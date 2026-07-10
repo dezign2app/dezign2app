@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/backend",
+  "type": "module",
+  "scripts": {
+    "dev": "convex dev",
+    "setup": "convex dev --until-success",
+    "test": "cd ."
+  },
+  "exports": {
+    "./convex": "./convex/*.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.30",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "latest",
+    "vitest": "^3.0.7"
+  },
+  "dependencies": {
+    "convex": "^1.31.6",
+    "cron-parser": "^5.5.0",
+    "svix": "^1.84.1"
+  }
+}

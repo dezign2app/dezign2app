@@ -1,0 +1,35 @@
+---
+title: Upstash Redis
+description: Setting up the serverless Redis database for background job locks and state.
+---
+
+# Upstash Redis Setup
+
+Upstash providing a serverless Redis database that is used for background job orchestration and internal state management.
+
+## 1. Create an Upstash Account
+- Go to [Upstash Console](https://console.upstash.com/) and sign up or log in.
+
+## 2. Create a Redis Database
+- Click on **"Create Database"**.
+- Enter a name (e.g., `workflow-redis`).
+- Select a region closest to your deployment (or local environment).
+- Keep **"TLS"** enabled (default).
+- Enable **"Eviction"** if you want to limit memory usage, though default settings are usually fine for this template.
+
+## 3. Retrieve Credentials
+- Scroll down to the **"REST API"** section.
+- Copy the following values:
+  - **`UPSTASH_REDIS_REST_URL`**
+  - **`UPSTASH_REDIS_REST_TOKEN`**
+
+## 4. Update Environment Variables
+Add these values to your `.env` file in `apps/workflow-engine`:
+
+```bash
+UPSTASH_REDIS_REST_URL="https://your-db-url.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-access-token"
+```
+
+> [!NOTE]
+> The Workflow Engine uses these credentials to manage distributed locks and avoid duplicate job processing.

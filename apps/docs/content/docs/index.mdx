@@ -1,0 +1,60 @@
+---
+title: Overview
+description: Technical documentation for the Workflow Template monorepo.
+---
+
+# Project Overview
+
+The **Workflow Template** is a modern, high-performance monorepo designed for building and scaling AI-powered workflow automation platforms. It provides a production-ready foundation with integrated authentication, payments, real-time event processing, background job orchestration, and a robust database layer.
+
+---
+
+## Video Walkthrough
+
+> [!TIP]
+> **Video Placeholder**: Replace the link below with your actual YouTube walkthrough.
+> 
+
+<iframe
+  width="100%"
+  height="450"
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  title="Workflow Template Walkthrough"
+  className="rounded-xl border shadow-lg w-[80%] h-96"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+></iframe>
+
+---
+
+## Why is this Production Grade?
+
+This template goes beyond simple MVPs by implementing an **Advanced Agentic Architecture** used by top-tier AI platforms:
+
+- **Resilient AI Orchestration**: By using **Inngest** for background offloading, the system ensures that long-running LLM calls or complex multi-step workflows never trigger front-facing HTTP timeouts.
+- **Stateless & Scalable Streaming**: A **Redis-backed matching system** decouples background execution from frontend delivery. This allows your backend to scale horizontally while maintaining a consistent real-time chat state.
+- **End-to-End Type Safety**: A shared schema core ensures that your database (Convex), workflow engine, and frontend are always in sync at the type level, preventing runtime errors.
+- **Hybrid Real-time Architecture**: Most apps choose between SSE and WebSockets; this template uses both. Direct **SSE (Server-Sent Events)** provides low-latency active chatting, while **Upstash Realtime (PubSub)** handles cross-tab synchronization and background status updates.
+- **Massive Scalability**: The architecture is built to handle **100k+ DAU**. By leveraging a stateless Workflow Engine and high-concurrency services like Convex and Upstash, the system scales horizontally with ease.
+
+---
+
+### Key features include:
+- **Full-Stack Monorepo**: Managed with `pnpm` workspaces for seamess development.
+- **Real-time Database**: Powered by **Convex**, providing a type-safe, ACID-compliant, and automatically syncing backend.
+- **AI-Ready Architecture**: Built-in support for AI SDKs and embeddings.
+- **Scalable Workflows**: Orchestration powered by Inngest.
+- **Real-time State**: Powered by Upstash Redis and Realtime.
+- **Payments**: Powered by Creem.
+- **Developer First**: Integrated documentation, type-safe backend, and modern UI components.
+
+---
+
+## Quick Links
+
+- [**Full Architecture Guide**](./architecture.mdx) — Understanding how the Web App, Workflow Engine, and Convex interact.
+- [**Setup Guide**](./setup.mdx) — Step-by-step instructions to get the project running locally.
+- [**Internal Documentation**](./getting-started.mdx) — How the docs app itself is integrated into the monorepo.
+
+---

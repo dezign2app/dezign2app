@@ -1,0 +1,12 @@
+{
+  "name": "mcp-inspector-dev",
+  "version": "1.0.0",
+  "description": "mcp inspector/validator for development",
+  "main": "index",
+  "scripts": {
+    "test": "cd .",
+    "dev":"npx @modelcontextprotocol/inspector"
+  },
+  "author": "Subhash Nayak",
+  "license": "ISC"
+}

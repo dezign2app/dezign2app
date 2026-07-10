@@ -1,0 +1,21 @@
+---
+title: Workflow Engine (express)
+description: Setting up the background job orchestration.
+---
+
+# Workflow Engine Setup (`apps/workflow-engine`)
+
+1. Create a `.env` file in `apps/workflow-engine` (use `.env.example` as a template).
+2. Required environment variables:
+   - `CONVEX_URL`: Your Convex project URL.
+   - `CLERK_JWT_ISSUER_DOMAIN`: Your Clerk domain (e.g., `https://your-domain.clerk.accounts.dev`).
+   - `GROQ_API_KEY`: Get from [Groq](https://groq.com/) (for AI Agent functionality).
+   - `GOOGLE_API_KEY`: Get from [Google AI](https://aistudio.google.com/) (alternative for AI Agent functionality).
+   - `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`: Get from [Upstash](https://upstash.com/).
+   - `INNGEST_EVENT_KEY` & `INNGEST_SIGNING_KEY`: Get from [Inngest Cloud](https://www.inngest.com/).
+   - `SYSTEM_CORE_SECRET`: A secure random string used to authenticate internal requests from the backend.
+
+3. Run the service:
+```bash
+pnpm --filter workflow-engine dev
+```

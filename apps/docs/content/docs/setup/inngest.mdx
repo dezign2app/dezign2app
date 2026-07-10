@@ -1,0 +1,50 @@
+---
+title: Inngest (Event Bus)
+description: Setting up the serverless event bus and background job queue.
+---
+
+# Inngest Setup
+
+Inngest is used to handle background jobs and event-driven workflows. It works by listening to events and triggering functions based on those events.
+
+## 1. Local Development
+
+For local development, you should use the Inngest Dev Server. This allows you to test your functions without deploying to the cloud.
+
+### Install Inngest CLI
+Run the following command to install the CLI globally:
+
+```bash
+npm install -g inngest-cli
+```
+
+### Start the Dev Server
+In a new terminal window, start the Inngest Dev Server:
+
+```bash
+inngest dev
+```
+
+The Dev Server will start (usually at `http://localhost:8288`) and automatically discover your functions if your workflow engine is running.
+
+## 2. Production Setup
+
+For production, you need an Inngest Cloud account.
+
+### Create an Inngest Account
+- Go to [Inngest Cloud](https://app.inngest.com/) and sign up.
+
+### Retrieve Credentials
+- Navigate to your project settings.
+- Copy the **`INNGEST_SIGNING_KEY`** and **`INNGEST_EVENT_KEY`**.
+
+## 3. Update Environment Variables
+Add the keys to your `.env` file in `apps/workflow-engine`:
+
+```bash
+INNGEST_EVENT_KEY="key-prod-..."
+INNGEST_SIGNING_KEY="signkey-prod-..."
+```
+
+> [!TIP]
+> In local development, you typically don't need the signing key if the dev server is accessible. However, it is mandatory for production to verify event authenticity.

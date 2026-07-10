@@ -1,0 +1,4 @@
+packages:
+  - "!apps/ai-agent"
+  - "apps/*"
+  - "packages/*"

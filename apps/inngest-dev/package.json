@@ -1,0 +1,12 @@
+{
+  "name": "inngest-dev",
+  "version": "1.0.0",
+  "description": "dev server for inggest processes",
+  "main": "index",
+  "scripts": {
+    "test": "cd .",
+    "dev": "npx --ignore-scripts=false inngest-cli@latest dev -u http://localhost:3001/inngest"
+  },
+  "author": "Subhash Nayak",
+  "license": "ISC"
+}

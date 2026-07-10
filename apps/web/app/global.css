@@ -1,0 +1,23 @@
+@import '../styles/_variables.scss';
+@import '../styles/_keyframe-animations.scss';
+
+:root {
+  --workflow-edge-label-color: var(--color-foreground);
+  --workflow-edge-label-background: var(--color-background);
+}
+
+.dark {
+  --workflow-edge-label-color: var(--color-background);
+  --workflow-edge-label-background: var(--color-foreground);
+}
+
+.react-flow__edge-path {
+  transition: stroke 0.22s ease-in-out;
+}
+
+.react-flow__edge:hover .react-flow__edge-path,
+.react-flow__edge.selected .react-flow__edge-path { 
+  stroke: var(--color-foreground) !important;
+  color: var(--color-foreground) !important;
+}
+

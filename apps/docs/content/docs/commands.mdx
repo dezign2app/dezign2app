@@ -1,0 +1,144 @@
+---
+title: Monorepo Commands
+description: Guide to the scripts and tools used to manage the development workflow.
+---
+
+# Monorepo Commands
+
+The workspace uses [Turborepo](https://turbo.build/) for task orchestration and [pnpm](https://pnpm.io/) for package management. This setup allows for lightning-fast builds and concurrent development across multiple apps and packages.
+
+## Global Commands
+
+These commands are run from the **root** of the project and affect all workspaces simultaneously.
+
+| Command | Action |
+| :--- | :--- |
+| `pnpm dev` | Starts all applications in development mode. |
+| `pnpm build` | Builds all applications for production. |
+| `pnpm lint` | Runs ESLint across the entire monorepo. |
+| `pnpm format` | Formats all files with Prettier. |
+| `pnpm test` | Runs unit and integration tests. |
+
+## Workspace Filtering
+
+If you want to run a command for a **specific app or package**, use the `--filter` flag. This is faster than running everything when you're only working on one part of the system.
+
+### Examples:
+
+**Run only the Web app:**
+```bash
+pnpm --filter web dev
+```
+
+**Run only the Workflow Engine:**
+```bash
+pnpm --filter workflow-engine dev
+```
+
+**Run only the Documentation:**
+```bash
+pnpm --filter docs dev
+```
+
+**Build only the Backend packages:**
+```bash
+pnpm --filter "@workspace/backend" build
+```
+
+---
+
+## Tooling Specific Commands
+
+### Convex (Database)
+Convex commands are usually run from within the `packages/backend` directory or using filters:
+
+```bash
+# Start Convex dev server
+pnpm --filter backend dev
+```
+
+### Inngest (Workflows)
+To see your background functions locally:
+
+```bash
+# Start Inngest Dev Server
+inngest dev
+```
+
+---
+
+## Dependency Management
+
+Managing packages in a monorepo requires targeting specific workspaces or the root.
+
+### Adding Packages
+
+**Add a package to a specific app/package:**
+```bash
+pnpm --filter <workspace-name> add <package-name>
+```
+*Example: `pnpm --filter web add lucide-react`*
+
+**Add a development dependency to a specific workspace:**
+```bash
+pnpm --filter <workspace-name> add -D <package-name>
+```
+
+**Add a global dependency to the root:**
+```bash
+pnpm add -w <package-name>
+```
+
+### Removing Packages
+
+**Remove a package from a specific workspace:**
+```bash
+pnpm --filter <workspace-name> remove <package-name>
+```
+
+---
+
+## Codebase Cleanup
+
+Maintain a clean monorepo by removing unused code and dependencies.
+
+### Removing Unused Imports
+The project is configured with ESLint and Prettier to help identify and remove unused imports.
+
+```bash
+# Automatically fix linting issues, including removing unused imports
+pnpm lint --fix
+```
+
+### Pruning Unused Dependencies
+If you have packages installed in `node_modules` that are no longer listed in any `package.json`, you can prune them to save disk space.
+
+```bash
+# Remove unreferenced packages from node_modules
+pnpm prune
+```
+
+### Finding Unused Packages
+To identify packages that are installed but not imported anywhere in your code, we recommend using [knip](https://knip.dev/).
+
+```bash
+# If installed, run knip to find unused files and dependencies
+pnpm exec knip
+```
+
+---
+
+## Troubleshooting
+
+### Cleaning the Workspace
+If you encounter weird caching issues or dependency conflicts:
+
+```bash
+# Remove all node_modules and turbo caches
+pnpm -r exec rm -rf node_modules
+rm -rf .turbo
+pnpm install
+```
+
+> [!TIP]
+> Turbo's **Remote Caching** is configured to speed up CI/CD. Locally, it uses a filesystem cache in `.turbo` to avoid re-running tasks that haven't changed.

@@ -1,0 +1,22 @@
+---
+title: Web (Next.js)
+description: Setting up the frontend and environment variables.
+---
+
+# Web App Setup (`apps/web`)
+
+1. Create a `.env.local` file in `apps/web` (use `.env.example` as a template).
+2. Required environment variables:
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` & `CLERK_SECRET_KEY`: Get from [Clerk](https://clerk.com/).
+   - `CLERK_JWT_ISSUER_URL`: Your Clerk domain (e.g., `https://your-domain.clerk.accounts.dev`).
+   - `NEXT_PUBLIC_CONVEX_URL`: From the Convex setup step.
+   - `NEXT_PUBLIC_CONVEX_SITE_URL`: From the Convex setup step (usually ends in `.convex.site`).
+   - `NEXT_PUBLIC_APP_URL`: Your local web URL (usually `http://localhost:3000`).
+   - `NEXT_PUBLIC_WORKFLOW_ENGINE_BASE_URL`: The URL of your local workflow engine (usually `http://localhost:3001`).
+   - `CREEM_API_KEY`: Get from [Creem](https://creem.io/).
+   - `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`: Get from [Upstash](https://upstash.com/).
+
+3. Run the development server:
+```bash
+pnpm --filter web dev
+```

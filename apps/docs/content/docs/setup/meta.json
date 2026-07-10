@@ -1,0 +1,4 @@
+{
+  "title": "Setup Guide",
+  "pages": ["index", "upstash", "inngest", "workflow-engine", "convex", "web", "docs"]
+}

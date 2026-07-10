@@ -1,0 +1,29 @@
+---
+title: Shared Backend (Convex)
+description: Initializing the database and backend layer.
+---
+
+# Shared Backend Setup (Convex)
+
+The database layer must be initialized first as other services depend on it.
+
+1. Navigate to the backend package:
+```bash
+cd packages/backend
+```
+
+2. Run the Convex development server:
+```bash
+pnpm run setup
+```
+
+*This will prompt you to log in to Convex and create a new project. Once running, it will provide you with a `CONVEX_URL`.*
+
+3. Configure Environment Variables:
+Create a `.env.local` file in `packages/backend` (use `.env.local.example` as a template).
+   - `CLERK_JWT_ISSUER_DOMAIN`: Your Clerk domain.
+   - `CLERK_WEBHOOK_SECRET`: Secure webhook secret from Clerk dashboard.
+   - `CREEM_SUBSCRIPTION_WEBHOOK_SECRET`: Secret from your Creem dashboard.
+   - `SYSTEM_CORE_SECRET`: Must match the secret in `apps/workflow-engine`.
+   - `WORKFLOW_SECRETS_MASTER_KEY`: A 32-character string for secret encryption.
+   - `EMBEDDING_384_MODEL_URL`: URL to your 384-dimensional embedding server.

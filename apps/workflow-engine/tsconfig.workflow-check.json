@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/workflows/runtime.ts",
+    "src/routes/workflows.ts",
+    "src/inngest/functions/workflows.ts"
+  ]
+}

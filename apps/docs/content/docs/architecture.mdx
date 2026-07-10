@@ -1,0 +1,39 @@
+---
+title: Architecture
+description: Deep dive into the project's technical structure and service interactions.
+---
+
+# Project Architecture
+
+The **Workflow Template** is structured as a monorepo containing multiple specialized applications and shared packages. 
+
+## Main Components
+
+- **Frontend (`apps/web`)**: A Next.js 15+ application that serves as the primary user interface. It handles user authentication (via Clerk), payments (via Creem), and provides a dashboard for managing workflows.
+- **Workflow Engine (`apps/workflow-engine`)**: An Express.js microservice dedicated to the execution and orchestration of complex workflows. It communicates with Inngest for background processing and Upstash for real-time state management.
+- **Backend Core (`packages/backend`)**: A shared package that contains the [Convex](https://www.convex.dev/) schema, queries, and mutations used across the monorepo.
+- **Documentation (`apps/docs`)**: A Fumadocs-powered technical documentation site (which you are currently reading).
+
+---
+
+# Service Interaction Flow
+
+The platform follows a highly resilient path for processing user requests:
+
+1. **User Action**: A user sends a message or triggers an action through the **Chat Interface** in the Web App.
+2. **Initial Request**: The Web App hits the **Workflow Engine** (`/ai/agent`) endpoint with the user's request.
+3. **Offloading**: For complex actions (like Kanban or Workflow updates), the Workflow Engine offloads the task to **Inngest** for background orchestration.
+4. **Processing & State**: The **Inngest** function executes the logic, interacts with **Convex** for data persistence, and writes progress updates to **Upstash Redis**.
+5. **Real-time Streaming**: The Workflow Engine polls the **Redis** stream and pipes the updates back to the Web App via **Server-Sent Events (SSE)** for a real-time chat experience.
+
+---
+
+# Why Convex?
+
+The project leverages [Convex](https://www.convex.dev/) as its primary backend and database layer. Unlike traditional databases, Convex provides:
+
+- **Type-Safe Backend**: The schema is defined in TypeScript, and queries/mutations are end-to-end type-safe.
+- **Automatic Caching**: Queries are reactive and automatically cached, ensuring high performance.
+- **Integrated Storage**: Convex handles file storage and vector search (used for AI embeddings).
+- **Serverless functions**: Backend logic runs as serverless functions within the Convex environment, reducing infrastructure overhead.
+- **Real-time Subscriptions**: The frontend automatically subscribes to data changes, ensuring the UI is always in sync.

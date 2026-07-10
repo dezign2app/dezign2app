@@ -101,6 +101,7 @@ declare module "@xyflow/react" {
   export const MiniMap: React.ComponentType<Record<string, unknown>>;
   export const BaseEdge: React.ComponentType<any>;
   export const NodeResizer: React.ComponentType<any>;
+  export const Panel: React.ComponentType<any>;
   export const ReactFlowProvider: React.ComponentType<{
     children?: React.ReactNode;
   }>;

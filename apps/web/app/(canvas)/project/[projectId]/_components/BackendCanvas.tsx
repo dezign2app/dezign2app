@@ -8,9 +8,12 @@ import {
   MiniMap,
   ReactFlowProvider,
   useReactFlow,
+  Panel,
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { Button } from "@workspace/ui/components/button";
+import { PlusSquare, FolderPlus, LayoutGrid } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
@@ -84,7 +87,38 @@ function Flow({ projectId, view }: BackendCanvasProps) {
     clearPending,
   } = useBackendCanvasStore();
 
-  const { fitView, setViewport } = useReactFlow();
+  const addTableNode = useBackendCanvasStore(s => s.addTableNode);
+  const addNode = useBackendCanvasStore(s => s.addNode);
+
+  const { fitView, setViewport, screenToFlowPosition } = useReactFlow();
+
+  const getCenterPosition = () => {
+    if (typeof window === "undefined") return { x: 100, y: 100 };
+    return screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    });
+  };
+
+  const handleAddTable = () => {
+    const center = getCenterPosition();
+    addTableNode(undefined, { x: center.x - 75, y: center.y - 30 }); // offset by half the rough width/height of table
+  };
+
+  const handleAddGroup = () => {
+    const center = getCenterPosition();
+    addNode({
+      id: crypto.randomUUID(),
+      type: "group",
+      position: { x: center.x - 225, y: center.y - 150 },
+      style: { width: 450, height: 300 },
+      width: 450,
+      height: 300,
+      data: { 
+        label: ""
+      },
+    });
+  };
 
   const initialElements = useQuery(api.canvas.getBackendElements, {
     projectId: projectId as Id<"projects">,
@@ -357,6 +391,22 @@ function Flow({ projectId, view }: BackendCanvasProps) {
           <Background gap={12} size={1} />
           <Controls />
           <MiniMap />
+          <Panel position="top-right" className="flex gap-2 flex-col">
+            <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={handleAddTable}>
+              <PlusSquare className="w-3.5 h-3.5 mr-2" />
+              Table
+            </Button>
+            <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={handleAddGroup}>
+              <FolderPlus className="w-3.5 h-3.5 mr-2" />
+              Group
+            </Button>
+            <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={() => {
+               // runAutoLayout()
+            }}>
+              <LayoutGrid className="w-3.5 h-3.5 mr-2" />
+              Auto-layout
+            </Button>
+          </Panel>
         </ReactFlow>
       </div>
     );
@@ -390,6 +440,14 @@ function Flow({ projectId, view }: BackendCanvasProps) {
         <Background gap={12} size={1} />
         <Controls />
         <MiniMap />
+        <Panel position="top-right" className="flex gap-2">
+          <Button variant="outline" size="sm" className="bg-background shadow-sm h-9 text-xs" onClick={() => {
+             // runAutoLayout()
+          }}>
+            <LayoutGrid className="w-3.5 h-3.5 mr-2" />
+            Auto-layout
+          </Button>
+        </Panel>
       </ReactFlow>
     </div>
   );

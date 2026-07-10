@@ -34,7 +34,7 @@ interface BackendCanvasState {
 
   // Manual actions
   addNode: (node: Omit<BackendNode, "fractionalIndex">) => void;
-  addTableNode: (parentId?: string) => void;
+  addTableNode: (parentId?: string, position?: { x: number; y: number }) => void;
   updateNode: (id: string, changes: Partial<BackendNode>) => void;
   deleteNode: (id: string) => void;
   addEdge: (edge: Omit<BackendEdge, "fractionalIndex">) => void;
@@ -214,29 +214,30 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   addNode: (nodeWithoutIndex) => {
     const lastNodeIndex = getLastIndex(get().nodes);
     const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
-    const node: BackendNode = { ...nodeWithoutIndex, fractionalIndex } as BackendNode;
-    const next = [...get().nodes, node];
+    const node: BackendNode = { ...nodeWithoutIndex, fractionalIndex, selected: true } as BackendNode;
+    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
     set({
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, node],
     });
   },
 
-  addTableNode: (parentId) => {
+  addTableNode: (parentId, position) => {
     const lastNodeIndex = getLastIndex(get().nodes);
     const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
     const node: BackendNode = {
       id: crypto.randomUUID(),
       type: "entity",
-      position: { x: 100, y: 100 },
+      position: position || { x: 100, y: 100 },
       parentId,
       fractionalIndex,
       data: {
         label: "",
         columns: [{ name: "_id", type: "UUID", isPrimaryKey: true }] 
-      }
+      },
+      selected: true
     };
-    const next = [...get().nodes, node];
+    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
     set({
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, node],

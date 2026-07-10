@@ -49,6 +49,7 @@ export type BackendNode = {
   style?: React.CSSProperties;
   width?: number;
   height?: number;
+  selected?: boolean;
 };
 
 export type BackendEdgeType = "connection" | "foreign-key" | "message";

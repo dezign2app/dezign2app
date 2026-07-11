@@ -66,13 +66,22 @@ const backendTools = [
     type: "function",
     function: {
       name: "add_node",
-      description: "Add a service, database, queue, entity, group, webClient or external node to the backend canvas.",
+      description: `Add a node to the backend canvas. Node types:
+- 'service': A backend API / microservice
+- 'database': A database reference node
+- 'queue': Point-to-point message queue (use with implementations: 'RabbitMQ', 'Amazon SQS', 'Azure Service Bus')
+- 'pubsub': Fan-out publish-subscribe (use with implementations: 'Google Pub/Sub', 'Redis Pub/Sub', 'RabbitMQ Fanout')
+- 'eventstream': Log-based event streaming (use with implementations: 'Kafka', 'Redis Streams', 'Azure Event Hubs')
+- 'entity': A database table/schema entity
+- 'webClient': A frontend client or page
+- 'external': An external third-party API
+- 'group': A logical grouping node`,
       parameters: {
         type: "object",
         properties: {
-          type: { type: "string", enum: ["service", "database", "queue", "entity", "group", "webClient", "external"] },
+          type: { type: "string", enum: ["service", "database", "queue", "pubsub", "eventstream", "entity", "group", "webClient", "external"] },
           label: { type: "string", description: "Name of the node" },
-          data: { type: "object", description: "Additional data for the node, like columns for 'entity'" },
+          data: { type: "object", description: "Additional data for the node. For 'queue': { implementation: 'RabbitMQ'|'Amazon SQS'|'Azure Service Bus', delivery, failureHandling, durable, rabbitExchange, rabbitRoutingKey, sqsVisibilityTimeout, sqsFifo, azureTopic }. For 'pubsub': { implementation: 'Google Pub/Sub'|'Redis Pub/Sub'|'RabbitMQ Fanout', delivery, retention, gcpTopic, gcpSubscription, rabbitExchange }. For 'eventstream': { implementation: 'Kafka'|'Redis Streams'|'Azure Event Hubs', delivery, ordering, retention, kafkaPartitions, kafkaReplication, kafkaCompression, kafkaTTL, kafkaBatchSize, redisConsumerGroup }. For 'entity': { columns: [{ name, type, isPrimaryKey, isForeignKey, isNotNull, isUnique }] }." },
         },
         required: ["type", "label"],
       },
@@ -148,6 +157,12 @@ Your job is to assist the user in designing their system using the provided tool
 You are currently viewing the **${canvasMode}** canvas.
 
 If working on a Database Schema, use 'entity' nodes and populate 'data.columns' with an array of { name, type, isPrimaryKey, isForeignKey, isNotNull, isUnique }. Use 'group' nodes to group tables, and 'foreign-key' edges to connect tables, specifying 'sourceCardinality' and 'targetCardinality' (1 or N) in 'data'.
+
+When adding messaging infrastructure, choose the correct node type based on the messaging pattern:
+- Use 'queue' for point-to-point work queues. Valid implementations: 'RabbitMQ', 'Amazon SQS', 'Azure Service Bus'. Only set fields: delivery, failureHandling, durable, rabbitExchange, rabbitRoutingKey, rabbitBindings, sqsVisibilityTimeout, sqsDelay, sqsFifo, azureTopic, azureSubscription.
+- Use 'pubsub' for fan-out broadcast messaging. Valid implementations: 'Google Pub/Sub', 'Redis Pub/Sub', 'RabbitMQ Fanout'. Only set fields: delivery, retention, gcpTopic, gcpSubscription, rabbitExchange.
+- Use 'eventstream' for log-based replay-able streams. Valid implementations: 'Kafka', 'Redis Streams', 'Azure Event Hubs'. Only set fields: delivery, ordering, retention, kafkaPartitions, kafkaReplication, kafkaCompression, kafkaTTL, kafkaBatchSize, redisConsumerGroup.
+NEVER mix implementation fields across node types (e.g., never put kafkaPartitions on a 'queue' node).
 
 Current Canvas State:
 ${canvasStateContext}

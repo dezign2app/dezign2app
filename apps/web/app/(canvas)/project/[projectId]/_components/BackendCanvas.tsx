@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { PlusSquare, FolderPlus, LayoutGrid, User, Server, Globe, Container, Database } from "lucide-react";
+import { PlusSquare, FolderPlus, LayoutGrid, User, Server, Globe, Container, Database, GitBranch, Radio, Waves } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
@@ -490,7 +490,7 @@ function Flow({ projectId, view }: BackendCanvasProps) {
   // This implies graph view probably doesn't need entity nodes, or if it does, it doesn't need groups.
   // I will just filter out "group".
   
-  const handleAddGraphNode = (type: "service" | "database" | "queue" | "webClient" | "external", label: string) => {
+  const handleAddGraphNode = (type: "service" | "database" | "queue" | "pubsub" | "eventstream" | "webClient" | "external", label: string) => {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 100, center.y - 100);
     addNode({
@@ -502,9 +502,8 @@ function Flow({ projectId, view }: BackendCanvasProps) {
         events: type === 'webClient' ? [] : undefined,
         inputs: type === 'service' ? [] : undefined,
         logic: type === 'service' ? [] : undefined,
-        outputs: (type === 'service' || type === 'queue') ? [] : undefined,
+        outputs: type === 'service' ? [] : undefined,
         actions: type === 'external' ? [] : undefined,
-        messages: type === 'queue' ? [] : undefined,
       },
     });
   };
@@ -535,17 +534,26 @@ function Flow({ projectId, view }: BackendCanvasProps) {
             <Server className="w-3.5 h-3.5 mr-2" />
             Service
           </Button>
-          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('external', 'New API')}>
-            <Globe className="w-3.5 h-3.5 mr-2" />
-            External
-          </Button>
+          
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('queue', 'New Queue')}>
-            <Container className="w-3.5 h-3.5 mr-2" />
+            <GitBranch className="w-3.5 h-3.5 mr-2" />
             Queue
+          </Button>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('pubsub', 'New Pub/Sub')}>
+            <Radio className="w-3.5 h-3.5 mr-2" />
+            Pub / Sub
+          </Button>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('eventstream', 'New Event Stream')}>
+            <Waves className="w-3.5 h-3.5 mr-2" />
+            Event Stream
           </Button>
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('database', 'Table Ref')}>
             <Database className="w-3.5 h-3.5 mr-2" />
             DB Ref
+          </Button>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleAddGraphNode('external', 'New API')}>
+            <Globe className="w-3.5 h-3.5 mr-2" />
+            External
           </Button>
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start mt-2" onClick={() => {
              // runAutoLayout()

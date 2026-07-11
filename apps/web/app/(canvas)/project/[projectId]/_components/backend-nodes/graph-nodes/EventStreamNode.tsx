@@ -1,21 +1,20 @@
 import React, { useState } from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
-import { GitBranch, ChevronDown, ChevronUp } from "lucide-react";
+import { Waves, ChevronDown, ChevronUp } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { NodeHeader } from "./shared";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { Switch } from "@workspace/ui/components/switch";
-import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 
-// Queue implementations with their specific config fields
-const QUEUE_IMPLEMENTATIONS = ["None", "RabbitMQ", "Amazon SQS", "Azure Service Bus"] as const;
-type QueueImpl = typeof QUEUE_IMPLEMENTATIONS[number];
+// Event Stream implementations with their specific config fields
+const EVENTSTREAM_IMPLEMENTATIONS = ["None", "Kafka", "Redis Streams", "Azure Event Hubs"] as const;
+type EventStreamImpl = typeof EVENTSTREAM_IMPLEMENTATIONS[number];
 
-export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+export const EventStreamNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
@@ -23,10 +22,10 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const [showReliability, setShowReliability] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const implementation = (data.implementation || "None") as QueueImpl;
+  const implementation = (data.implementation || "None") as EventStreamImpl;
   const hasImplementation = implementation !== "None";
 
-  // Derive producers (nodes that send to this queue) and consumers (nodes that receive from it)
+  // Derive producers (publishers) and consumers
   const producerIds = new Set(edges.filter(e => e.target === id).map(e => e.source));
   const consumerIds = new Set(edges.filter(e => e.source === id).map(e => e.target));
 
@@ -35,7 +34,7 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <NodeHeader id={id} data={data} icon={GitBranch} title="Queue" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
+      <NodeHeader id={id} data={data} icon={Waves} title="Event Stream" colorClass="bg-teal-500/10 text-teal-700 dark:text-teal-400" selected={selected} />
 
       <Handle type="target" position={Position.Left} className="w-2 h-2" style={{ top: '20px' }} />
       <Handle type="source" position={Position.Right} className="w-2 h-2" style={{ top: '20px' }} />
@@ -44,7 +43,7 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">
         <Textarea
           className="min-h-[40px] text-xs bg-transparent border-none shadow-none p-1 resize-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-          placeholder="description (e.g. Processes order payment jobs...)"
+          placeholder="description (e.g. Immutable audit log of all user actions...)"
           value={data.description || ""}
           onChange={(e) => updateNode(id, { data: { ...data, description: e.target.value } })}
         />
@@ -57,7 +56,7 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           <Select value={implementation} onValueChange={(val) => updateNode(id, { data: { ...data, implementation: val } })}>
             <SelectTrigger className="h-6 w-[160px] text-[10px] px-2 py-0 nodrag"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {QUEUE_IMPLEMENTATIONS.map(impl => (
+              {EVENTSTREAM_IMPLEMENTATIONS.map(impl => (
                 <SelectItem key={impl} value={impl} className="text-xs">{impl}</SelectItem>
               ))}
             </SelectContent>
@@ -72,7 +71,7 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           {producers.length === 0
             ? <span className="text-[10px] text-muted-foreground italic">No producers connected</span>
             : producers.map(p => (
-                <div key={p.id} className="text-xs font-medium truncate px-1 border-l-2 border-orange-500/50 ml-1">{p.data.label || "Untitled"}</div>
+                <div key={p.id} className="text-xs font-medium truncate px-1 border-l-2 border-teal-500/50 ml-1">{p.data.label || "Untitled"}</div>
               ))
           }
         </div>
@@ -85,13 +84,13 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           {consumers.length === 0
             ? <span className="text-[10px] text-muted-foreground italic">No consumers connected</span>
             : consumers.map(c => (
-                <div key={c.id} className="text-xs font-medium truncate px-1 border-l-2 border-orange-500/50 ml-1">{c.data.label || "Untitled"}</div>
+                <div key={c.id} className="text-xs font-medium truncate px-1 border-l-2 border-teal-500/50 ml-1">{c.data.label || "Untitled"}</div>
               ))
           }
         </div>
       </div>
 
-      {/* Reliability — only when an implementation is chosen */}
+      {/* Reliability */}
       {hasImplementation && (
         <div className="flex flex-col nodrag border-b">
           <div
@@ -103,7 +102,6 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           </div>
           {showReliability && (
             <div className="p-3 flex flex-col gap-3 bg-secondary/5 border-t">
-              {/* Delivery guarantee */}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">Delivery Guarantee</span>
                 <Select value={data.delivery || "At Least Once"} onValueChange={(val) => updateNode(id, { data: { ...data, delivery: val } })}>
@@ -116,31 +114,32 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
                 </Select>
               </div>
 
-              {/* Failure Handling */}
+              {/* Ordering */}
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Failure Handling</span>
-                <Select value={data.failureHandling || "Retry"} onValueChange={(val) => updateNode(id, { data: { ...data, failureHandling: val } })}>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Ordering</span>
+                <Select value={data.ordering || "Unordered"} onValueChange={(val) => updateNode(id, { data: { ...data, ordering: val } })}>
                   <SelectTrigger className="h-6 w-[140px] text-[10px] px-2 py-0 nodrag"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Drop" className="text-xs">Drop</SelectItem>
-                    <SelectItem value="Retry" className="text-xs">Retry</SelectItem>
-                    <SelectItem value="Retry + DLQ" className="text-xs">Retry + DLQ</SelectItem>
+                    <SelectItem value="Unordered" className="text-xs">Unordered</SelectItem>
+                    <SelectItem value="Ordered" className="text-xs">Ordered (per partition)</SelectItem>
+                    <SelectItem value="Global Order" className="text-xs">Global Order</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Durable — only relevant for RabbitMQ */}
-              {implementation === "RabbitMQ" && (
-                <div className="flex items-center justify-between">
-                  <Label htmlFor={`durable-${id}`} className="text-[10px] font-bold text-muted-foreground uppercase">Durable</Label>
-                  <Switch
-                    id={`durable-${id}`}
-                    className="nodrag scale-75 origin-right"
-                    checked={data.durable ?? true}
-                    onCheckedChange={(val) => updateNode(id, { data: { ...data, durable: val } })}
-                  />
-                </div>
-              )}
+              {/* Retention */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Retention</span>
+                <Select value={data.retention || "7 days"} onValueChange={(val) => updateNode(id, { data: { ...data, retention: val } })}>
+                  <SelectTrigger className="h-6 w-[140px] text-[10px] px-2 py-0 nodrag"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1 hour" className="text-xs">1 hour</SelectItem>
+                    <SelectItem value="1 day" className="text-xs">1 day</SelectItem>
+                    <SelectItem value="7 days" className="text-xs">7 days</SelectItem>
+                    <SelectItem value="Forever" className="text-xs">Forever</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
         </div>
@@ -158,51 +157,51 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           </div>
           {showAdvanced && (
             <div className="px-3 py-2 flex flex-col gap-3 border-t text-[10px] text-muted-foreground bg-secondary/5">
-              {implementation === "RabbitMQ" && (
+              {implementation === "Kafka" && (
                 <>
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Exchange</Label>
-                    <Input className="h-6 text-[10px] w-28 bg-background nodrag" placeholder="Exchange Name" value={data.rabbitExchange || ""} onChange={e => updateNode(id, { data: { ...data, rabbitExchange: e.target.value } })} />
+                    <Label className="text-[10px] font-bold text-muted-foreground">Partitions</Label>
+                    <Input className="h-6 text-[10px] w-16 text-right bg-background nodrag" placeholder="e.g. 3" value={data.kafkaPartitions || ""} onChange={e => updateNode(id, { data: { ...data, kafkaPartitions: e.target.value } })} />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Routing Key</Label>
-                    <Input className="h-6 text-[10px] w-28 bg-background nodrag" placeholder="Routing Key" value={data.rabbitRoutingKey || ""} onChange={e => updateNode(id, { data: { ...data, rabbitRoutingKey: e.target.value } })} />
+                    <Label className="text-[10px] font-bold text-muted-foreground">Replication Factor</Label>
+                    <Input className="h-6 text-[10px] w-16 text-right bg-background nodrag" placeholder="e.g. 3" value={data.kafkaReplication || ""} onChange={e => updateNode(id, { data: { ...data, kafkaReplication: e.target.value } })} />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Bindings</Label>
-                    <Input className="h-6 text-[10px] w-28 bg-background nodrag" placeholder="Bindings" value={data.rabbitBindings || ""} onChange={e => updateNode(id, { data: { ...data, rabbitBindings: e.target.value } })} />
+                    <Label className="text-[10px] font-bold text-muted-foreground">Compression</Label>
+                    <Select value={data.kafkaCompression || "None"} onValueChange={(val) => updateNode(id, { data: { ...data, kafkaCompression: val } })}>
+                      <SelectTrigger className="h-6 w-24 text-[10px] px-2 py-0 nodrag"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None" className="text-[10px]">None</SelectItem>
+                        <SelectItem value="Gzip" className="text-[10px]">Gzip</SelectItem>
+                        <SelectItem value="Snappy" className="text-[10px]">Snappy</SelectItem>
+                        <SelectItem value="LZ4" className="text-[10px]">LZ4</SelectItem>
+                        <SelectItem value="Zstd" className="text-[10px]">Zstd</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground">TTL</Label>
+                    <Input className="h-6 text-[10px] w-24 text-right bg-background nodrag" placeholder="e.g. 7 days" value={data.kafkaTTL || ""} onChange={e => updateNode(id, { data: { ...data, kafkaTTL: e.target.value } })} />
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-[10px] font-bold text-muted-foreground">Batch Size</Label>
+                    <Input className="h-6 text-[10px] w-24 text-right bg-background nodrag" placeholder="e.g. 16KB" value={data.kafkaBatchSize || ""} onChange={e => updateNode(id, { data: { ...data, kafkaBatchSize: e.target.value } })} />
                   </div>
                 </>
               )}
 
-              {implementation === "Amazon SQS" && (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Visibility Timeout</Label>
-                    <Input className="h-6 text-[10px] w-24 text-right bg-background nodrag" placeholder="e.g. 30s" value={data.sqsVisibilityTimeout || ""} onChange={e => updateNode(id, { data: { ...data, sqsVisibilityTimeout: e.target.value } })} />
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Delay Seconds</Label>
-                    <Input className="h-6 text-[10px] w-24 text-right bg-background nodrag" placeholder="e.g. 0s" value={data.sqsDelay || ""} onChange={e => updateNode(id, { data: { ...data, sqsDelay: e.target.value } })} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`sqs-fifo-${id}`} className="text-[10px] font-bold text-muted-foreground uppercase">FIFO Queue</Label>
-                    <Switch id={`sqs-fifo-${id}`} className="nodrag scale-75 origin-right" checked={data.sqsFifo || false} onCheckedChange={(val) => updateNode(id, { data: { ...data, sqsFifo: val } })} />
-                  </div>
-                </>
+              {implementation === "Redis Streams" && (
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground">Consumer Group</Label>
+                  <Input className="h-6 text-[10px] w-32 bg-background nodrag" placeholder="Group Name" value={data.redisConsumerGroup || ""} onChange={e => updateNode(id, { data: { ...data, redisConsumerGroup: e.target.value } })} />
+                </div>
               )}
 
-              {implementation === "Azure Service Bus" && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Queue / Topic Name</Label>
-                    <Input className="h-6 text-[10px] w-full bg-background nodrag" placeholder="my-queue" value={data.azureTopic || ""} onChange={e => updateNode(id, { data: { ...data, azureTopic: e.target.value } })} />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-muted-foreground">Subscription</Label>
-                    <Input className="h-6 text-[10px] w-full bg-background nodrag" placeholder="Subscription Name" value={data.azureSubscription || ""} onChange={e => updateNode(id, { data: { ...data, azureSubscription: e.target.value } })} />
-                  </div>
-                </>
+              {implementation === "Azure Event Hubs" && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Azure Event Hubs uses the common delivery and retention settings above. No additional config required.
+                </p>
               )}
             </div>
           )}

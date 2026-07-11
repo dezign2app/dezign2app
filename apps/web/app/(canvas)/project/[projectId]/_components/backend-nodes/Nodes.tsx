@@ -531,7 +531,9 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
 import { 
   ServiceNode, 
   DatabaseNode, 
-  QueueNode, 
+  QueueNode,
+  PubSubNode,
+  EventStreamNode,
   ExternalNode, 
   WebClientNode 
 } from "./graph-nodes";
@@ -541,6 +543,8 @@ export const nodeTypes = {
   service: ServiceNode,
   database: DatabaseNode,
   queue: QueueNode,
+  pubsub: PubSubNode,
+  eventstream: EventStreamNode,
   entity: EntityNode,
   external: ExternalNode,
   webClient: WebClientNode,

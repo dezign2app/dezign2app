@@ -479,8 +479,8 @@ export const ExternalNode = ({ id, data, selected }: NodeProps<BackendNode>) => 
   );
 };
 
-// --- Queue Node ---
-export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+// --- Messaging Node ---
+export const MessagingNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
 
   return (

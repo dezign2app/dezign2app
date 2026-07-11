@@ -411,7 +411,7 @@ export const MessageRow = ({ item, isEditing, setEditingId, setEditingName, hand
   const isPublished = field === "publishedEvents";
   const isConsumed = field === "consumedEvents";
   const nodes = useBackendCanvasStore(s => s.nodes);
-  const queueNodes = nodes.filter(n => n.type === "queue");
+  const messagingNodes = nodes.filter(n => n.type === "queue" || n.type === "pubsub" || n.type === "eventstream");
 
   return (
     <div className="flex flex-col border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag">
@@ -525,19 +525,19 @@ export const MessageRow = ({ item, isEditing, setEditingId, setEditingName, hand
                  <span className="text-[9px] font-bold text-muted-foreground">
                    {isPublished ? "Publishes To" : "Consumes From"}
                  </span>
-                 <Select value={item.targetNodeId || ""} onValueChange={v => handleUpdateItem(item.id, { targetNodeId: v })}>
-                   <SelectTrigger className="h-7 text-xs bg-background nodrag">
-                     <SelectValue placeholder="Select Messaging Node" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     {queueNodes.length === 0 && <SelectItem value="none" disabled className="text-xs">No messaging nodes found</SelectItem>}
-                     {queueNodes.map((node: any) => (
-                       <SelectItem key={node.id} value={node.id} className="text-xs">
-                         {node.data.label || "Untitled Messaging"}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
+                  <Select value={item.targetNodeId || ""} onValueChange={v => handleUpdateItem(item.id, { targetNodeId: v })}>
+                    <SelectTrigger className="h-7 text-xs bg-background nodrag">
+                      <SelectValue placeholder="Select Messaging Node" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {messagingNodes.length === 0 && <SelectItem value="none" disabled className="text-xs">No messaging nodes found</SelectItem>}
+                      {messagingNodes.map((node: any) => (
+                        <SelectItem key={node.id} value={node.id} className="text-xs">
+                          {node.data.label || "Untitled Messaging"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                </div>
              )}
           </div>

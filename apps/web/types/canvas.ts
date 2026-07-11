@@ -15,6 +15,8 @@ export type BackendNodeType =
   | "service"
   | "database"
   | "queue"
+  | "pubsub"
+  | "eventstream"
   | "entity"
   | "webClient"
   | "external"
@@ -80,13 +82,12 @@ export type BackendNode = {
     techStack?: string;
     dbType?: string;
     baseUrl?: string;
-    queueType?: string;
     cors?: boolean;
     corsOrigins?: string;
     rateLimit?: string;
     port?: string;
-    // Messaging node fields
-    pattern?: string;
+    // Messaging/Queue/PubSub/EventStream node fields
+    // (implementation is the broker choice; type of node IS the pattern)
     implementation?: string;
     delivery?: string;
     ordering?: string;

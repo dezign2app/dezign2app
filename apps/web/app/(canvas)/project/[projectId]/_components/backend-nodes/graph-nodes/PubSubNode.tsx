@@ -25,12 +25,47 @@ export const PubSubNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const implementation = (data.implementation || "None") as PubSubImpl;
   const hasImplementation = implementation !== "None";
 
-  // Derive publishers and subscribers from edges
-  const publisherIds = new Set(edges.filter(e => e.target === id).map(e => e.source));
-  const subscriberIds = new Set(edges.filter(e => e.source === id).map(e => e.target));
+  // Derive publishers (nodes/endpoints/events that send to this pub/sub)
+  const publisherEdges = edges.filter(e => e.target === id);
+  const publishers = publisherEdges.map(edge => {
+    const srcNode = nodes.find(n => n.id === edge.source);
+    if (!srcNode) return null;
 
-  const publishers = nodes.filter(n => publisherIds.has(n.id));
-  const subscribers = nodes.filter(n => subscriberIds.has(n.id));
+    let eventDetail = "";
+    if (edge.sourceHandle?.startsWith("publishedEvents-out-")) {
+      const evId = edge.sourceHandle.replace("publishedEvents-out-", "");
+      const ev = srcNode.data.publishedEvents?.find((e: any) => e.id === evId);
+      if (ev && ev.name) {
+        eventDetail = ` (${ev.name})`;
+      }
+    }
+
+    return {
+      id: edge.id,
+      label: `${srcNode.data.label || "Untitled"}${eventDetail}`
+    };
+  }).filter((x): x is { id: string; label: string } => x !== null);
+
+  // Derive subscribers (nodes/endpoints/events that read from this pub/sub)
+  const subscriberEdges = edges.filter(e => e.source === id);
+  const subscribers = subscriberEdges.map(edge => {
+    const targetNode = nodes.find(n => n.id === edge.target);
+    if (!targetNode) return null;
+
+    let eventDetail = "";
+    if (edge.targetHandle?.startsWith("consumedEvents-in-")) {
+      const evId = edge.targetHandle.replace("consumedEvents-in-", "");
+      const ev = targetNode.data.consumedEvents?.find((e: any) => e.id === evId);
+      if (ev && ev.name) {
+        eventDetail = ` (${ev.name})`;
+      }
+    }
+
+    return {
+      id: edge.id,
+      label: `${targetNode.data.label || "Untitled"}${eventDetail}`
+    };
+  }).filter((x): x is { id: string; label: string } => x !== null);
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col", selected ? "border-primary" : "border-border")}>
@@ -69,9 +104,9 @@ export const PubSubNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Publishers</div>
         <div className="px-3 pb-2 flex flex-col gap-1">
           {publishers.length === 0
-            ? <span className="text-[10px] text-muted-foreground italic">No publishers connected</span>
+            ? <span className="text-[10px] text-muted-foreground italic px-1">No publishers connected</span>
             : publishers.map(p => (
-                <div key={p.id} className="text-xs font-medium truncate px-1 border-l-2 border-purple-500/50 ml-1">{p.data.label || "Untitled"}</div>
+                <div key={p.id} className="text-xs font-medium truncate px-1 border-l-2 border-purple-500/50 ml-1">{p.label}</div>
               ))
           }
         </div>
@@ -82,13 +117,14 @@ export const PubSubNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Subscribers</div>
         <div className="px-3 pb-2 flex flex-col gap-1">
           {subscribers.length === 0
-            ? <span className="text-[10px] text-muted-foreground italic">No subscribers connected</span>
+            ? <span className="text-[10px] text-muted-foreground italic px-1">No subscribers connected</span>
             : subscribers.map(s => (
-                <div key={s.id} className="text-xs font-medium truncate px-1 border-l-2 border-purple-500/50 ml-1">{s.data.label || "Untitled"}</div>
+                <div key={s.id} className="text-xs font-medium truncate px-1 border-l-2 border-purple-500/50 ml-1">{s.label}</div>
               ))
           }
         </div>
       </div>
+
 
       {/* Reliability */}
       {hasImplementation && (

@@ -10,9 +10,38 @@ import { useShallow } from "zustand/react/shallow";
 export const DatabaseNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
+  const edges = useBackendCanvasStore((s) => s.edges);
+  const nodes = useBackendCanvasStore((s) => s.nodes);
+  
   const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity")));
-
   const selectedEntity = entities.find(e => e.id === data.tableRef);
+
+  // Derive which service endpoints connect to this database node
+  const incomingEdges = edges.filter(e => e.target === id);
+  const accessors = incomingEdges.map(edge => {
+    const srcNode = nodes.find(n => n.id === edge.source);
+    if (!srcNode) return null;
+
+    let detail = "";
+    if (edge.sourceHandle?.startsWith("endpoints-out-")) {
+      const epId = edge.sourceHandle.replace("endpoints-out-", "");
+      let ep = srcNode.data.endpoints?.find((e: any) => e.id === epId);
+      if (!ep && srcNode.data.routeGroups) {
+        for (const group of srcNode.data.routeGroups) {
+          ep = group.endpoints?.find((e: any) => e.id === epId);
+          if (ep) break;
+        }
+      }
+      if (ep) {
+        detail = ` (${ep.type || "GET"} ${ep.name})`;
+      }
+    }
+
+    return {
+      id: edge.id,
+      label: `${srcNode.data.label || "Untitled"}${detail}`
+    };
+  }).filter((x): x is { id: string; label: string } => x !== null);
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
@@ -59,8 +88,22 @@ export const DatabaseNode = ({ id, data, selected }: NodeProps<BackendNode>) => 
          )}
       </div>
 
+      {/* Accessed By */}
+      <div className="flex flex-col border-t bg-secondary/20 nodrag">
+        <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Accessed By</div>
+        <div className="px-3 pb-2 flex flex-col gap-1">
+          {accessors.length === 0
+            ? <span className="text-[10px] text-muted-foreground italic px-1">No connections</span>
+            : accessors.map(acc => (
+                <div key={acc.id} className="text-xs font-medium truncate px-1 border-l-2 border-orange-500/50 ml-1">{acc.label}</div>
+              ))
+          }
+        </div>
+      </div>
+
       <Handle type="target" position={Position.Left} className="w-2 h-2" style={{ top: '20px' }} />
       <Handle type="source" position={Position.Right} className="w-2 h-2" style={{ top: '20px' }} />
     </div>
   );
 };
+

@@ -120,6 +120,21 @@ export type BackendNode = {
       processing?: string;
       output?: string;
     }[];
+    routeGroups?: {
+      id: string;
+      name: string;
+      basePath: string;
+      endpoints: {
+        id: string;
+        name: string;
+        type: string;
+        headers?: { id: string; key: string; value: string }[];
+        params?: { id: string; key: string; type: string }[];
+        body?: string;
+        processing?: string;
+        output?: string;
+      }[];
+    }[];
   };
   fractionalIndex: string; // For Z-order
   parentId?: string;

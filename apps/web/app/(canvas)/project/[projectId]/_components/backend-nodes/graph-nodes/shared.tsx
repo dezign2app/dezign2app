@@ -151,7 +151,12 @@ export const EndpointRow = ({ item, isEditing, setEditingId, setEditingName, set
     <div 
       className="flex flex-col border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag"
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        const related = e.relatedTarget as HTMLElement | null;
+        if (related?.closest('[role="combobox"]')) return;
+        if (related?.closest('[role="listbox"]')) return;
+        if (related?.closest('[data-radix-popper-content-wrapper]')) return;
+
+        if (!e.currentTarget.contains(related)) {
           if (isEndpointEmpty()) {
             handleDelete(item.id);
             if (isEditing) setEditingId(null);
@@ -453,7 +458,12 @@ export const MessageRow = ({ item, isEditing, setEditingId, setEditingName, hand
     <div 
       className="flex flex-col border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag"
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        const related = e.relatedTarget as HTMLElement | null;
+        if (related?.closest('[role="combobox"]')) return;
+        if (related?.closest('[role="listbox"]')) return;
+        if (related?.closest('[data-radix-popper-content-wrapper]')) return;
+
+        if (!e.currentTarget.contains(related)) {
           if (isMessageEmpty()) {
             handleDelete(item.id);
             if (isEditing) setEditingId(null);
@@ -464,7 +474,26 @@ export const MessageRow = ({ item, isEditing, setEditingId, setEditingName, hand
         }
       }}
     >
+      {isPublished && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id={`publishedEvents-out-${item.id}`}
+          className="w-2 h-2 -right-1"
+          style={{ top: '15px' }}
+        />
+      )}
+      {isConsumed && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          id={`consumedEvents-in-${item.id}`}
+          className="w-2 h-2 -left-1"
+          style={{ top: '15px' }}
+        />
+      )}
       <div className="flex flex-col px-3 py-1.5 nodrag">
+
         {isEditing ? (
            <div className="flex items-center gap-1 nodrag">
              <Input 
@@ -660,3 +689,303 @@ export const MessageList = ({ nodeId, title, items = [], field, updateNode, data
   )
 }
 
+// --- Route Group Components ---
+
+const RouteGroupSection = ({
+  group,
+  groupIndex,
+  nodeId,
+  updateNode,
+  data,
+}: any) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [editingName, setEditingName] = useState(!group.name);
+  const [nameValue, setNameValue] = useState(group.name);
+  const [editingBasePath, setEditingBasePath] = useState(false);
+  const [basePathValue, setBasePathValue] = useState(group.basePath || "");
+
+  // Endpoint editing state
+  const [editingEndpointId, setEditingEndpointId] = useState<string | null>(null);
+  const [editingEndpointName, setEditingEndpointName] = useState("");
+  const [editingEndpointType, setEditingEndpointType] = useState("GET");
+
+  const routeGroups: any[] = data.routeGroups || [];
+
+  const updateGroup = (changes: any) => {
+    const newGroups = [...routeGroups];
+    newGroups[groupIndex] = { ...newGroups[groupIndex], ...changes };
+    updateNode(nodeId, { data: { ...data, routeGroups: newGroups } });
+  };
+
+  const deleteGroup = () => {
+    const newGroups = routeGroups.filter((_: any, i: number) => i !== groupIndex);
+    updateNode(nodeId, { data: { ...data, routeGroups: newGroups } });
+  };
+
+  const handleSaveName = () => {
+    const trimmed = nameValue.trim();
+    if (!trimmed && !group.endpoints?.length) {
+      deleteGroup();
+      return;
+    }
+    updateGroup({ name: trimmed || "Untitled Group" });
+    setEditingName(false);
+  };
+
+  const handleSaveBasePath = () => {
+    updateGroup({ basePath: basePathValue.trim() });
+    setEditingBasePath(false);
+  };
+
+  // Endpoint CRUD within this group
+  const endpoints = group.endpoints || [];
+
+  const handleAddEndpoint = () => {
+    const newEndpoint = { id: generateId(), name: "", type: "GET" };
+    updateGroup({ endpoints: [...endpoints, newEndpoint] });
+    setEditingEndpointId(newEndpoint.id);
+    setEditingEndpointName("");
+    setEditingEndpointType("GET");
+  };
+
+  const handleUpdateEndpoint = (id: string, name: string, type: string) => {
+    const newEndpoints = endpoints.map((ep: any) =>
+      ep.id === id ? { ...ep, name, type } : ep
+    );
+    updateGroup({ endpoints: newEndpoints });
+  };
+
+  const handleDeleteEndpoint = (id: string) => {
+    const newEndpoints = endpoints.filter((ep: any) => ep.id !== id);
+    updateGroup({ endpoints: newEndpoints });
+  };
+
+  const handleUpdateEndpointItem = (id: string, changes: any) => {
+    const newEndpoints = endpoints.map((ep: any) =>
+      ep.id === id ? { ...ep, ...changes } : ep
+    );
+    updateGroup({ endpoints: newEndpoints });
+  };
+
+  return (
+    <div className="border-t">
+      {/* Source handle for wiring this group to a DB node */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id={`routeGroup-${group.id}`}
+        className="w-2 h-2 -right-1"
+        style={{ top: 'auto' }}
+      />
+
+      {/* Group Header */}
+      <div
+        className="px-3 py-1.5 bg-blue-500/5 flex items-center justify-between group/grp cursor-pointer nodrag"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <div className="flex items-center gap-1.5 flex-1 overflow-hidden">
+          <div className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-all shrink-0">
+            {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </div>
+
+          {editingName ? (
+            <Input
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              className="h-5 text-xs px-1 w-24 nodrag"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveName();
+                if (e.key === "Escape") {
+                  setNameValue(group.name);
+                  setEditingName(false);
+                }
+              }}
+              onBlur={handleSaveName}
+            />
+          ) : (
+            <span
+              className="text-xs font-semibold truncate hover:text-primary transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingName(true);
+                setNameValue(group.name);
+              }}
+            >
+              {group.name || "Untitled Group"}
+            </span>
+          )}
+
+          {editingBasePath ? (
+            <Input
+              value={basePathValue}
+              onChange={(e) => setBasePathValue(e.target.value)}
+              className="h-5 text-[10px] px-1 w-20 text-muted-foreground nodrag"
+              placeholder="/path"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveBasePath();
+                if (e.key === "Escape") {
+                  setBasePathValue(group.basePath || "");
+                  setEditingBasePath(false);
+                }
+              }}
+              onBlur={handleSaveBasePath}
+            />
+          ) : (
+            <span
+              className="text-[10px] text-muted-foreground truncate hover:text-foreground transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingBasePath(true);
+                setBasePathValue(group.basePath || "");
+              }}
+            >
+              {group.basePath || "/..."}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 opacity-0 group-hover/grp:opacity-100 transition-all shrink-0">
+          <div
+            className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddEndpoint();
+              if (collapsed) setCollapsed(false);
+            }}
+          >
+            <Plus size={12} />
+          </div>
+          <div
+            className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteGroup();
+            }}
+          >
+            <X size={14} />
+          </div>
+        </div>
+      </div>
+
+      {/* Endpoints within this group */}
+      {!collapsed && (
+        <div className="flex flex-col">
+          {endpoints.length === 0 ? (
+            <div className="bg-secondary/10 p-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full h-6 text-xs text-muted-foreground hover:text-foreground"
+                onClick={handleAddEndpoint}
+              >
+                <Plus size={12} className="mr-1" /> Add endpoint
+              </Button>
+            </div>
+          ) : (
+            endpoints.map((ep: any) => (
+              <EndpointRow
+                key={ep.id}
+                item={ep}
+                isEditing={editingEndpointId === ep.id}
+                setEditingId={setEditingEndpointId}
+                editingName={editingEndpointName}
+                setEditingName={setEditingEndpointName}
+                editingType={editingEndpointType}
+                setEditingType={setEditingEndpointType}
+                handleUpdate={handleUpdateEndpoint}
+                handleDelete={handleDeleteEndpoint}
+                handleUpdateItem={handleUpdateEndpointItem}
+                field={`routeGroup-${group.id}-endpoints`}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const RouteGroupList = ({
+  nodeId,
+  data,
+  updateNode,
+}: {
+  nodeId: string;
+  data: any;
+  updateNode: (id: string, changes: any) => void;
+}) => {
+  const routeGroups: any[] = data.routeGroups || [];
+  const ungroupedEndpoints: any[] = data.endpoints || [];
+
+  const handleAddGroup = () => {
+    const newGroup = {
+      id: generateId(),
+      name: "",
+      basePath: "",
+      endpoints: [],
+    };
+    const newGroups = [...routeGroups, newGroup];
+    updateNode(nodeId, { data: { ...data, routeGroups: newGroups } });
+  };
+
+  // Move an ungrouped endpoint into a specific group
+  const moveToGroup = (endpointId: string, groupIndex: number) => {
+    const ep = ungroupedEndpoints.find((e: any) => e.id === endpointId);
+    if (!ep) return;
+
+    const newUngrouped = ungroupedEndpoints.filter((e: any) => e.id !== endpointId);
+    const newGroups = [...routeGroups];
+    newGroups[groupIndex] = {
+      ...newGroups[groupIndex],
+      endpoints: [...(newGroups[groupIndex].endpoints || []), ep],
+    };
+
+    updateNode(nodeId, {
+      data: { ...data, endpoints: newUngrouped, routeGroups: newGroups },
+    });
+  };
+
+  return (
+    <div className="flex flex-col">
+      {/* Ungrouped endpoints (backward compat) */}
+      {ungroupedEndpoints.length > 0 && (
+        <EndpointList
+          nodeId={nodeId}
+          title="Routes (ungrouped)"
+          items={ungroupedEndpoints}
+          field="endpoints"
+          updateNode={updateNode}
+          data={data}
+        />
+      )}
+
+      {/* Route Groups */}
+      {routeGroups.map((group: any, index: number) => (
+        <RouteGroupSection
+          key={group.id}
+          group={group}
+          groupIndex={index}
+          nodeId={nodeId}
+          updateNode={updateNode}
+          data={data}
+        />
+      ))}
+
+      {/* Add route group button */}
+      <div className="bg-secondary/20 p-1.5 border-t">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full h-6 text-xs text-muted-foreground hover:text-foreground"
+          onClick={handleAddGroup}
+        >
+          <Plus size={12} className="mr-1" /> Add route group
+        </Button>
+      </div>
+    </div>
+  );
+};

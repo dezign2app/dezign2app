@@ -33,11 +33,15 @@ import { BackendCanvasAdapter } from "@/lib/canvas-adapters/backendAdapter";
 import { BackendCanvasView, BackendNode, BackendEdge } from "@/types/canvas";
 import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
+import { HTTPConnectionEdge, MessagingEdge } from "./backend-nodes/CustomEdges";
 import ELK from "elkjs/lib/elk.bundled.js";
 
 const edgeTypes = {
   "foreign-key": ForeignKeyEdge,
+  "connection": HTTPConnectionEdge,
+  "message": MessagingEdge,
 };
+
 
 const elk = new ELK();
 

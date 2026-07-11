@@ -50,6 +50,8 @@ declare module "@xyflow/react" {
 
   export interface EdgeProps<TEdge = Edge> {
     id: string;
+    source: string;
+    target: string;
     sourceX: number;
     sourceY: number;
     targetX: number;
@@ -138,6 +140,7 @@ declare module "@xyflow/react" {
   ): TEdge[];
 
   export function getSmoothStepPath(params: any): [string, number, number, number, number];
+  export function getBezierPath(params: any): [string, number, number, number, number];
   
   export function addEdge(edgeParams: any, edges: any[]): any[];
 }

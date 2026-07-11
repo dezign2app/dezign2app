@@ -172,6 +172,39 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       changes.some((c: any) => c.id === e.id && c.type !== "remove")
     );
 
+    // Sync edge deletion back to node event dropdowns
+    const removedEdges = get().edges.filter(e => removedIds.includes(e.id));
+    
+    removedEdges.forEach((edge) => {
+      // 1. Check if it's a published event edge
+      if (edge.sourceHandle?.startsWith("publishedEvents-out-")) {
+        const eventId = edge.sourceHandle.replace("publishedEvents-out-", "");
+        const sourceNode = get().nodes.find(n => n.id === edge.source);
+        if (sourceNode && sourceNode.data.publishedEvents) {
+          const updatedEvents = sourceNode.data.publishedEvents.map((ev: any) =>
+            ev.id === eventId ? { ...ev, targetNodeId: "none" } : ev
+          );
+          get().updateNode(sourceNode.id, {
+            data: { ...sourceNode.data, publishedEvents: updatedEvents }
+          });
+        }
+      }
+      
+      // 2. Check if it's a consumed event edge
+      if (edge.targetHandle?.startsWith("consumedEvents-in-")) {
+        const eventId = edge.targetHandle.replace("consumedEvents-in-", "");
+        const targetNode = get().nodes.find(n => n.id === edge.target);
+        if (targetNode && targetNode.data.consumedEvents) {
+          const updatedEvents = targetNode.data.consumedEvents.map((ev: any) =>
+            ev.id === eventId ? { ...ev, targetNodeId: "none" } : ev
+          );
+          get().updateNode(targetNode.id, {
+            data: { ...targetNode.data, consumedEvents: updatedEvents }
+          });
+        }
+      }
+    });
+
     set({
       edges: next,
       pendingEdgeUpserts: [...get().pendingEdgeUpserts, ...upserts],
@@ -181,7 +214,13 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
   onConnect: (connection) => {
     const isColumnToColumn = connection.sourceHandle?.startsWith('source-') || connection.targetHandle?.startsWith('target-');
-    const edgeType = isColumnToColumn ? "foreign-key" : "connection";
+    const isPublishedConnect = connection.sourceHandle?.startsWith('publishedEvents-out-');
+    const isConsumedConnect = connection.targetHandle?.startsWith('consumedEvents-in-');
+    
+    let edgeType = isColumnToColumn ? "foreign-key" : "connection";
+    if (isPublishedConnect || isConsumedConnect) {
+      edgeType = "message";
+    }
 
     const lastEdgeIndex = getLastIndex(get().edges);
     const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
@@ -190,12 +229,39 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       id: `edge-${Date.now()}`,
       source: connection.source!,
       target: connection.target!,
-      type: edgeType,
+      type: edgeType as any,
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
       fractionalIndex,
     };
     
+    // Update targetNodeId on service events if connected via messaging handles
+    if (isPublishedConnect && connection.sourceHandle) {
+      const eventId = connection.sourceHandle.replace('publishedEvents-out-', '');
+      const sourceNode = get().nodes.find(n => n.id === connection.source);
+      if (sourceNode && sourceNode.data.publishedEvents) {
+        const updatedEvents = sourceNode.data.publishedEvents.map((ev: any) =>
+          ev.id === eventId ? { ...ev, targetNodeId: connection.target } : ev
+        );
+        get().updateNode(sourceNode.id, {
+          data: { ...sourceNode.data, publishedEvents: updatedEvents }
+        });
+      }
+    }
+
+    if (isConsumedConnect && connection.targetHandle) {
+      const eventId = connection.targetHandle.replace('consumedEvents-in-', '');
+      const targetNode = get().nodes.find(n => n.id === connection.target);
+      if (targetNode && targetNode.data.consumedEvents) {
+        const updatedEvents = targetNode.data.consumedEvents.map((ev: any) =>
+          ev.id === eventId ? { ...ev, targetNodeId: connection.source } : ev
+        );
+        get().updateNode(targetNode.id, {
+          data: { ...targetNode.data, consumedEvents: updatedEvents }
+        });
+      }
+    }
+
     // Update source node's column to isForeignKey: true if it's a foreign key edge
     if (isColumnToColumn && connection.sourceHandle?.startsWith('source-')) {
        const colIndex = parseInt(connection.sourceHandle.replace('source-', ''), 10);
@@ -255,11 +321,109 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const next = get().nodes.map((n) => (n.id === id ? { ...n, ...changes } : n));
     const updated = next.find((n) => n.id === id)!;
     console.log("backendCanvasStore: adding to pendingNodeUpserts", updated);
-    set({
+
+    // Bidirectional sync: sync dropdown updates to edges
+    let nextEdges = [...get().edges];
+    let edgesChanged = false;
+
+    if (changes.data?.publishedEvents) {
+      const existingPublishEdges = nextEdges.filter(
+        (e) => e.source === id && e.sourceHandle?.startsWith("publishedEvents-out-")
+      );
+      
+      const currentEvents = changes.data.publishedEvents;
+      
+      // 1. Remove edges that are no longer referenced or changed targetNodeId
+      existingPublishEdges.forEach((edge) => {
+        const eventId = edge.sourceHandle?.replace("publishedEvents-out-", "");
+        const ev = currentEvents.find((e: any) => e.id === eventId);
+        if (!ev || ev.targetNodeId !== edge.target || ev.targetNodeId === "none") {
+          nextEdges = nextEdges.filter((e) => e.id !== edge.id);
+          edgesChanged = true;
+          set({ pendingEdgeRemovals: [...get().pendingEdgeRemovals, edge.id] });
+        }
+      });
+
+      // 2. Add edges for newly selected targetNodeId
+      currentEvents.forEach((ev: any) => {
+        if (ev.targetNodeId && ev.targetNodeId !== "none") {
+          const hasEdge = existingPublishEdges.some(
+            (e) => e.sourceHandle === `publishedEvents-out-${ev.id}` && e.target === ev.targetNodeId
+          );
+          if (!hasEdge) {
+            const lastEdgeIndex = getLastIndex(nextEdges);
+            const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
+            const newEdge: BackendEdge = {
+              id: `edge-${Date.now()}-${ev.id}`,
+              source: id,
+              target: ev.targetNodeId,
+              type: "message",
+              sourceHandle: `publishedEvents-out-${ev.id}`,
+              targetHandle: null,
+              fractionalIndex,
+            };
+            nextEdges.push(newEdge);
+            edgesChanged = true;
+            set({ pendingEdgeUpserts: [...get().pendingEdgeUpserts, newEdge] });
+          }
+        }
+      });
+    }
+
+    if (changes.data?.consumedEvents) {
+      const existingConsumeEdges = nextEdges.filter(
+        (e) => e.target === id && e.targetHandle?.startsWith("consumedEvents-in-")
+      );
+      
+      const currentEvents = changes.data.consumedEvents;
+
+      // 1. Remove edges that are no longer referenced or changed
+      existingConsumeEdges.forEach((edge) => {
+        const eventId = edge.targetHandle?.replace("consumedEvents-in-", "");
+        const ev = currentEvents.find((e: any) => e.id === eventId);
+        if (!ev || ev.targetNodeId !== edge.source || ev.targetNodeId === "none") {
+          nextEdges = nextEdges.filter((e) => e.id !== edge.id);
+          edgesChanged = true;
+          set({ pendingEdgeRemovals: [...get().pendingEdgeRemovals, edge.id] });
+        }
+      });
+
+      // 2. Add edges for newly selected targetNodeId
+      currentEvents.forEach((ev: any) => {
+        if (ev.targetNodeId && ev.targetNodeId !== "none") {
+          const hasEdge = existingConsumeEdges.some(
+            (e) => e.targetHandle === `consumedEvents-in-${ev.id}` && e.source === ev.targetNodeId
+          );
+          if (!hasEdge) {
+            const lastEdgeIndex = getLastIndex(nextEdges);
+            const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
+            const newEdge: BackendEdge = {
+              id: `edge-${Date.now()}-${ev.id}`,
+              source: ev.targetNodeId,
+              target: id,
+              type: "message",
+              sourceHandle: null,
+              targetHandle: `consumedEvents-in-${ev.id}`,
+              fractionalIndex,
+            };
+            nextEdges.push(newEdge);
+            edgesChanged = true;
+            set({ pendingEdgeUpserts: [...get().pendingEdgeUpserts, newEdge] });
+          }
+        }
+      });
+    }
+
+    const update: any = {
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, updated],
-    });
+    };
+    if (edgesChanged) {
+      update.edges = nextEdges;
+    }
+    set(update);
   },
+
 
   deleteNode: (id) => {
     const getChildrenIds = (parentId: string): string[] => {

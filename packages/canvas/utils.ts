@@ -1,0 +1,65 @@
+import type { HandleKind } from "./types.js";
+import { CONNECTION_RULES, EDGE_TYPE_MAP } from "./graph-rules.js";
+
+export function getSuggestion(
+  sourceKind: HandleKind,
+  targetKind: HandleKind,
+): string | undefined {
+  const validTargets = CONNECTION_RULES[sourceKind];
+  if (validTargets && validTargets.length > 0) {
+    return `"${sourceKind}" can connect to: ${validTargets.map((k: HandleKind) => `"${k}"`).join(", ")}. ` +
+      `You attempted to connect to "${targetKind}" which is not in that list.`;
+  }
+
+  const validSources = (Object.entries(CONNECTION_RULES) as [HandleKind, HandleKind[]][])
+    .filter(([, targets]) => targets.includes(targetKind))
+    .map(([src]) => src);
+
+  if (validSources.length > 0) {
+    return `"${targetKind}" accepts connections from: ${validSources.map((k: HandleKind) => `"${k}"`).join(", ")}. ` +
+      `You attempted to connect from "${sourceKind}" which is not in that list.`;
+  }
+
+  return undefined;
+}
+
+export function classifyHandle(
+  nodeType: string,
+  handleId: string | null | undefined,
+  handleDirection: "source" | "target",
+): HandleKind {
+  const id = handleId ?? "";
+
+  if (nodeType === "entity") {
+    if (id.startsWith("source-")) return "entity-column-source";
+    if (id.startsWith("target-")) return "entity-column-target";
+    if (handleDirection === "target") return "entity-top-target";
+    if (handleDirection === "source") return "entity-bottom-source";
+  }
+
+  if (id.startsWith("endpoints-in-") || id.startsWith("routeEndpoints-in-")) return "endpoint-in";
+  if (id.startsWith("endpoints-out-") || id.startsWith("routeEndpoints-out-")) return "endpoint-out";
+  if (id.startsWith("events-")) return "event-source";
+  if (id.startsWith("publishedEvents-out-")) return "published-event-out";
+  if (id.startsWith("consumedEvents-in-")) return "consumed-event-in";
+
+  const resourceMatch = id.match(/^(topics|queues|streams|channels):(in|out):(.+)$/);
+  if (resourceMatch) {
+    const direction = resourceMatch[2];
+    return direction === "in" ? "resource-def-in" : "resource-def-out";
+  }
+
+  if (id.startsWith("actions-")) return "action-target";
+
+  if (nodeType === "database") {
+    if (handleDirection === "target") return "database-target";
+    if (handleDirection === "source") return "database-source";
+  }
+
+  return "unknown";
+}
+
+export function getEdgeType(sourceKind: HandleKind, targetKind: HandleKind): string {
+  const key = `${sourceKind}→${targetKind}`;
+  return EDGE_TYPE_MAP[key] ?? "connection";
+}

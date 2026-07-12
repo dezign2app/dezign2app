@@ -34,9 +34,10 @@ import { BackendCanvasView, BackendNode, BackendEdge, BackendNodeType } from "@/
 import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
 import { HTTPConnectionEdge, MessagingEdge } from "./backend-nodes/CustomEdges";
-import { isValidConnection } from "@workspace/backend/canvas/index";
+import { isValidConnection } from "@workspace/canvas";
 import ELK from "elkjs/lib/elk.bundled.js";
 import { Connection } from "@xyflow/react";
+import { ChatContainer } from "@/app/(protected)/_components/chat/chat-container";
 
 const edgeTypes = {
   "foreign-key": ForeignKeyEdge,
@@ -530,7 +531,7 @@ function Flow({ projectId, view }: BackendCanvasProps) {
   return (
     <div className="w-full h-full bg-muted/20">
       <ReactFlow
-        nodes={nodes.filter(n => n.type !== "group")}
+        nodes={graphNodes}
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
@@ -629,6 +630,7 @@ export function BackendCanvas(props: BackendCanvasProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <ChatContainer />
     </ReactFlowProvider>
   );
 }

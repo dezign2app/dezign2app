@@ -24,6 +24,7 @@
     "@hugeicons/react": "^1.1.4",
     "@upstash/realtime": "latest",
     "@upstash/redis": "^1.36.3",
+    "@workspace/canvas": "workspace:*",
     "@workspace/ui": "workspace:*",
     "@xyflow/react": "^12.10.2",
     "ai": "^7.0.19",

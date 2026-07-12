@@ -1,6 +1,6 @@
 import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { isValidConnection, RULES_VERSION } from "./canvas/index";
+import { isValidConnection, RULES_VERSION } from "@workspace/canvas";
 
 // ---------------------------------------------------------------------------
 // FRONTEND CANVAS — tldraw granular records
@@ -168,6 +168,9 @@ export const upsertBackendNode = mutation({
         fractionalIndex: args.fractionalIndex,
       });
     }
+
+    // Trigger background sync to System Design Engine
+    // TODO: ctx.scheduler.runAfter(0, internal.sync.triggerWebhook, { projectId: args.projectId });
   },
 });
 

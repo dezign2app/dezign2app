@@ -15,7 +15,6 @@ export const DatabaseNode = ({ id, data, selected }: NodeProps<BackendNode>) => 
   const nodes = useBackendCanvasStore((s) => s.nodes);
   
   const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity")));
-  const selectedEntity = entities.find(e => e.id === data.tableRef);
 
   // Derive which service endpoints connect to this database node
   const incomingEdges = edges.filter(e => e.target === id);
@@ -86,17 +85,7 @@ export const DatabaseNode = ({ id, data, selected }: NodeProps<BackendNode>) => 
            </SelectContent>
          </Select>
 
-         {selectedEntity && selectedEntity.data.columns && (
-           <div className="mt-2 flex flex-col gap-1 px-1 max-h-[150px] overflow-y-auto">
-             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Columns</span>
-             {selectedEntity.data.columns.map((c, i) => (
-                <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="font-medium truncate">{c.name}</span>
-                  <span className="text-muted-foreground text-[10px]">{c.type}</span>
-                </div>
-             ))}
-           </div>
-         )}
+
       </div>
 
       {/* Accessed By */}

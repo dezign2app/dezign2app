@@ -16,6 +16,7 @@
     "vitest": "^3.0.7"
   },
   "dependencies": {
+    "@workspace/canvas": "workspace:*",
     "convex": "^1.31.6",
     "cron-parser": "^5.5.0",
     "svix": "^1.84.1"

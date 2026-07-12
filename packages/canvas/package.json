@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/canvas",
+  "version": "1.0.0",
+  "description": "Shared pure domain models for Blueprint canvas",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.7",
+    "@types/node": "^20.19.30"
+  }
+}

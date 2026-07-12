@@ -9,7 +9,7 @@ import {
   Connection,
 } from "@xyflow/react";
 import { generateKeyBetween } from "fractional-indexing";
-import { isValidConnection } from "@workspace/backend/canvas/index";
+import { isValidConnection } from "@workspace/canvas";
 
 // Helper: get the last fractional index from a sorted list
 function getLastIndex(items: { fractionalIndex?: string }[]): string | null {

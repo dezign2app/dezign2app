@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { streamCanvasAI } from "@/lib/ai/groqClient";
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,29 +9,26 @@ export async function POST(req: NextRequest) {
       return new Response("Missing required fields", { status: 400 });
     }
 
-    // We use a ReadableStream to stream the chunks back to the client
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const aiStream = streamCanvasAI(
-            messages,
-            canvasStateContext || "Canvas is empty."
-          );
-
-          for await (const chunk of aiStream) {
-            // Send each chunk as JSON delimited by newlines
-            controller.enqueue(encoder.encode(JSON.stringify(chunk) + "\n"));
-          }
-          controller.close();
-        } catch (err) {
-          console.error("AI Streaming error:", err);
-          controller.error(err);
-        }
+    // Proxy the request to the system-design-engine
+    const response = await fetch("http://localhost:3002/canvas-ai", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        projectId,
+        messages,
+        canvasStateContext,
+      }),
     });
 
-    return new Response(stream, {
+    if (!response.ok) {
+      console.error("System Design Engine error:", await response.text());
+      return new Response("Error from backend AI service", { status: response.status });
+    }
+
+    // We can just stream the response body directly back to the client
+    return new Response(response.body, {
       headers: {
         "Content-Type": "application/x-ndjson",
         "Cache-Control": "no-cache",

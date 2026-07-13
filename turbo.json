@@ -21,6 +21,18 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "@workspace/canvas#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "system-design-engine#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "workflow-engine#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },

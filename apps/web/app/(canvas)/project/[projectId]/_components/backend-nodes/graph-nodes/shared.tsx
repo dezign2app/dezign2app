@@ -7,7 +7,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { BackendNode, Endpoint, Schema } from "@/types/canvas";
+import { BackendNode, Endpoint, Schema, AnyMessagingResource } from "@/types/canvas";
 import { ParameterEditor, SchemaEditor, ProcessingStepsEditor } from "./Editors";
 
 export const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -462,13 +462,13 @@ export const NodeHeader = ({ id, data, icon: Icon, title, colorClass, selected }
 };
 
 export interface MessagingResourceRowProps {
-  item: Record<string, unknown> & BaseItem;
+  item: AnyMessagingResource;
   isEditing: boolean;
   setEditingId: (id: string | null) => void;
   setEditingName: (name: string) => void;
   handleUpdate: (id: string, name: string) => void;
   handleDelete: (id: string) => void;
-  handleUpdateItem: (id: string, changes: Record<string, unknown>) => void;
+  handleUpdateItem: (id: string, changes: Partial<AnyMessagingResource>) => void;
   field?: string;
   handleType?: "source" | "target";
   handlePosition?: "left" | "right" | "top" | "bottom";
@@ -503,8 +503,8 @@ export const MessagingResourceRow = ({ item, isEditing, setEditingId, setEditing
     const desc = (item.description as string | undefined) || (item.publishedWhen as string | undefined) || "";
     const hasDesc = desc.trim().length > 0;
     
-    const schema = item.payloadSchema as Record<string, unknown> | undefined;
-    const fields = schema?.fields as unknown[] | undefined;
+    const schema = item.payloadSchema as Schema | undefined;
+    const fields = schema?.fields;
     const hasSchema = (fields?.length || 0) > 0;
     
     const logic = item.handlerLogic as string | undefined;
@@ -781,7 +781,7 @@ export const MessagingResourceRow = ({ item, isEditing, setEditingId, setEditing
 }
 
 
-export const MessagingResourceList = <T extends Record<string, unknown> & BaseItem = Record<string, unknown> & BaseItem>({
+export const MessagingResourceList = <T extends AnyMessagingResource = AnyMessagingResource>({
   title,
   items = [],
   variant,
@@ -819,7 +819,7 @@ export const MessagingResourceList = <T extends Record<string, unknown> & BaseIt
         id: generateId(),
         name: "",
         kind: getKind(),
-      } as unknown as T,
+      } as T,
     ];
 
     onChange(newItems);
@@ -832,7 +832,7 @@ export const MessagingResourceList = <T extends Record<string, unknown> & BaseIt
     onChange(
       items.map((item) =>
         item.id === id ? { ...item, name } : item
-      ) as unknown as T[]
+      ) as T[]
     );
   };
 
@@ -840,11 +840,11 @@ export const MessagingResourceList = <T extends Record<string, unknown> & BaseIt
     onChange(items.filter((item) => item.id !== id));
   };
 
-  const handleUpdateItem = (id: string, changes: Record<string, unknown>) => {
+  const handleUpdateItem = (id: string, changes: Partial<AnyMessagingResource>) => {
     onChange(
       items.map((item) =>
         item.id === id ? { ...item, ...changes } : item
-      ) as unknown as T[]
+      ) as T[]
     );
   };
 

@@ -296,7 +296,7 @@ const EndpointRow = ({ item, isEditing, setEditingId, setEditingName, setEditing
                <Textarea 
                  className="min-h-[50px] w-full rounded-md border border-input px-2 py-1 text-[10px] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring nodrag"
                  placeholder="{}"
-                 value={(item as Record<string, unknown>).body as string || ""}
+                 value={item.body || ""}
                  onChange={e => handleUpdateItem(item.id, { body: e.target.value })}
                />
             </div>

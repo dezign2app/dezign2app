@@ -52,7 +52,7 @@ export type KafkaTopic = {
   kind: "topic";
   name: string;
   description?: string;
-  schema?: string;
+  payloadSchema?: Schema;
   version?: string;
 };
 
@@ -61,7 +61,7 @@ export type RedisStream = {
   kind: "stream";
   name: string;
   description?: string;
-  schema?: string;
+  payloadSchema?: Schema;
   version?: string;
 };
 
@@ -70,7 +70,7 @@ export type SQSQueue = {
   kind: "queue";
   name: string;
   description?: string;
-  schema?: string;
+  payloadSchema?: Schema;
   version?: string;
 };
 
@@ -97,7 +97,7 @@ export type RedisPubSubChannel = {
   kind: "channel";
   name: string;
   description?: string;
-  schema?: string;
+  payloadSchema?: Schema;
   version?: string;
 };
 
@@ -271,15 +271,15 @@ export type BackendDesignDoc = {
 // --- AI Adapter Types ---
 
 export type CanvasOperation =
-  | { op: "add_node"; type: BackendNodeType; label: string; position?: { x: number; y: number }; data?: Record<string, unknown> }
-  | { op: "update_node"; id: string; changes: Record<string, unknown> }
+  | { op: "add_node"; type: BackendNodeType; label: string; position?: { x: number; y: number }; data?: Partial<BackendNode["data"]> }
+  | { op: "update_node"; id: string; changes: Partial<BackendNode> }
   | { op: "delete_node"; id: string }
-  | { op: "add_edge"; source: string; target: string; type: BackendEdgeType; data?: Record<string, unknown> }
-  | { op: "update_edge"; id: string; changes: Record<string, unknown> }
+  | { op: "add_edge"; source: string; target: string; type: BackendEdgeType; data?: Partial<BackendEdge["data"]> }
+  | { op: "update_edge"; id: string; changes: Partial<BackendEdge> }
   | { op: "delete_edge"; id: string }
   | { op: "run_auto_layout" }
-  | { op: "add_shape"; type: string; x: number; y: number; props: Record<string, unknown> }
-  | { op: "update_shape"; id: string; props: Record<string, unknown> }
+  | { op: "add_shape"; type: string; x: number; y: number; props: Record<string, string | number | boolean | null> }
+  | { op: "update_shape"; id: string; props: Record<string, string | number | boolean | null> }
   | { op: "delete_shape"; id: string };
 
 export interface CanvasAdapter<TDoc> {
@@ -365,6 +365,33 @@ export type ConsumedEvent = {
   isIdempotent: boolean;
   
   metadata?: ArchitectureMetadata;
+};
+
+// UI Specific Types
+export type UIEventItem = {
+  id: string;
+  name: string;
+  event?: string;
+};
+
+export type AnyMessagingResource = {
+  id: string;
+  name: string;
+  _legacyName?: string;
+  kind?: string;
+  description?: string;
+  publishedWhen?: string;
+  payloadSchema?: Schema;
+  handlerLogic?: string;
+  retryPolicy?: RetryPolicy | string;
+  maxRetries?: number;
+  deadLetterQueue?: string;
+  isIdempotent?: boolean;
+  version?: SchemaVersion | string;
+  category?: EventCategory | string;
+  delivery?: DeliveryGuarantee | string;
+  brokerNodeId?: string;
+  messagingResourceId?: string;
 };
 
 export type Endpoint = {

@@ -1,15 +1,15 @@
 import type { BackendNode, Parameter, Schema, ProcessingStep, PublishedEvent, ConsumedEvent, Endpoint, SchemaVersion, EventCategory, DeliveryGuarantee, EventOrdering, ArchitectureMetadata, RetryPolicy } from "./types";
 
-function stringToSchema(schemaInput: string | Record<string, unknown> | null | undefined | unknown, defaultName: string = "body"): Schema {
+function stringToSchema(schemaInput: string | { id?: string; fields?: Parameter[] } | null | undefined, defaultName: string = "body"): Schema {
   if (!schemaInput) {
     return { id: crypto.randomUUID(), fields: [] };
   }
   
   // If it's already an object that looks like a Schema
   if (typeof schemaInput === 'object' && schemaInput !== null) {
-    const obj = schemaInput as Record<string, unknown>;
+    const obj = schemaInput as { id?: string; fields?: Parameter[] };
     if (obj.id && Array.isArray(obj.fields)) {
-      return obj as unknown as Schema;
+      return obj as Schema;
     }
     // If it's an object but not a Schema, stringify it for the description
     schemaInput = JSON.stringify(schemaInput);
@@ -18,9 +18,9 @@ function stringToSchema(schemaInput: string | Record<string, unknown> | null | u
   if (typeof schemaInput === 'string') {
     if (schemaInput.startsWith('{"id":') && schemaInput.includes('"fields":')) {
       try {
-        const parsed = JSON.parse(schemaInput) as Record<string, unknown>;
+        const parsed = JSON.parse(schemaInput) as { id?: string; fields?: Parameter[] };
         if (parsed.id && Array.isArray(parsed.fields)) {
-          return parsed as unknown as Schema;
+          return parsed as Schema;
         }
       } catch (e) {}
     }
@@ -126,7 +126,7 @@ export function migrateNodeDataToV2(node: BackendNode): BackendNode {
     return node;
   }
 
-  const data = { ...node.data } as Record<string, unknown> & typeof node.data;
+  const data = { ...node.data } as typeof node.data;
 
   if (data.endpoints && Array.isArray(data.endpoints)) {
     data.endpoints = data.endpoints.map((ep: LegacyEndpoint) => {
@@ -192,7 +192,7 @@ export function migrateNodeDataToV2(node: BackendNode): BackendNode {
       deprecated: !!pe.deprecated,
       replacementEventId: pe.replacementEventId,
       metadata: pe.metadata || { createdByAI: false, createdAt: Date.now() },
-    })) as unknown as NonNullable<BackendNode["data"]["publishedEvents"]>;
+    })) as NonNullable<BackendNode["data"]["publishedEvents"]>;
   }
 
   if (data.consumedEvents && Array.isArray(data.consumedEvents)) {
@@ -212,10 +212,10 @@ export function migrateNodeDataToV2(node: BackendNode): BackendNode {
       metadata: ce.metadata || { createdByAI: false, createdAt: Date.now() },
       _legacyName: ce.name,
       _legacySchema: ce.schema,
-    })) as unknown as NonNullable<BackendNode["data"]["consumedEvents"]>;
+    })) as NonNullable<BackendNode["data"]["consumedEvents"]>;
   }
 
   (node as BackendNode & { schemaVersion?: number }).schemaVersion = 2;
-  node.data = data as unknown as typeof node.data;
+  node.data = data as typeof node.data;
   return node;
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NodeProps, Position, Handle } from "@xyflow/react";
 import { Globe, Plus, X, Play, Send, Loader2 } from "lucide-react";
-import { BackendNode, Endpoint, Parameter } from "@/types/canvas";
+import { BackendNode, Endpoint, Parameter, UIEventItem } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { NodeHeader, generateId, BaseItem } from "./shared";
@@ -25,7 +25,7 @@ const EVENT_OPTIONS = ["pageLoad", "click", "hover", "drag", "dblclick", "keydow
 interface TriggerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  event: Record<string, unknown> & BaseItem;
+  event: UIEventItem;
   targetNode: BackendNode;
   endpoint: Endpoint;
 }
@@ -42,7 +42,7 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
   });
 
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<Record<string, unknown> | null>(null);
+  const [response, setResponse] = useState<{ headers?: Record<string, string>; status?: number; statusText?: string; body?: string | object } | null>(null);
 
   React.useEffect(() => {
     setHeaders(endpoint.headers?.map((h) => ({ ...h })) || []);
@@ -55,7 +55,7 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
     if (body.trim()) {
       try {
         JSON.parse(body);
-      } catch (err: unknown) {
+      } catch (err) {
         setResponse({
           status: 400,
           statusText: "Bad Request",
@@ -65,7 +65,7 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
           },
           body: JSON.stringify({
             error: "Invalid JSON in request body",
-            message: (err as Error).message,
+            message: err instanceof Error ? err.message : String(err),
           }, null, 2)
         });
         return;
@@ -78,7 +78,7 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
     setTimeout(() => {
       setLoading(false);
       
-      const queryParams: Record<string, unknown> = {};
+      const queryParams: Record<string, string> = {};
       params.forEach(p => {
         if (p.key) {
           queryParams[p.key] = p.value || `[${p.type || "string"}]`;
@@ -283,14 +283,14 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Simulated Response</h4>
                 <div className="flex items-center gap-2">
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono border bg-muted text-muted-foreground">
-                    {response.status as string} {response.statusText as string}
+                    {response.status} {response.statusText}
                   </span>
                 </div>
               </div>
 
               {/* Response Headers */}
               <div className="p-2 border rounded-lg bg-secondary/10 flex flex-col gap-1 text-[10px] font-mono text-muted-foreground">
-                {Object.entries((response.headers as Record<string, unknown>) || {}).map(([k, v]: [string, unknown]) => (
+                {Object.entries((response.headers as Record<string, string>) || {}).map(([k, v]: [string, string]) => (
                   <div key={k} className="flex justify-between">
                     <span>{k}:</span>
                     <span className="text-foreground">{String(v)}</span>
@@ -312,10 +312,10 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint }: Trigger
 
 export interface WebClientEventListProps {
   nodeId: string;
-  items?: (Record<string, unknown> & BaseItem)[];
+  items?: UIEventItem[];
   updateNode: (id: string, changes: Partial<BackendNode>) => void;
   data: BackendNode["data"];
-  onTriggerEvent: (triggerInfo: { event: Record<string, unknown> & BaseItem; targetNode: BackendNode; endpoint: Endpoint }) => void;
+  onTriggerEvent: (triggerInfo: { event: UIEventItem; targetNode: BackendNode; endpoint: Endpoint }) => void;
 }
 
 const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEvent }: WebClientEventListProps) => {
@@ -511,7 +511,7 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
 
 export const WebClientNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
-  const [activeTrigger, setActiveTrigger] = useState<{ event: Record<string, unknown> & BaseItem; targetNode: BackendNode; endpoint: Endpoint } | null>(null);
+  const [activeTrigger, setActiveTrigger] = useState<{ event: UIEventItem; targetNode: BackendNode; endpoint: Endpoint } | null>(null);
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>

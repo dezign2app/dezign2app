@@ -46,8 +46,8 @@ export type ValidationResult =
 export type BackendCanvasView = "graph" | "sequence" | "schema";
 
 // --- Backend Canvas Types ---
-
-import type { KafkaTopic, KafkaBrokerConfig } from "./schemas";
+import type { KafkaTopic, KafkaBrokerConfig, Endpoint, ServiceNodeData, ProcessingStep } from "./schemas";
+export type { KafkaTopic, KafkaBrokerConfig, Endpoint, ServiceNodeData, ProcessingStep };
 
 export type RedisStream = {
   id: string;
@@ -306,12 +306,7 @@ export type Schema = {
   fields: Parameter[];
 };
 
-export type ProcessingStep = {
-  id: string;
-  text: string;
-  operation?: ProcessingOperation;
-  config?: Record<string, unknown>;
-};
+
 
 export type ProcessingOperation =
   | "passthrough"
@@ -399,31 +394,7 @@ export type AnyMessagingResource = {
   messagingResourceId?: string;
 };
 
-export type Endpoint = {
-  id: string;
-  name: string;
-  type: string;
-  
-  headers: Parameter[];
-  pathParams: Parameter[];
-  queryParams: Parameter[];
-  
-  requestBody: Schema;
-  responseBody: Schema;
-  
-  processingSteps: ProcessingStep[];
-  publishedEvents: PublishedEvent[];
-  databaseNodeIds?: string[];
-  databaseNodeId?: string;
-  
-  metadata?: ArchitectureMetadata;
-  
-  // Frontend specific fields
-  params?: Parameter[];
-  body?: string;
-  businessLogic?: string;
-  output?: string;
-};
+
 
 // --- Input Types (for AI tools & Store operations) ---
 

@@ -31,6 +31,7 @@ export {
   redisStreamsDataSchema,
   externalDataSchema,
   serviceDataSchema,
+  serviceDataInputSchema,
   nodeDataSchemas,
   assignResourceIds,
 } from "@workspace/canvas";

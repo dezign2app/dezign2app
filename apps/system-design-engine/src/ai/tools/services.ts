@@ -11,68 +11,47 @@ import {
   PublishedEventInputType
 } from "@workspace/canvas/types";
 import {
-  endpointInputSchema,
-  consumedEventInputSchema,
-  publishedEventInputSchema,
+  serviceDataInputSchema,
+  serviceDataSchema,
 } from "../schemas";
 
-export interface AddServiceNodeInput {
-  label: string;
-  description?: string;
-  techStack?: string;
-  port?: string;
-  cors?: boolean;
-  corsOrigins?: string;
-  rateLimit?: string;
-  baseUrl?: string;
-  endpoints?: EndpointInputType[];
-  consumedEvents?: ConsumedEventInputType[];
-  publishedEvents?: PublishedEventInputType[];
-  inputs?: { id?: string; name: string }[];
-  outputs?: { id?: string; name: string }[];
-  logic?: { id?: string; name: string }[];
-  routeGroups?: { id?: string; name: string; basePath: string; endpoints: EndpointInputType[] }[];
-}
-
-const addServiceNodeSchema: z.ZodType<AddServiceNodeInput> = z.object({
-  label: z.string().describe("Name of the service"),
-  description: z.string().optional(),
-  techStack: z.string().optional(),
-  port: z.string().optional(),
-  cors: z.boolean().optional(),
-  corsOrigins: z.string().optional(),
-  rateLimit: z.string().optional(),
-  baseUrl: z.string().optional(),
-  endpoints: z.array(endpointInputSchema).optional(),
-  consumedEvents: z.array(consumedEventInputSchema).optional(),
-  publishedEvents: z.array(publishedEventInputSchema).optional(),
-  inputs: z.array(z.object({ id: z.string().optional(), name: z.string() })).optional(),
-  outputs: z.array(z.object({ id: z.string().optional(), name: z.string() })).optional(),
-  logic: z.array(z.object({ id: z.string().optional(), name: z.string() })).optional(),
-  routeGroups: z.array(z.object({
-    id: z.string().optional(),
-    name: z.string(),
-    basePath: z.string(),
-    endpoints: z.array(endpointInputSchema),
-  })).optional(),
-}) as unknown as z.ZodType<AddServiceNodeInput>;
-
+export type AddServiceNodeInput = z.infer<typeof serviceDataInputSchema>;
 
 export const addServiceNodeTool = tool(
   async (input, config) => {
+    console.log("[DEBUG] addServiceNodeTool called with:", JSON.stringify(input, null, 2));
     const { label, description, techStack, port, cors, baseUrl, endpoints, consumedEvents, publishedEvents, inputs, outputs, logic } = input;
     const state = config.configurable?.state as typeof GraphAnnotation.State;
-    if (!state?.projectId) return "Error: projectId missing";
+    if (!state?.projectId) {
+      console.error("[DEBUG] addServiceNodeTool error: projectId missing");
+      return "Error: projectId missing";
+    }
 
+    console.log(`[DEBUG] Adding service node for project ${state.projectId}`);
     const convex = getConvexClient(state);
 
-    const nodeId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const offsetX = Math.floor(Math.random() * 600) - 300;
-    const offsetY = Math.floor(Math.random() * 600) - 300;
-    const position = state.viewportCenter
-      ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
-      : { x: 100 + offsetX, y: 100 + offsetY };
-    const fractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+    const elements = await convex.query(api.canvas.getBackendElements, {
+      projectId: state.projectId as Id<"projects">,
+    });
+    
+    // Upsert logic: Check if a service node with this label already exists (case-insensitive)
+    const existingNode = elements.nodes.find(
+      (n) => n.type === "service" && n.data?.label?.toLowerCase() === label.toLowerCase()
+    );
+
+    const isUpdate = !!existingNode;
+    const nodeId = existingNode?.nodeId || `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    
+    let position = existingNode?.position;
+    if (!position) {
+      const offsetX = Math.floor(Math.random() * 600) - 300;
+      const offsetY = Math.floor(Math.random() * 600) - 300;
+      position = state.viewportCenter
+        ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
+        : { x: 100 + offsetX, y: 100 + offsetY };
+    }
+    
+    const fractionalIndex = existingNode?.fractionalIndex || ("a0" + Date.now() + Math.random().toString(36).slice(2, 6));
 
     const makeId = () => Math.random().toString(36).slice(2, 9);
     const processedEndpoints = (endpoints || []).map((ep: EndpointInputType) => ({
@@ -89,22 +68,47 @@ export const addServiceNodeTool = tool(
         id: ep.responseBody?.id || makeId(),
         fields: (ep.responseBody?.fields ?? [{ name: "response", type: "object", required: true, description: ep.output || "Endpoint response" }]).map((item) => ({ ...item, id: item.id || makeId() })),
       },
-      processingSteps: (ep.processingSteps ?? []).map((step) => ({ ...step, id: step.id || makeId() })),
-      publishedEvents: ep.publishedEvents?.map((pe) => ({
-        ...pe,
-        id: pe.id || makeId(),
+      processingSteps: (ep.processingSteps ?? []).map((step) => ({ 
+        ...step, 
+        id: step.id || makeId(),
+        // zodToConvex doesn't support ZodCatch, so we manually sanitize enums here
+        operation: ["passthrough", "validate", "pick", "omit", "rename", "set", "filter", "map", "db_get", "db_get_many", "db_insert", "db_update", "db_delete", "return"].includes(step.operation as string) ? step.operation : "passthrough"
       })),
+      publishedEvents: ep.publishedEvents?.map((pe) => ({ ...pe, id: pe.id || makeId() })),
     }));
 
     const processedConsumedEvents = (consumedEvents || []).map((ce: ConsumedEventInputType) => ({
       ...ce,
-      id: ce.id || Math.random().toString(36).slice(2, 9),
+      id: ce.id || makeId(),
+      retryPolicy: ["NONE", "IMMEDIATE", "EXPONENTIAL"].includes(ce.retryPolicy as string) ? ce.retryPolicy : "NONE",
+      isIdempotent: typeof ce.isIdempotent === "boolean" ? ce.isIdempotent : false,
     }));
 
     const processedPublishedEvents = (publishedEvents || []).map((pe: PublishedEventInputType) => ({
       ...pe,
-      id: pe.id || Math.random().toString(36).slice(2, 9),
+      id: pe.id || makeId(),
+      version: ["v1", "v2", "v3"].includes(pe.version as string) ? pe.version : "v1",
+      category: ["DOMAIN", "INTEGRATION", "INTERNAL", "NOTIFICATION"].includes(pe.category as string) ? pe.category : "DOMAIN",
+      delivery: ["EXACTLY_ONCE", "AT_LEAST_ONCE", "AT_MOST_ONCE", "FIRE_AND_FORGET"].includes(pe.delivery as string) ? pe.delivery : "AT_LEAST_ONCE",
+      ordering: ["NONE", "GLOBAL", "PER_ENTITY", "PER_AGGREGATE"].includes(pe.ordering as string) ? pe.ordering : "NONE",
+      deprecated: typeof pe.deprecated === "boolean" ? pe.deprecated : false,
     }));
+
+    // Reuse the DB schema to parse, sanitize, and inject all defaults!
+    const validatedData = serviceDataSchema.parse({
+      label,
+      description,
+      techStack,
+      port,
+      cors,
+      baseUrl,
+      endpoints: processedEndpoints,
+      consumedEvents: processedConsumedEvents,
+      publishedEvents: processedPublishedEvents,
+      inputs: inputs || [],
+      outputs: outputs || [],
+      logic: logic || [],
+    });
 
     try {
       await convex.mutation(api.canvas.upsertBackendNode, {
@@ -112,21 +116,7 @@ export const addServiceNodeTool = tool(
         nodeId,
         type: "service",
         position,
-        data: {
-          label,
-          description,
-          techStack,
-          port,
-          cors,
-          baseUrl,
-          endpoints: processedEndpoints,
-          consumedEvents: processedConsumedEvents,
-          publishedEvents: processedPublishedEvents,
-          inputs: inputs || [],
-          outputs: outputs || [],
-          logic: logic || [],
-          graphPosition: position,
-        },
+        data: validatedData,
         fractionalIndex,
       });
 
@@ -205,7 +195,7 @@ export const addServiceNodeTool = tool(
         });
       }
 
-      let resultStr = `Added service node ${label} with ID ${nodeId} and ${edgesToCreate.length} edges.`;
+      let resultStr = `${isUpdate ? 'Updated' : 'Added'} service node ${label} with ID ${nodeId} and ${edgesToCreate.length} edges.`;
       if (processedEndpoints.length > 0) {
         resultStr += `\nEndpoints:\n` + processedEndpoints.map((ep) => `- ${ep.type} ${ep.name}: targetHandle="endpoints-in-${ep.id}", sourceHandle="endpoints-out-${ep.id}"`).join("\n");
       }
@@ -215,15 +205,20 @@ export const addServiceNodeTool = tool(
       if (processedPublishedEvents.length > 0) {
         resultStr += `\nPublished Events:\n` + processedPublishedEvents.map((pe) => `- ${pe.name}: sourceHandle="publishedEvents-out-${pe.id}"`).join("\n");
       }
+      console.log(`[DEBUG] ${isUpdate ? 'Updated' : 'Created'} service node ${nodeId} successfully.`);
       return resultStr;
+
     } catch (error: unknown) {
       const e = error as Error;
-      return `Failed to add service node: ${e.message || String(error)}`;
+      console.error("[DEBUG] Failed to add/update service node:", e);
+      return `Failed to add/update service node: ${e.message || String(error)}`;
     }
   },
   {
     name: "add_service_node",
-    description: "Add a complete microservice node to the backend canvas, including its REST endpoints, business logic, inputs, outputs, and message broker event publications/subscriptions. Automatically creates edges to connected message brokers (targetNodeId).",
-    schema: addServiceNodeSchema,
+    description: "Add or update a complete microservice node on the backend canvas, including its REST endpoints, business logic, inputs, outputs, and message broker event publications/subscriptions. Automatically creates edges to connected message brokers (targetNodeId). If a service with the same label already exists, this tool will safely UPDATE it instead of creating duplicates.",
+    schema: serviceDataInputSchema.extend({
+      label: z.string().describe("Name of the service (e.g., 'User Service')"),
+    }) as z.ZodType<AddServiceNodeInput>,
   }
 );

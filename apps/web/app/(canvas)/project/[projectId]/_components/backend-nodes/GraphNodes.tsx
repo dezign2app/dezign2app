@@ -156,10 +156,10 @@ const EndpointRow = ({ item, isEditing, setEditingId, setEditingName, setEditing
      handleUpdateItem(item.id, { headers: [...headers, { id: generateId(), name: "", type: "string", required: false, key: "", value: "" }] });
   };
   const updateHeader = (id: string, key: string, value: string) => {
-     handleUpdateItem(item.id, { headers: item.headers.map((h) => h.id === id ? { ...h, key, value } : h) });
+     handleUpdateItem(item.id, { headers: (item.headers || []).map((h) => h.id === id ? { ...h, key, value } : h) });
   };
   const deleteHeader = (id: string) => {
-     handleUpdateItem(item.id, { headers: item.headers.filter((h) => h.id !== id) });
+     handleUpdateItem(item.id, { headers: (item.headers || []).filter((h) => h.id !== id) });
   };
 
   const addParam = () => {
@@ -167,10 +167,10 @@ const EndpointRow = ({ item, isEditing, setEditingId, setEditingName, setEditing
      handleUpdateItem(item.id, { queryParams: [...params, { id: generateId(), key: "", type: "string", name: "", required: false }] });
   };
   const updateParam = (id: string, key: string, type: string) => {
-     handleUpdateItem(item.id, { queryParams: item.queryParams.map((p) => p.id === id ? { ...p, key, type } : p) });
+     handleUpdateItem(item.id, { queryParams: (item.queryParams || []).map((p) => p.id === id ? { ...p, key, type } : p) });
   };
   const deleteParam = (id: string) => {
-     handleUpdateItem(item.id, { queryParams: item.queryParams.filter((p) => p.id !== id) });
+     handleUpdateItem(item.id, { queryParams: (item.queryParams || []).filter((p) => p.id !== id) });
   };
 
   return (

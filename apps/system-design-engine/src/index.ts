@@ -95,7 +95,12 @@ app.post('/canvas-ai', async (req, res) => {
     res.end();
   } catch (error) {
     console.error("API error:", error);
-    res.status(500).send("Internal Server Error");
+    if (!res.headersSent) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.write(JSON.stringify({ type: 'error', message: 'Internal Server Error' }) + '\n');
+      res.end();
+    }
   }
 });
 

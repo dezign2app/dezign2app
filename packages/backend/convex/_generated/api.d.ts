@@ -19,6 +19,7 @@ import type * as project_chat from "../project_chat.js";
 import type * as projects from "../projects.js";
 import type * as requirements from "../requirements.js";
 import type * as schema_auth from "../schema/auth.js";
+import type * as schema_canvasValidators from "../schema/canvasValidators.js";
 import type * as schema_features from "../schema/features.js";
 import type * as schema_requirements from "../schema/requirements.js";
 import type * as schema_workflows from "../schema/workflows.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   projects: typeof projects;
   requirements: typeof requirements;
   "schema/auth": typeof schema_auth;
+  "schema/canvasValidators": typeof schema_canvasValidators;
   "schema/features": typeof schema_features;
   "schema/requirements": typeof schema_requirements;
   "schema/workflows": typeof schema_workflows;

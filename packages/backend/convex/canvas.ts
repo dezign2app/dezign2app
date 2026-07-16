@@ -1,6 +1,6 @@
 import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { isValidConnection, RULES_VERSION, BackendNodeType, BackendNode, BackendEdgeType, BackendEdge } from "@workspace/canvas";
+import { isValidConnection, RULES_VERSION, BackendNodeType, BackendNode, BackendEdgeType, BackendEdge, nodeDataSchemas } from "@workspace/canvas";
 
 // ---------------------------------------------------------------------------
 // FRONTEND CANVAS — tldraw granular records
@@ -112,6 +112,17 @@ export const upsertBackendNode = mutation({
     console.log("upsertBackendNode called with args:", { nodeId: args.nodeId, type: args.type, label: args.data?.label });
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError("Not authenticated");
+
+    const schema = nodeDataSchemas[args.type];
+    if (schema) {
+      // Validate the data against the strict Zod schema for this node type
+      const parsed = schema.safeParse(args.data);
+      if (!parsed.success) {
+        throw new ConvexError(`Invalid data for node type '${args.type}': ${parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ")}`);
+      }
+    }
 
     if ((args.type === "entity" || args.type === "group") && args.data?.label) {
       const allNodes = await ctx.db

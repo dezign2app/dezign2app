@@ -28,15 +28,15 @@
     "convex": "^1.31.6",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.3.1",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
     "inngest": "^3.54.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
+    "@types/express": "^4.17.21",
     "@types/node": "^24.0.3",
     "tsx": "4.21.0",
     "vitest": "^3.0.7",

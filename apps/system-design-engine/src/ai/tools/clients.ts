@@ -4,7 +4,7 @@ import { GraphAnnotation } from "../state";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { getConvexClient } from "../utils";
-import { clientEventInputSchema } from "../schemas";
+import { webClientDataInputSchema } from "../schemas";
 
 export const addClientNodeTool = tool(
   async (input, config) => {
@@ -90,10 +90,8 @@ export const addClientNodeTool = tool(
   {
     name: "add_client_node",
     description: "Add a Web Client (frontend) node to the backend canvas, including a collection of user events on the page.",
-    schema: z.object({
+    schema: webClientDataInputSchema.extend({
       label: z.string().describe("Name of the client page/component (e.g., 'Login Page')"),
-      description: z.string().optional(),
-      events: z.array(clientEventInputSchema).optional(),
     })
   }
 );

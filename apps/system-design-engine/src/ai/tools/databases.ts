@@ -4,7 +4,7 @@ import { GraphAnnotation } from "../state";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { getConvexClient } from "../utils";
-import { dbRefDataSchema, entityColumnInputSchema } from "../schemas";
+import { entityDataInputSchema, dbRefDataInputSchema } from "../schemas";
 
 export const addSchemaTool = tool(
   async (input, config) => {
@@ -41,11 +41,9 @@ export const addSchemaTool = tool(
   {
     name: "add_single_schema",
     description: "Add a single database schema (table/entity) to the canvas.",
-    schema: z.object({
+    schema: entityDataInputSchema.extend({
       label: z.string().describe("Name of the table/entity (e.g. 'Users')"),
-      description: z.string().optional(),
-      // groupId: z.string().optional().describe("Optional ID of the schema group to place this schema inside"),
-      columns: z.array(entityColumnInputSchema).describe("The columns/fields of the table"),
+      groupId: z.string().optional().describe("Optional ID of the schema group to place this schema inside"),
     })
   }
 );
@@ -86,7 +84,7 @@ export const addDbRefNodeTool = tool(
   {
     name: "add_db_ref_node",
     description: "Add a database table reference node to the canvas. Use this to represent a reference to an existing database table (entity) so services can connect to it.",
-    schema: dbRefDataSchema.extend({
+    schema: dbRefDataInputSchema.extend({
       label: z.string().describe("Name of the table reference (e.g. 'Users Table')"),
       tableRef: z.string().optional().describe("The ID of the target entity node this references, if known"),
       type: z.string().optional(),

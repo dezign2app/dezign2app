@@ -4,6 +4,7 @@ import { GraphAnnotation } from "../state";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { getConvexClient } from "../utils";
+import { edgeDataSchema } from "../schemas";
 
 export const addEdgeTool = tool(
   async ({ source, target, type, data, sourceHandle, targetHandle }, config) => {
@@ -68,7 +69,7 @@ Important handle rules:
       type: z.enum(["connection", "foreign-key", "message"]),
       sourceHandle: z.string().optional().describe("The ID of the source handle. See rules."),
       targetHandle: z.string().optional().describe("The ID of the target handle. See rules."),
-      data: z.any().optional(),
+      data: edgeDataSchema.optional(),
     }),
   }
 );

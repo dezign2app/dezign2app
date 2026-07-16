@@ -105,6 +105,7 @@ export const publishedEventSchema = z.object({
   correlationId: z.string().optional(),
   deprecated: z.boolean().default(false),
   replacementEventId: z.string().optional(),
+  targetNodeId: z.string().optional(),
   metadata: architectureMetadataSchema.optional(),
 });
 
@@ -127,6 +128,7 @@ export const consumedEventSchema = z.object({
   maxRetries: z.number().optional(),
   deadLetterQueue: z.string().optional(),
   isIdempotent: z.boolean().default(false),
+  targetNodeId: z.string().optional(),
   metadata: architectureMetadataSchema.optional(),
 });
 
@@ -243,6 +245,8 @@ export const dbRefDataSchema = baseNodeDataSchema.extend({
   graphPosition: z.object({ x: z.number(), y: z.number() }).optional(),
 }).strict();
 
+export const dbRefDataInputSchema = dbRefDataSchema;
+
 export const entityDataSchema = baseNodeDataSchema.extend({
   description: z.string().optional(),
   columns: z.array(z.object({
@@ -271,6 +275,11 @@ export const entityColumnInputSchema = z.object({
     table: z.string(),
     column: z.string(),
   }).optional().describe("If this is a foreign key, which table and column it references in this group"),
+});
+
+export const entityDataInputSchema = baseNodeDataSchema.extend({
+  description: z.string().optional(),
+  columns: z.array(entityColumnInputSchema),
 });
 
 export const kafkaTopicSchema = z.object({
@@ -364,6 +373,11 @@ export const webClientDataSchema = simpleDataSchema.extend({
     name: z.string(),
     event: z.string().optional(),
   })).optional(),
+});
+
+export const webClientDataInputSchema = baseNodeDataSchema.extend({
+  description: z.string().optional(),
+  events: z.array(clientEventInputSchema).optional(),
 });
 
 export const serviceDataSchema = baseNodeDataSchema.extend({
@@ -463,4 +477,5 @@ export const edgeDataSchema = z.object({
   sequenceOrder: z.number().optional(),
   sourceCardinality: z.enum(["1", "N"]).optional(),
   targetCardinality: z.enum(["1", "N"]).optional(),
+  resourceKind: z.string().optional(),
 });

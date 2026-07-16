@@ -75,6 +75,7 @@ export const processingStepSchema = z.object({
   operation: processingOperationEnum.optional(),
   config: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
 });
+export type ProcessingStep = z.infer<typeof processingStepSchema>;
 
 export const processingStepInputSchema = processingStepSchema.extend({
   id: z.string().optional(),
@@ -93,16 +94,16 @@ export const architectureMetadataSchema = z.object({
 export const publishedEventSchema = z.object({
   id: z.string(),
   name: z.string(),
-  publishedWhen: z.string(),
-  brokerNodeId: z.string(),
-  messagingResourceId: z.string(),
-  payloadSchema: schemaModelSchema,
-  version: schemaVersionEnum,
-  category: eventCategoryEnum,
-  delivery: deliveryGuaranteeEnum,
-  ordering: eventOrderingEnum,
+  publishedWhen: z.string().default("after-processing"),
+  brokerNodeId: z.string().default(""),
+  messagingResourceId: z.string().default(""),
+  payloadSchema: schemaModelSchema.default({ id: "dummy", fields: [] }),
+  version: schemaVersionEnum.default("v1"),
+  category: eventCategoryEnum.default("DOMAIN"),
+  delivery: deliveryGuaranteeEnum.default("AT_LEAST_ONCE"),
+  ordering: eventOrderingEnum.default("NONE"),
   correlationId: z.string().optional(),
-  deprecated: z.boolean(),
+  deprecated: z.boolean().default(false),
   replacementEventId: z.string().optional(),
   metadata: architectureMetadataSchema.optional(),
 });
@@ -114,17 +115,18 @@ export const publishedEventInputSchema: z.ZodType<PublishedEventInputType> = z.o
   schema: z.string().optional(),
   targetNodeId: z.string().optional(),
   targetResourceId: z.string().optional(),
-});
+  brokerNodeId: z.string().optional(),
+}).passthrough();
 
 export const consumedEventSchema = z.object({
   id: z.string(),
-  eventId: z.string(),
-  brokerNodeId: z.string(),
-  messagingResourceId: z.string(),
-  retryPolicy: retryPolicyEnum,
+  eventId: z.string().default(""),
+  brokerNodeId: z.string().default(""),
+  messagingResourceId: z.string().default(""),
+  retryPolicy: retryPolicyEnum.default("NONE"),
   maxRetries: z.number().optional(),
   deadLetterQueue: z.string().optional(),
-  isIdempotent: z.boolean(),
+  isIdempotent: z.boolean().default(false),
   metadata: architectureMetadataSchema.optional(),
 });
 
@@ -136,7 +138,8 @@ export const consumedEventInputSchema: z.ZodType<ConsumedEventInputType> = z.obj
   handlerLogic: z.string().optional(),
   targetNodeId: z.string().optional(),
   targetResourceId: z.string().optional(),
-});
+  brokerNodeId: z.string().optional(),
+}).passthrough();
 
 // ---------------------------------------------------------------------------
 // Endpoint
@@ -162,6 +165,7 @@ export const endpointSchema = z.object({
   businessLogic: z.string().optional(),
   output: z.string().optional(),
 });
+export type Endpoint = z.infer<typeof endpointSchema>;
 
 /** AI-input form: IDs optional, sub-objects use input variants. */
 export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
@@ -181,23 +185,25 @@ export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
     description: z.string().optional(), defaultValue: z.string().optional(),
   })).describe("Query parameters such as page, limit, or q. Use [] when none."),
   requestBody: z.object({
+    id: z.string().optional(),
     fields: z.array(z.object({
       id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
       description: z.string().optional(),
-    })),
-  }).describe("Request body schema. Use fields: [] only for endpoints with no body."),
+    }).passthrough()),
+  }).passthrough().describe("Request body schema. Use fields: [] only for endpoints with no body."),
   responseBody: z.object({
+    id: z.string().optional(),
     fields: z.array(z.object({
       id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
       description: z.string().optional(),
-    })),
-  }).describe("Response body schema; define the actual returned fields."),
+    }).passthrough()),
+  }).passthrough().describe("Response body schema; define the actual returned fields."),
   processingSteps: z.array(z.object({
     id: z.string().optional(),
     text: z.string(),
-    operation: processingOperationEnum.optional(),
-    config: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
-  })).describe("Executable request-processing steps in order."),
+    operation: z.string().optional(),
+    config: z.record(z.any()).optional(),
+  }).passthrough()).describe("Executable request-processing steps in order."),
   output: z.string().optional().describe("Short response description; do not use this instead of responseBody."),
   businessLogic: z.string().optional().describe("Human-readable purpose of the endpoint."),
   databaseNodeIds: z.array(z.string()).optional().describe(
@@ -381,6 +387,29 @@ export const serviceDataSchema = baseNodeDataSchema.extend({
     endpoints: z.array(endpointSchema),
   })).optional(),
 }).strict();
+export type ServiceNodeData = z.infer<typeof serviceDataSchema>;
+
+export const serviceDataInputSchema = baseNodeDataSchema.extend({
+  description: z.string().optional(),
+  techStack: z.string().optional(),
+  port: z.string().optional(),
+  cors: z.boolean().optional(),
+  corsOrigins: z.string().optional(),
+  rateLimit: z.string().optional(),
+  baseUrl: z.string().optional(),
+  endpoints: z.array(endpointInputSchema).optional(),
+  consumedEvents: z.array(consumedEventInputSchema).optional(),
+  publishedEvents: z.array(publishedEventInputSchema).optional(),
+  inputs: z.array(z.object({ id: z.string().optional(), name: z.string() }).passthrough()).optional(),
+  outputs: z.array(z.object({ id: z.string().optional(), name: z.string() }).passthrough()).optional(),
+  logic: z.array(z.object({ id: z.string().optional(), name: z.string() }).passthrough()).optional(),
+  routeGroups: z.array(z.object({
+    id: z.string().optional(),
+    name: z.string(),
+    basePath: z.string(),
+    endpoints: z.array(endpointInputSchema),
+  }).passthrough()).optional(),
+}).passthrough();
 
 // ---------------------------------------------------------------------------
 // Node data schemas map — keyed by BackendNodeType

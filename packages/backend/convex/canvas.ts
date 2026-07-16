@@ -122,6 +122,7 @@ export const upsertBackendNode = mutation({
           .map((i) => `${i.path.join(".")}: ${i.message}`)
           .join("; ")}`);
       }
+      args.data = parsed.data;
     }
 
     if ((args.type === "entity" || args.type === "group") && args.data?.label) {

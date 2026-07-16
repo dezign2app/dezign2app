@@ -4,7 +4,7 @@ import { GraphAnnotation } from "./state";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { getConvexClient } from "./utils";
-import { EDGE_TYPE_MAP, WEB_CLIENT_EVENTS } from "@workspace/canvas";
+import { EDGE_TYPE_MAP, WEB_CLIENT_EVENTS, BackendNode } from "@workspace/canvas";
 import {
   simpleDataSchema,
   entityDataSchema,
@@ -16,12 +16,19 @@ import {
   dbRefDataSchema,
   nodeDataSchemas,
   assignResourceIds,
+  endpointInputSchema,
+  consumedEventInputSchema,
+  publishedEventInputSchema,
+  entityColumnInputSchema,
+  clientEventInputSchema,
+  webClientDataSchema,
+  serviceDataSchema,
 } from "./schemas";
 
 export const addNodeSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("service"), label: z.string(), data: simpleDataSchema.optional() }),
+  z.object({ type: z.literal("service"), label: z.string(), data: serviceDataSchema.optional() }),
   z.object({ type: z.literal("db_ref"), label: z.string(), data: dbRefDataSchema.optional() }),
-  z.object({ type: z.literal("webClient"), label: z.string(), data: z.object({ label: z.string().optional(), description: z.string().optional(), events: z.array(z.any()).optional() }).passthrough().optional() }),
+  z.object({ type: z.literal("webClient"), label: z.string(), data: webClientDataSchema.optional() }),
   z.object({ type: z.literal("external"), label: z.string(), data: externalDataSchema.optional() }),
   z.object({ type: z.literal("group"), label: z.string(), data: simpleDataSchema.optional() }),
   z.object({ type: z.literal("entity"), label: z.string(), data: entityDataSchema }),
@@ -111,19 +118,14 @@ export const updateNodeTool = tool(
       if (!node) return `Error: Node ${id} not found`;
 
       let schema = nodeDataSchemas[node.type];
-      if (node.type === "webClient") {
-        schema = z.object({
-          label: z.string().optional(),
-          description: z.string().optional(),
-          events: z.array(z.any()).optional(),
-        }).passthrough();
-      }
       if (!schema) return `Error: Unknown node type '${node.type}' for node ${id}`;
 
       // Validate only the fields being changed, merged onto existing data,
       // so we catch cross-type field leakage at update time too.
-      const merged = { ...node.data, ...changes };
-      const { label, graphPosition, ...dataToValidate } = merged;
+      const existingData = node.data as BackendNode["data"];
+      const newChanges = changes as Partial<BackendNode["data"]>;
+      const merged: BackendNode["data"] = { ...existingData, ...newChanges };
+      const { label, graphPosition, parentId, ...dataToValidate } = merged;
       const parsed = schema.safeParse(dataToValidate);
       if (!parsed.success) {
         return `Failed to update node: invalid fields for type '${node.type}': ${parsed.error.issues
@@ -138,7 +140,7 @@ export const updateNodeTool = tool(
         nodeId: id,
         type: node.type,
         position: node.position,
-        data: { ...node.data, ...processedChanges },
+        data: { ...existingData, ...processedChanges },
         fractionalIndex: node.fractionalIndex,
       });
       return `Updated node ${id}`;
@@ -153,7 +155,7 @@ export const updateNodeTool = tool(
       "Update an existing node on the backend canvas. Only specify the fields you want to change. Changes are validated against the node's existing type — fields belonging to other node types will be rejected.",
     schema: z.object({
       id: z.string(),
-      changes: z.record(z.any()).describe("Partial data fields to change, matching the node's existing type schema."),
+      changes: z.record(z.unknown()).describe("Partial data fields to change, matching the node's existing type schema."),
     }),
   }
 );
@@ -446,56 +448,9 @@ export const addServiceNodeTool = tool(
       port: z.string().optional(),
       cors: z.boolean().optional(),
       baseUrl: z.string().optional(),
-      endpoints: z.array(z.object({
-        name: z.string().describe("Endpoint path (e.g., /api/users)"),
-        type: z.string().describe("HTTP method (GET, POST, etc.)"),
-        headers: z.array(z.object({
-          name: z.string(), type: z.string(), required: z.boolean(), description: z.string().optional(), defaultValue: z.string().optional()
-        })).describe("Request headers. Use [] when none are required."),
-        pathParams: z.array(z.object({
-          name: z.string(), type: z.string(), required: z.boolean(), description: z.string().optional(), defaultValue: z.string().optional()
-        })).describe("Path parameters, such as id in /products/{id}. Use [] when none."),
-        queryParams: z.array(z.object({
-          name: z.string(), type: z.string(), required: z.boolean(), description: z.string().optional(), defaultValue: z.string().optional()
-        })).describe("Query parameters such as page, limit, or q. Use [] when none."),
-        requestBody: z.object({
-          fields: z.array(z.object({ name: z.string(), type: z.string(), required: z.boolean(), description: z.string().optional() }))
-        }).describe("Request body schema. Use fields: [] only for endpoints with no body."),
-        responseBody: z.object({
-          fields: z.array(z.object({ name: z.string(), type: z.string(), required: z.boolean(), description: z.string().optional() }))
-        }).describe("Response body schema; define the actual returned fields."),
-        processingSteps: z.array(z.object({
-          text: z.string(),
-          operation: z.enum(["passthrough", "validate", "pick", "omit", "rename", "set", "filter", "map", "db_get", "db_get_many", "db_insert", "db_update", "db_delete", "return"]).optional(),
-          config: z.record(z.any()).optional(),
-        })).describe("Executable request-processing steps in order."),
-        output: z.string().optional().describe("Short response description; do not use this instead of responseBody."),
-        businessLogic: z.string().optional().describe("Human-readable purpose of the endpoint."),
-        databaseNodeIds: z.array(z.string()).optional().describe("IDs of db_ref nodes this endpoint reads from or writes to. REQUIRED whenever this endpoint uses a database; one endpoint may target multiple tables."),
-        databaseNodeId: z.string().optional().describe("Single db_ref node ID this endpoint uses; prefer databaseNodeIds when there is more than one."),
-        publishedEvents: z.array(z.object({
-          name: z.string(),
-          kind: z.string().optional(),
-          schema: z.string().optional(),
-          targetNodeId: z.string().optional().describe("Target node ID to automatically connect to (e.g. queue or pubsub node)"),
-          targetResourceId: z.string().optional().describe("The specific topic/queue/stream ID on the broker to connect to")
-        })).optional()
-      })).optional(),
-      consumedEvents: z.array(z.object({
-        name: z.string(),
-        kind: z.string().optional(),
-        schema: z.string().optional(),
-        handlerLogic: z.string().optional(),
-        targetNodeId: z.string().optional().describe("Source node ID to automatically connect from (e.g. queue or pubsub node)"),
-        targetResourceId: z.string().optional().describe("The specific topic/queue/stream ID on the broker to connect to")
-      })).optional(),
-      publishedEvents: z.array(z.object({
-        name: z.string(),
-        kind: z.string().optional(),
-        schema: z.string().optional(),
-        targetNodeId: z.string().optional().describe("Target node ID to automatically connect to (e.g. queue or pubsub node)"),
-        targetResourceId: z.string().optional().describe("The specific topic/queue/stream ID on the broker to connect to")
-      })).optional(),
+      endpoints: z.array(endpointInputSchema).optional(),
+      consumedEvents: z.array(consumedEventInputSchema).optional(),
+      publishedEvents: z.array(publishedEventInputSchema).optional(),
       inputs: z.array(z.any()).optional(),
       outputs: z.array(z.any()).optional(),
       logic: z.array(z.any()).optional(),
@@ -552,24 +507,8 @@ export const addKafkaNodeTool = tool(
   {
     name: "add_kafka_node",
     description: "Add an Apache Kafka message broker node to the backend canvas, including its topics and broker configuration.",
-    schema: z.object({
+    schema: kafkaDataSchema.extend({
       label: z.string().describe("Name of the Kafka broker (e.g., 'Main Kafka Cluster')"),
-      description: z.string().optional(),
-      topics: z.array(z.object({
-        name: z.string().describe("Name of the topic"),
-        schema: z.string().optional(),
-        version: z.string().optional()
-      })).optional(),
-      kafkaBroker: z.object({
-        partitions: z.number().optional(),
-        replication: z.number().optional(),
-        batchSize: z.number().optional(),
-        compression: z.string().optional(),
-        ttl: z.string().optional(),
-      }).optional(),
-      delivery: z.string().optional().describe("Message delivery guarantee (e.g., 'At-least-once')"),
-      ordering: z.string().optional(),
-      retention: z.string().optional(),
     })
   }
 );
@@ -661,13 +600,7 @@ export const addClientNodeTool = tool(
     schema: z.object({
       label: z.string().describe("Name of the client page/component (e.g., 'Login Page')"),
       description: z.string().optional(),
-      events: z.array(z.object({
-        id: z.string().optional().describe("Unique identifier for this event"),
-        name: z.string().describe("Logical name of the action (e.g., 'sendMessage', 'fetchData')"),
-        event: z.enum(WEB_CLIENT_EVENTS).optional().describe("The DOM event that triggers it"),
-        targetNodeId: z.string().optional().describe("If this event triggers an API call, specify the target service node ID to AUTOMATICALLY create an edge"),
-        targetEndpointId: z.string().optional().describe("If this event triggers an API call, specify the target endpoint ID on the service node to AUTOMATICALLY create an edge"),
-      })).optional(),
+      events: z.array(clientEventInputSchema).optional(),
     })
   }
 );
@@ -775,18 +708,7 @@ export const addSchemaGroupTool = tool(
       schemas: z.array(z.object({
         label: z.string().describe("Name of the table/entity (e.g. 'Users')"),
         description: z.string().optional(),
-        columns: z.array(z.object({
-          name: z.string(),
-          type: z.string(),
-          isPrimaryKey: z.boolean().optional(),
-          isForeignKey: z.boolean().optional(),
-          isNotNull: z.boolean().optional(),
-          isUnique: z.boolean().optional(),
-          references: z.object({
-            table: z.string(),
-            column: z.string()
-          }).optional().describe("If this is a foreign key, which table and column it references in this group"),
-        })).describe("The columns/fields of the table"),
+        columns: z.array(entityColumnInputSchema).describe("The columns/fields of the table"),
       })).optional().describe("The tables/entities that belong to this group"),
     })
   }
@@ -831,14 +753,7 @@ export const addSchemaTool = tool(
       label: z.string().describe("Name of the table/entity (e.g. 'Users')"),
       description: z.string().optional(),
       groupId: z.string().optional().describe("Optional ID of the schema group to place this schema inside"),
-      columns: z.array(z.object({
-        name: z.string(),
-        type: z.string(),
-        isPrimaryKey: z.boolean().optional(),
-        isForeignKey: z.boolean().optional(),
-        isNotNull: z.boolean().optional(),
-        isUnique: z.boolean().optional(),
-      })).describe("The columns/fields of the table"),
+      columns: z.array(entityColumnInputSchema).describe("The columns/fields of the table"),
     })
   }
 );
@@ -879,9 +794,8 @@ export const addDbRefNodeTool = tool(
   {
     name: "add_db_ref_node",
     description: "Add a database table reference node to the canvas. Use this to represent a reference to an existing database table (entity) so services can connect to it.",
-    schema: z.object({
+    schema: dbRefDataSchema.extend({
       label: z.string().describe("Name of the table reference (e.g. 'Users Table')"),
-      description: z.string().optional(),
       tableRef: z.string().optional().describe("The ID of the target entity node this references, if known"),
       type: z.string().optional(),
       data: z.any().optional(),

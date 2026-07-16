@@ -23,7 +23,7 @@ export function formatToolCallLog(name: string, args: any): string {
     const label = args.label || "Unknown Client";
     return `\nAdded **${label}** (client)`;
   } else if (name === "add_schema_group") {
-    const label = args.label || "Unknown Schema Group";
+    const label = args.groupLabel || "Unknown Schema Group";
     return `\nAdded **${label}** (schema group)`;
   } else if (name === "add_schema") {
     const label = args.label || "Unknown Schema";

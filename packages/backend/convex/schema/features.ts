@@ -1,5 +1,7 @@
-import { defineTable } from "convex/server";
+import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { z } from "zod";
+import { backendNodeDataValidator, backendEdgeDataValidator } from "./canvasValidators";
 
 export const featureTables = {
   conversations: defineTable({
@@ -80,7 +82,7 @@ export const featureTables = {
     nodeId: v.string(),
     type: v.string(),
     position: v.object({ x: v.number(), y: v.number() }),
-    data: v.any(),
+    data: v.optional(backendNodeDataValidator),
     fractionalIndex: v.string(),
   })
     .index("by_project", ["projectId"])
@@ -95,7 +97,7 @@ export const featureTables = {
     type: v.string(),
     sourceHandle: v.optional(v.string()),
     targetHandle: v.optional(v.string()),
-    data: v.optional(v.any()),
+    data: v.optional(backendEdgeDataValidator),
     fractionalIndex: v.string(),
     rulesVersion: v.optional(v.number()), // Edge validation rules version (backward compat: undefined for pre-validation edges)
   })

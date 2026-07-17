@@ -1,5 +1,5 @@
-import Pricing from "../_landing_components/pricing";
+import { EffortlessSection } from "../_landing_components/features";
 
 export default function PricingPage() {
-  return <Pricing />;
+  return <EffortlessSection />;
 }

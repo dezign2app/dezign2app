@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import Link from "next/link";
 import Pricing from "./pricing";
 
 // ─── Feature Switcher Section ──────────────────────────────────────────────────
@@ -507,7 +506,7 @@ const FeatureSwitcher = () => {
 
 // ─── Effortless Section ────────────────────────────────────────────────────────
 
-const EffortlessSection = () => {
+export const EffortlessSection = () => {
   const [billing, setBilling] = React.useState<"monthly" | "annually">("monthly");
 
   return (

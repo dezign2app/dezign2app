@@ -13,7 +13,7 @@ import { createSession, cleanupOldSessions, Session } from './mcp/session';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => {
   res.send('System Design Engine is running!');
@@ -50,7 +50,7 @@ app.post('/canvas-ai', async (req, res) => {
     const backendCanvasState = formatCanvasState(elements);
     
     // Prepare initial state
-    const formattedMessages = messages.map((m: any) => 
+    const formattedMessages = messages.map((m) => 
       m.role === 'assistant' ? new AIMessage(m.content) : new HumanMessage(m.content)
     );
 
@@ -93,10 +93,10 @@ app.post('/canvas-ai', async (req, res) => {
       }
     }
     res.end();
-  } catch (error) {
+  } catch (error: any) {
     console.error("API error:", error);
     if (!res.headersSent) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).send(`Internal Server Error: ${error?.message || 'Unknown error'}`);
     } else {
       res.write(JSON.stringify({ type: 'error', message: 'Internal Server Error' }) + '\n');
       res.end();

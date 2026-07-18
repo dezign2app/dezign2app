@@ -25,6 +25,9 @@ import {
 import { Globe, Server, Waves, GitBranch, Radio, Database, LayoutGrid, ChevronRight, TerminalSquare, Plus, PenLine, Trash } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
+import { useMutation } from "convex/react";
+import { api } from "@workspace/backend/_generated/api";
+import { Id } from "@workspace/backend/_generated/dataModel";
 import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
 import { HTTPConnectionEdge, MessagingEdge } from "./backend-nodes/CustomEdges";
@@ -52,11 +55,17 @@ export function GraphView({ projectId }: GraphViewProps) {
     addNode,
   } = useBackendCanvasStore();
   const simulation = useSimulationStore();
-  const selectedEventId = useSimulationStore((state) => state.selectedEventId);
   const selectedCaseId = useSimulationStore((state) => state.selectedCaseId);
+  const testCases = useSimulationStore((state) => state.testCases);
   const selectTestCase = useSimulationStore((state) => state.selectTestCase);
   const clearSelectedTestCase = useSimulationStore((state) => state.clearSelectedTestCase);
+  const addTestCase = useSimulationStore((state) => state.addTestCase);
+  const updateTestCase = useSimulationStore((state) => state.updateTestCase);
+  const deleteTestCase = useSimulationStore((state) => state.deleteTestCase);
   
+  const upsertBackendTestCase = useMutation(api.canvas.upsertBackendTestCase);
+  const removeBackendTestCase = useMutation(api.canvas.removeBackendTestCase);
+
   const [caseNameDialog, setCaseNameDialog] = useState<{ mode: "create" | "rename"; value: string } | null>(null);
   const [deleteCaseOpen, setDeleteCaseOpen] = useState(false);
 
@@ -154,30 +163,13 @@ export function GraphView({ projectId }: GraphViewProps) {
     };
   });
 
-  const simulationCases = nodes.flatMap((node) => (node.type === "webClient" ? (node.data.events ?? []).flatMap((event) =>
-    (event.simulationCases ?? []).map((testCase) => ({ nodeId: node.id, eventId: event.id, eventName: event.name, testCase }))
-  ) : []));
-  const selectedCaseValue = selectedEventId && selectedCaseId ? `${selectedEventId}:${selectedCaseId}` : "";
-  const selectedCaseEntry = simulationCases.find(({ eventId, testCase }) => eventId === selectedEventId && testCase.id === selectedCaseId);
+  const selectedCaseEntry = testCases.find((testCase) => testCase.id === selectedCaseId);
 
   React.useEffect(() => {
-    if (!selectedCaseEntry && simulationCases[0]) {
-      selectTestCase(simulationCases[0].eventId, simulationCases[0].testCase.id);
+    if (!selectedCaseEntry && testCases[0]) {
+      selectTestCase(testCases[0].id);
     }
-  }, [simulationCases.length, selectedEventId, selectedCaseId, selectedCaseEntry, selectTestCase]);
-
-  const updateSelectedEventCases = (nextCases: NonNullable<BackendNode["data"]["events"]>[number]["simulationCases"]) => {
-    if (!selectedEventId || !selectedCaseEntry) return;
-    const nextNodes = nodes.map((node) => node.type !== "webClient" ? node : {
-      ...node,
-      data: {
-        ...node.data,
-        events: (node.data.events ?? []).map((event) => event.id === selectedEventId ? { ...event, simulationCases: nextCases } : event),
-      },
-    });
-    const changed = nextNodes.find((node) => node.id === selectedCaseEntry.nodeId);
-    if (changed) useBackendCanvasStore.getState().updateNode(changed.id, { data: changed.data });
-  };
+  }, [testCases.length, selectedCaseId, selectedCaseEntry, selectTestCase]);
 
   return (
     <div className="w-full h-full bg-muted/20">
@@ -206,20 +198,19 @@ export function GraphView({ projectId }: GraphViewProps) {
           <div className="flex items-center gap-2 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Test case</span>
             <Select
-              value={selectedCaseValue || "none"}
+              value={selectedCaseId || "none"}
               onValueChange={(value) => {
                 if (value === "none") return;
-                const [eventId, caseId] = value.split(":");
-                if (eventId && caseId) selectTestCase(eventId, caseId);
+                selectTestCase(value);
               }}
             >
               <SelectTrigger className="h-7 w-[190px] text-xs"><SelectValue placeholder="Select test case" /></SelectTrigger>
               <SelectContent>
-                {simulationCases.length === 0 ? (
+                {testCases.length === 0 ? (
                   <SelectItem value="none">No saved test cases</SelectItem>
-                ) : simulationCases.map(({ eventId, eventName, testCase }) => (
-                  <SelectItem key={`${eventId}:${testCase.id}`} value={`${eventId}:${testCase.id}`}>
-                    {eventName} / {testCase.name}
+                ) : testCases.map((testCase) => (
+                  <SelectItem key={testCase.id} value={testCase.id}>
+                    {testCase.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -237,8 +228,7 @@ export function GraphView({ projectId }: GraphViewProps) {
                   size="sm"
                   className="h-7 px-2 shrink-0 bg-background text-xs"
                   onClick={() => {
-                    if (!selectedCaseEntry) return;
-                    const count = simulationCases.filter(({ eventId }) => eventId === selectedEventId).length;
+                    const count = testCases.length;
                     setCaseNameDialog({ mode: "create", value: `Test Case ${count + 1}` });
                   }}
                   disabled={!selectedCaseEntry}
@@ -251,7 +241,7 @@ export function GraphView({ projectId }: GraphViewProps) {
                   className="h-7 px-2 shrink-0 bg-background text-xs"
                   onClick={() => {
                     if (!selectedCaseEntry) return;
-                    setCaseNameDialog({ mode: "rename", value: selectedCaseEntry.testCase.name });
+                    setCaseNameDialog({ mode: "rename", value: selectedCaseEntry.name });
                   }}
                   disabled={!selectedCaseEntry}
                 >
@@ -337,15 +327,16 @@ export function GraphView({ projectId }: GraphViewProps) {
             <Button variant="outline" onClick={() => setCaseNameDialog(null)}>Cancel</Button>
             <Button onClick={() => {
               const name = caseNameDialog?.value.trim();
-              if (!name || !selectedCaseEntry) return;
+              if (!name) return;
               const mode = caseNameDialog?.mode;
-              const cases = simulationCases.filter(({ eventId }) => eventId === selectedEventId).map(({ testCase }) => testCase);
               if (mode === "create") {
-                const nextCase = { id: `case-${Date.now()}`, name, request: { body: null }, enabled: true };
-                updateSelectedEventCases([...cases, nextCase]);
-                selectTestCase(selectedEventId!, nextCase.id);
-              } else {
-                updateSelectedEventCases(cases.map((testCase) => testCase.id === selectedCaseId ? { ...testCase, name } : testCase));
+                const nextCase = { id: `case-${Date.now()}`, name, targetNodeId: "", request: { body: null }, enabled: true };
+                addTestCase(nextCase);
+                selectTestCase(nextCase.id);
+                upsertBackendTestCase({ projectId: projectId as Id<"projects">, testCaseId: nextCase.id, data: nextCase });
+              } else if (selectedCaseEntry) {
+                updateTestCase(selectedCaseId!, { name });
+                upsertBackendTestCase({ projectId: projectId as Id<"projects">, testCaseId: selectedCaseId!, data: { ...selectedCaseEntry, name } });
               }
               setCaseNameDialog(null);
             }}>Save</Button>
@@ -356,16 +347,14 @@ export function GraphView({ projectId }: GraphViewProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete test case?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove “{selectedCaseEntry?.testCase.name}” from this frontend event.</AlertDialogDescription>
+            <AlertDialogDescription>This will remove “{selectedCaseEntry?.name}” from the project.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               if (!selectedCaseEntry) return;
-              const remaining = simulationCases.filter(({ eventId }) => eventId === selectedEventId).map(({ testCase }) => testCase).filter((testCase) => testCase.id !== selectedCaseId);
-              updateSelectedEventCases(remaining);
-              const next = remaining[0];
-              if (next) selectTestCase(selectedEventId!, next.id); else clearSelectedTestCase();
+              deleteTestCase(selectedCaseId!);
+              removeBackendTestCase({ projectId: projectId as Id<"projects">, testCaseId: selectedCaseId! });
               setDeleteCaseOpen(false);
             }}>Delete</AlertDialogAction>
           </AlertDialogFooter>

@@ -293,8 +293,7 @@ export const EndpointRow = ({ nodeId, item, isEditing, setEditingId, setEditingN
                       type="source"
                       position={Position.Right}
                       id={`publishedEvents-out-${ev.id}`}
-                      className="w-2 h-2 -right-4"
-                      style={{ top: '50%' }}
+                      style={{ top: '50%', right: '-12px' }}
                     />
                   </div>
                 ))}

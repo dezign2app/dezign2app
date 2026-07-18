@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { PlusSquare, FolderPlus, LayoutGrid, User, Server, Globe, Container, Database, GitBranch, Radio, Waves, TerminalSquare } from "lucide-react";
+import { PlusSquare, LayoutGrid, User, Server, Globe, Database, GitBranch, Radio, Waves, TerminalSquare, Plus, PenLine, Trash, ChevronRight } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id, Doc } from "@workspace/backend/_generated/dataModel";
@@ -720,46 +720,52 @@ function Flow({ projectId, view }: BackendCanvasProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 bg-background text-xs"
-                onClick={() => {
-                  if (!selectedCaseEntry) return;
-                  const count = simulationCases.filter(({ eventId }) => eventId === selectedEventId).length;
-                  setCaseNameDialog({ mode: "create", value: `Test Case ${count + 1}` });
-                }}
-                disabled={!selectedCaseEntry}
-              >
-                + New
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 bg-background text-xs"
-                onClick={() => {
-                  if (!selectedCaseEntry) return;
-                  setCaseNameDialog({ mode: "rename", value: selectedCaseEntry.testCase.name });
-                }}
-                disabled={!selectedCaseEntry}
-              >
-                Rename
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 bg-background text-xs text-destructive"
-                onClick={() => {
-                  if (selectedCaseEntry) setDeleteCaseOpen(true);
-                }}
-                disabled={!selectedCaseEntry}
-              >
-                Delete
-              </Button>
-              <Button variant="outline" size="sm" className="h-7 bg-background text-xs" onClick={simulation.toggleTerminal}>
-                <TerminalSquare className="mr-1.5 h-3.5 w-3.5" />
-                Terminal
-              </Button>
+              <div className="group flex items-center overflow-hidden transition-all duration-300">
+                <Button variant="outline" size="sm" className="h-7 w-7 p-0 shrink-0 bg-background text-xs cursor-default">
+                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                </Button>
+                <div className="flex items-center gap-2 max-w-0 opacity-0 overflow-hidden transition-all duration-300 ease-in-out group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-2">
+                  <Button variant="outline" size="sm" className="h-7 px-2 shrink-0 bg-background text-xs" onClick={simulation.toggleTerminal}>
+                    <TerminalSquare className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 shrink-0 bg-background text-xs"
+                    onClick={() => {
+                      if (!selectedCaseEntry) return;
+                      const count = simulationCases.filter(({ eventId }) => eventId === selectedEventId).length;
+                      setCaseNameDialog({ mode: "create", value: `Test Case ${count + 1}` });
+                    }}
+                    disabled={!selectedCaseEntry}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 shrink-0 bg-background text-xs"
+                    onClick={() => {
+                      if (!selectedCaseEntry) return;
+                      setCaseNameDialog({ mode: "rename", value: selectedCaseEntry.testCase.name });
+                    }}
+                    disabled={!selectedCaseEntry}
+                  >
+                    <PenLine className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 shrink-0 bg-background text-xs text-destructive"
+                    onClick={() => {
+                      if (selectedCaseEntry) setDeleteCaseOpen(true);
+                    }}
+                    disabled={!selectedCaseEntry}
+                  >
+                    <Trash className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </Panel>
           <Panel position="bottom-center">

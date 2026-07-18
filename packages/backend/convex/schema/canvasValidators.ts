@@ -11,8 +11,12 @@ import {
   sqsDataSchema,
   redisPubSubDataSchema,
   redisStreamsDataSchema,
-  edgeDataSchema 
+  edgeDataSchema,
+  simulationTestCaseSchema
 } from "@workspace/canvas/schemas";
+
+// Test Case Data Validator
+export const backendTestCaseDataValidator = zodToConvex(simulationTestCaseSchema);
 
 // Edge Data Validator
 export const backendEdgeDataValidator = zodToConvex(edgeDataSchema);

@@ -374,13 +374,14 @@ export type UIEventItem = {
   id: string;
   name: string;
   event?: string;
-  simulationCases?: SimulationTestCase[];
 };
 
-/** A named, repeatable input for a client-triggered simulation. */
+/** A global simulation scenario. */
 export type SimulationTestCase = {
   id: string;
   name: string;
+  targetNodeId: string;
+  targetEventId?: string;
   request?: {
     headers?: Record<string, string>;
     params?: Record<string, string>;

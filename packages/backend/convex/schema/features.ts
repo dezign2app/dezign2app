@@ -1,7 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { z } from "zod";
-import { backendNodeDataValidator, backendEdgeDataValidator } from "./canvasValidators";
+import { backendNodeDataValidator, backendEdgeDataValidator, backendTestCaseDataValidator } from "./canvasValidators";
 
 export const featureTables = {
   conversations: defineTable({
@@ -126,4 +126,13 @@ export const featureTables = {
     .index("by_project", ["projectId"])
     .index("by_project_node", ["projectId", "nodeId"])
     .index("by_node_event", ["nodeId", "eventId"]),
+
+  // Global project test cases
+  canvas_backend_test_cases: defineTable({
+    projectId: v.id("projects"),
+    testCaseId: v.string(),
+    data: backendTestCaseDataValidator,
+  })
+    .index("by_project", ["projectId"])
+    .index("by_project_test_case", ["projectId", "testCaseId"]),
 };

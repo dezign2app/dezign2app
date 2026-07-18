@@ -101,6 +101,11 @@ export const getBackendElements = query({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .collect();
 
+    const testCases = await ctx.db
+      .query("canvas_backend_test_cases")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+
     // Sort by fractionalIndex for correct ordering
     nodes.sort((a, b) => (a.fractionalIndex < b.fractionalIndex ? -1 : 1));
     edges.sort((a, b) => (a.fractionalIndex < b.fractionalIndex ? -1 : 1));
@@ -109,7 +114,8 @@ export const getBackendElements = query({
       nodes, 
       edges, 
       endpoints: endpoints.map(e => ({ ...e.data, nodeId: e.nodeId, id: e.endpointId })), 
-      events: events.map(e => ({ ...e.data, nodeId: e.nodeId, variant: e.variant, id: e.eventId })) 
+      events: events.map(e => ({ ...e.data, nodeId: e.nodeId, variant: e.variant, id: e.eventId })),
+      testCases: testCases.map(t => ({ ...t.data, id: t.testCaseId }))
     };
   },
 });
@@ -472,6 +478,58 @@ export const removeBackendEvent = mutation({
       .query("canvas_backend_events")
       .withIndex("by_node_event", (q) =>
         q.eq("nodeId", args.nodeId).eq("eventId", args.eventId)
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+  },
+});
+
+// ---------------------------------------------------------------------------
+// TEST CASES
+// ---------------------------------------------------------------------------
+
+export const upsertBackendTestCase = mutation({
+  args: {
+    projectId: v.id("projects"),
+    testCaseId: v.string(),
+    data: v.any(), // uses simulationTestCaseSchema
+  },
+  async handler(ctx, args) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Not authenticated");
+
+    const existing = await ctx.db
+      .query("canvas_backend_test_cases")
+      .withIndex("by_project_test_case", (q) =>
+        q.eq("projectId", args.projectId).eq("testCaseId", args.testCaseId)
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { data: args.data });
+    } else {
+      await ctx.db.insert("canvas_backend_test_cases", {
+        projectId: args.projectId,
+        testCaseId: args.testCaseId,
+        data: args.data,
+      });
+    }
+  },
+});
+
+export const removeBackendTestCase = mutation({
+  args: { projectId: v.id("projects"), testCaseId: v.string() },
+  async handler(ctx, args) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Not authenticated");
+
+    const existing = await ctx.db
+      .query("canvas_backend_test_cases")
+      .withIndex("by_project_test_case", (q) =>
+        q.eq("projectId", args.projectId).eq("testCaseId", args.testCaseId)
       )
       .unique();
 

@@ -3,9 +3,10 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id, Doc } from "@workspace/backend/_generated/dataModel";
 import { useBackendCanvasStore, parseResourceHandle } from "@/lib/stores/backendCanvasStore";
-import { BackendCanvasView, BackendNode, BackendEdge } from "@/types/canvas";
+import { BackendCanvasView, BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { migrateNodeDataToV2 } from "@workspace/canvas/migrations";
 import { BackendCanvasAdapter } from "@/lib/canvas-adapters/backendAdapter";
+import { useSimulationStore } from "@/lib/stores/simulationStore";
 
 export function useBackendSync(projectId: string, view: BackendCanvasView) {
   const {
@@ -114,6 +115,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     });
     
     setNodesAndEdges(nodesToSet, edgesToSet, initialElements.endpoints || [], initialElements.events || []);
+    useSimulationStore.getState().setTestCases(initialElements.testCases || []);
   }, [initialElements, setNodesAndEdges, view]);
 
   // Handle view changes: swap active positions for existing nodes

@@ -27,6 +27,19 @@ export const createProject = mutation({
       updatedAt: Date.now(),
     });
 
+    // Add a default global test case
+    await ctx.db.insert("canvas_backend_test_cases", {
+      projectId,
+      testCaseId: `case-${Date.now()}`,
+      data: {
+        id: `case-${Date.now()}`,
+        name: "Test Case 1",
+        targetNodeId: "",
+        request: { body: null },
+        enabled: true,
+      },
+    });
+
     return projectId;
   },
 });

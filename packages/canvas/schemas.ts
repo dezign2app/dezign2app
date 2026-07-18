@@ -512,3 +512,22 @@ export const edgeDataSchema = z.object({
   targetCardinality: z.enum(["1", "N"]).optional(),
   resourceKind: z.string().optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Simulation Test Case Schema
+// ---------------------------------------------------------------------------
+
+export const simulationTestCaseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  targetNodeId: z.string(),
+  targetEventId: z.string().optional(),
+  request: z.object({
+    headers: z.record(z.string()).optional(),
+    params: z.record(z.string()).optional(),
+    body: z.unknown().optional(),
+  }).optional(),
+  expectedStatus: z.number().optional(),
+  expectedBody: z.unknown().optional(),
+  enabled: z.boolean().optional(),
+});

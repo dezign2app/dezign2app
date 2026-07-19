@@ -5,7 +5,9 @@ import { MESSAGING_RESOURCE_TYPES, MESSAGING_NODE_TYPES } from "./constants";
 const ALL_BACKEND_NODE_TYPES = [
   "service", "database", "queue", "pubsub", "eventstream", "kafka", 
   "redis-streams", "sqs", "redis-pubsub", "redis-cache", "entity", 
-  "webClient", "external", "group", "db_ref", "storage"
+  "webClient", "external", "group", "db_ref", "storage",
+  "worker", "serverless", "search_index", "api_gateway", 
+  "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref"
 ] as const;
 
 export function isBackendNode(type: string): type is BackendNodeType {
@@ -64,7 +66,7 @@ export function classifyHandle(
 
   if (id.startsWith("actions-")) return "action-target";
 
-  if (nodeType === "database" || nodeType === "db_ref") {
+  if (nodeType === "database" || nodeType === "db_ref" || nodeType === "vector_db_ref") {
     if (id.startsWith("database-target") || handleDirection === "target") return "database-target";
     if (id.startsWith("database-source") || handleDirection === "source") return "database-source";
   }

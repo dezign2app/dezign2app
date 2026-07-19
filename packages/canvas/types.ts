@@ -117,13 +117,13 @@ export type BackendNodeType =
   // New node types
   | "worker"
   | "serverless"
-  | "vector_db"
   | "search_index"
   | "api_gateway"
   | "load_balancer"
   | "webhook"
   | "llm"
-  | "mcp_server";
+  | "mcp_server"
+  | "vector_db_ref";
 
 export type BackendNode = {
   id: string;
@@ -139,6 +139,10 @@ export type BackendNode = {
       isForeignKey?: boolean;
       isNotNull?: boolean;
       isUnique?: boolean;
+      references?: {
+        table: string;
+        column: string;
+      };
     }[];
     indexes?: {
       name: string;
@@ -200,7 +204,6 @@ export type BackendNode = {
     tableRef?: string; // Reference to an entity node ID
     graphPosition?: { x: number; y: number };
     techStack?: string;
-    dbType?: string;
     baseUrl?: string;
     cors?: boolean;
     corsOrigins?: string;
@@ -244,16 +247,19 @@ export type BackendNode = {
     concurrency?: number;
     retryPolicy?: string;
     maxRetries?: number;
+    // --- Entity Node ---
+    dbType?: "relational" | "document" | "vector";
+    embeddingModel?: string;
+    dimensions?: number;
+    metric?: "Cosine" | "Dot Product" | "Euclidean";
     // --- Serverless Node ---
     triggerType?: "HTTP" | "Event" | "CRON" | "Queue";
     runtime?: string;
     memoryMb?: number;
     timeoutSec?: number;
-    // --- Vector DB Node ---
-    collections?: { id: string; name: string }[];
-    dimensions?: number;
-    metric?: "Cosine" | "Dot Product" | "Euclidean";
-    embeddingModel?: string;
+    // --- Vector DB Ref Node ---
+    collectionRef?: string;
+    dbRef?: string;
     // --- Search Index Node ---
     searchIndexes?: { id: string; name: string }[];
     analyzer?: string;

@@ -8,13 +8,13 @@ import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 import { Textarea } from "@workspace/ui/components/textarea";
 
-export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   
-  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity" && n.data.dbType !== "vector")));
+  const vectorCollections = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity" && n.data.dbType === "vector")));
 
   // Derive which service endpoints connect to this database node
   const incomingEdges = edges.filter(e => e.target === id);
@@ -45,11 +45,11 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-xl bg-orange-500/10 text-orange-700 dark:text-orange-400")}>
+      <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-xl bg-violet-500/10 text-violet-700 dark:text-violet-400")}>
         <div className="flex items-center flex-1">
           <Database size={14} className="mr-2 shrink-0" />
           <div className="flex flex-col flex-1">
-             <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">Table Reference</span>
+             <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">Vector DB Ref</span>
           </div>
         </div>
         <div 
@@ -71,31 +71,35 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
       </div>
       
       <div className="p-2 flex flex-col gap-2">
-         <Select 
-           value={data.tableRef || ""} 
-           onValueChange={(val) => {
-             const entity = entities.find(e => e.id === val);
-             updateNode(id, { 
-               data: { 
-                 ...data, 
-                 tableRef: val, 
-                 label: entity?.data.label || "Table Ref",
-                 graphPosition: entity?.position
-               } 
-             });
-           }}
-         >
-           <SelectTrigger className="h-8 text-xs">
-             <SelectValue placeholder="Select a Table..." />
-           </SelectTrigger>
-           <SelectContent>
-             {entities.map(e => (
-               <SelectItem key={e.id} value={e.id}>{e.data.label || "Untitled"}</SelectItem>
-             ))}
-           </SelectContent>
+          <Select 
+            value={data.collectionRef || ""} 
+            onValueChange={(val) => {
+              const col = vectorCollections.find(c => c.id === val);
+              updateNode(id, { 
+                data: { 
+                  ...data, 
+                  collectionRef: val, 
+                  dbRef: undefined,
+                  label: col?.data?.label || "Vector Collection Ref",
+                } 
+              });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select a Collection..." />
+            </SelectTrigger>
+            <SelectContent>
+              {vectorCollections.length === 0 ? (
+                <div className="p-2 text-xs text-muted-foreground italic">No vector collections defined</div>
+              ) : (
+                vectorCollections.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.data.label || "Untitled Collection"}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
          </Select>
-
-
       </div>
 
       {/* Accessed By */}
@@ -105,7 +109,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
           {accessors.length === 0
             ? <span className="text-[10px] text-muted-foreground italic px-1">No connections</span>
             : accessors.map(acc => (
-                <div key={acc.id} className="text-xs font-medium truncate px-1 border-l-2 border-orange-500/50 ml-1">{acc.label}</div>
+                <div key={acc.id} className="text-xs font-medium truncate px-1 border-l-2 border-violet-500/50 ml-1">{acc.label}</div>
               ))
           }
         </div>
@@ -116,4 +120,3 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
     </div>
   );
 };
-

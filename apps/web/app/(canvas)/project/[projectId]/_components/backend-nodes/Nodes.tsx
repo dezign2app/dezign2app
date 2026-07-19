@@ -1,45 +1,248 @@
 import React, { useState } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { Server, Database, Container, Table2, User, Globe, Plus, Check, X, Trash2 } from "lucide-react";
+import { Database, Table2, User, Globe, Plus, Check, X, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { Switch } from "@workspace/ui/components/switch";
+import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { COLUMN_TYPES } from "@/lib/schema/columnTypes";
 import { SchemaGroupNode } from "./SchemaGroupNode";
 import { Textarea } from "@workspace/ui/components/textarea";
 
-const ensureUniqueColumnNames = (columns: NonNullable<BackendNode["data"]["columns"]>) => {
-  const seen = new Set<string>();
-  const result = [];
-  for (const col of columns) {
-    if (!col.name) {
-      result.push(col);
-      continue;
-    }
-    let finalName = col.name;
-    let count = 1;
-    while (seen.has(finalName.toLowerCase())) {
-      finalName = `${col.name}_${count}`;
-      count++;
-    }
-    seen.add(finalName.toLowerCase());
-    result.push({ ...col, name: finalName });
-  }
-  return result;
-};
+
 
 // Graph nodes (Service, Database, Queue, External, Actor) are now imported from GraphNodes.tsx
+
+
+
+type ColumnItem = NonNullable<BackendNode["data"]["columns"]>[0];
+
+interface ColumnRowProps {
+  col: ColumnItem;
+  index: number;
+  isEditing: boolean;
+  setEditingIndex: (idx: number | null) => void;
+  editingName: string;
+  setEditingName: (name: string) => void;
+  editingType: string;
+  setEditingType: (type: string) => void;
+  handleUpdate: (index: number, changes: Partial<ColumnItem>) => void;
+  handleDelete: (index: number) => void;
+  isVector: boolean;
+  nameError: boolean;
+  setNameError: (err: boolean) => void;
+}
+
+const ColumnRow = ({ 
+  col, 
+  index, 
+  isEditing, 
+  setEditingIndex, 
+  editingName, 
+  setEditingName, 
+  editingType, 
+  setEditingType, 
+  handleUpdate, 
+  handleDelete,
+  isVector,
+  nameError,
+  setNameError
+}: ColumnRowProps) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const saveInlineEdit = () => {
+    if (!editingName.trim()) {
+      handleDelete(index);
+      setEditingIndex(null);
+      return;
+    }
+    handleUpdate(index, { name: editingName.trim(), type: editingType });
+    setEditingIndex(null);
+  };
+
+  return (
+    <div className="flex flex-col px-3 py-1.5 border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag">
+      <Handle type="source" position={Position.Right} id={`source-${index}`} className="w-2 h-2 -right-1" style={{ top: '15px' }} />
+      <Handle type="target" position={Position.Left} id={`target-${index}`} className="w-2 h-2 -left-1" style={{ top: '15px' }} />
+      
+      {isEditing ? (
+        <div className="flex items-center gap-1 w-full nodrag">
+          <Input 
+            value={editingName} 
+            onChange={(e) => { setEditingName(e.target.value); setNameError(false); }} 
+            className={cn("h-6 text-xs flex-1 nodrag", nameError && "border-destructive")}
+            placeholder="Name"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveInlineEdit();
+              if (e.key === "Escape") setEditingIndex(null);
+            }}
+          />
+          <Select value={editingType} onValueChange={setEditingType}>
+            <SelectTrigger className="h-6 text-[10px] px-1.5 w-[80px] py-0 nodrag">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COLUMN_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground" onClick={saveInlineEdit}>
+             <Check size={14} />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => { 
+          setEditingIndex(index); 
+          setEditingName(col.name); 
+          setEditingType(col.type || "VARCHAR"); 
+          setNameError(false);
+        }}>
+          <div className="flex items-center gap-2 overflow-hidden">
+            {col.isPrimaryKey && <Badge className="text-[9px] px-1 rounded font-bold" variant="secondary">PK</Badge>}
+            {col.isForeignKey && <Badge className="text-[9px] px-1 rounded font-bold" variant="secondary">FK</Badge>}
+            <span className="font-medium truncate max-w-[120px]">{col.name}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-2 opacity-100 group-hover/row:opacity-100 transition-all">
+            <span className="text-muted-foreground truncate max-w-[60px]">{col.type}</span>
+            {col.isNotNull && <Badge className="text-[9px] px-1 rounded font-bold" variant="outline">NN</Badge>}
+            {col.isUnique && <Badge className="text-[9px] px-1 rounded font-bold" variant="outline">UQ</Badge>}
+            <div className="flex items-center gap-1">
+              <div className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}>
+                 {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </div>
+              <div className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(index); }}>
+                 <X size={14} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {expanded && !isEditing && (
+        <div className="flex flex-col gap-3 pt-3 mt-2 border-t cursor-default nodrag" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Primary Key</Label>
+            <Switch checked={!!col.isPrimaryKey} onCheckedChange={(val) => handleUpdate(index, { isPrimaryKey: val })} className="scale-75 origin-right" />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Not Null</Label>
+            <Switch checked={!!col.isNotNull} onCheckedChange={(val) => handleUpdate(index, { isNotNull: val })} className="scale-75 origin-right" />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Unique</Label>
+            <Switch checked={!!col.isUnique} onCheckedChange={(val) => handleUpdate(index, { isUnique: val })} className="scale-75 origin-right" />
+          </div>
+          <div className="flex flex-col gap-1.5 border-t pt-2 mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Foreign Key</Label>
+              <Switch checked={!!col.isForeignKey} onCheckedChange={(val) => handleUpdate(index, { isForeignKey: val })} className="scale-75 origin-right" />
+            </div>
+            {col.isForeignKey && (
+              <div className="flex items-center gap-1 mt-1">
+                <Input 
+                  className="h-6 text-[10px] px-1.5 flex-1 nodrag" 
+                  placeholder="Ref Table" 
+                  value={col.references?.table || ""} 
+                  onChange={e => handleUpdate(index, { references: { ...col.references, table: e.target.value, column: col.references?.column || "" } })} 
+                />
+                <Input 
+                  className="h-6 text-[10px] px-1.5 flex-1 nodrag" 
+                  placeholder="Ref Column" 
+                  value={col.references?.column || ""} 
+                  onChange={e => handleUpdate(index, { references: { ...col.references, table: col.references?.table || "", column: e.target.value } })} 
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface ColumnListProps {
+  nodeId: string;
+  items?: ColumnItem[];
+  updateNode: (id: string, changes: Partial<BackendNode>) => void;
+  data: BackendNode["data"];
+  isVector: boolean;
+}
+
+const ColumnList = ({ nodeId, items = [], updateNode, data, isVector }: ColumnListProps) => {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingType, setEditingType] = useState("VARCHAR");
+  const [nameError, setNameError] = useState(false);
+
+  const handleAdd = () => {
+    const newItems = [...items, { name: "", type: "VARCHAR" }];
+    updateNode(nodeId, { data: { ...data, columns: newItems } });
+    setEditingIndex(newItems.length - 1);
+    setEditingName("");
+    setEditingType("VARCHAR");
+    setNameError(false);
+  };
+
+  const handleUpdate = (index: number, changes: Partial<ColumnItem>) => {
+    let newCols = [...items];
+    if (changes.name && changes.name.trim() !== "" && changes.name !== items[index]?.name) {
+       const isDuplicate = newCols.some((c, idx) => idx !== index && c.name.toLowerCase() === changes.name!.toLowerCase());
+       if (isDuplicate) {
+         setNameError(true);
+         return;
+       }
+    }
+    newCols[index] = { ...newCols[index]!, ...changes };
+    updateNode(nodeId, { data: { ...data, columns: newCols } });
+  };
+
+  const handleDelete = (index: number) => {
+    let newCols = [...items];
+    newCols.splice(index, 1);
+    updateNode(nodeId, { data: { ...data, columns: newCols } });
+  };
+
+  return (
+    <div className="flex flex-col">
+      <div className="px-3 py-1 bg-secondary/40 border-t border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex justify-between items-center group">
+        Columns
+        <div className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all" onClick={handleAdd}>
+          <Plus size={12} />
+        </div>
+      </div>
+      <div className="flex flex-col">
+        {items.map((col, i) => (
+          <ColumnRow
+            key={i}
+            col={col}
+            index={i}
+            isEditing={editingIndex === i}
+            setEditingIndex={setEditingIndex}
+            editingName={editingName}
+            setEditingName={setEditingName}
+            editingType={editingType}
+            setEditingType={setEditingType}
+            handleUpdate={handleUpdate}
+            handleDelete={handleDelete}
+            isVector={isVector}
+            nameError={nameError && editingIndex === i}
+            setNameError={setNameError}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 // --- Entity Node ---
 export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const setNodesPendingDeletion = useBackendCanvasStore((s) => s.setNodesPendingDeletion);
-  const [editingCol, setEditingCol] = useState<number | null>(null);
-  const [editingColName, setEditingColName] = useState("");
-  const [colNameError, setColNameError] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState(data.label);
   const [isEditingName, setIsEditingName] = useState(data.label === "");
@@ -55,24 +258,6 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
 
   const columns = data.columns || [];
   const indexes = data.indexes || [];
-
-  const addColumn = () => {
-    updateNode(id, {
-      data: {
-        ...data,
-        columns: [...columns, { name: "", type: "VARCHAR" }]
-      }
-    });
-    setEditingCol(columns.length);
-    setEditingColName("");
-    setColNameError(false);
-  };
-
-  const updateColumn = (index: number, changes: Partial<NonNullable<BackendNode["data"]["columns"]>[0]>) => {
-    const newCols = [...columns];
-    newCols[index] = { ...newCols[index], ...changes } as NonNullable<BackendNode["data"]["columns"]>[0];
-    updateNode(id, { data: { ...data, columns: newCols } });
-  };
 
   const addIndex = () => {
     updateNode(id, {
@@ -164,12 +349,16 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     <div 
       ref={nodeRef}
       tabIndex={-1}
-      className={cn("shadow-md rounded-xl bg-card border-2 min-w-[250px] max-w-[350px] overflow-hidden focus:outline-none", selected ? "border-primary" : "border-border")}
+      className={cn("shadow-md rounded-xl bg-card border-2 min-w-[250px] max-w-[350px] focus:outline-none", selected ? "border-primary" : "border-border")}
     >
       <Handle type="target" position={Position.Top} className="w-2 h-2" />
-      <div className="px-3 py-2 bg-secondary/80 border-b flex items-center justify-between group">
+      <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-[10px]", data.dbType === "vector" ? "bg-violet-500/10 text-violet-700 dark:text-violet-400" : "bg-secondary/80")}>
         <div className="flex items-center flex-1">
-          <Table2 size={14} className="mr-2 text-muted-foreground shrink-0" />
+          {data.dbType === "vector" ? (
+            <Database size={14} className="mr-2 shrink-0" />
+          ) : (
+            <Table2 size={14} className="mr-2 text-muted-foreground shrink-0" />
+          )}
           {isEditingName ? (
             <div className="flex flex-1 items-center gap-1">
               <Input 
@@ -232,180 +421,60 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         />
       </div>
 
-      <div className="flex flex-col">
-        {columns.map((col, i) => {
-          const isEditing = editingCol === i;
-          return (
-            <div key={i} className="flex flex-col px-3 py-1.5 border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20">
-              <Handle type="source" position={Position.Right} id={`source-${i}`} className="w-2 h-2 -right-1" style={{ top: '50%' }} />
-              <Handle type="target" position={Position.Left} id={`target-${i}`} className="w-2 h-2 -left-1" style={{ top: '50%' }} />
-              
-              {isEditing ? (
-                <div className="flex items-center gap-2 w-full">
-                  <Input 
-                    value={editingColName} 
-                    onChange={(e) => {
-                      setEditingColName(e.target.value);
-                      if (colNameError) setColNameError(false);
-                    }} 
-                    className={cn("h-6 text-xs w-24", colNameError && "border-destructive focus-visible:ring-destructive")}
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const trimmedName = editingColName.trim();
-                        let newCols = [...columns];
-                        if (trimmedName === "") {
-                          if (newCols[i]?.isPrimaryKey) {
-                            newCols[i].name = "_id";
-                            updateNode(id, { data: { ...data, columns: newCols } });
-                          } else {
-                            newCols.splice(i, 1);
-                            updateNode(id, { data: { ...data, columns: newCols } });
-                          }
-                          setEditingCol(null);
-                        } else {
-                          const isDuplicate = newCols.some((c, idx) => idx !== i && c.name.toLowerCase() === trimmedName.toLowerCase());
-                          if (isDuplicate) {
-                            setColNameError(true);
-                            return;
-                          }
-                          newCols[i]!.name = trimmedName;
-                          newCols.splice(i + 1, 0, { name: "", type: "VARCHAR" });
-                          updateNode(id, { data: { ...data, columns: newCols } });
-                          setEditingCol(i + 1);
-                          setEditingColName("");
-                          setColNameError(false);
-                        }
-                      }
-                      if (e.key === "Escape") {
-                        e.preventDefault();
-                        e.currentTarget.blur();
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const related = e.relatedTarget as HTMLElement | null;
-                      if (related?.closest('[role="combobox"]')) return;
-                      if (related?.closest('[role="listbox"]')) return;
-                      
-                      const trimmedName = editingColName.trim();
-                      let newCols = [...columns];
-                      if (trimmedName === "") {
-                        if (newCols[i]?.isPrimaryKey) {
-                          newCols[i].name = "_id";
-                          updateNode(id, { data: { ...data, columns: newCols } });
-                          setEditingCol(null);
-                        } else {
-                          newCols.splice(i, 1);
-                          updateNode(id, { data: { ...data, columns: newCols } });
-                          setEditingCol(null);
-                        }
-                      } else {
-                        const isDuplicate = newCols.some((c, idx) => idx !== i && c.name.toLowerCase() === trimmedName.toLowerCase());
-                        if (isDuplicate) {
-                          setColNameError(true);
-                          setTimeout(() => e.target.focus(), 0);
-                          return;
-                        }
-                        newCols[i]!.name = trimmedName;
-                        updateNode(id, { data: { ...data, columns: newCols } });
-                        setEditingCol(null);
-                      }
-                    }}
-                  />
-                  <Select 
-                    value={col.type} 
-                    onValueChange={(val) => {
-                      const trimmedName = editingColName.trim();
-                      let newCols = [...columns];
-                      if (trimmedName === "") {
-                        if (col.isPrimaryKey && newCols[i]) {
-                          newCols[i].name = "_id";
-                          newCols[i].type = val;
-                        } else {
-                          newCols.splice(i, 1);
-                        }
-                        updateNode(id, { data: { ...data, columns: newCols } });
-                        setEditingCol(null);
-                      } else {
-                        const isDuplicate = newCols.some((c, idx) => idx !== i && c.name.toLowerCase() === trimmedName.toLowerCase());
-                        if (isDuplicate) {
-                          setColNameError(true);
-                          newCols[i]!.type = val;
-                          updateNode(id, { data: { ...data, columns: newCols } });
-                          return;
-                        }
-                        newCols[i]!.name = trimmedName;
-                        newCols[i]!.type = val;
-                        updateNode(id, { data: { ...data, columns: newCols } });
-                        setEditingCol(null);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-6 text-xs flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COLUMN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div 
-                  className="flex items-center justify-between w-full cursor-pointer"
-                  onClick={() => {
-                    setEditingCol(i);
-                    setEditingColName(col.name);
-                    setColNameError(false);
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    {col.isPrimaryKey && <Badge className="text-[9px] px-1 rounded font-bold" variant="secondary">PK</Badge>}
-                    {col.isForeignKey && <Badge className="text-[9px] px-1 rounded font-bold" variant="secondary">FK</Badge>}
-                    <span className="font-medium truncate max-w-[100px]">{col.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-muted-foreground">{col.type}</span>
-                    {col.isNotNull && <Badge className="text-[9px] px-1 rounded font-bold" variant="outline">NN</Badge>}
-                    {col.isUnique && <Badge className="text-[9px] px-1 rounded font-bold" variant="outline">UQ</Badge>}
-                    <div 
-                      className="opacity-0 group-hover/row:opacity-100 flex items-center justify-center p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newCols = [...columns];
-                        newCols.splice(i, 1);
-                        updateNode(id, { data: { ...data, columns: newCols } });
-                      }}
-                    >
-                      <X size={12} className={`${col.isPrimaryKey && "opacity-0"}`}/>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      
-      <div className="bg-secondary/20 p-1.5 border-t">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full h-6 text-xs text-muted-foreground hover:text-foreground" 
-          onClick={addColumn}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <Plus size={12} className="mr-1" /> Add column
-        </Button>
-      </div>
-
-      {/* Indexes Section */}
-      {indexes.length > 0 && (
-        <div className="px-3 py-1 bg-secondary/40 border-t border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Indexes
+      {/* Vector Collection Settings */}
+      {data.dbType === "vector" && (
+        <div className="flex flex-col gap-2 p-3 bg-secondary/10 border-b border-border/50 nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Embedding Model</span>
+            <Input
+              className="h-6 text-xs w-[140px] bg-background"
+              placeholder="text-embedding-3-small"
+              value={data.embeddingModel || ""}
+              onChange={(e) => updateNode(id, { data: { ...data, embeddingModel: e.target.value } })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Dimensions</span>
+            <Input
+              type="number"
+              className="h-6 text-xs w-20 text-right bg-background"
+              placeholder="1536"
+              value={data.dimensions ?? ""}
+              onChange={(e) => updateNode(id, { data: { ...data, dimensions: parseInt(e.target.value) || undefined } })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Metric</span>
+            <Select
+              value={data.metric || "Cosine"}
+              onValueChange={(v) => updateNode(id, { data: { ...data, metric: v as typeof data.metric } })}
+            >
+              <SelectTrigger className="h-6 text-xs w-[120px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Cosine" className="text-xs">Cosine</SelectItem>
+                <SelectItem value="Dot Product" className="text-xs">Dot Product</SelectItem>
+                <SelectItem value="Euclidean" className="text-xs">Euclidean</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
+
+      <ColumnList 
+        nodeId={id} 
+        items={columns} 
+        updateNode={updateNode} 
+        data={data} 
+        isVector={data.dbType === "vector"} 
+      />
+
+      {/* Indexes Section */}
+      <div className="px-3 py-1 bg-secondary/40 border-t border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex justify-between items-center group">
+        Indexes
+        <div className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all" onClick={addIndex}>
+          <Plus size={12} />
+        </div>
+      </div>
       <div className="flex flex-col">
         {indexes.map((idxObj, i) => {
           const isEditing = editingIndex === i;
@@ -521,17 +590,7 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         })}
       </div>
       
-      <div className="bg-secondary/20 p-1.5 border-t">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full h-6 text-xs text-muted-foreground hover:text-foreground" 
-          onClick={addIndex}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <Plus size={12} className="mr-1" /> Add index
-        </Button>
-      </div>
+      <div className="h-2 w-full border-t border-transparent rounded-b-[10px]" />
       
       <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
     </div>
@@ -556,13 +615,13 @@ import {
   // New nodes
   WorkerNode,
   ServerlessNode,
-  VectorDBNode,
   SearchIndexNode,
   APIGatewayNode,
   LoadBalancerNode,
   WebhookNode,
   LLMNode,
   MCPServerNode,
+  VectorDBRefNode,
 } from "./graph-nodes";
 import { Badge } from "@workspace/ui/components/badge";
 
@@ -586,11 +645,11 @@ export const nodeTypes = {
   // New nodes
   worker: WorkerNode,
   serverless: ServerlessNode,
-  vector_db: VectorDBNode,
   search_index: SearchIndexNode,
   api_gateway: APIGatewayNode,
   load_balancer: LoadBalancerNode,
   webhook: WebhookNode,
   llm: LLMNode,
   mcp_server: MCPServerNode,
+  vector_db_ref: VectorDBRefNode,
 };

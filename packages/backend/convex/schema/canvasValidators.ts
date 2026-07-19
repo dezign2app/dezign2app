@@ -18,13 +18,13 @@ import {
   // New nodes
   workerDataSchema,
   serverlessDataSchema,
-  vectorDbDataSchema,
   searchIndexDataSchema,
   apiGatewayDataSchema,
   loadBalancerDataSchema,
   webhookDataSchema,
   llmDataSchema,
   mcpServerDataSchema,
+  vectorDbRefDataSchema,
 } from "@workspace/canvas/schemas";
 
 // Test Case Data Validator
@@ -51,13 +51,13 @@ export const backendNodeDataValidator = v.union(
   // New nodes
   zodToConvex(workerDataSchema),
   zodToConvex(serverlessDataSchema),
-  zodToConvex(vectorDbDataSchema),
   zodToConvex(searchIndexDataSchema),
   zodToConvex(apiGatewayDataSchema),
   zodToConvex(loadBalancerDataSchema),
   zodToConvex(webhookDataSchema),
   zodToConvex(llmDataSchema),
   zodToConvex(mcpServerDataSchema),
+  zodToConvex(vectorDbRefDataSchema),
   // Fallback for completely empty data (allowable in some updates)
   v.object({
     label: v.optional(v.string()),

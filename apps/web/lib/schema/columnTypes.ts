@@ -15,4 +15,5 @@ export const COLUMN_TYPES = [
   "FLOAT",
   "DECIMAL",
   "NUMERIC",
+  "VECTOR",
 ];

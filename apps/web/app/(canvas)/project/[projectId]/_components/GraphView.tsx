@@ -80,7 +80,7 @@ export function GraphView({ projectId }: GraphViewProps) {
     });
   };
 
-  const handleAddGraphNode = (type: "service" | "db_ref" | "queue" | "pubsub" | "eventstream" | "kafka" | "redis-streams" | "sqs" | "redis-pubsub" | "redis-cache" | "webClient" | "external" | "storage" | "worker" | "serverless" | "vector_db" | "search_index" | "api_gateway" | "load_balancer" | "webhook" | "llm" | "mcp_server", label: string) => {
+  const handleAddGraphNode = (type: "service" | "db_ref" | "queue" | "pubsub" | "eventstream" | "kafka" | "redis-streams" | "sqs" | "redis-pubsub" | "redis-cache" | "webClient" | "external" | "storage" | "worker" | "serverless" | "vector_db_ref" | "search_index" | "api_gateway" | "load_balancer" | "webhook" | "llm" | "mcp_server", label: string) => {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 100, center.y - 100, nodes);
     addNode({
@@ -104,7 +104,6 @@ export function GraphView({ projectId }: GraphViewProps) {
         sqsBroker: type === 'sqs' ? {} : undefined,
         tasks: type === 'worker' ? [] : undefined,
         endpoints: type === 'serverless' ? [] : undefined,
-        collections: type === 'vector_db' ? [] : undefined,
         searchIndexes: type === 'search_index' ? [] : undefined,
         routes: type === 'api_gateway' ? [] : undefined,
         targetGroups: type === 'load_balancer' ? [] : undefined,
@@ -328,7 +327,7 @@ export function GraphView({ projectId }: GraphViewProps) {
             <HardDrive className="w-3.5 h-3.5 mr-2 text-amber-500" />
             Storage Bucket
           </Button>
-          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0" onClick={() => handleAddGraphNode('vector_db', 'Vector DB')}>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0" onClick={() => handleAddGraphNode('vector_db_ref', 'Vector DB')}>
             <Database className="w-3.5 h-3.5 mr-2 text-violet-500" />
             Vector DB
           </Button>

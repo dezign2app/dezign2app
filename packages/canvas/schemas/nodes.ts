@@ -52,6 +52,10 @@ export const dbRefDataInputSchema = dbRefDataSchema;
 
 export const entityDataSchema = baseNodeDataSchema.extend({
   description: z.string().optional(),
+  dbType: z.enum(["relational", "vector"]).optional(),
+  embeddingModel: z.string().optional(),
+  dimensions: z.number().optional(),
+  metric: z.enum(["Cosine", "Dot Product", "Euclidean"]).optional(),
   columns: z.array(z.object({
     name: z.string(),
     type: z.string(),
@@ -64,6 +68,11 @@ export const entityDataSchema = baseNodeDataSchema.extend({
       column: z.string(),
     }).optional(),
   })),
+  indexes: z.array(z.object({
+    name: z.string(),
+    columns: z.string(),
+    isUnique: z.boolean().optional(),
+  })).optional(),
 }).strict();
 
 export const entityColumnInputSchema = z.object({
@@ -81,6 +90,10 @@ export const entityColumnInputSchema = z.object({
 
 export const entityDataInputSchema = baseNodeDataSchema.extend({
   description: z.string().optional(),
+  dbType: z.enum(["relational", "vector"]).optional(),
+  embeddingModel: z.string().optional(),
+  dimensions: z.number().optional(),
+  metric: z.enum(["Cosine", "Dot Product", "Euclidean"]).optional(),
   columns: z.array(entityColumnInputSchema),
 });
 
@@ -297,21 +310,13 @@ export const serverlessDataSchema = baseNodeDataSchema.extend({
 }).strict();
 export type ServerlessNodeData = z.infer<typeof serverlessDataSchema>;
 
-// --- Vector DB Node ---
-export const vectorDbDataSchema = baseNodeDataSchema.extend({
-  description:    z.string().optional(),
-  // Core Resources
-  collections:    z.array(resourceItemSchema).optional(),
-  // Implementation
-  implementation: z.enum(["Pinecone", "Qdrant", "Milvus", "Weaviate", "pgvector", "Chroma", "Other"]).optional(),
-  // Configuration (Advanced)
-  dimensions:     z.number().optional(),
-  metric:         z.enum(["Cosine", "Dot Product", "Euclidean"]).optional(),
-  embeddingModel: z.string().optional(),                  // "text-embedding-3-small", "bge-large", etc.
-  // Tags
-  tags:           z.array(z.string()).optional(),
+// --- Vector DB Ref Node (Graph View) ---
+export const vectorDbRefDataSchema = baseNodeDataSchema.extend({
+  description: z.string().optional(),
+  collectionRef: z.string().optional(),
+  dbRef: z.string().optional(),
 }).strict();
-export type VectorDbNodeData = z.infer<typeof vectorDbDataSchema>;
+export type VectorDbRefNodeData = z.infer<typeof vectorDbRefDataSchema>;
 
 // --- Search Index Node ---
 export const searchIndexDataSchema = baseNodeDataSchema.extend({
@@ -421,11 +426,11 @@ export const nodeDataSchemas: Record<string, z.ZodTypeAny> = {
   // New nodes
   worker: workerDataSchema,
   serverless: serverlessDataSchema,
-  vector_db: vectorDbDataSchema,
   search_index: searchIndexDataSchema,
   api_gateway: apiGatewayDataSchema,
   load_balancer: loadBalancerDataSchema,
   webhook: webhookDataSchema,
   llm: llmDataSchema,
   mcp_server: mcpServerDataSchema,
+  vector_db_ref: vectorDbRefDataSchema,
 };

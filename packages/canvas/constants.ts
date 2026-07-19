@@ -12,7 +12,6 @@ export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   // New node types
   worker: "worker",
   serverless: "serverless",
-  vector_db: "vector_db",
   search_index: "search_index",
   api_gateway: "api_gateway",
   load_balancer: "load_balancer",

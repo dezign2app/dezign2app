@@ -9,7 +9,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { Button } from "@workspace/ui/components/button";
-import { PlusSquare, LayoutGrid } from "lucide-react";
+import { PlusSquare, LayoutGrid, Database } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
@@ -34,6 +34,7 @@ export function SchemaView({ projectId }: SchemaViewProps) {
     onEdgesChange,
     onConnect,
     addTableNode,
+    addNode,
   } = useBackendCanvasStore();
   
   const { handleNodesChange, handleMoveEnd } = useCanvasHandlers(projectId, "schema");
@@ -51,6 +52,23 @@ export function SchemaView({ projectId }: SchemaViewProps) {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 75, center.y - 30, nodes);
     addTableNode(undefined, { x, y });
+  };
+
+  const handleAddVectorDb = () => {
+    const center = getCenterPosition();
+    const { x, y } = getOffsetPosition(center.x - 75, center.y - 30, nodes);
+    addNode({
+      id: crypto.randomUUID(),
+      type: "entity",
+      position: { x, y },
+      data: {
+        label: "Vector Collection",
+        dbType: "vector",
+        columns: [
+          { name: "_id", type: "UUID", isPrimaryKey: true }
+        ],
+      }
+    });
   };
 
   const schemaNodes = nodes
@@ -93,6 +111,10 @@ export function SchemaView({ projectId }: SchemaViewProps) {
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={handleAddTable}>
             <PlusSquare className="w-3.5 h-3.5 mr-2" />
             Table
+          </Button>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={handleAddVectorDb}>
+            <Database className="w-3.5 h-3.5 mr-2 text-violet-500" />
+            Vector Collection
           </Button>
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={() => {
              // runAutoLayout()

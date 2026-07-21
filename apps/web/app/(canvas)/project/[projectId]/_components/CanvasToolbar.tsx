@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
+import { Label } from "@workspace/ui/components/label";
 
 interface CanvasToolbarProps {
   projectName: string;
@@ -107,26 +108,28 @@ export function CanvasToolbar({
       </div>
 
       <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={handleClear}
-          disabled={isClearing || isSyncing}
-        >
-          <Trash2 className={`w-4 h-4 mr-2 ${isClearing ? "animate-pulse" : ""}`} />
-          {isClearing ? "Clearing..." : "Clear MCP"}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          onClick={handleSync}
-          disabled={isSyncing || isClearing}
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-          {isSyncing ? "Syncing..." : "Sync MCP"}
-        </Button>
+        <div className="flex items-center gap-2 bg-sidebar py-1 px-2 rounded-lg">
+          <Label>MCP</Label>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={isSyncing || isClearing}
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleClear}
+              disabled={isClearing || isSyncing}
+            >
+              <Trash2 className={`w-4 h-4 ${isClearing ? "animate-pulse" : ""}`} />
+            </Button>
+          </div>
+        </div>
         <Button
           variant={aiPanelOpen ? "secondary" : "ghost"}
           size="sm"

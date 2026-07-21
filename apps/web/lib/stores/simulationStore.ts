@@ -61,6 +61,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           activeEdgeIds: first?.edgeId ? [first.edgeId] : [],
           currentNodeId: first?.nodeId,
           currentEdgeId: first?.edgeId,
+          terminalOpen: true,
         });
 
         trace.slice(1).forEach((entry, offset) => {

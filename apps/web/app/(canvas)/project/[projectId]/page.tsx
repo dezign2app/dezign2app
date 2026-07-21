@@ -21,7 +21,7 @@ export default function ProjectCanvasPage({ params }: { params: Promise<{ projec
     parseAsStringEnum<BackendCanvasView>(["graph", "sequence", "schema"]).withDefault("graph")
   );
 
-  const [aiPanelOpen, setAiPanelOpen] = useState(true);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   // Fetch project basic info to show in toolbar
   const project = useQuery(api.projects.getProjectById, { 

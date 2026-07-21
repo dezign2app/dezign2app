@@ -19,6 +19,8 @@ import { useBackendSync } from "./hooks/useBackendSync";
 import { SchemaView } from "./SchemaView";
 import { GraphView } from "./GraphView";
 import { SequenceView } from "./SequenceView";
+import { useChatStore } from "@/app/(protected)/_components/chat/chat-store";
+import { useSimulationStore } from "@/lib/stores/simulationStore";
 
 interface BackendCanvasProps {
   projectId: string;
@@ -41,6 +43,11 @@ function Flow({ projectId, view }: BackendCanvasProps) {
 }
 
 export function BackendCanvas(props: BackendCanvasProps) {
+  React.useEffect(() => {
+    useChatStore.setState({ showAIPopup: false });
+    useSimulationStore.setState({ terminalOpen: false });
+  }, []);
+
   if (!props.projectId) return null;
   
   const nodesPendingDeletion = useBackendCanvasStore(s => s.nodesPendingDeletion);

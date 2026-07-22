@@ -4,7 +4,7 @@ import { api } from "@workspace/backend/_generated/api";
 import { Id, Doc } from "@workspace/backend/_generated/dataModel";
 import { useBackendCanvasStore, parseResourceHandle } from "@/lib/stores/backendCanvasStore";
 import { BackendCanvasView, BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { migrateNodeDataToV2 } from "@workspace/canvas/migrations";
+
 import { BackendCanvasAdapter } from "@/lib/canvas-adapters/backendAdapter";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { z } from "zod";
@@ -55,7 +55,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       let activePosition = row.data?.position ?? row.position;
       return {
         id: row.nodeId,
-        type: row.type,
+        type: row.type as BackendNode["type"],
         position: activePosition,
         data: {
           ...row.data,
@@ -63,8 +63,8 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
         },
         fractionalIndex: row.fractionalIndex,
         parentId: row.data?.parentId,
-      };
-    }).map((node) => migrateNodeDataToV2(node as BackendNode));
+      } as BackendNode;
+    });
     
     const store = useBackendCanvasStore.getState();
     const pendingNodeIds = new Set(store.pendingNodeUpserts.map((n) => n.id));

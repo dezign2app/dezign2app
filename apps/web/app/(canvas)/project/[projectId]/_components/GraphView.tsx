@@ -9,7 +9,6 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { Button } from "@workspace/ui/components/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Input } from "@workspace/ui/components/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import {
@@ -207,74 +206,6 @@ export function GraphView({ projectId }: GraphViewProps) {
         <Background gap={12} size={1} />
         <Controls />
         <MiniMap />
-        <Panel position="top-center">
-          <div className="flex items-center gap-2 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Test case</span>
-            <Select
-              value={selectedCaseId || "none"}
-              onValueChange={(value) => {
-                if (value === "none") return;
-                selectTestCase(value);
-              }}
-            >
-              <SelectTrigger className="h-7 w-[190px] text-xs"><SelectValue placeholder="Select test case" /></SelectTrigger>
-              <SelectContent>
-                {testCases.length === 0 ? (
-                  <SelectItem value="none">No saved test cases</SelectItem>
-                ) : testCases.map((testCase) => (
-                  <SelectItem key={testCase.id} value={testCase.id}>
-                    {testCase.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="group flex items-center overflow-hidden transition-all duration-300">
-              <Button variant="outline" size="sm" className="h-7 w-7 p-0 shrink-0 bg-background text-xs cursor-default">
-                <EllipsisVertical className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-              </Button>
-              <div className="flex items-center gap-2 max-w-0 opacity-0 overflow-hidden transition-all duration-300 ease-in-out group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-2">
-
-                <Button variant="outline" size="sm" className="h-7 px-2 shrink-0 bg-background text-xs" onClick={simulation.toggleTerminal}>
-                  <TerminalSquare className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 shrink-0 bg-background text-xs"
-                  onClick={() => {
-                    const count = testCases.length;
-                    setCaseNameDialog({ mode: "create", value: `Test Case ${count + 1}` });
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 shrink-0 bg-background text-xs"
-                  onClick={() => {
-                    if (!selectedCaseEntry) return;
-                    setCaseNameDialog({ mode: "rename", value: selectedCaseEntry.name });
-                  }}
-                  disabled={!selectedCaseEntry}
-                >
-                  <PenLine className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 shrink-0 bg-background text-xs text-destructive"
-                  onClick={() => {
-                    if (selectedCaseEntry) setDeleteCaseOpen(true);
-                  }}
-                  disabled={!selectedCaseEntry}
-                >
-                  <Trash className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Panel>
         <Panel position="top-right" className="flex gap-2 flex-col">
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs" onClick={() => handleLayout("TB")}>
             <LayoutTemplate className="w-3.5 h-3.5 mr-2" />

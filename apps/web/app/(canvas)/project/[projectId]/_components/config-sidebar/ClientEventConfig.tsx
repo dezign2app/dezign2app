@@ -103,9 +103,7 @@ export const ClientEventConfig = ({ id, nodeId }: ClientEventConfigProps) => {
     if (endpoint.queryParams) endpoint.queryParams.forEach(p => { if (p.name) inferred[p.name] = p.type || "string"; });
     if (endpoint.headers) endpoint.headers.forEach(h => { if (h.name) inferred[h.name] = h.type || "string"; });
     
-    if (endpoint.requestBody?.fields) {
-      endpoint.requestBody.fields.forEach(f => { if (f.name) inferred[f.name] = f.type || "string"; });
-    } else if (endpoint.requestBody?.rawJson) {
+    if (endpoint.requestBody?.rawJson) {
        try {
          const parsed = JSON.parse(endpoint.requestBody.rawJson);
          Object.assign(inferred, parsed);

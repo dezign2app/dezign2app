@@ -15,7 +15,7 @@ export const publishedEventSchema = z.object({
   publishedWhen: z.string().default("after-processing"),
   brokerNodeId: z.string().default(""),
   messagingResourceId: z.string().default(""),
-  payloadSchema: schemaModelSchema.default({ id: "dummy", fields: [] }),
+  payloadSchema: schemaModelSchema.default({ id: "dummy" }),
   version: schemaVersionEnum.default("v1"),
   category: eventCategoryEnum.default("DOMAIN"),
   delivery: deliveryGuaranteeEnum.default("AT_LEAST_ONCE"),

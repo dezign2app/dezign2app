@@ -134,7 +134,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       z.array(fullEventSchema).parse(initialElements.events || []),
       z.array(fullIdentityProviderSchema).parse(initialElements.identityProviders || [])
     );
-    useSimulationStore.getState().setTestCases(initialElements.testCases || []);
+    useSimulationStore.getState().setTestCases((initialElements.testCases || []) as any);
   }, [initialElements, setNodesAndEdges, view]);
 
   // Handle view changes: swap active positions for existing nodes

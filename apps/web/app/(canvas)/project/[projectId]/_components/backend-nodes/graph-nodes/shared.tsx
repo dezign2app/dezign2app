@@ -7,10 +7,34 @@ import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { BackendNode, Endpoint, Schema, AnyMessagingResource } from "@/types/canvas";
+import { BackendNode, Endpoint, Schema, AnyMessagingResource, Parameter, JSONValue } from "@/types/canvas";
 import { ParameterEditor, SchemaEditor, ProcessingStepsEditor } from "./Editors";
 
 export const generateId = () => Math.random().toString(36).substring(2, 9);
+
+export function endpointInputParams(endpoint: Endpoint): Parameter[] {
+  if (endpoint.params?.length) return endpoint.params.map((param) => ({ ...param, value: param.value ?? param.defaultValue ?? "" }));
+  return [...(endpoint.pathParams ?? []), ...(endpoint.queryParams ?? [])].map((param) => ({
+    ...param,
+    key: param.name,
+    value: param.value ?? param.defaultValue ?? "",
+  }));
+}
+
+export function endpointBodyTemplate(endpoint: Endpoint): string {
+  if (endpoint.body) return endpoint.body;
+  if (endpoint.requestBody?.rawJson) return endpoint.requestBody.rawJson;
+  const fields = endpoint.requestBody?.fields ?? [];
+  if (fields.length === 0) return "";
+  const valueFor = (type: string) => type === "number" ? 0 : type === "boolean" ? false : type === "array" ? [] : type === "object" ? {} : "";
+  return JSON.stringify(Object.fromEntries(fields.map((field) => [field.name, valueFor(field.type)])), null, 2);
+}
+
+export function getInitialBody(endpoint: Endpoint): JSONValue | undefined {
+  const template = endpointBodyTemplate(endpoint);
+  if (!template) return undefined;
+  try { return JSON.parse(template) as JSONValue; } catch { return undefined; }
+}
 
 export const LocalInput = ({ value, onChange, ...props }: React.ComponentProps<typeof Input>) => {
   const [localValue, setLocalValue] = useState(value);

@@ -192,6 +192,7 @@ export const clientEventInputSchema = z.object({
   id: z.string().optional().describe("Unique identifier for this event"),
   name: z.string().describe("Logical name of the action (e.g., 'sendMessage', 'fetchData')"),
   event: z.string().optional().describe("The DOM event that triggers it"),
+  schema: z.string().optional().describe("Input schema for the API call"),
   targetNodeId: z.string().optional().describe("If this event triggers an API call, specify the target service node ID to AUTOMATICALLY create an edge"),
   targetEndpointId: z.string().optional().describe("If this event triggers an API call, specify the target endpoint ID on the service node to AUTOMATICALLY create an edge"),
   simulationCases: z.array(z.object({
@@ -213,6 +214,7 @@ export const webClientDataSchema = simpleDataSchema.extend({
     id: z.string().optional(),
     name: z.string(),
     event: z.string().optional(),
+    schema: z.string().optional(),
     simulationCases: z.array(z.object({
       id: z.string(),
       name: z.string(),

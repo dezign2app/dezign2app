@@ -24,10 +24,7 @@ export function endpointInputParams(endpoint: Endpoint): Parameter[] {
 export function endpointBodyTemplate(endpoint: Endpoint): string {
   if (endpoint.body) return endpoint.body;
   if (endpoint.requestBody?.rawJson) return endpoint.requestBody.rawJson;
-  const fields = endpoint.requestBody?.fields ?? [];
-  if (fields.length === 0) return "";
-  const valueFor = (type: string) => type === "number" ? 0 : type === "boolean" ? false : type === "array" ? [] : type === "object" ? {} : "";
-  return JSON.stringify(Object.fromEntries(fields.map((field) => [field.name, valueFor(field.type)])), null, 2);
+  return "";
 }
 
 export function getInitialBody(endpoint: Endpoint): JSONValue | undefined {
@@ -532,8 +529,8 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
     const hasDesc = desc.trim().length > 0;
     
     const schema = item.payloadSchema as Schema | undefined;
-    const fields = schema?.fields;
-    const hasSchema = (fields?.length || 0) > 0;
+    const rawJson = schema?.rawJson;
+    const hasSchema = (rawJson?.trim().length || 0) > 0;
     
     const logic = item.handlerLogic as string | undefined;
     const hasLogic = (logic?.trim().length || 0) > 0;

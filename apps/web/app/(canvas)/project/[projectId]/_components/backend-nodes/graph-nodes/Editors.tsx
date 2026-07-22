@@ -194,93 +194,6 @@ export const ParameterEditor = ({
   );
 };
 
-const TabbedJsonEditorLayout = ({
-  title,
-  defaultTab,
-  rawJsonValue, 
-  onRawJsonChange,
-  onParsedJsonChange,
-  formContent,
-}: {
-  title: string;
-  defaultTab: "form" | "raw";
-  rawJsonValue: string;
-  onRawJsonChange?: (val: string) => void;
-  onParsedJsonChange?: (parsed: JSONValue) => void;
-  formContent: React.ReactNode;
-}) => {
-  const [activeTab, setActiveTab] = React.useState<"form" | "raw">(defaultTab);
-  const [rawInput, setRawInput] = React.useState<string | undefined>(undefined);
-  const [jsonError, setJsonError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
-
-  const handleRawChange = (val: string) => {
-    setRawInput(val);
-    if (onRawJsonChange) onRawJsonChange(val);
-
-    if (!val.trim()) {
-      setJsonError(null);
-      if (onParsedJsonChange) onParsedJsonChange({});
-      return;
-    }
-    try {
-      const parsed = JSON.parse(val);
-      setJsonError(null);
-      if (onParsedJsonChange) onParsedJsonChange(parsed as JSONValue);
-    } catch (err) {
-      setJsonError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const handleRawBlur = () => {
-    if (jsonError || rawInput === undefined) return;
-    const finalVal = rawInput.trim();
-    if (onRawJsonChange) onRawJsonChange(finalVal);
-    if (onParsedJsonChange) {
-      try {
-        const parsed = finalVal ? JSON.parse(finalVal) : {};
-        onParsedJsonChange(parsed as JSONValue);
-      } catch {}
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2 border p-3 rounded-lg bg-secondary/5">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "form" | "raw")} className="w-full flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
-          <TabsList className="h-7 bg-background">
-            <TabsTrigger value="form" className="text-[10px] px-2">Form</TabsTrigger>
-            <TabsTrigger value="raw" className="text-[10px] px-2">Raw JSON</TabsTrigger>
-          </TabsList>
-        </div>
-        
-        <TabsContent value="form" className="mt-0">
-          {formContent}
-        </TabsContent>
-        
-        <TabsContent value="raw" className="mt-0 flex flex-col gap-2">
-          <LocalTextarea
-            className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-            placeholder={'{\n  "key": "value"\n}'}
-            value={rawInput !== undefined ? rawInput : rawJsonValue}
-            onChange={(e) => handleRawChange(e.target.value)}
-            onBlur={handleRawBlur}
-          />
-          {jsonError && (
-            <span className="text-[10px] text-destructive font-mono bg-destructive/10 px-2 py-1 rounded">
-              Invalid JSON: {jsonError}
-            </span>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
 export const SchemaEditor = ({
   title,
   schema,
@@ -292,24 +205,47 @@ export const SchemaEditor = ({
   onChange: (schema: Schema) => void;
   fieldOptions?: string[];
 }) => {
-  const safeSchema = schema || { id: generateId(), fields: [] };
-  const isRawValue = !!safeSchema.rawJson && safeSchema.fields.length === 0;
+  const safeSchema = schema || { id: generateId() };
+  const initialString = safeSchema.rawJson || "";
+  const [rawInput, setRawInput] = React.useState<string | undefined>(undefined);
+  const [jsonError, setJsonError] = React.useState<string | null>(null);
+
+  const handleRawChange = (val: string) => {
+    setRawInput(val);
+    onChange({ ...safeSchema, rawJson: val });
+    
+    if (!val.trim()) {
+      setJsonError(null);
+      return;
+    }
+    try {
+      JSON.parse(val);
+      setJsonError(null);
+    } catch (err) {
+      setJsonError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   return (
-    <TabbedJsonEditorLayout
-      title={title}
-      defaultTab={isRawValue ? "raw" : "form"}
-      rawJsonValue={safeSchema.rawJson || ""}
-      onRawJsonChange={(rawStr) => onChange({ ...safeSchema, rawJson: rawStr })}
-      formContent={
-        <ParameterEditor 
-          title="Fields" 
-          parameters={safeSchema.fields} 
-          onChange={(fields) => onChange({ ...safeSchema, fields })}
-          fieldOptions={fieldOptions}
+    <div className="flex flex-col gap-2 border p-3 rounded-lg bg-secondary/5">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
+      </div>
+      
+      <div className="flex flex-col gap-2 mt-1">
+        <LocalTextarea
+          className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          placeholder={'{\n  "key": "value"\n}'}
+          value={rawInput !== undefined ? rawInput : initialString}
+          onChange={(e) => handleRawChange(e.target.value)}
         />
-      }
-    />
+        {jsonError && (
+          <span className="text-[10px] text-destructive font-mono bg-destructive/10 px-2 py-1 rounded">
+            Invalid JSON: {jsonError}
+          </span>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -352,18 +288,6 @@ export const JsonPayloadEditor = ({
         onChange(parsed);
         return;
       } catch {}
-    }
-    
-    if (schema?.fields) {
-      const mock: Record<string, any> = {};
-      schema.fields.forEach(f => {
-        if (f.type === "string") mock[f.name] = "string";
-        else if (f.type === "number") mock[f.name] = 0;
-        else if (f.type === "boolean") mock[f.name] = false;
-        else if (f.type === "array") mock[f.name] = [];
-        else mock[f.name] = {};
-      });
-      onChange(mock);
     }
   };
 

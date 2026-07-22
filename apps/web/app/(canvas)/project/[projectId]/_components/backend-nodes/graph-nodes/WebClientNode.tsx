@@ -55,7 +55,7 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint, sourceNod
     return endpointInputParams(endpoint);
   });
   const [body, setBody] = useState<JSONValue | undefined>(() => getInitialBody(endpoint));
-  const bodyFields = endpoint.requestBody?.fields ?? [];
+
 
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<{ headers?: Record<string, string>; status?: number; statusText?: string; body?: unknown; trace?: SimulationTraceEntry[] } | null>(null);

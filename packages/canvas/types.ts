@@ -549,7 +549,6 @@ export type Parameter = {
 
 export type Schema = {
   id: string;
-  fields: Parameter[];
   rawJson?: string;
 };
 

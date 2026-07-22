@@ -85,25 +85,7 @@ function resolveObject(value: unknown, context: RuntimeContext): unknown {
 }
 
 function validateSchema(value: unknown, schema?: Schema): string[] {
-  if (!schema?.fields?.length) return [];
-  if (!value || typeof value !== "object" || Array.isArray(value)) return ["Expected an object response."];
-  const object = value as Record<string, unknown>;
-  const errors: string[] = [];
-  for (const field of schema.fields) {
-    const fieldValue = object[field.name];
-    if (field.required && (fieldValue === undefined || fieldValue === null)) {
-      errors.push(`Missing required output field: ${field.name}`);
-      continue;
-    }
-    if (fieldValue === undefined || fieldValue === null) continue;
-    const valid = field.type === "number" ? typeof fieldValue === "number"
-      : field.type === "boolean" ? typeof fieldValue === "boolean"
-      : field.type === "array" ? Array.isArray(fieldValue)
-      : field.type === "object" ? typeof fieldValue === "object" && !Array.isArray(fieldValue)
-      : typeof fieldValue === "string";
-    if (!valid) errors.push(`Output field ${field.name} must be ${field.type}.`);
-  }
-  return errors;
+  return [];
 }
 
 function findEndpointDatabaseRefs(serviceId: string, endpoint: Endpoint, nodes: BackendNode[], edges: BackendEdge[]) {

@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { ChevronLeft } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { EndpointConfig } from "./config-sidebar/EndpointConfig";
+import { ClientEventConfig } from "./config-sidebar/ClientEventConfig";
 import { EventConfig } from "./config-sidebar/EventConfig";
 import { TaskConfig } from "./config-sidebar/TaskConfig";
 import { SearchIndexConfig } from "./config-sidebar/SearchIndexConfig";
@@ -115,6 +116,7 @@ export const ConfigSidebar = () => {
          type === 'searchIndex' ? <SearchIndexConfig id={id} nodeId={nodeId} sourceId={activeConfigItem.sourceId} /> :
          type === 'authRule' ? <AuthRuleConfig id={id} nodeId={nodeId} /> :
          type === 'identityProvider' ? <IdentityProviderConfig id={id} nodeId={nodeId} /> :
+         type === 'clientEvent' ? <ClientEventConfig id={id} nodeId={nodeId} /> :
          <EventConfig id={id} nodeId={nodeId} />}
       </SheetContent>
     </Sheet>

@@ -25,6 +25,7 @@ export const schemaModelSchema = z.object({
 export const schemaModelInputSchema = z.object({
   id: z.string().optional(),
   fields: z.array(parameterInputSchema),
+  rawJson: z.string().optional(),
 });
 
 export const processingStepSchema = z.object({

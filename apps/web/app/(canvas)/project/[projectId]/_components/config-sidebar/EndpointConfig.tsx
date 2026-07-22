@@ -216,7 +216,6 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
                           schema={event.payloadSchema}
                           value={eventMock}
                           onChange={(val) => updateEventMock(event.id!, val)}
-                          emptyText="No schema defined for this event. Use Raw JSON."
                         />
                       </div>
                     );

@@ -619,6 +619,7 @@ export type UIEventItem = {
   id: string;
   name: string;
   event?: string;
+  schema?: string;
 };
 
 export type JSONPrimitive = string | number | boolean | null;

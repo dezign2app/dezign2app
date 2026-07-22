@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NodeProps, Position, Handle } from "@xyflow/react";
-import { Globe, Plus, X, Play, Send, Loader2 } from "lucide-react";
+import { Globe, Plus, X, Play, Send, Loader2, Settings } from "lucide-react";
 import { BackendNode, Endpoint, Parameter, UIEventItem, JSONValue } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
@@ -31,29 +31,7 @@ import { useParams } from "next/navigation";
 
 const EVENT_OPTIONS = [...WEB_CLIENT_EVENTS];
 
-function endpointInputParams(endpoint: Endpoint): Parameter[] {
-  if (endpoint.params?.length) return endpoint.params.map((param) => ({ ...param, value: param.value ?? param.defaultValue ?? "" }));
-  return [...(endpoint.pathParams ?? []), ...(endpoint.queryParams ?? [])].map((param) => ({
-    ...param,
-    key: param.name,
-    value: param.value ?? param.defaultValue ?? "",
-  }));
-}
-
-function endpointBodyTemplate(endpoint: Endpoint): string {
-  if (endpoint.body) return endpoint.body;
-  if (endpoint.requestBody?.rawJson) return endpoint.requestBody.rawJson;
-  const fields = endpoint.requestBody?.fields ?? [];
-  if (fields.length === 0) return "";
-  const valueFor = (type: string) => type === "number" ? 0 : type === "boolean" ? false : type === "array" ? [] : type === "object" ? {} : "";
-  return JSON.stringify(Object.fromEntries(fields.map((field) => [field.name, valueFor(field.type)])), null, 2);
-}
-
-function getInitialBody(endpoint: Endpoint): JSONValue | undefined {
-  const template = endpointBodyTemplate(endpoint);
-  if (!template) return undefined;
-  try { return JSON.parse(template) as JSONValue; } catch { return undefined; }
-}
+import { endpointInputParams, getInitialBody } from "./shared";
 
 interface TriggerDialogProps {
   isOpen: boolean;
@@ -306,7 +284,6 @@ const TriggerDialog = ({ isOpen, onClose, event, targetNode, endpoint, sourceNod
               schema={endpoint.requestBody}
               value={body}
               onChange={(val) => setBody(val)}
-              emptyText="No fields defined in request body schema. Use Raw JSON to mock the payload."
             />
           </div>
 
@@ -406,6 +383,7 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
 
 
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
+  const setActiveConfigItem = useBackendCanvasStore((s) => s.setActiveConfigItem);
 
   const getLinkedEndpoint = (eventId: string) => {
     const edge = edges.find((e) => e.source === nodeId && e.sourceHandle === `events-${eventId}`);
@@ -559,7 +537,7 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
                       setEditName(item.name || "");
                       const evt = item.event || item.name || "";
                       const isStandard = (EVENT_OPTIONS as readonly string[]).includes(evt);
-                      setEditEvent((isStandard ? evt : (evt ? "other" : "click")) as any); 
+                      setEditEvent((isStandard ? evt : (evt ? "other" : "click"))); 
                       setCustomEvent(isStandard ? "" : evt);
                   }}
                 >
@@ -581,8 +559,13 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
                          <Play size={10} className="fill-green-600 text-green-600" />
                        </button>
                      )}
-                     <div className="opacity-0 group-hover/row:opacity-100 flex items-center justify-center p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
-                        <X size={12} />
+                     <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
+                       <div className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer" onClick={(e) => { e.stopPropagation(); setActiveConfigItem({ type: 'clientEvent', id: item.id, nodeId }); }}>
+                          <Settings size={12} />
+                       </div>
+                       <div className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive cursor-pointer" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
+                          <X size={12} />
+                       </div>
                      </div>
                    </div>
                 </div>

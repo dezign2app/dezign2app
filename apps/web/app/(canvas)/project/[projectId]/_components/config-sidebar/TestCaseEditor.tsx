@@ -124,42 +124,60 @@ export const TestCaseEditor = ({
          <JsonPayloadEditor title="Request Body" schema={endpoint.requestBody} value={body} onChange={setBody} />
       </div>
 
-      {mockables.length > 0 && mockables.map(m => (
-         <div key={m.id} className="flex flex-col gap-2 pt-3 border-t">
-           <h5 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-             <span className="normal-case font-mono bg-background border px-1 rounded text-[9px]">{m.label}</span>
-             <span className="px-1 py-0.5 rounded text-[8px] uppercase tracking-wider font-mono border bg-secondary text-muted-foreground">{m.description}</span>
-           </h5>
-           <div className="flex items-center gap-2">
-             <Label className="text-xs font-mono text-muted-foreground w-24">Status</Label>
-             <Input 
-               type="number" 
-               placeholder="200" 
-               className="h-7 text-xs font-mono bg-background w-24"
-               value={m.isInitial ? (expectedStatus || "") : (mocks[m.id]?.status || "")}
-               onChange={(e) => {
-                  const val = e.target.value ? parseInt(e.target.value) : undefined;
-                  if (m.isInitial) {
-                      setExpectedStatus(val);
-                  } else {
-                      setMocks(prev => ({ ...prev, [m.id]: { ...(prev[m.id] || { returnData: {} }), status: val || 200 } }));
-                  }
-               }}
-             />
-           </div>
-           <JsonPayloadEditor
-              title="Expected Output"
-              value={m.isInitial ? expectedBody : mocks[m.id]?.returnData}
-              onChange={(val) => {
-                  if (m.isInitial) {
-                      setExpectedBody(val);
-                  } else {
-                      setMocks(prev => ({ ...prev, [m.id]: { ...(prev[m.id] || { status: 200 }), returnData: val } }));
-                  }
-              }}
-           />
-         </div>
-      ))}
+      {mockables.length > 0 && mockables.map(m => {
+        const isReferenceOnly = ["messaging", "database", "vectordb", "cache", "storage", "search"].includes(m.type);
+
+        let badgeColor = "bg-secondary text-muted-foreground border-border";
+        if (m.type === "messaging") badgeColor = "bg-teal-500/10 text-teal-600 border-teal-500/20";
+        if (m.type === "database") badgeColor = "bg-amber-500/10 text-amber-600 border-amber-500/20";
+        if (m.type === "vectordb") badgeColor = "bg-purple-500/10 text-purple-600 border-purple-500/20";
+        if (m.type === "cache") badgeColor = "bg-red-500/10 text-red-600 border-red-500/20";
+        if (m.type === "storage") badgeColor = "bg-blue-500/10 text-blue-600 border-blue-500/20";
+        if (m.type === "search") badgeColor = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+
+        return (
+          <div key={m.id} className="flex flex-col gap-2 pt-3 border-t">
+            <h5 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+              <span className="normal-case font-mono bg-background border px-1 rounded text-[9px]">{m.label}</span>
+              <span className={`px-1 py-0.5 rounded text-[8px] uppercase tracking-wider font-mono border ${badgeColor}`}>
+                {m.description} {isReferenceOnly ? "(Pass-Through)" : ""}
+              </span>
+            </h5>
+            {!isReferenceOnly && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-mono text-muted-foreground w-24">Status</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="200" 
+                    className="h-7 text-xs font-mono bg-background w-24"
+                    value={m.isInitial ? (expectedStatus || "") : (mocks[m.id]?.status || "")}
+                    onChange={(e) => {
+                       const val = e.target.value ? parseInt(e.target.value) : undefined;
+                       if (m.isInitial) {
+                           setExpectedStatus(val);
+                       } else {
+                           setMocks(prev => ({ ...prev, [m.id]: { ...(prev[m.id] || { returnData: {} }), status: val || 200 } }));
+                       }
+                    }}
+                  />
+                </div>
+                <JsonPayloadEditor
+                   title="Expected Output"
+                   value={m.isInitial ? expectedBody : mocks[m.id]?.returnData}
+                   onChange={(val) => {
+                       if (m.isInitial) {
+                           setExpectedBody(val);
+                       } else {
+                           setMocks(prev => ({ ...prev, [m.id]: { ...(prev[m.id] || { status: 200 }), returnData: val } }));
+                       }
+                   }}
+                />
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   )
 }

@@ -53,7 +53,34 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
   const parentNode = nodes.find((n) => n.id === nodeId);
   const event = parentNode?.data?.events?.find((e: UIEventItem) => e.id === id) as UIEventItem | undefined;
   const targetNode = nodes.find(n => n.id === targetNodeId);
-  const endpoint = endpoints.find(e => e.id === endpointId) || targetNode?.data?.endpoints?.find((e: Endpoint) => e.id === endpointId) || (targetNode?.data?.routeGroups?.flatMap((g: any) => g.endpoints || []) as Endpoint[]).find(e => e.id === endpointId);
+  const messagingTypes = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+  
+  let endpoint = endpoints.find(e => e.id === endpointId) || targetNode?.data?.endpoints?.find((e: Endpoint) => e.id === endpointId) || (targetNode?.data?.routeGroups?.flatMap((g: any) => g.endpoints || []) as Endpoint[]).find(e => e.id === endpointId);
+
+  if (!endpoint && targetNode) {
+    if (messagingTypes.includes(targetNode.type)) {
+      const resourceList = targetNode.data?.topics || targetNode.data?.queues || targetNode.data?.streams || targetNode.data?.channels || [];
+      const resource = resourceList.find((r: any) => r.id === endpointId) || resourceList[0];
+      const name = resource?.name || targetNode.data?.label || "Topic";
+      endpoint = {
+        id: resource?.id || endpointId,
+        name: name,
+        type: targetNode.type.toUpperCase(),
+        summary: `Messaging Topic on ${targetNode.data?.label || "Kafka"}`,
+      };
+    } else {
+      const consumedEv = targetNode.data?.consumedEvents?.find((e: any) => e.id === endpointId);
+      const publishedEv = targetNode.data?.publishedEvents?.find((e: any) => e.id === endpointId);
+      const ev = consumedEv || publishedEv;
+      if (ev) {
+        endpoint = {
+          id: ev.id,
+          name: ev.name || "Event Handler",
+          type: "EVENT",
+        };
+      }
+    }
+  }
 
   const triggerTestCases = event ? testCases.filter(tc => tc.targetEventId === event.id) : [];
 
@@ -224,79 +251,236 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
     
     const mockables: { id: string, label: string, type: string, description: string, isInitial?: boolean }[] = [];
     
+    const isMessagingTarget = ["KAFKA", "SQS", "REDIS-STREAMS", "REDIS-PUBSUB", "PUBSUB", "EVENTSTREAM", "QUEUE"].includes(endpoint.type || "");
+
     mockables.push({
       id: endpoint.id,
-      label: `${targetNode.data?.label || 'Service'}: ${endpoint.type || 'GET'} ${endpoint.name}`,
-      type: "endpoint",
-      description: "Target Endpoint",
+      label: isMessagingTarget 
+        ? `${targetNode.data?.label || 'Broker'}: ${endpoint.name}`
+        : `${targetNode.data?.label || 'Service'}: ${endpoint.type || 'GET'} ${endpoint.name}`,
+      type: isMessagingTarget ? "messaging" : "endpoint",
+      description: isMessagingTarget ? "Target Broker / Topic" : "Target Endpoint",
       isInitial: true
     });
 
-    const visitedEndpoints = new Set<string>();
-    
-    let currentEndpoint: Endpoint | undefined = endpoint;
-    let currentService: BackendNode | undefined = targetNode;
+    const isEdgeFromCurrentEndpoint = (edge: any, service: BackendNode, currentEp?: Endpoint) => {
+      if (!currentEp) return true;
 
-    while (currentEndpoint && currentService && !visitedEndpoints.has(currentEndpoint.id)) {
-      visitedEndpoints.add(currentEndpoint.id);
-      
-      const outgoingEdges = edges.filter(e => 
-         e.source === currentService!.id && 
-         (e.sourceHandle === `endpoint-out-${currentEndpoint!.id}` || e.sourceHandle === `endpoints-out-${currentEndpoint!.id}`)
-      );
+      const epId = currentEp.id;
+      const messagingTypes = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
 
-      for (const edge of outgoingEdges) {
-         if (!edge.targetHandle?.startsWith("endpoint-in-") && edge.targetHandle !== "database-target") {
-             const extNode = nodes.find(n => n.id === edge.target);
-             if (extNode && extNode.type === "external") {
-                 if (!mockables.find(m => m.id === extNode.id)) {
-                     const apiName = extNode.data?.label || "External API";
-                     mockables.push({
-                       id: extNode.id,
-                       label: `External / ${apiName}`,
-                       type: extNode.type,
-                       description: "External API"
-                     });
-                 }
-             }
-         }
+      if (messagingTypes.includes(service.type)) {
+        const pubTopicId = edge.sourceHandle?.split(":").pop();
+        if (pubTopicId && pubTopicId !== epId) return false;
+        return true;
       }
+
+      if (
+        edge.sourceHandle === `endpoint-out-${epId}` ||
+        edge.sourceHandle === `endpoints-out-${epId}` ||
+        edge.sourceHandle === "database-target" ||
+        edge.targetHandle === "database-target" ||
+        edge.targetHandle === "database-source"
+      ) {
+        return true;
+      }
+
+      if (edge.sourceHandle?.startsWith("publishedEvents-out-")) {
+        const pubEventId = edge.sourceHandle.replace("publishedEvents-out-", "");
+        if (pubEventId === epId) return true;
+        const epPubEvents = currentEp.publishedEvents || [];
+        if (epPubEvents.some((pe: any) => pe.id === pubEventId)) return true;
+      }
+
+      return false;
+    };
+
+    const visitedKeys = new Set<string>();
+    const queue: { service: BackendNode; endpoint?: Endpoint }[] = [{ service: targetNode, endpoint }];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const serviceId = current.service.id;
+      const epId = current.endpoint?.id;
       
-      const nextEdge = outgoingEdges.find(e => e.targetHandle?.startsWith("endpoint-in-"));
-      if (nextEdge) {
-         const nextEndpointId = nextEdge.targetHandle?.split("-in-").pop();
-         const nextService = nodes.find(n => n.id === nextEdge.target);
-         if (nextService && nextEndpointId) {
-             let nextEndpoint: Endpoint | undefined = endpoints.find(ep => ep.nodeId === nextService.id && ep.id === nextEndpointId);
-             if (!nextEndpoint) nextEndpoint = nextService.data?.endpoints?.find((ep: Endpoint) => ep.id === nextEndpointId);
-             if (!nextEndpoint && nextService.data?.routeGroups) {
-                for (const group of nextService.data.routeGroups) {
-                  nextEndpoint = group.endpoints?.find((ep: Endpoint) => ep.id === nextEndpointId);
+      const key = `${serviceId}:${epId || "node"}`;
+      if (visitedKeys.has(key)) continue;
+      visitedKeys.add(key);
+
+      // If this is a dequeued consumer or downstream endpoint (not the initial target endpoint), push its label to mockables first
+      if (current.endpoint && current.endpoint.id !== endpoint.id) {
+        if (!mockables.find(m => m.id === current.endpoint!.id)) {
+          mockables.push({
+            id: current.endpoint.id,
+            label: `${current.service.data?.label || 'Service'} / ${current.endpoint.type || 'EVENT'} ${current.endpoint.name}`,
+            type: current.endpoint.type === "EVENT" ? "event" : "endpoint",
+            description: current.endpoint.type === "EVENT" ? "Event Consumer" : "Service Endpoint"
+          });
+        }
+      }
+
+      // 1. Check explicitly declared database refs on current.endpoint FIRST
+      const declaredDbIds = [
+        ...(current.endpoint?.databaseNodeIds ?? []),
+        ...(current.endpoint?.databaseNodeId ? [current.endpoint.databaseNodeId] : []),
+      ];
+      for (const dbId of declaredDbIds) {
+        const dbNode = nodes.find(n => n.id === dbId);
+        if (dbNode && !mockables.find(m => m.id === dbNode.id)) {
+          const isVector = dbNode.type === "vector_db_ref";
+          mockables.push({
+            id: dbNode.id,
+            label: `${isVector ? "Vector DB" : "Database"} / ${dbNode.data?.label || "Table"}`,
+            type: isVector ? "vectordb" : "database",
+            description: isVector ? "Vector DB Table" : "Database Table"
+          });
+        }
+      }
+
+      // Find outgoing edges strictly from this service AND endpoint
+      const outgoingEdges = edges.filter(e => e.source === serviceId && isEdgeFromCurrentEndpoint(e, current.service, current.endpoint));
+
+      // Check DB/Vector DB nodes connected via edges FIRST
+      for (const edge of outgoingEdges) {
+        const target = nodes.find(n => n.id === edge.target);
+        if (!target) continue;
+        const isDbOrRef = ["database", "db_ref", "vector_db_ref", "redis-cache", "storage", "search_index"].includes(target.type);
+        if (isDbOrRef && !mockables.find(m => m.id === target.id)) {
+          let typeKey = "database";
+          let desc = "Database Table";
+          let prefix = "Database";
+
+          if (target.type === "vector_db_ref") {
+            typeKey = "vectordb";
+            desc = "Vector DB Table";
+            prefix = "Vector DB";
+          } else if (target.type === "redis-cache") {
+            typeKey = "cache";
+            desc = "Redis Cache";
+            prefix = "Cache";
+          } else if (target.type === "storage") {
+            typeKey = "storage";
+            desc = "Object Storage";
+            prefix = "Storage";
+          } else if (target.type === "search_index") {
+            typeKey = "search";
+            desc = "Search Index";
+            prefix = "Search Index";
+          }
+
+          mockables.push({
+            id: target.id,
+            label: `${prefix} / ${target.data?.label || "Table"}`,
+            type: typeKey,
+            description: desc
+          });
+        }
+      }
+
+      // 2. Next, process External APIs and Direct HTTP/Event service connections
+      for (const edge of outgoingEdges) {
+        const target = nodes.find(n => n.id === edge.target);
+        if (!target) continue;
+
+        if (target.type === "external") {
+          if (!mockables.find(m => m.id === target.id)) {
+            const apiName = target.data?.label || "External API";
+            mockables.push({
+              id: target.id,
+              label: `External / ${apiName}`,
+              type: target.type,
+              description: "External API"
+            });
+          }
+        } else if (target.type === "service") {
+          const isEndpointEdge = edge.targetHandle?.startsWith("endpoint-in-");
+          const isEventEdge = edge.targetHandle?.startsWith("consumedEvents-in-");
+
+          if (isEndpointEdge || isEventEdge) {
+            const nextId = edge.targetHandle?.replace(/^(endpoint|consumedEvents)-in-/, "");
+            if (nextId) {
+              let nextEndpoint: Endpoint | undefined = endpoints.find(ep => ep.nodeId === target.id && ep.id === nextId);
+              if (!nextEndpoint) nextEndpoint = target.data?.endpoints?.find((ep: Endpoint) => ep.id === nextId);
+              if (!nextEndpoint && target.data?.routeGroups) {
+                for (const group of target.data.routeGroups) {
+                  nextEndpoint = group.endpoints?.find((ep: Endpoint) => ep.id === nextId);
                   if (nextEndpoint) break;
                 }
-             }
-             
-             if (nextEndpoint) {
-                 if (!mockables.find(m => m.id === nextEndpoint!.id)) {
-                    mockables.push({
-                      id: nextEndpoint.id,
-                      label: `${nextService.data?.label || 'Service'} / ${nextEndpoint.type || 'GET'} ${nextEndpoint.name}`,
-                      type: "endpoint",
-                      description: "Service Endpoint"
-                    });
-                 }
-                 currentEndpoint = nextEndpoint;
-                 currentService = nextService;
-             } else {
-                 currentEndpoint = undefined;
-             }
-         } else {
-             currentEndpoint = undefined;
-         }
-      } else {
-         currentEndpoint = undefined;
+              }
+
+              if (nextEndpoint) {
+                if (!mockables.find(m => m.id === nextEndpoint!.id)) {
+                  mockables.push({
+                    id: nextEndpoint.id,
+                    label: `${target.data?.label || 'Service'} / ${nextEndpoint.type || 'GET'} ${nextEndpoint.name}`,
+                    type: isEventEdge ? "event" : "endpoint",
+                    description: isEventEdge ? "Event Consumer" : "Service Endpoint"
+                  });
+                }
+                queue.push({ service: target, endpoint: nextEndpoint });
+              }
+            }
+          }
+        }
+      }
+
+      // 3. Next, process Messaging Broker connections (Kafka, PubSub, Queue)
+      for (const edge of outgoingEdges) {
+        const target = nodes.find(n => n.id === edge.target);
+        if (!target) continue;
+
+        const isMessaging = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"].includes(target.type);
+        if (isMessaging) {
+          const resourceId = edge.targetHandle?.includes(":") ? edge.targetHandle.split(":").pop() : edge.targetHandle?.split("-in-").pop();
+          const resourceList = target.data?.topics || target.data?.queues || target.data?.streams || target.data?.channels || [];
+          const resource = resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+          const topicName = resource?.name || target.data?.label || "Topic";
+          const mockId = resource?.id || target.id;
+
+          if (!mockables.find(m => m.id === mockId)) {
+            mockables.push({
+              id: mockId,
+              label: `${target.data?.label || "Kafka"} / ${topicName}`,
+              type: "messaging",
+              description: "Message Broker"
+            });
+          }
+
+          // Follow consumers connected specifically to this topic/broker
+          const consumerEdges = edges.filter(ce => {
+            if (ce.source !== target.id) return false;
+            const subTopicId = ce.sourceHandle?.split(":").pop();
+            if (subTopicId && resourceId && subTopicId !== resourceId) return false;
+            return true;
+          });
+
+          for (const cEdge of consumerEdges) {
+            const consumerNode = nodes.find(n => n.id === cEdge.target);
+            if (consumerNode && consumerNode.type === "service") {
+              const consumedEventId = cEdge.targetHandle?.replace("consumedEvents-in-", "");
+              let consumerEp: Endpoint | undefined = endpoints.find(ep => ep.nodeId === consumerNode.id && ep.id === consumedEventId);
+              if (!consumerEp) consumerEp = consumerNode.data?.endpoints?.find((ep: Endpoint) => ep.id === consumedEventId);
+              
+              if (consumerEp) {
+                // Enqueue consumer service so it is dequeued and pushed to mockables in its own turn with its DB tables
+                queue.push({ service: consumerNode, endpoint: consumerEp });
+              } else {
+                const consumerEpId = consumedEventId || consumerNode.id;
+                if (!mockables.find(m => m.id === consumerEpId)) {
+                  mockables.push({
+                    id: consumerEpId,
+                    label: `${consumerNode.data?.label || "Service"} / ${consumedEventId || "Consumer"}`,
+                    type: "event",
+                    description: "Event Consumer"
+                  });
+                }
+              }
+            }
+          }
+        }
       }
     }
+
     return mockables;
   };
   

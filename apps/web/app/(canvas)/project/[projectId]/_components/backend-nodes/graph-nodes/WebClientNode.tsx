@@ -59,6 +59,47 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
       return getLinkedEndpoint(targetEventId, edge.target, depth + 1);
     }
 
+    // Check if target is a messaging / broker node (e.g. Kafka, Queue, PubSub)
+    const messagingTypes: string[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+    if (messagingTypes.includes(targetNode.type)) {
+      const resourceId = edge.targetHandle.includes(":")
+        ? edge.targetHandle.split(":").pop()
+        : edge.targetHandle.split("-in-").pop();
+      const resourceList =
+        targetNode.data?.topics ||
+        targetNode.data?.queues ||
+        targetNode.data?.streams ||
+        targetNode.data?.channels ||
+        [];
+      const resource = resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+      const name = resource?.name || targetNode.data?.label || "Topic";
+      const endpoint: Endpoint = {
+        id: resource?.id || targetNode.id,
+        name: name,
+        type: targetNode.type.toUpperCase(),
+        summary: `Messaging Topic on ${targetNode.data?.label || "Kafka"}`,
+      };
+      return { targetNode, endpoint };
+    }
+
+    // Check if target handle is a consumed or published event on a service node
+    if (
+      edge.targetHandle.startsWith("consumedEvents-in-") ||
+      edge.targetHandle.startsWith("publishedEvents-out-") ||
+      edge.targetHandle.startsWith("publishedEvents-in-")
+    ) {
+      const eventIdMatch = edge.targetHandle.replace(/^(consumedEvents|publishedEvents)-(in|out)-/, "");
+      const consumedEv = targetNode.data?.consumedEvents?.find((e: any) => e.id === eventIdMatch);
+      const publishedEv = targetNode.data?.publishedEvents?.find((e: any) => e.id === eventIdMatch);
+      const ev = consumedEv || publishedEv;
+      const endpoint: Endpoint = {
+        id: ev?.id || eventIdMatch,
+        name: ev?.name || "Event Handler",
+        type: "EVENT",
+      };
+      return { targetNode, endpoint };
+    }
+
     const parts = edge.targetHandle.split("-in-");
     const endpointId = parts[parts.length - 1];
     if (!endpointId) return null;

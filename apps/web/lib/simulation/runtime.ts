@@ -307,11 +307,38 @@ export async function simulateEndpoint(args: {
 }
 
 function findEndpoint(nodes: BackendNode[], nodeId: string, endpointId: string, endpoints: Array<Endpoint & { nodeId: string }> = []): { service: BackendNode; endpoint: Endpoint } | undefined {
-  const service = nodes.find((node) => node.id === nodeId && node.type === "service");
+  const service = nodes.find((node) => node.id === nodeId);
   if (!service) return undefined;
-  const endpoint = endpoints.find((item) => item.nodeId === nodeId && item.id === endpointId)
+  let endpoint = endpoints.find((item) => item.nodeId === nodeId && item.id === endpointId)
     ?? service.data.endpoints?.find((item) => item.id === endpointId)
     ?? service.data.routeGroups?.flatMap((group) => group.endpoints).find((item) => item.id === endpointId);
+
+  if (!endpoint) {
+    const messagingTypes: BackendNodeType[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+    if (messagingTypes.includes(service.type)) {
+      const resourceId = endpointId.includes(":") ? endpointId.split(":").pop() : endpointId.split("-in-").pop();
+      const resourceList = service.data.topics || service.data.queues || service.data.streams || service.data.channels || [];
+      const resource = resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+      const name = resource?.name || service.data.label || "Topic";
+      endpoint = {
+        id: resource?.id || endpointId,
+        name: name,
+        type: service.type.toUpperCase(),
+      };
+    } else {
+      const consumedEv = service.data.consumedEvents?.find((e: any) => e.id === endpointId);
+      const publishedEv = service.data.publishedEvents?.find((e: any) => e.id === endpointId);
+      const ev = consumedEv || publishedEv;
+      if (ev) {
+        endpoint = {
+          id: ev.id,
+          name: ev.name || "Event Handler",
+          type: "EVENT",
+        };
+      }
+    }
+  }
+
   return endpoint ? { service, endpoint } : undefined;
 }
 
@@ -352,7 +379,7 @@ export async function simulateTestCase(args: {
   }
 
   const finalEdge = currentEdge;
-  const firstEndpointId = finalEdge?.targetHandle?.split("-in-").pop();
+  const firstEndpointId = finalEdge?.targetHandle?.includes(":") ? finalEdge.targetHandle.split(":").pop() : finalEdge?.targetHandle?.split("-in-").pop();
   const first = finalEdge && firstEndpointId ? findEndpoint(args.nodes, finalEdge.target, firstEndpointId, args.endpoints) : undefined;
   if (!first) {
     return {
@@ -368,6 +395,143 @@ export async function simulateTestCase(args: {
   }
 
   const connectedEdge = finalEdge!;
+
+  // Check if target is a Kafka / messaging broker node
+  const messagingTypes: BackendNodeType[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+  if (messagingTypes.includes(first.service.type)) {
+    const targetNode = first.service;
+    const trace: SimulationTraceEntry[] = [{
+      id: `${args.testCase.id}-client`,
+      kind: "client",
+      label: `Test case: ${args.testCase.name}`,
+      status: "completed",
+      nodeId: args.client.id,
+      edgeId: chainEdges[0]?.id,
+      input: clone(args.testCase.request?.body),
+    }];
+
+    for (let i = 0; i < chainEdges.length - 1; i++) {
+      const navNode = chainNodes[i + 1];
+      const nextEdge = chainEdges[i + 1];
+      trace.push({
+        id: `${args.testCase.id}-nav-${i}`,
+        kind: "client",
+        label: `Page Load: ${navNode?.data?.label || "Web Client"}`,
+        status: "completed",
+        nodeId: navNode?.id,
+        edgeId: nextEdge?.id,
+      });
+    }
+
+    const eventLabel = first.endpoint.name || targetNode.data.label || "Kafka Topic";
+
+    trace.push({
+      id: `msg-${connectedEdge.id}`,
+      kind: "messaging",
+      label: `${targetNode.data.label ?? targetNode.type} ← ${eventLabel}`,
+      status: "completed",
+      nodeId: targetNode.id,
+      edgeId: connectedEdge.id,
+      output: clone(args.testCase.request?.body),
+    });
+
+    const consumeEdges = args.edges.filter((edge) =>
+      edge.source === targetNode.id &&
+      (edge.targetHandle?.startsWith("consumedEvents-in-") || edge.targetHandle?.includes(":"))
+    );
+
+    for (const consumeEdge of consumeEdges) {
+      const consumerService = args.nodes.find((n) => n.id === consumeEdge.target && n.type === "service");
+      if (!consumerService) continue;
+
+      const consumedEventId = consumeEdge.targetHandle?.replace("consumedEvents-in-", "");
+      const consumedEventName = consumedEventId ? findEventName(consumedEventId, consumerService, args.nodes) : undefined;
+
+      const pubTopicId = connectedEdge.targetHandle?.split(":").pop();
+      const subTopicId = consumeEdge.sourceHandle?.split(":").pop();
+      if (pubTopicId && subTopicId && pubTopicId !== subTopicId) continue;
+      if (consumedEventName && eventLabel && consumedEventName.trim().toLowerCase() !== eventLabel.trim().toLowerCase()) continue;
+
+      const consumerEndpoint: Endpoint | undefined =
+        (args.endpoints ?? []).find((ep) => ep.nodeId === consumerService.id && ep.id === consumedEventId) ??
+        consumerService.data.endpoints?.find((ep: Endpoint) => ep.id === consumedEventId) ??
+        (consumerService.data.routeGroups?.flatMap((g: any) => g.endpoints) as Endpoint[])?.find((ep: Endpoint) => ep.id === consumedEventId);
+
+      let consumerBody: unknown = clone(args.testCase.request?.body);
+
+      if (consumerEndpoint) {
+        const consumerResult = await simulateEndpoint({
+          service: consumerService,
+          endpoint: consumerEndpoint,
+          nodes: args.nodes,
+          edges: args.edges,
+          request: {
+            method: consumerEndpoint.type || "EVENT",
+            path: consumerEndpoint.name || eventLabel,
+            headers: {},
+            params: {},
+            body: consumerBody,
+          },
+          resolvedIngressEdge: consumeEdge,
+          mocks: args.testCase.mocks,
+        });
+        trace.push(...consumerResult.trace);
+        consumerBody = clone(consumerResult.body);
+      } else {
+        trace.push({
+          id: `msg-consume-${consumeEdge.id}`,
+          kind: "messaging",
+          label: `${consumerService.data.label ?? "Service"} ← ${eventLabel}`,
+          status: "completed",
+          nodeId: consumerService.id,
+          edgeId: consumeEdge.id,
+          output: clone(consumerBody),
+        });
+      }
+
+      const pushEdges = args.edges.filter((edge) => {
+        if (edge.source !== consumerService.id) return false;
+        return args.nodes.some((n) => n.id === edge.target && n.type === "webClient");
+      });
+
+      for (const pushEdge of pushEdges) {
+        const clientNode = args.nodes.find((n) => n.id === pushEdge.target && n.type === "webClient");
+        if (!clientNode) continue;
+
+        const th = pushEdge.targetHandle ?? "";
+        let pushKind = "SSE";
+        if (th.startsWith("websocket-in-") || th.startsWith("ws-in-")) pushKind = "WebSocket";
+        else if (th.startsWith("webrtc-in-")) pushKind = "WebRTC";
+
+        const targetEventId = th.replace(/^(sse|websocket|ws|webrtc|events)-in-/, "");
+        const clientEvent = clientNode.data.events?.find((ev: any) => ev.id === targetEventId);
+        const eventSuffix = clientEvent?.name ? ` (${clientEvent.name})` : "";
+
+        trace.push({
+          id: `push-${pushEdge.id}`,
+          kind: "push",
+          label: `${pushKind} → ${clientNode.data.label ?? "Client"}${eventSuffix}`,
+          status: "completed",
+          nodeId: clientNode.id,
+          edgeId: pushEdge.id,
+          output: clone(consumerBody),
+        });
+      }
+    }
+
+    return {
+      status: 200,
+      statusText: "OK",
+      headers: { "x-simulated": "true" },
+      body: clone(args.testCase.request?.body ?? { status: "Message Published to Kafka" }),
+      trace,
+      testCaseId: args.testCase.id,
+      testCaseName: args.testCase.name,
+      assertions: [
+        { name: "message published to messaging broker", passed: true, detail: `Published to ${targetNode.data?.label || "Kafka"}` },
+      ],
+    };
+  }
 
   // Build trace steps for client navigation chain
   const trace: SimulationTraceEntry[] = [{

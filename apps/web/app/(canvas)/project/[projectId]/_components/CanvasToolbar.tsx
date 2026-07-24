@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Network, Workflow, Sparkles, Database, RefreshCw, Trash2, Hammer } from "lucide-react";
+import { ArrowLeft, Network, Workflow, Sparkles, Database, RefreshCw, Trash2, Hammer, Router } from "lucide-react";
 import { BackendCanvasView } from "@/types/canvas";
 import { Button } from "@workspace/ui/components/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -109,37 +110,30 @@ export function CanvasToolbar({
       </div>
 
       <div className="flex items-center space-x-2">
-        <div className="flex items-center gap-2 bg-sidebar py-1 px-2 rounded-lg">
-          <Label>MCP</Label>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSync}
-              disabled={isSyncing || isClearing}
-            >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={handleClear}
-              disabled={isClearing || isSyncing}
-            >
-              <Trash2 className={`w-4 h-4 ${isClearing ? "animate-pulse" : ""}`} />
-            </Button>
-          </div>
-        </div>
-        <Button
-          variant={"secondary"}
-          size="sm"
-          className="py-3.5"
-          disabled  
-        >
-          <Hammer className="w-4 h-4 mr-1 text-primary" />
-          Build
+        <Button asChild variant={"secondary"}>
+          <Link href={"/api-keys"}>
+            <Router className="mr-1"/>
+            MCP
+          </Link>
         </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Button
+                variant={"secondary"}
+                size="sm"
+                className="py-3.5"
+                disabled  
+              >
+                <Hammer className="w-4 h-4 mr-1 text-primary" />
+                Build
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Coming soon
+          </TooltipContent>
+        </Tooltip>
         <Button
           variant={"secondary"}
           size="sm"

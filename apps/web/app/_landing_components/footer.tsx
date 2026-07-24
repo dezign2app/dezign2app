@@ -84,6 +84,7 @@ export const Footer = () => {
                   <div className="flex flex-col gap-3">
                      <Link href="/privacy" className="text-[11px] text-gray-500 hover:text-black transition-colors">Privacy Policy</Link>
                      <Link href="/terms" className="text-[11px] text-gray-500 hover:text-black transition-colors">Terms & Conditions</Link>
+                     <Link href="/acceptable-use" className="text-[11px] text-gray-500 hover:text-black transition-colors">Acceptable Use Policy</Link>
                   </div>
                 </div>
               </div>
@@ -97,6 +98,7 @@ export const Footer = () => {
               <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6">
                 <Link href="/privacy" className="text-[10px] text-gray-500 hover:text-black underline decoration-gray-300 underline-offset-2 transition-colors">Privacy Policy</Link>
                 <Link href="/terms" className="text-[10px] text-gray-500 hover:text-black underline decoration-gray-300 underline-offset-2 transition-colors">Terms & Conditions</Link>
+                <Link href="/acceptable-use" className="text-[10px] text-gray-500 hover:text-black underline decoration-gray-300 underline-offset-2 transition-colors">Acceptable Use Policy</Link>
               </div>
             </div>
          </div>

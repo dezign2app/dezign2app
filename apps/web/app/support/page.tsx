@@ -87,12 +87,15 @@ export default function SupportPage() {
             <p className="text-xs text-gray-600 leading-relaxed">
               Read about our commitment to user data protection, uptime SLAs, and legal compliance.
             </p>
-            <div className="flex gap-4 mt-2">
+            <div className="flex flex-wrap gap-4 mt-2">
               <Link href="/privacy" className="text-xs font-semibold text-black hover:underline">
                 Privacy
               </Link>
               <Link href="/terms" className="text-xs font-semibold text-black hover:underline">
                 Terms
+              </Link>
+              <Link href="/acceptable-use" className="text-xs font-semibold text-black hover:underline">
+                Acceptable Use
               </Link>
             </div>
           </div>

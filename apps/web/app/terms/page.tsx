@@ -6,11 +6,11 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions | dezign2app",
-  description: "Terms and Conditions of Service for dezign2app platform.",
+  description: "Terms and Conditions of Service for dezign2app platform - Includes Merchant of Record, Refund Policy, and AI Tool Use Terms.",
 };
 
 export default function TermsPage() {
-  const lastUpdated = "July 23, 2026";
+  const lastUpdated = "July 24, 2026";
 
   return (
     <div className="max-w-screen min-h-screen w-full bg-white text-black flex flex-col items-center overflow-x-hidden">
@@ -23,10 +23,10 @@ export default function TermsPage() {
             <span>Last Updated: {lastUpdated}</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-gray-900">
-            Terms & Conditions
+            Terms & Conditions of Service
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl">
-            These Terms & Conditions govern your access to and use of the dezign2app website, services, and applications. Please read them carefully before using our services.
+            These Terms & Conditions govern your access to and use of the dezign2app platform, applications, and AI visual tools. Please read these terms carefully before registering or using our platform.
           </p>
         </div>
 
@@ -38,94 +38,148 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p>
-              By registering, accessing, or using dezign2app, you agree to be bound by these Terms & Conditions and our Privacy Policy. If you do not agree with any part of these terms, you must not use our platform.
+              By accessing, registering for, or using dezign2app, you acknowledge that you have read, understood, and agree to be bound legally by these Terms & Conditions, our <Link href="/privacy" className="text-black font-semibold hover:underline">Privacy Policy</Link>, and our <Link href="/acceptable-use" className="text-black font-semibold hover:underline">Acceptable Use Policy</Link>. If you do not agree with any portion of these terms, you must discontinue using our services immediately.
             </p>
           </section>
 
           {/* Section 2 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              2. User Accounts & Registration
+              2. Merchant of Record & Payment Processing Disclosures
             </h2>
             <p>
-              To access certain features of dezign2app, you may be required to register for an account. You agree to:
+              Our order process and paid subscription billing are conducted by our reseller and Merchant of Record, <strong>Creem.io</strong>.
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
-              <li>Provide accurate, current, and complete information during registration.</li>
-              <li>Maintain and safeguard the confidentiality of your account credentials.</li>
-              <li>Notify us immediately of any unauthorized use or security breach related to your account.</li>
-              <li>Accept responsibility for all activities conducted under your user account.</li>
+              <li>
+                <strong className="text-gray-900">Merchant of Record:</strong> Creem.io is the Merchant of Record for all orders placed on dezign2app. Creem handles payment collection, tax compliance, invoicing, and customer billing inquiries.
+              </li>
+              <li>
+                <strong className="text-gray-900">Recurring Billing:</strong> Paid subscriptions automatically renew on a monthly or annual basis unless cancelled prior to the renewal date.
+              </li>
             </ul>
           </section>
 
           {/* Section 3 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              3. Acceptable Use Policy
+              3. Cancellation & Refund Policy
             </h2>
             <p>
-              You agree to use dezign2app only for lawful purposes. You must not:
+              We want you to be completely satisfied with dezign2app. We maintain clear cancellation and refund rules:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
-              <li>Violate any applicable local, national, or international laws or regulations.</li>
-              <li>Attempt to gain unauthorized access to our servers, user accounts, or connected networks.</li>
-              <li>Reverse engineer, decompile, or attempt to extract source code from the platform.</li>
-              <li>Upload or transmit harmful code, viruses, malware, or destructive data.</li>
-              <li>Use automated tools or scrapers to extract data from our service without prior written authorization.</li>
+              <li>
+                <strong className="text-gray-900">Cancellation:</strong> You may cancel your subscription at any time through your workspace settings dashboard, directly via the Creem Customer Portal, or by emailing <a href="mailto:founder@dezign2app.com" className="text-black font-semibold hover:underline">founder@dezign2app.com</a>. Upon cancellation, your subscription will remain active until the end of your current billing period.
+              </li>
+              <li>
+                <strong className="text-gray-900">14-Day Refund Window:</strong> If you are unsatisfied with your new paid subscription, you may request a full refund within 14 days of your initial purchase date by contacting our support team.
+              </li>
+              <li>
+                <strong className="text-gray-900">Support Response SLA:</strong> Support inquiries regarding billing, refunds, or account access will be addressed within 3 business days.
+              </li>
             </ul>
           </section>
 
           {/* Section 4 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              4. Intellectual Property Rights
+              4. User Accounts & Security
             </h2>
             <p>
-              All proprietary rights, intellectual property, software, branding, trademarks, and UI components in dezign2app belong exclusively to dezign2app and its licensors. Users retain ownership of their user-generated content and diagram designs created using the platform.
+              To access certain features of dezign2app, you must register an account. You agree to:
             </p>
+            <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
+              <li>Provide accurate, current, and complete registration information.</li>
+              <li>Maintain the security and confidentiality of your credentials.</li>
+              <li>Notify us immediately of any unauthorized access or security compromise.</li>
+              <li>Accept responsibility for all activities conducted under your account.</li>
+            </ul>
           </section>
 
           {/* Section 5 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              5. Subscriptions & Billing
+              5. Intellectual Property Rights & Output Ownership
             </h2>
-            <p>
-              Certain features of dezign2app may require a paid subscription. Payments are billed in advance on a recurring monthly or annual basis. Fees are non-refundable except where explicitly required by law or specified in our refund policy.
-            </p>
+            <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
+              <li>
+                <strong className="text-gray-900">User Content Ownership:</strong> You retain full ownership and intellectual property rights in your input prompts, architecture specifications, and generated visual design assets created using dezign2app.
+              </li>
+              <li>
+                <strong className="text-gray-900">Platform IP:</strong> dezign2app and its licensors retain all rights, title, and interest in and to the core platform, software, visual components, branding, and proprietary algorithms.
+              </li>
+            </ul>
           </section>
 
           {/* Section 6 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              6. Limitation of Liability
+              6. AI Service Terms & Disclaimers
             </h2>
             <p>
-              To the maximum extent permitted by law, dezign2app and its officers, employees, or partners shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the platform.
+              dezign2app incorporates AI model integrations to assist in generating visual diagrams and code specs.
             </p>
+            <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
+              <li>
+                <strong className="text-gray-900">"AS IS" Output:</strong> AI-generated outputs are provided on an "AS IS" and "AS AVAILABLE" basis without warranty of accuracy or completeness. Users are responsible for evaluating, testing, and verifying generated output prior to production deployment.
+              </li>
+              <li>
+                <strong className="text-gray-900">Independent Branding Disclaimer:</strong> dezign2app is an independent tool and is not affiliated with, sponsored by, or endorsed by Google, OpenAI, Anthropic, or third-party AI model creators. Third-party model names referenced denote functional API integrations only.
+              </li>
+            </ul>
           </section>
 
           {/* Section 7 */}
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3 border-l-2 border-black pl-4 my-2">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              7. Termination
+              7. Prohibited Uses & Acceptable Use Policy
             </h2>
             <p>
-              We reserve the right to suspend or terminate your account and access to dezign2app at our sole discretion, without prior notice, if you breach these Terms & Conditions.
+              You agree to use dezign2app strictly for lawful, professional purposes. You are strictly prohibited from generating:
+            </p>
+            <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
+              <li>Sexually explicit, adult (NSFW), pornographic, or suggestive content of any kind.</li>
+              <li>Face-swap, deepfake, or non-consensual image manipulation.</li>
+              <li>Malicious code, spyware, viruses, exploit payloads, or phishing materials.</li>
+              <li>Hate speech, harassing material, defamatory statements, or violent imagery.</li>
+            </ul>
+            <p className="mt-2 text-xs md:text-sm text-gray-500">
+              For a complete description of prohibited behaviors and technical enforcement rules, read our full <Link href="/acceptable-use" className="text-black font-bold underline">Acceptable Use Policy</Link>.
             </p>
           </section>
 
           {/* Section 8 */}
           <section className="flex flex-col gap-3">
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-              8. Contact Us
+              8. Limitation of Liability
             </h2>
             <p>
-              If you have questions regarding these Terms & Conditions, please contact our legal team at:
+              To the maximum extent permitted by applicable law, dezign2app, its directors, employees, or partners shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data loss, or system interruption arising out of your use of or inability to use the platform.
+            </p>
+          </section>
+
+          {/* Section 9 */}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              9. Termination
+            </h2>
+            <p>
+              We reserve the right to suspend or terminate your account and platform access without prior notice if you breach these Terms & Conditions or our Acceptable Use Policy.
+            </p>
+          </section>
+
+          {/* Section 10 */}
+          <section className="flex flex-col gap-3">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              10. Contact Information
+            </h2>
+            <p>
+              If you have any questions or concerns regarding these Terms & Conditions, please contact our legal and support team:
             </p>
             <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl text-gray-800 font-medium flex flex-col gap-1">
               <div>Email: <a href="mailto:founder@dezign2app.com" className="text-black font-bold hover:underline">founder@dezign2app.com</a></div>
-              <div className="text-xs text-gray-500">Support & Legal Inquiries</div>
+              <div className="text-xs text-gray-500">Support & Legal Compliance Team</div>
             </div>
           </section>
         </div>
@@ -138,12 +192,20 @@ export default function TermsPage() {
           >
             ← Back to Home
           </Link>
-          <Link
-            href="/privacy"
-            className="text-xs font-semibold text-gray-600 hover:text-black transition-colors"
-          >
-            Read Privacy Policy →
-          </Link>
+          <div className="flex gap-4">
+            <Link
+              href="/privacy"
+              className="text-xs font-semibold text-gray-600 hover:text-black transition-colors"
+            >
+              Privacy Policy →
+            </Link>
+            <Link
+              href="/acceptable-use"
+              className="text-xs font-semibold text-gray-600 hover:text-black transition-colors"
+            >
+              Acceptable Use Policy →
+            </Link>
+          </div>
         </div>
       </main>
 

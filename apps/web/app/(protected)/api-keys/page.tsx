@@ -8,6 +8,7 @@ import { ApiKeyHeader } from "./_components/api-key-header";
 import { ApiKeyList } from "./_components/api-key-list";
 import { CreateKeyCard } from "./_components/create-key-card";
 import { SecurityTip } from "./_components/security-tip";
+import { McpConfigCard } from "./_components/mcp-config-card";
 import { RevokeKeyDialog } from "./_components/revoke-key-dialog";
 import { GeneratedKeyDialog } from "./_components/generated-key-dialog";
 import { Doc, Id } from "@workspace/backend/_generated/dataModel";
@@ -123,6 +124,7 @@ export default function ApiKeysPage() {
             selectedProjectId={selectedProjectId}
             setSelectedProjectId={(id) => setSelectedProjectId(id)}
           />
+          <McpConfigCard />
           <SecurityTip />
         </div>
       </div>

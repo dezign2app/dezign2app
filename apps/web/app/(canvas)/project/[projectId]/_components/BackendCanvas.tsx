@@ -22,6 +22,8 @@ import { SequenceView } from "./SequenceView";
 import { useChatStore } from "@/app/(protected)/_components/chat/chat-store";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 
+import { Loader2 } from "lucide-react";
+
 interface BackendCanvasProps {
   projectId: string;
   view: BackendCanvasView;
@@ -29,7 +31,7 @@ interface BackendCanvasProps {
 
 function Flow({ projectId, view }: BackendCanvasProps) {
   // Syncs the local zustand store with the remote Convex database
-  useBackendSync(projectId, view);
+  const { isLoading } = useBackendSync(projectId, view);
 
   // Syncs the active test case for this project from localStorage
   const testCases = useSimulationStore(s => s.testCases);
@@ -53,15 +55,26 @@ function Flow({ projectId, view }: BackendCanvasProps) {
     }
   }, [selectedCaseId, projectId]);
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-background text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span>Loading canvas...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "sequence") {
-    return <SequenceView />;
+    return <SequenceView key={projectId} />;
   }
 
   if (view === "schema") {
-    return <SchemaView projectId={projectId} />;
+    return <SchemaView key={projectId} projectId={projectId} />;
   }
 
-  return <GraphView projectId={projectId} />;
+  return <GraphView key={projectId} projectId={projectId} />;
 }
 
 export function BackendCanvas(props: BackendCanvasProps) {

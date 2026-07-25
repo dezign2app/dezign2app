@@ -253,11 +253,13 @@ export { schema };
   // Generate db/package.json
   const dbPackageJson = JSON.stringify(
     {
-      name: "blueprint-db",
-      version: "1.0.0",
-      description: "Generated Drizzle ORM database schemas",
+      name: "@workspace/db",
+      version: "0.0.0",
+      private: true,
+      description: "Generated Drizzle ORM database schemas package",
       main: "index.ts",
       scripts: {
+        build: "tsc",
         generate: "drizzle-kit generate:sqlite",
         push: "drizzle-kit push:sqlite",
       },
@@ -266,6 +268,7 @@ export { schema };
         "better-sqlite3": "^11.3.0",
       },
       devDependencies: {
+        "@workspace/typescript-config": "workspace:*",
         "drizzle-kit": "^0.20.0",
         "@types/better-sqlite3": "^7.6.11",
         typescript: "^5.3.3",
@@ -278,6 +281,23 @@ export { schema };
     filename: "package.json",
     language: "json",
     content: dbPackageJson,
+  });
+
+  const dbTsconfig = JSON.stringify(
+    {
+      extends: "@workspace/typescript-config/base.json",
+      compilerOptions: {
+        outDir: "dist",
+      },
+      include: ["src/**/*", "index.ts", "schema/**/*"],
+    },
+    null,
+    2
+  );
+  files.push({
+    filename: "tsconfig.json",
+    language: "json",
+    content: dbTsconfig,
   });
 
   // Generate db/drizzle.config.ts
@@ -300,3 +320,4 @@ export default {
 
   return { files };
 }
+

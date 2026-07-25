@@ -2,16 +2,7 @@ import { CompiledFile } from "../types";
 import { BackendNode } from "@/types/canvas";
 
 export function generateLibFiles(): CompiledFile[] {
-  const dbConfigCode = `import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import path from "path";
-
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../../../db/sqlite.db");
-export const sqlite = new Database(dbPath);
-export const db = drizzle(sqlite);
-`;
-
-  const libIndexCode = `export * from "./db.config";
+  const libIndexCode = `export { db, sqlite, schema } from "@workspace/db";
 
 export function formatResponse<T>(data: T, message = "Success") {
   return {
@@ -24,11 +15,6 @@ export function formatResponse<T>(data: T, message = "Success") {
 `;
 
   return [
-    {
-      filename: "src/lib/db.config.ts",
-      language: "typescript",
-      content: dbConfigCode,
-    },
     {
       filename: "src/lib/index.ts",
       language: "typescript",
@@ -44,7 +30,8 @@ export function generateServerFile(
   corsOrigins: string
 ): CompiledFile {
   const serverCode = `import express, { Request, Response } from "express";
-${cors ? 'import cors from "cors";\n' : ""}import dotenv from "dotenv";
+import cors from "cors";
+import dotenv from "dotenv";
 import { router as apiRouter } from "./routes";
 import { initConsumers } from "./consumer";
 
@@ -101,8 +88,9 @@ export function generateConfigFiles(
 ): CompiledFile[] {
   const packageJson = JSON.stringify(
     {
-      name: `${sanitizedName}-service`,
-      version: "1.0.0",
+      name: `@workspace/${sanitizedName}`,
+      version: "0.0.0",
+      private: true,
       description: node.data.description || `Generated microservice for ${serviceName}`,
       main: "dist/index.js",
       scripts: {
@@ -111,16 +99,18 @@ export function generateConfigFiles(
         dev: "ts-node-dev --respawn src/index.ts",
       },
       dependencies: {
+        "@workspace/db": "workspace:*",
         express: "^4.19.2",
+        cors: "^2.8.5",
         dotenv: "^16.4.5",
         "drizzle-orm": "^0.30.0",
         "better-sqlite3": "^11.3.0",
-        ...(cors ? { cors: "^2.8.5" } : {}),
       },
       devDependencies: {
+        "@workspace/typescript-config": "workspace:*",
         "@types/express": "^4.17.21",
+        "@types/cors": "^2.8.17",
         "@types/better-sqlite3": "^7.6.11",
-        ...(cors ? { "@types/cors": "^2.8.17" } : {}),
         "@types/node": "^20.11.0",
         "ts-node-dev": "^2.0.0",
         typescript: "^5.3.3",
@@ -132,16 +122,10 @@ export function generateConfigFiles(
 
   const tsconfig = JSON.stringify(
     {
+      extends: "@workspace/typescript-config/base.json",
       compilerOptions: {
-        target: "ES2022",
-        module: "CommonJS",
-        moduleResolution: "node",
         outDir: "./dist",
         rootDir: "./src",
-        strict: true,
-        esModuleInterop: true,
-        skipLibCheck: true,
-        forceConsistentCasingInFileNames: true,
       },
       include: ["src/**/*"],
     },
@@ -151,7 +135,7 @@ export function generateConfigFiles(
 
   const envFile = `PORT=${port}
 NODE_ENV=development
-DATABASE_PATH=../../db/sqlite.db
+DATABASE_PATH=../../packages/db/sqlite.db
 `;
 
   const gitignoreFile = `node_modules

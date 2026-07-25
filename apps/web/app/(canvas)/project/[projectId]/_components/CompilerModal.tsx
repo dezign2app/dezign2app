@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +9,25 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import {
-  compileServiceNode,
-  compileDatabaseNodes,
-  CompiledServiceResult,
-  CompiledDatabaseResult,
+  compileMonorepo,
+  CompiledMonorepoResult,
   CompiledFile,
 } from "@/lib/compiler";
-import { Copy, Check, Download, Server, FileCode, Cpu, ExternalLink, Code, Database } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Download,
+  Server,
+  FileCode,
+  Cpu,
+  ExternalLink,
+  Code,
+  Archive,
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  FolderOpen,
+} from "lucide-react";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { toast } from "sonner";
 import sdk from "@stackblitz/sdk";
@@ -25,6 +35,143 @@ import sdk from "@stackblitz/sdk";
 interface CompilerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface FileTreeNode {
+  name: string;
+  path: string;
+  isFolder: boolean;
+  children?: FileTreeNode[];
+}
+
+function buildFileTree(files: CompiledFile[]): FileTreeNode[] {
+  const root: FileTreeNode[] = [];
+
+  files.forEach((f) => {
+    const parts = f.filename.split("/");
+    let current = root;
+
+    parts.forEach((part, idx) => {
+      const isLast = idx === parts.length - 1;
+      const currentPath = parts.slice(0, idx + 1).join("/");
+      let node = current.find((n) => n.name === part);
+
+      if (!node) {
+        node = {
+          name: part,
+          path: currentPath,
+          isFolder: !isLast,
+          children: isLast ? undefined : [],
+        };
+        current.push(node);
+      }
+
+      if (!isLast && node.children) {
+        current = node.children;
+      }
+    });
+  });
+
+  const sortNodes = (nodes: FileTreeNode[]) => {
+    nodes.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    nodes.forEach((n) => {
+      if (n.children) sortNodes(n.children);
+    });
+  };
+
+  sortNodes(root);
+  return root;
+}
+
+function FileTreeItem({
+  node,
+  depth = 0,
+  activePath,
+  expandedPaths,
+  onToggleExpand,
+  onSelectFile,
+}: {
+  node: FileTreeNode;
+  depth?: number;
+  activePath: string;
+  expandedPaths: Set<string>;
+  onToggleExpand: (path: string) => void;
+  onSelectFile: (path: string) => void;
+}) {
+  const isExpanded = expandedPaths.has(node.path);
+  const isActive = activePath === node.path;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (node.isFolder) {
+      onToggleExpand(node.path);
+    } else {
+      onSelectFile(node.path);
+    }
+  };
+
+  const getFileIcon = (name: string) => {
+    if (name === "package.json") return <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+    if (name.endsWith(".ts") || name.endsWith(".tsx")) return <FileCode className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
+    if (name.endsWith(".json") || name.endsWith(".yaml")) return <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+    if (name.endsWith(".md")) return <FileCode className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+    return <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
+  };
+
+  return (
+    <div>
+      <div
+        onClick={handleClick}
+        style={{ paddingLeft: `${depth * 14 + 10}px` }}
+        className={`flex items-center gap-1.5 py-1 px-2 text-xs font-mono rounded cursor-pointer transition-colors ${
+          isActive
+            ? "bg-primary/20 text-primary font-medium border-l-2 border-primary"
+            : "hover:bg-accent/40 text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        {node.isFolder ? (
+          <>
+            {isExpanded ? (
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            )}
+            {isExpanded ? (
+              <FolderOpen className="w-3.5 h-3.5 text-amber-400/90 shrink-0" />
+            ) : (
+              <Folder className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
+            )}
+          </>
+        ) : (
+          <>
+            <span className="w-3.5 shrink-0" />
+            {getFileIcon(node.name)}
+          </>
+        )}
+        <span className="truncate">{node.name}</span>
+      </div>
+
+      {node.isFolder && isExpanded && node.children && (
+        <div>
+          {node.children.map((child) => (
+            <FileTreeItem
+              key={child.path}
+              node={child}
+              depth={depth + 1}
+              activePath={activePath}
+              expandedPaths={expandedPaths}
+              onToggleExpand={onToggleExpand}
+              onSelectFile={onSelectFile}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
@@ -37,35 +184,59 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
   const serviceNodes = nodes.filter((n) => n.type === "service");
   const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
 
-  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedFilename, setSelectedFilename] = useState<string>("src/index.ts");
+  const [selectedFilename, setSelectedFilename] = useState<string>("package.json");
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<boolean>(false);
+  const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
 
-  // Set default selected service when opening
+  const monorepoResult: CompiledMonorepoResult = useMemo(
+    () =>
+      compileMonorepo(
+        nodes,
+        endpoints,
+        events,
+        edges,
+        testCases,
+        "Blueprint System Monorepo"
+      ),
+    [nodes, endpoints, events, edges, testCases]
+  );
+
+  const fileTree = useMemo(() => buildFileTree(monorepoResult.files), [monorepoResult.files]);
+
+  // Default expand root directories when opening modal
   React.useEffect(() => {
     if (open) {
-      if (serviceNodes.length > 0 && (!selectedServiceId || (!serviceNodes.some((s) => s.id === selectedServiceId) && selectedServiceId !== "db_schemas"))) {
-        setSelectedServiceId(serviceNodes[0]!.id);
-      } else if (serviceNodes.length === 0 && entityNodes.length > 0) {
-        setSelectedServiceId("db_schemas");
+      const initialExpanded = new Set<string>();
+      monorepoResult.files.forEach((f) => {
+        const parts = f.filename.split("/");
+        if (parts.length > 1) {
+          initialExpanded.add(parts[0]!);
+          if (parts.length > 2) {
+            initialExpanded.add(`${parts[0]}/${parts[1]}`);
+          }
+        }
+      });
+      setExpandedPaths(initialExpanded);
+      if (!monorepoResult.files.some((f) => f.filename === selectedFilename)) {
+        setSelectedFilename(monorepoResult.files[0]?.filename || "package.json");
       }
     }
-  }, [open, serviceNodes, entityNodes, selectedServiceId]);
+  }, [open]);
 
-  const activeServiceNode = serviceNodes.find((n) => n.id === selectedServiceId) || serviceNodes[0];
-  const isDbSelected = selectedServiceId === "db_schemas";
+  const handleToggleExpand = (path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
 
-  const compiledDatabase: CompiledDatabaseResult = compileDatabaseNodes(nodes, edges);
-
-  const compiledResult: CompiledServiceResult | null = activeServiceNode
-    ? compileServiceNode(activeServiceNode, endpoints, events, nodes, edges, testCases)
-    : null;
-
-  const currentFiles: CompiledFile[] = isDbSelected
-    ? compiledDatabase.files
-    : compiledResult?.files || [];
-
-  const activeFile = currentFiles.find((f) => f.filename === selectedFilename) || currentFiles[0];
+  const activeFile = monorepoResult.files.find((f) => f.filename === selectedFilename) || monorepoResult.files[0];
 
   const handleCopy = () => {
     if (!activeFile) return;
@@ -87,70 +258,52 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
     toast.success(`Downloaded ${activeFile.filename}`);
   };
 
+  const handleDownloadZip = async () => {
+    if (monorepoResult.files.length === 0) return;
+    setDownloadingZip(true);
+    toast.info("Compressing monorepo project into ZIP...");
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      monorepoResult.files.forEach((file) => {
+        zip.file(file.filename, file.content);
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const zipName = `${monorepoResult.projectName.toLowerCase().replace(/[^a-z0-9]/g, "-")}.zip`;
+      a.download = zipName;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${zipName}!`);
+    } catch (err) {
+      console.error("Failed to generate ZIP archive:", err);
+      toast.error("Failed to generate ZIP archive");
+    } finally {
+      setDownloadingZip(false);
+    }
+  };
+
   const handleRunInCloud = () => {
     if (serviceNodes.length === 0 && entityNodes.length === 0) return;
 
     const fileMap: Record<string, string> = {};
-
-    // 1. Compile Database Schemas into top-level db/ folder
-    compiledDatabase.files.forEach((f) => {
-      fileMap[`db/${f.filename}`] = f.content;
+    monorepoResult.files.forEach((f) => {
+      fileMap[f.filename] = f.content;
     });
-
-    // 2. Compile Service Nodes into services/<serviceName>/ folders
-    const devScripts: string[] = [];
-    const serviceNames: string[] = [];
-
-    serviceNodes.forEach((srvNode) => {
-      const res = compileServiceNode(srvNode, endpoints, events, nodes, edges, testCases);
-      const folderName = (res.serviceName || "service").toLowerCase().replace(/[^a-z0-9]/g, "-");
-      serviceNames.push(res.serviceName);
-
-      res.files.forEach((f) => {
-        fileMap[`services/${folderName}/${f.filename}`] = f.content;
-      });
-
-      devScripts.push(`"npm run dev --prefix services/${folderName}"`);
-    });
-
-    if (serviceNodes.length > 0) {
-      fileMap["package.json"] = JSON.stringify(
-        {
-          name: "blueprint-microservices-monorepo",
-          version: "1.0.0",
-          private: true,
-          workspaces: ["db", "services/*"],
-          scripts: {
-            dev: devScripts.length > 0 ? `concurrently ${devScripts.join(" ")}` : "npm run build --prefix db",
-            start: devScripts.length > 0 ? `concurrently ${devScripts.map((s) => s.replace("run dev", "start")).join(" ")}` : "node index.js",
-          },
-          devDependencies: {
-            concurrently: "^8.2.2",
-          },
-        },
-        null,
-        2
-      );
-
-      fileMap["README.md"] = `# Blueprint System Architecture Workspace\n\nThis project contains ${serviceNodes.length} generated microservice(s) and database schemas:\n\n- **Database Schemas**: \`db/\`\n${serviceNames
-        .map((s) => `- **${s}**: \`services/${s.toLowerCase().replace(/[^a-z0-9]/g, "-")}\``)
-        .join("\n")}\n\n## Getting Started\n\nRun \`npm run dev\` to start all microservices concurrently.\n`;
-    }
-
-    const title =
-      serviceNodes.length === 1 && activeServiceNode
-        ? `${activeServiceNode.data.label || "Service"} Architecture`
-        : `Blueprint Microservices System (${serviceNodes.length} Services)`;
 
     const defaultOpenFile =
       serviceNodes.length > 0
-        ? `services/${(serviceNodes[0]?.data.label || "service").toLowerCase().replace(/[^a-z0-9]/g, "-")}/src/index.ts`
-        : `db/schema/index.ts`;
+        ? `apps/${serviceNodes[0]?.data.label?.toLowerCase().replace(/[^a-z0-9]/g, "-") || "service"}/src/index.ts`
+        : `packages/db/schema/index.ts`;
 
     sdk.openProject(
       {
-        title,
-        description: `Generated microservices architecture workspace for Blueprint project`,
+        title: monorepoResult.projectName,
+        description: `Generated Turborepo + pnpm monorepo workspace containing ${serviceNodes.length} service(s)`,
         template: "node",
         files: fileMap,
         settings: {
@@ -165,13 +318,13 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
         openFile: defaultOpenFile,
       }
     );
-    toast.success(`Opening architecture workspace live in StackBlitz Cloud IDE!`);
+    toast.success(`Opening monorepo workspace live in StackBlitz Cloud IDE!`);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-card border-border shadow-2xl">
-        <DialogHeader className="px-6 pt-5 pb-4 border-b border-border/60 bg-muted/20">
+      <DialogContent className="sm:max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden bg-card border-border shadow-2xl">
+        <DialogHeader className="px-6 pt-4 pb-3 border-b border-border/60 bg-muted/20">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -179,20 +332,26 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                  Service & DB Compiler Engine
+                  Monorepo Compiler Engine
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Converts architecture nodes into modular microservices & Drizzle database schemas
+                  Turborepo + pnpm workspace code generation engine
                 </DialogDescription>
               </div>
             </div>
 
             {(serviceNodes.length > 0 || entityNodes.length > 0) && (
-              <Button onClick={handleRunInCloud} size="sm">
-                <Code className="w-4 h-4" />
-                Open IDE
-                <ExternalLink className="w-3 h-3 opacity-80" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleDownloadZip} disabled={downloadingZip} variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Archive className="w-4 h-4 text-primary" />
+                  {downloadingZip ? "Zipping..." : "Download ZIP"}
+                </Button>
+                <Button onClick={handleRunInCloud} size="sm" className="gap-1.5 text-xs">
+                  <Code className="w-4 h-4" />
+                  Open IDE
+                  <ExternalLink className="w-3 h-3 opacity-80" />
+                </Button>
+              </div>
             )}
           </div>
         </DialogHeader>
@@ -206,85 +365,58 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col flex-1 min-h-0">
-            {/* Service & Database selector tabs */}
-            <div className="flex items-center gap-1.5 px-6 py-2 border-b border-border/40 bg-muted/10 overflow-x-auto">
-              <span className="text-xs text-muted-foreground mr-2 font-medium">Nodes:</span>
-
-              {entityNodes.length > 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedServiceId("db_schemas");
-                    setSelectedFilename("schema/index.ts");
-                  }}
-                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-                    isDbSelected
-                      ? "bg-amber-500/20 text-amber-500 border border-amber-500/30 font-semibold"
-                      : "hover:bg-accent text-muted-foreground"
-                  }`}
-                >
-                  <Database className="w-3.5 h-3.5" />
-                  Database (db/)
-                </button>
-              )}
-
-              {serviceNodes.map((srv) => (
-                <button
-                  key={srv.id}
-                  onClick={() => {
-                    setSelectedServiceId(srv.id);
-                    setSelectedFilename("src/index.ts");
-                  }}
-                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-                    srv.id === activeServiceNode?.id && !isDbSelected
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "hover:bg-accent text-muted-foreground"
-                  }`}
-                >
-                  <Server className="w-3 h-3" />
-                  {srv.data.label || "Service"}
-                </button>
-              ))}
-            </div>
-
-            {/* File Tabs & Actions bar */}
-            <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b border-border/60">
-              <div className="flex items-center gap-1 overflow-x-auto">
-                {currentFiles.map((file) => (
-                  <button
-                    key={file.filename}
-                    onClick={() => setSelectedFilename(file.filename)}
-                    className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all flex items-center gap-1.5 ${
-                      file.filename === activeFile?.filename
-                        ? "bg-background text-foreground shadow-xs font-semibold border border-border/50"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                    }`}
-                  >
-                    <FileCode className="w-3.5 h-3.5 text-primary/80" />
-                    {file.filename}
-                  </button>
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* VS Code Style File Explorer Sidebar */}
+            <div className="w-64 bg-muted/20 border-r border-border/60 flex flex-col shrink-0 select-none">
+              <div className="px-3 py-2 text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase border-b border-border/40 flex items-center justify-between">
+                <span>Explorer</span>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
+                  {monorepoResult.files.length} files
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
+                {fileTree.map((node) => (
+                  <FileTreeItem
+                    key={node.path}
+                    node={node}
+                    activePath={activeFile?.filename || ""}
+                    expandedPaths={expandedPaths}
+                    onToggleExpand={handleToggleExpand}
+                    onSelectFile={setSelectedFilename}
+                  />
                 ))}
               </div>
-
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" onClick={handleCopy} className="h-8 text-xs gap-1.5">
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "Copied" : "Copy"}
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleDownload} className="h-8 text-xs gap-1.5">
-                  <Download className="w-3.5 h-3.5" />
-                  Download
-                </Button>
-              </div>
             </div>
 
-            {/* Code Output Box */}
-            <div className="flex-1 min-h-[350px] p-4 bg-[#0d1117] overflow-auto font-mono text-xs leading-relaxed text-slate-200">
-              {activeFile ? (
-                <pre className="whitespace-pre">
-                  <code>{activeFile.content}</code>
-                </pre>
-              ) : null}
+            {/* Code Editor View */}
+            <div className="flex-1 flex flex-col min-w-0 bg-[#0d1117]">
+              {/* File Header Bar */}
+              <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-border/40 text-xs font-mono">
+                <div className="flex items-center gap-2 text-slate-300 truncate">
+                  <FileCode className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">{activeFile?.filename}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white">
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleDownload} className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white">
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+
+              {/* Code Pre Box */}
+              <div className="flex-1 p-4 overflow-auto font-mono text-xs leading-relaxed text-slate-200">
+                {activeFile ? (
+                  <pre className="whitespace-pre">
+                    <code>{activeFile.content}</code>
+                  </pre>
+                ) : null}
+              </div>
             </div>
           </div>
         )}
@@ -292,3 +424,5 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
     </Dialog>
   );
 }
+
+

@@ -46,7 +46,7 @@ export async function defaultHandler(_req: Request, res: Response) {
       }
 
       let routeHandlerCode = `import { Request, Response } from "express";
-import { db } from "../lib/db.config";
+import { db } from "@workspace/db";
 
 /**
  * ${ep.type || "GET"} ${path}

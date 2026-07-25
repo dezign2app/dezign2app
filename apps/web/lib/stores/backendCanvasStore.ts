@@ -377,9 +377,29 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   addNode: (nodeWithoutIndex) => {
+    let finalNode = nodeWithoutIndex;
+    if (nodeWithoutIndex.type === "service" && !nodeWithoutIndex.data?.port) {
+      const existingPorts = new Set(
+        get()
+          .nodes.filter((n) => n.type === "service")
+          .map((n) => parseInt(n.data?.port || "8080", 10))
+          .filter((p) => !isNaN(p))
+      );
+      let nextPort = 8080;
+      while (existingPorts.has(nextPort)) {
+        nextPort++;
+      }
+      finalNode = {
+        ...nodeWithoutIndex,
+        data: {
+          ...nodeWithoutIndex.data,
+          port: String(nextPort),
+        },
+      };
+    }
     const lastNodeIndex = getLastIndex(get().nodes);
     const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
-    const node = { ...nodeWithoutIndex, fractionalIndex, selected: true };
+    const node = { ...finalNode, fractionalIndex, selected: true };
     const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
     set({
       nodes: next,

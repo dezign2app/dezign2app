@@ -164,6 +164,9 @@ importers:
       '@hugeicons/react':
         specifier: ^1.1.4
         version: 1.1.4(react@19.2.4)
+      '@stackblitz/sdk':
+        specifier: ^1.11.1
+        version: 1.11.1
       '@types/dagre':
         specifier: ^0.7.54
         version: 0.7.54
@@ -3071,6 +3074,9 @@ packages:
 
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
+
+  '@stackblitz/sdk@1.11.1':
+    resolution: {integrity: sha512-5wl1j3IhtmE7POTl2W9VGQdbQyBQrRsF3jcYBK+0V353AuO8H2GFZkiFNyTRxL+TDY3HIFCHc3G983Osmg76Lg==}
 
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
@@ -10997,6 +11003,8 @@ snapshots:
   '@shikijs/vscode-textmate@10.0.2': {}
 
   '@stablelib/base64@1.0.1': {}
+
+  '@stackblitz/sdk@1.11.1': {}
 
   '@standard-schema/spec@1.0.0': {}
 

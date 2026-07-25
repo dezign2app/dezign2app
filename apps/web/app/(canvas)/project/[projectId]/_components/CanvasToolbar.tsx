@@ -12,6 +12,7 @@ import { useAuth } from "@clerk/nextjs";
 import { Label } from "@workspace/ui/components/label";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { FlaskConical } from "lucide-react";
+import { CompilerModal } from "./CompilerModal";
 
 interface CanvasToolbarProps {
   projectName: string;
@@ -32,6 +33,7 @@ export function CanvasToolbar({
 }: CanvasToolbarProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [compilerOpen, setCompilerOpen] = useState(false);
   const { getToken } = useAuth();
 
   const handleSync = async () => {
@@ -118,22 +120,21 @@ export function CanvasToolbar({
         </Button>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span>
-              <Button
-                variant={"secondary"}
-                size="sm"
-                className="py-3.5"
-                disabled  
-              >
-                <Hammer className="w-4 h-4 mr-1 text-primary" />
-                Build
-              </Button>
-            </span>
+            <Button
+              variant={"secondary"}
+              size="sm"
+              className="py-3.5"
+              onClick={() => setCompilerOpen(true)}
+            >
+              <Hammer className="w-4 h-4 mr-1 text-primary" />
+              Build
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Coming soon
+            limited support
           </TooltipContent>
         </Tooltip>
+        <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} />
         <Button
           variant={"secondary"}
           size="sm"

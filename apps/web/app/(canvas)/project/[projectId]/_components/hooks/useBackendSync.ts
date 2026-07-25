@@ -27,6 +27,16 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     clearPending,
   } = useBackendCanvasStore();
 
+  const storeProjectId = useBackendCanvasStore((s) => s.projectId);
+  const hasHydrated = useRef(false);
+
+  // If switching projects or store hasn't been initialized for this project, reset state immediately
+  if (storeProjectId !== projectId) {
+    hasHydrated.current = false;
+    useBackendCanvasStore.getState().reset(projectId);
+    useSimulationStore.setState({ testCases: [], selectedCaseId: undefined });
+  }
+
   const initialElements = useQuery(api.canvas.getBackendElements, {
     projectId: projectId as Id<"projects">,
   });
@@ -41,8 +51,6 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
   const removeEvent = useMutation(api.canvas.removeBackendEvent);
   const upsertIdentityProvider = useMutation(api.canvas.upsertBackendIdentityProvider);
   const removeIdentityProvider = useMutation(api.canvas.removeBackendIdentityProvider);
-
-  const hasHydrated = useRef(false);
 
   // Hydrate from Convex
   useEffect(() => {
@@ -162,10 +170,11 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       edgesToSet,
       endpointsToSet,
       eventsToSet,
-      providersToSet
+      providersToSet,
+      projectId
     );
     useSimulationStore.getState().setTestCases((initialElements.testCases || []) as any);
-  }, [initialElements, setNodesAndEdges, view]);
+  }, [initialElements, setNodesAndEdges, view, projectId]);
 
   // Handle view changes: swap active positions for existing nodes
   const prevViewRef = useRef(view);
@@ -333,5 +342,5 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     );
   }, []);
 
-  return { hasHydrated: hasHydrated.current, nodes };
+  return { isLoading: initialElements === undefined, hasHydrated: hasHydrated.current, nodes };
 }

@@ -151,6 +151,7 @@ export function parseResourceHandle(handleId: string | null | undefined): {
 }
 
 interface BackendCanvasState {
+  projectId: string | null;
   nodes: BackendNode[];
   edges: BackendEdge[];
   canvasView: BackendCanvasView;
@@ -209,7 +210,8 @@ interface BackendCanvasState {
     edges: BackendEdge[], 
     endpoints?: (Endpoint & { nodeId: string })[], 
     events?: (AnyMessagingResource & { nodeId: string, variant: 'publish' | 'consume' })[],
-    identityProviders?: (IdentityProvider & { nodeId: string })[]
+    identityProviders?: (IdentityProvider & { nodeId: string })[],
+    projectId?: string
   ) => void;
   setView: (view: BackendCanvasView) => void;
 
@@ -226,10 +228,11 @@ interface BackendCanvasState {
     syncedIdentityProviderUpserts?: (IdentityProvider & { nodeId: string })[],
     syncedIdentityProviderRemovals?: { nodeId: string, providerId: string }[]
   ) => void;
-  reset: () => void;
+  reset: (projectId?: string | null) => void;
 }
 
 export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
+  projectId: null,
   nodes: [],
   edges: [],
   endpoints: [],
@@ -697,8 +700,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     }
   },
 
-  setNodesAndEdges: (nodes, edges, endpoints = [], events = [], identityProviders = []) =>
+  setNodesAndEdges: (nodes, edges, endpoints = [], events = [], identityProviders = [], projectId) =>
     set({
+      ...(projectId !== undefined && { projectId }),
       nodes,
       edges,
       endpoints,
@@ -732,8 +736,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       pendingIdentityProviderRemovals: state.pendingIdentityProviderRemovals.filter(r => !syncedIdentityProviderRemovals.some(sr => sr.providerId === r.providerId)),
     })),
 
-  reset: () =>
+  reset: (projectId = null) =>
     set({
+      projectId,
       nodes: [],
       edges: [],
       endpoints: [],

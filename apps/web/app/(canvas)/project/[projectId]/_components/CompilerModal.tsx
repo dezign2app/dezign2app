@@ -16,7 +16,7 @@ import {
   CompiledServiceResult,
   CompiledDatabaseResult,
   CompiledFile,
-} from "@/lib/compiler/compileServiceNode";
+} from "@/lib/compiler";
 import { Copy, Check, Download, Server, FileCode, Cpu, ExternalLink, Code, Database } from "lucide-react";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { toast } from "sonner";

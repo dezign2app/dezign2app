@@ -10,8 +10,14 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { compileServiceNode, CompiledServiceResult } from "@/lib/compiler/compileServiceNode";
-import { Copy, Check, Download, Server, FileCode, Cpu, ExternalLink, Code } from "lucide-react";
+import {
+  compileServiceNode,
+  compileDatabaseNodes,
+  CompiledServiceResult,
+  CompiledDatabaseResult,
+  CompiledFile,
+} from "@/lib/compiler/compileServiceNode";
+import { Copy, Check, Download, Server, FileCode, Cpu, ExternalLink, Code, Database } from "lucide-react";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { toast } from "sonner";
 import sdk from "@stackblitz/sdk";
@@ -29,25 +35,37 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
   const testCases = useSimulationStore((s) => s.testCases);
 
   const serviceNodes = nodes.filter((n) => n.type === "service");
+  const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
 
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedFilename, setSelectedFilename] = useState<string>("server.ts");
+  const [selectedFilename, setSelectedFilename] = useState<string>("src/index.ts");
   const [copied, setCopied] = useState<boolean>(false);
 
   // Set default selected service when opening
   React.useEffect(() => {
-    if (open && serviceNodes.length > 0 && (!selectedServiceId || !serviceNodes.some(s => s.id === selectedServiceId))) {
-      setSelectedServiceId(serviceNodes[0]!.id);
+    if (open) {
+      if (serviceNodes.length > 0 && (!selectedServiceId || (!serviceNodes.some((s) => s.id === selectedServiceId) && selectedServiceId !== "db_schemas"))) {
+        setSelectedServiceId(serviceNodes[0]!.id);
+      } else if (serviceNodes.length === 0 && entityNodes.length > 0) {
+        setSelectedServiceId("db_schemas");
+      }
     }
-  }, [open, serviceNodes, selectedServiceId]);
+  }, [open, serviceNodes, entityNodes, selectedServiceId]);
 
   const activeServiceNode = serviceNodes.find((n) => n.id === selectedServiceId) || serviceNodes[0];
+  const isDbSelected = selectedServiceId === "db_schemas";
+
+  const compiledDatabase: CompiledDatabaseResult = compileDatabaseNodes(nodes, edges);
 
   const compiledResult: CompiledServiceResult | null = activeServiceNode
     ? compileServiceNode(activeServiceNode, endpoints, events, nodes, edges, testCases)
     : null;
 
-  const activeFile = compiledResult?.files.find((f) => f.filename === selectedFilename) || compiledResult?.files[0];
+  const currentFiles: CompiledFile[] = isDbSelected
+    ? compiledDatabase.files
+    : compiledResult?.files || [];
+
+  const activeFile = currentFiles.find((f) => f.filename === selectedFilename) || currentFiles[0];
 
   const handleCopy = () => {
     if (!activeFile) return;
@@ -63,24 +81,76 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = activeFile.filename;
+    a.download = activeFile.filename.split("/").pop() || activeFile.filename;
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Downloaded ${activeFile.filename}`);
   };
 
   const handleRunInCloud = () => {
-    if (!compiledResult) return;
+    if (serviceNodes.length === 0 && entityNodes.length === 0) return;
 
     const fileMap: Record<string, string> = {};
-    compiledResult.files.forEach((f) => {
-      fileMap[f.filename] = f.content;
+
+    // 1. Compile Database Schemas into top-level db/ folder
+    compiledDatabase.files.forEach((f) => {
+      fileMap[`db/${f.filename}`] = f.content;
     });
+
+    // 2. Compile Service Nodes into services/<serviceName>/ folders
+    const devScripts: string[] = [];
+    const serviceNames: string[] = [];
+
+    serviceNodes.forEach((srvNode) => {
+      const res = compileServiceNode(srvNode, endpoints, events, nodes, edges, testCases);
+      const folderName = (res.serviceName || "service").toLowerCase().replace(/[^a-z0-9]/g, "-");
+      serviceNames.push(res.serviceName);
+
+      res.files.forEach((f) => {
+        fileMap[`services/${folderName}/${f.filename}`] = f.content;
+      });
+
+      devScripts.push(`"npm run dev --prefix services/${folderName}"`);
+    });
+
+    if (serviceNodes.length > 0) {
+      fileMap["package.json"] = JSON.stringify(
+        {
+          name: "blueprint-microservices-monorepo",
+          version: "1.0.0",
+          private: true,
+          workspaces: ["db", "services/*"],
+          scripts: {
+            dev: devScripts.length > 0 ? `concurrently ${devScripts.join(" ")}` : "npm run build --prefix db",
+            start: devScripts.length > 0 ? `concurrently ${devScripts.map((s) => s.replace("run dev", "start")).join(" ")}` : "node index.js",
+          },
+          devDependencies: {
+            concurrently: "^8.2.2",
+          },
+        },
+        null,
+        2
+      );
+
+      fileMap["README.md"] = `# Blueprint System Architecture Workspace\n\nThis project contains ${serviceNodes.length} generated microservice(s) and database schemas:\n\n- **Database Schemas**: \`db/\`\n${serviceNames
+        .map((s) => `- **${s}**: \`services/${s.toLowerCase().replace(/[^a-z0-9]/g, "-")}\``)
+        .join("\n")}\n\n## Getting Started\n\nRun \`npm run dev\` to start all microservices concurrently.\n`;
+    }
+
+    const title =
+      serviceNodes.length === 1 && activeServiceNode
+        ? `${activeServiceNode.data.label || "Service"} Architecture`
+        : `Blueprint Microservices System (${serviceNodes.length} Services)`;
+
+    const defaultOpenFile =
+      serviceNodes.length > 0
+        ? `services/${(serviceNodes[0]?.data.label || "service").toLowerCase().replace(/[^a-z0-9]/g, "-")}/src/index.ts`
+        : `db/schema/index.ts`;
 
     sdk.openProject(
       {
-        title: `${compiledResult.serviceName} - Blueprint Microservice`,
-        description: `Generated microservice template for ${compiledResult.serviceName}`,
+        title,
+        description: `Generated microservices architecture workspace for Blueprint project`,
         template: "node",
         files: fileMap,
         settings: {
@@ -92,10 +162,10 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
       },
       {
         newWindow: true,
-        openFile: "server.ts",
+        openFile: defaultOpenFile,
       }
     );
-    toast.success(`Opening ${compiledResult.serviceName} live in StackBlitz Cloud IDE!`);
+    toast.success(`Opening architecture workspace live in StackBlitz Cloud IDE!`);
   };
 
   return (
@@ -109,62 +179,78 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                  Service Compiler Engine
+                  Service & DB Compiler Engine
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Converts service graph nodes into deployable server templates & live cloud environments
+                  Converts architecture nodes into modular microservices & Drizzle database schemas
                 </DialogDescription>
               </div>
             </div>
 
-            {compiledResult && (
-              <Button
-                onClick={handleRunInCloud}
-                size="sm"
-              >
+            {(serviceNodes.length > 0 || entityNodes.length > 0) && (
+              <Button onClick={handleRunInCloud} size="sm">
                 <Code className="w-4 h-4" />
-                  Open IDE
+                Open IDE
                 <ExternalLink className="w-3 h-3 opacity-80" />
               </Button>
             )}
           </div>
         </DialogHeader>
 
-        {serviceNodes.length === 0 ? (
+        {serviceNodes.length === 0 && entityNodes.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Server className="w-12 h-12 text-muted-foreground/40" />
-            <p className="text-sm font-medium text-muted-foreground">No Service Nodes Found</p>
+            <p className="text-sm font-medium text-muted-foreground">No Nodes Found</p>
             <p className="text-xs text-muted-foreground/70 max-w-sm">
-              Add a Service/API node on the canvas to generate backend code templates.
+              Add Service or Database Entity nodes on the canvas to generate backend code templates.
             </p>
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
-            {/* Service selector tabs if multiple service nodes exist */}
-            {serviceNodes.length > 1 && (
-              <div className="flex items-center gap-1.5 px-6 py-2 border-b border-border/40 bg-muted/10 overflow-x-auto">
-                <span className="text-xs text-muted-foreground mr-2 font-medium">Services:</span>
-                {serviceNodes.map((srv) => (
-                  <button
-                    key={srv.id}
-                    onClick={() => setSelectedServiceId(srv.id)}
-                    className={`px-3 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-                      srv.id === (activeServiceNode?.id)
-                        ? "bg-primary text-primary-foreground shadow-xs"
-                        : "hover:bg-accent text-muted-foreground"
-                    }`}
-                  >
-                    <Server className="w-3 h-3" />
-                    {srv.data.label || "Service"}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Service & Database selector tabs */}
+            <div className="flex items-center gap-1.5 px-6 py-2 border-b border-border/40 bg-muted/10 overflow-x-auto">
+              <span className="text-xs text-muted-foreground mr-2 font-medium">Nodes:</span>
+
+              {entityNodes.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedServiceId("db_schemas");
+                    setSelectedFilename("schema/index.ts");
+                  }}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+                    isDbSelected
+                      ? "bg-amber-500/20 text-amber-500 border border-amber-500/30 font-semibold"
+                      : "hover:bg-accent text-muted-foreground"
+                  }`}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  Database (db/)
+                </button>
+              )}
+
+              {serviceNodes.map((srv) => (
+                <button
+                  key={srv.id}
+                  onClick={() => {
+                    setSelectedServiceId(srv.id);
+                    setSelectedFilename("src/index.ts");
+                  }}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+                    srv.id === activeServiceNode?.id && !isDbSelected
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "hover:bg-accent text-muted-foreground"
+                  }`}
+                >
+                  <Server className="w-3 h-3" />
+                  {srv.data.label || "Service"}
+                </button>
+              ))}
+            </div>
 
             {/* File Tabs & Actions bar */}
             <div className="flex items-center justify-between px-4 py-2 bg-muted/40 border-b border-border/60">
               <div className="flex items-center gap-1 overflow-x-auto">
-                {compiledResult?.files.map((file) => (
+                {currentFiles.map((file) => (
                   <button
                     key={file.filename}
                     onClick={() => setSelectedFilename(file.filename)}

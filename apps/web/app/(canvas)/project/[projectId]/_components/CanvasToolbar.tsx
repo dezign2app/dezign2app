@@ -131,7 +131,7 @@ export function CanvasToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            limited support
+            prototype
           </TooltipContent>
         </Tooltip>
         <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} />

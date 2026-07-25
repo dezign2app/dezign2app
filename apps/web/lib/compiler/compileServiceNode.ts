@@ -31,6 +31,260 @@ function mapToSqliteType(type?: string): string {
   return "TEXT";
 }
 
+function resolveConnectedTables(
+  serviceNode: BackendNode,
+  endpoints: Endpoint[],
+  allNodes: BackendNode[],
+  allEdges: BackendEdge[]
+): BackendNode[] {
+  const tableMap = new Map<string, BackendNode>();
+
+  const addEntityNode = (node?: BackendNode) => {
+    if (!node || node.type !== "entity" || node.data?.dbType === "vector") return;
+    if (!tableMap.has(node.id)) {
+      tableMap.set(node.id, node);
+    }
+  };
+
+  const resolveDbRef = (refNode: BackendNode) => {
+    if (refNode.data?.tableRef) {
+      const targetEntity = allNodes.find((n) => n.id === refNode.data.tableRef && n.type === "entity");
+      addEntityNode(targetEntity);
+    }
+  };
+
+  const resolveDatabaseNode = (dbNode: BackendNode) => {
+    // 1. Children of database node (parentId)
+    allNodes.forEach((n) => {
+      if (n.parentId === dbNode.id) {
+        if (n.type === "entity") addEntityNode(n);
+        if (n.type === "db_ref") resolveDbRef(n);
+      }
+    });
+
+    // 2. Connected via edges to database node
+    allEdges.forEach((e) => {
+      let otherId: string | null = null;
+      if (e.source === dbNode.id) otherId = e.target;
+      else if (e.target === dbNode.id) otherId = e.source;
+
+      if (otherId) {
+        const otherNode = allNodes.find((n) => n.id === otherId);
+        if (otherNode?.type === "entity") addEntityNode(otherNode);
+        if (otherNode?.type === "db_ref") resolveDbRef(otherNode);
+      }
+    });
+  };
+
+  // 1. Direct edges from Service Node
+  const connectedEdges = allEdges.filter((e) => e.source === serviceNode.id || e.target === serviceNode.id);
+  connectedEdges.forEach((e) => {
+    const otherId = e.source === serviceNode.id ? e.target : e.source;
+    const otherNode = allNodes.find((n) => n.id === otherId);
+    if (!otherNode) return;
+
+    if (otherNode.type === "entity") addEntityNode(otherNode);
+    else if (otherNode.type === "db_ref") resolveDbRef(otherNode);
+    else if (otherNode.type === "database") resolveDatabaseNode(otherNode);
+  });
+
+  // 2. Endpoint database references
+  endpoints.forEach((ep) => {
+    const dbIds = [
+      ...(ep.databaseNodeIds ?? []),
+      ...(ep.databaseNodeId ? [ep.databaseNodeId] : [])
+    ];
+
+    const handleConnectedEdges = allEdges.filter(
+      (e) => e.source === serviceNode.id && e.sourceHandle === `endpoints-out-${ep.id}`
+    );
+    handleConnectedEdges.forEach((e) => dbIds.push(e.target));
+
+    dbIds.forEach((id) => {
+      const dbNode = allNodes.find((n) => n.id === id);
+      if (!dbNode) return;
+      if (dbNode.type === "entity") addEntityNode(dbNode);
+      else if (dbNode.type === "db_ref") resolveDbRef(dbNode);
+      else if (dbNode.type === "database") resolveDatabaseNode(dbNode);
+    });
+  });
+
+  // 3. Fallback: If no tables directly connected to service, use all project entity tables
+  if (tableMap.size === 0) {
+    allNodes
+      .filter((n) => n.type === "entity" && n.data?.dbType !== "vector")
+      .forEach((e) => addEntityNode(e));
+  }
+
+  return Array.from(tableMap.values());
+}
+
+function enrichEntitiesWithForeignKeys(
+  tables: BackendNode[],
+  allNodes: BackendNode[],
+  allEdges: BackendEdge[]
+): BackendNode[] {
+  const enrichedTables = tables.map((t) => JSON.parse(JSON.stringify(t)) as BackendNode);
+  const tableByLabel = new Map<string, BackendNode>();
+  const tableById = new Map<string, BackendNode>();
+
+  enrichedTables.forEach((t) => {
+    const label = (t.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    tableByLabel.set(label, t);
+    tableById.set(t.id, t);
+  });
+
+  // 1. Process Foreign Key edges from Canvas
+  const fkEdges = allEdges.filter(
+    (e) =>
+      e.type === "foreign-key" ||
+      e.data?.label === "foreign-key" ||
+      (e.sourceHandle && (e.sourceHandle.includes("entity") || e.sourceHandle.includes("target") || e.sourceHandle.includes("source")))
+  );
+
+  fkEdges.forEach((edge) => {
+    const srcNode = tableById.get(edge.source) || allNodes.find((n) => n.id === edge.source && n.type === "entity");
+    const tgtNode = tableById.get(edge.target) || allNodes.find((n) => n.id === edge.target && n.type === "entity");
+
+    if (!srcNode || !tgtNode) return;
+
+    const srcTable = tableById.get(srcNode.id);
+    const tgtTableLabel = (tgtNode.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+
+    if (!srcTable || !srcTable.data.columns) return;
+
+    let tgtColName = "id";
+    if (edge.targetHandle && edge.targetHandle.startsWith("target-")) {
+      const idxStr = edge.targetHandle.replace("target-", "");
+      const idx = parseInt(idxStr, 10);
+      if (!isNaN(idx) && tgtNode.data.columns?.[idx]) {
+        tgtColName = tgtNode.data.columns[idx].name;
+      }
+    }
+
+    let srcColIdx = -1;
+    if (edge.sourceHandle && edge.sourceHandle.startsWith("source-")) {
+      const idxStr = edge.sourceHandle.replace("source-", "");
+      const idx = parseInt(idxStr, 10);
+      if (!isNaN(idx)) srcColIdx = idx;
+    }
+
+    if (srcColIdx >= 0 && srcTable.data.columns[srcColIdx]) {
+      const col = srcTable.data.columns[srcColIdx];
+      if(!col) return
+      col.isForeignKey = true;
+      col.references = {
+        table: tgtTableLabel,
+        column: tgtColName,
+      };
+    } else {
+      const matchingCol = srcTable.data.columns.find(
+        (c) =>
+          c.isForeignKey ||
+          c.name.toLowerCase() === `${tgtTableLabel}_id` ||
+          c.name.toLowerCase() === `${tgtTableLabel.slice(0, -1)}_id`
+      );
+      if (matchingCol) {
+        matchingCol.isForeignKey = true;
+        matchingCol.references = {
+          table: tgtTableLabel,
+          column: tgtColName,
+        };
+      }
+    }
+  });
+
+  // 2. Infer missing references for columns explicitly marked isForeignKey or ending with _id
+  enrichedTables.forEach((table) => {
+    (table.data.columns || []).forEach((col) => {
+      if (col.references?.table) return;
+
+      const cName = col.name.toLowerCase();
+      if (col.isForeignKey || cName.endsWith("_id")) {
+        const potentialTargetLabel = cName.endsWith("_id") ? cName.slice(0, -3) : "";
+        if (potentialTargetLabel) {
+          const matchedTarget =
+            tableByLabel.get(potentialTargetLabel) ||
+            tableByLabel.get(`${potentialTargetLabel}s`) ||
+            tableByLabel.get(`${potentialTargetLabel}es`);
+
+          if (matchedTarget) {
+            const targetLabel = (matchedTarget.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+            col.isForeignKey = true;
+            col.references = {
+              table: targetLabel,
+              column: "id",
+            };
+          }
+        }
+      }
+    });
+  });
+
+  return enrichedTables;
+}
+
+function sortTablesTopologically(tables: BackendNode[]): BackendNode[] {
+  const tableMap = new Map<string, BackendNode>();
+  const tableLabels = new Set<string>();
+
+  tables.forEach((t) => {
+    const label = (t.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    tableMap.set(label, t);
+    tableLabels.add(label);
+  });
+
+  const inDegree = new Map<string, number>();
+  const adjList = new Map<string, Set<string>>();
+
+  tableLabels.forEach((label) => {
+    inDegree.set(label, 0);
+    adjList.set(label, new Set<string>());
+  });
+
+  tables.forEach((t) => {
+    const tLabel = (t.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    (t.data.columns || []).forEach((col) => {
+      if (col.references?.table) {
+        const refLabel = col.references.table.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        if (tableLabels.has(refLabel) && refLabel !== tLabel) {
+          if (!adjList.get(refLabel)!.has(tLabel)) {
+            adjList.get(refLabel)!.add(tLabel);
+            inDegree.set(tLabel, (inDegree.get(tLabel) || 0) + 1);
+          }
+        }
+      }
+    });
+  });
+
+  const queue: string[] = [];
+  inDegree.forEach((deg, label) => {
+    if (deg === 0) queue.push(label);
+  });
+
+  const sortedLabels: string[] = [];
+  while (queue.length > 0) {
+    const u = queue.shift()!;
+    sortedLabels.push(u);
+
+    adjList.get(u)?.forEach((v) => {
+      const newDeg = (inDegree.get(v) || 1) - 1;
+      inDegree.set(v, newDeg);
+      if (newDeg === 0) {
+        queue.push(v);
+      }
+    });
+  }
+
+  tableLabels.forEach((label) => {
+    if (!sortedLabels.includes(label)) {
+      sortedLabels.push(label);
+    }
+  });
+
+  return sortedLabels.map((label) => tableMap.get(label)!).filter(Boolean);
+}
+
 function generateSqliteTableDdl(node: BackendNode): string {
   const tableName = (node.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
   const columns = node.data.columns || [];
@@ -60,7 +314,7 @@ function generateSqliteTableDdl(node: BackendNode): string {
     if (col.references?.table) {
       const refTable = col.references.table.toLowerCase().replace(/[^a-z0-9_]/g, "_");
       const refCol = (col.references.column || "id").toLowerCase().replace(/[^a-z0-9_]/g, "_");
-      line += ` REFERENCES ${refTable}(${refCol})`;
+      line += ` REFERENCES ${refTable}(${refCol}) ON DELETE CASCADE`;
     }
     columnLines.push(line);
   });
@@ -428,31 +682,10 @@ export function compileServiceNode(
   const nodePublishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
   const webClientNodes = allNodes.filter((n) => n.type === "webClient");
 
-  // Discover connected SQLite database table references
-  const connectedEdges = allEdges.filter((e) => e.source === node.id || e.target === node.id);
-  const connectedNodeIds = connectedEdges.map((e) => (e.source === node.id ? e.target : e.source));
-
-  const connectedDbNodes = allNodes.filter(
-    (n) => connectedNodeIds.includes(n.id) && (n.type === "db_ref" || n.type === "entity" || n.type === "database")
-  );
-
-  // Resolve entity nodes (table schemas)
-  const connectedTables: BackendNode[] = [];
-  connectedDbNodes.forEach((dbNode) => {
-    if (dbNode.type === "entity") {
-      connectedTables.push(dbNode);
-    } else if (dbNode.type === "db_ref" && dbNode.data.tableRef) {
-      const entity = allNodes.find((n) => n.id === dbNode.data.tableRef && n.type === "entity");
-      if (entity && !connectedTables.some((t) => t.id === entity.id)) {
-        connectedTables.push(entity);
-      }
-    }
-  });
-
-  // If no direct edges, check all entity nodes in canvas as general project tables
-  if (connectedTables.length === 0) {
-    allNodes.filter((n) => n.type === "entity" && n.data.dbType !== "vector").forEach((e) => connectedTables.push(e));
-  }
+  // Discover connected SQLite database table references and entity schemas
+  const rawTables = resolveConnectedTables(node, nodeEndpoints, allNodes, allEdges);
+  const enrichedTables = enrichEntitiesWithForeignKeys(rawTables, allNodes, allEdges);
+  const connectedTables = sortTablesTopologically(enrichedTables);
 
   // Collect all published event names
   const allPublishedEventNames = new Set<string>();
@@ -476,7 +709,7 @@ import path from "path";
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../../data.db");
 export const db = new Database(dbPath);
 
-// Enable foreign keys constraint
+// Enable foreign keys constraint for runtime operations
 db.pragma("foreign_keys = ON");
 
 /**
@@ -487,8 +720,11 @@ export function initDatabase(): void {
     const schemaPath = path.join(__dirname, "schema.sql");
     if (fs.existsSync(schemaPath)) {
       const schemaSql = fs.readFileSync(schemaPath, "utf-8");
+      // Safely apply schema initialization with temporary FK suspension
+      db.pragma("foreign_keys = OFF");
       db.exec(schemaSql);
-      console.log("sqlite SQLite Database initialized with schema.sql");
+      db.pragma("foreign_keys = ON");
+      console.log("SQLite Database initialized with schema.sql");
     }
   } catch (error) {
     console.error("Failed to initialize SQLite database:", error);

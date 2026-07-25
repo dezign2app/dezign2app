@@ -17,17 +17,33 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateEvent = useBackendCanvasStore((s) => s.updateEvent);
   const deleteEvent = useBackendCanvasStore((s) => s.deleteEvent);
   const nodes = useBackendCanvasStore((s) => s.nodes);
+
+  // Mandatory Port Initialization
+  useEffect(() => {
+    if (!data.port || !data.port.trim()) {
+      const existingPorts = new Set(
+        nodes
+          .filter((n) => n.id !== id && n.type === "service")
+          .map((n) => parseInt(n.data?.port?.trim() || "8080", 10))
+          .filter((p) => !isNaN(p))
+      );
+      let nextPort = 8080;
+      while (existingPorts.has(nextPort)) {
+        nextPort++;
+      }
+      updateNode(id, { data: { ...data, port: String(nextPort) } });
+    }
+  }, [id, data, nodes, updateNode]);
   
   const consumedEvents = useBackendCanvasStore((s) => s.events).filter(e => e.nodeId === id && e.variant === 'consume');
   const publishedEvents = useBackendCanvasStore((s) => s.events).filter(e => e.nodeId === id && e.variant === 'publish');
 
   const [configOpen, setConfigOpen] = useState(false);
 
-  const currentPort = data.port?.trim() || "";
-  const effectivePort = currentPort || "8080";
+  const currentPort = data.port?.trim() || "8080";
   
   const conflictNode = nodes.find(
-    (n) => n.id !== id && n.type === "service" && (n.data?.port?.trim() || "8080") === effectivePort
+    (n) => n.id !== id && n.type === "service" && (n.data?.port?.trim() || "8080") === currentPort
   );
   const isPortOccupied = Boolean(conflictNode);
 
@@ -173,7 +189,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
                  </div>
                  {isPortOccupied && (
                    <span className="text-[10px] text-destructive text-right font-medium">
-                     Port {effectivePort} is already in use by {conflictNode?.data?.label || "another service"}
+                     Port {currentPort} is already in use by {conflictNode?.data?.label || "another service"}
                    </span>
                  )}
                </div>

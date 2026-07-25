@@ -14,20 +14,38 @@ export function generateConsumers(
     files.push({
       filename: "src/consumer/index.ts",
       language: "typescript",
-      content: `/**\n * Event Consumers for ${serviceName}\n */\nexport function initConsumers(): void {\n  // No consumed events configured for this service\n}\n`,
+      content: `import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:Consumer");
+
+/**
+ * Event Consumers for ${serviceName}
+ */
+export function initConsumers(): void {
+  logger.debug("No consumed events configured for this service");
+}
+`,
     });
   } else {
     nodeConsumedEvents.forEach((ev) => {
       const consumerFileName = toVarName(ev.name || "event") || "consumer";
       const handlerName = `handle${toPascalCase(ev.name || "event")}`;
 
-      const consumerCode = `/**
+      const consumerCode = `import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:Consumer:${ev.name}");
+
+/**
  * Event Consumer for: "${ev.name}"
  * Description: ${ev.description || "Processes incoming event payload"}
  */
 export async function ${handlerName}(payload: Record<string, unknown>): Promise<void> {
-  console.log(\`[EVENT CONSUME] [${ev.name}]\`, payload);
-  // Handler Logic: ${ev.handlerLogic || "Process event payload"}
+  try {
+    logger.info(\`Consuming event [${ev.name}]\`, payload);
+    // Handler Logic: ${ev.handlerLogic || "Process event payload"}
+  } catch (error) {
+    logger.error(\`Error processing event [${ev.name}]:\`, error);
+  }
 }
 `;
       files.push({
@@ -37,16 +55,20 @@ export async function ${handlerName}(payload: Record<string, unknown>): Promise<
       });
 
       consumerImports.push(`import { ${handlerName} } from "./${consumerFileName}";`);
-      consumerInits.push(`  console.log("Registered listener for topic: ${ev.name}");`);
+      consumerInits.push(`  logger.info("Registered listener for topic: ${ev.name}");`);
     });
 
-    const consumersIndexCode = `/**
+    const consumersIndexCode = `import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:Consumer");
+
+/**
  * Event Consumers Initialization for ${serviceName}
  */
 ${consumerImports.join("\n")}
 
 export function initConsumers(): void {
-  console.log("Initializing event consumers...");
+  logger.info("Initializing event consumers...");
 ${consumerInits.join("\n")}
 }
 `;
@@ -59,3 +81,4 @@ ${consumerInits.join("\n")}
 
   return files;
 }
+

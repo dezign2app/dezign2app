@@ -35,6 +35,7 @@ import sdk from "@stackblitz/sdk";
 interface CompilerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  projectName?: string;
 }
 
 interface FileTreeNode {
@@ -174,7 +175,7 @@ function FileTreeItem({
   );
 }
 
-export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
+export function CompilerModal({ open, onOpenChange, projectName }: CompilerModalProps) {
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
@@ -189,6 +190,14 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
 
+  const formattedProjectName = useMemo(() => {
+    const raw = (projectName || "Blueprint").trim();
+    if (raw.toLowerCase().endsWith("monorepo")) {
+      return raw;
+    }
+    return `${raw} Monorepo`;
+  }, [projectName]);
+
   const monorepoResult: CompiledMonorepoResult = useMemo(
     () =>
       compileMonorepo(
@@ -197,9 +206,9 @@ export function CompilerModal({ open, onOpenChange }: CompilerModalProps) {
         events,
         edges,
         testCases,
-        "Blueprint System Monorepo"
+        formattedProjectName
       ),
-    [nodes, endpoints, events, edges, testCases]
+    [nodes, endpoints, events, edges, testCases, formattedProjectName]
   );
 
   const fileTree = useMemo(() => buildFileTree(monorepoResult.files), [monorepoResult.files]);

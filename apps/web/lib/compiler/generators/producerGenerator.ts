@@ -13,18 +13,26 @@ export function generateProducers(
     files.push({
       filename: "src/producer/index.ts",
       language: "typescript",
-      content: `/**\n * Event Producers for ${serviceName}\n */\n// No published events configured for this service\n`,
+      content: `/**
+ * Event Producers for ${serviceName}
+ */
+// No published events configured for this service
+`,
     });
   } else {
     nodePublishedEvents.forEach((ev) => {
       const producerFileName = toVarName(ev.name || "event") || "producer";
       const funcName = `publish${toPascalCase(ev.name || "event")}`;
 
-      const producerCode = `/**
+      const producerCode = `import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:Producer:${ev.name}");
+
+/**
  * Event Producer for: "${ev.name}"
  */
 export async function ${funcName}(eventData: Record<string, unknown>): Promise<void> {
-  console.log(\`[EVENT PUBLISH] [${ev.name}]\`, JSON.stringify(eventData, null, 2));
+  logger.info(\`Publishing event [${ev.name}]\`, eventData);
   // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)
 }
 `;
@@ -51,3 +59,4 @@ ${producerExports.join("\n")}
 
   return files;
 }
+

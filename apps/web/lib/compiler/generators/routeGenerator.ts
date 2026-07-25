@@ -12,8 +12,12 @@ export function generateRoutes(
 
   if (nodeEndpoints.length === 0) {
     const defaultRouteCode = `import { Request, Response } from "express";
+import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:DefaultRoute");
 
 export async function defaultHandler(_req: Request, res: Response) {
+  logger.info("Executing default handler");
   return res.status(200).json({
     success: true,
     message: "Default service route operational for ${serviceName}.",
@@ -47,6 +51,9 @@ export async function defaultHandler(_req: Request, res: Response) {
 
       let routeHandlerCode = `import { Request, Response } from "express";
 import { db } from "@workspace/db";
+import { createLogger } from "@workspace/logger";
+
+const logger = createLogger("${serviceName}:${routeFileName}");
 
 /**
  * ${ep.type || "GET"} ${path}
@@ -54,6 +61,9 @@ import { db } from "@workspace/db";
  */
 export async function ${handlerName}(req: Request, res: Response) {
   try {
+    logger.info("Handling ${ep.type || "GET"} ${path}");
+    logger.debug("Request details", { params: req.params, query: req.query, body: req.body });
+
     // =========================================================================
     // 🤖 AI CODING AGENT DIRECTIVE:
     // Implement endpoint domain logic for: ${ep.type || "GET"} ${path}
@@ -72,8 +82,9 @@ export async function ${handlerName}(req: Request, res: Response) {
       }
 
       const statusCode = ep.type === "POST" ? 201 : 200;
-      routeHandlerCode += `\n    return res.status(${statusCode}).json(${responseData});\n`;
-      routeHandlerCode += `  } catch (error) {\n    console.error("Error in ${method.toUpperCase()} ${path}:", error);\n    return res.status(500).json({ error: "Internal Server Error", details: (error as Error).message });\n  }\n}\n`;
+      routeHandlerCode += `\n    logger.debug("Successfully generated response for ${path}");\n`;
+      routeHandlerCode += `    return res.status(${statusCode}).json(${responseData});\n`;
+      routeHandlerCode += `  } catch (error) {\n    logger.error("Error in ${method.toUpperCase()} ${path}:", error);\n    return res.status(500).json({ error: "Internal Server Error", details: (error as Error).message });\n  }\n}\n`;
 
       files.push({
         filename: `src/routes/${routeFileName}.ts`,

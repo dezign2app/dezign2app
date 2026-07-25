@@ -29,14 +29,14 @@ export function generateServerFile(
   cors: boolean,
   corsOrigins: string
 ): CompiledFile {
-  const serverCode = `import express, { Request, Response } from "express";
+  const serverCode = `import "dotenv/config";
+import express, { Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import { createLogger } from "@workspace/logger";
 import { router as apiRouter } from "./routes";
 import { initConsumers } from "./consumer";
 
-dotenv.config();
-
+const logger = createLogger("${serviceName}");
 const app = express();
 const PORT = process.env.PORT || ${port};
 
@@ -45,12 +45,13 @@ app.use(express.urlencoded({ extended: true }));
 ${cors ? `app.use(cors({ origin: "${corsOrigins}" }));\n` : "app.use(cors());\n"}
 // --- Request Logger ---
 app.use((req: Request, _res: Response, next) => {
-  console.log(\`[\${new Date().toISOString()}] \${req.method} \${req.url}\`);
+  logger.info(\`\${req.method} \${req.url}\`);
   next();
 });
 
 // --- Health Check ---
 app.get("/health", (_req: Request, res: Response) => {
+  logger.debug("Health check invoked");
   res.status(200).json({
     status: "UP",
     service: "${serviceName}",
@@ -67,8 +68,8 @@ initConsumers();
 
 // --- Server Startup ---
 app.listen(PORT, () => {
-  console.log(\`🚀 Service "${serviceName}" operational at http://localhost:\${PORT}\`);
-  console.log(\`📋 Health check available at http://localhost:\${PORT}/health\`);
+  logger.info(\`🚀 Service "${serviceName}" operational at http://localhost:\${PORT}\`);
+  logger.info(\`📋 Health check available at http://localhost:\${PORT}/health\`);
 });
 `;
 
@@ -100,6 +101,7 @@ export function generateConfigFiles(
       },
       dependencies: {
         "@workspace/db": "workspace:*",
+        "@workspace/logger": "workspace:*",
         express: "^4.19.2",
         cors: "^2.8.5",
         dotenv: "^16.4.5",
@@ -135,6 +137,7 @@ export function generateConfigFiles(
 
   const envFile = `PORT=${port}
 NODE_ENV=development
+LOG_LEVEL=info
 DATABASE_PATH=../../packages/db/sqlite.db
 `;
 

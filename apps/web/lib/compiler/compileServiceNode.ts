@@ -1,5 +1,5 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource, JSONValue, UIEventItem } from "@workspace/canvas/types";
+import { Endpoint, AnyMessagingResource, JSONValue } from "@workspace/canvas/types";
 
 export interface CompiledFile {
   filename: string;
@@ -13,6 +13,10 @@ export interface CompiledServiceResult {
   files: CompiledFile[];
 }
 
+export interface CompiledDatabaseResult {
+  files: CompiledFile[];
+}
+
 function parseSchemaJson(rawJson?: string): JSONValue {
   if (!rawJson || !rawJson.trim()) return null;
   try {
@@ -22,393 +26,335 @@ function parseSchemaJson(rawJson?: string): JSONValue {
   }
 }
 
-function mapToSqliteType(type?: string): string {
-  if (!type) return "TEXT";
-  const t = type.toLowerCase();
-  if (t === "number" || t === "int" || t === "integer") return "INTEGER";
-  if (t === "float" || t === "double" || t === "decimal" || t === "real") return "REAL";
-  if (t === "boolean" || t === "bool") return "INTEGER";
-  return "TEXT";
+function toVarName(str: string): string {
+  const clean = str.replace(/[^a-zA-Z0-9_]/g, "_");
+  const camel = clean.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  if (!camel) return "item";
+  return camel.charAt(0).toLowerCase() + camel.slice(1);
 }
 
-function generateSqliteTableDdl(node: BackendNode): string {
-  const tableName = (node.data.label || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
-  const columns = node.data.columns || [];
+function toPascalCase(str: string): string {
+  const clean = str.replace(/[^a-zA-Z0-9_]/g, "_");
+  const camel = clean.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  if (!camel) return "Item";
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function toTableName(str: string): string {
+  return (str || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+}
+
+function mapToDrizzleSqliteType(type?: string): { drizzleType: string; mode?: string } {
+  if (!type) return { drizzleType: "text" };
+  const t = type.toLowerCase();
+  if (t === "number" || t === "int" || t === "integer") return { drizzleType: "integer" };
+  if (t === "float" || t === "double" || t === "decimal" || t === "real") return { drizzleType: "real" };
+  if (t === "boolean" || t === "bool") return { drizzleType: "integer", mode: '{ mode: "boolean" }' };
+  return { drizzleType: "text" };
+}
+
+function enrichEntitiesWithForeignKeys(
+  tables: BackendNode[],
+  allNodes: BackendNode[],
+  allEdges: BackendEdge[]
+): BackendNode[] {
+  const enrichedTables = tables.map((t) => JSON.parse(JSON.stringify(t)) as BackendNode);
+  const tableByLabel = new Map<string, BackendNode>();
+  const tableById = new Map<string, BackendNode>();
+
+  enrichedTables.forEach((t) => {
+    const label = toTableName(t.data.label || "table");
+    tableByLabel.set(label, t);
+    tableById.set(t.id, t);
+  });
+
+  // 1. Process Foreign Key edges from Canvas
+  const fkEdges = allEdges.filter(
+    (e) =>
+      e.type === "foreign-key" ||
+      e.data?.label === "foreign-key" ||
+      (e.sourceHandle && (e.sourceHandle.includes("entity") || e.sourceHandle.includes("target") || e.sourceHandle.includes("source")))
+  );
+
+  fkEdges.forEach((edge) => {
+    const srcNode = tableById.get(edge.source) || allNodes.find((n) => n.id === edge.source && (n.type === "entity" || n.type === "db_ref"));
+    const tgtNode = tableById.get(edge.target) || allNodes.find((n) => n.id === edge.target && (n.type === "entity" || n.type === "db_ref"));
+
+    if (!srcNode || !tgtNode) return;
+
+    const srcTable = tableById.get(srcNode.id);
+    const tgtTableLabel = toTableName(tgtNode.data.label || "table");
+
+    if (!srcTable || !srcTable.data.columns) return;
+
+    let tgtColName = "id";
+    if (edge.targetHandle && edge.targetHandle.startsWith("target-")) {
+      const idxStr = edge.targetHandle.replace("target-", "");
+      const idx = parseInt(idxStr, 10);
+      if (!isNaN(idx) && tgtNode.data.columns?.[idx]) {
+        tgtColName = tgtNode.data.columns[idx].name;
+      }
+    }
+
+    let srcColIdx = -1;
+    if (edge.sourceHandle && edge.sourceHandle.startsWith("source-")) {
+      const idxStr = edge.sourceHandle.replace("source-", "");
+      const idx = parseInt(idxStr, 10);
+      if (!isNaN(idx)) srcColIdx = idx;
+    }
+
+    if (srcColIdx >= 0 && srcTable.data.columns[srcColIdx]) {
+      const col = srcTable.data.columns[srcColIdx];
+      if (!col) return;
+      col.isForeignKey = true;
+      col.references = {
+        table: tgtTableLabel,
+        column: tgtColName,
+      };
+    } else {
+      const matchingCol = srcTable.data.columns.find(
+        (c) =>
+          c.isForeignKey ||
+          c.name.toLowerCase() === `${tgtTableLabel}_id` ||
+          c.name.toLowerCase() === `${tgtTableLabel.slice(0, -1)}_id`
+      );
+      if (matchingCol) {
+        matchingCol.isForeignKey = true;
+        matchingCol.references = {
+          table: tgtTableLabel,
+          column: tgtColName,
+        };
+      }
+    }
+  });
+
+  // 2. Infer missing references for columns explicitly marked isForeignKey or ending with _id
+  enrichedTables.forEach((table) => {
+    (table.data.columns || []).forEach((col) => {
+      if (col.references?.table) return;
+
+      const cName = col.name.toLowerCase();
+      if (col.isForeignKey || cName.endsWith("_id")) {
+        const potentialTargetLabel = cName.endsWith("_id") ? cName.slice(0, -3) : "";
+        if (potentialTargetLabel) {
+          const matchedTarget =
+            tableByLabel.get(potentialTargetLabel) ||
+            tableByLabel.get(`${potentialTargetLabel}s`) ||
+            tableByLabel.get(`${potentialTargetLabel}es`);
+
+          if (matchedTarget) {
+            const targetLabel = toTableName(matchedTarget.data.label || "table");
+            col.isForeignKey = true;
+            col.references = {
+              table: targetLabel,
+              column: "id",
+            };
+          }
+        }
+      }
+    });
+  });
+
+  return enrichedTables;
+}
+
+/**
+ * Generates Drizzle ORM Schema TS file for a specific database entity/table
+ */
+function generateDrizzleTableSchema(tableNode: BackendNode, allTables: BackendNode[]): string {
+  const tableName = toTableName(tableNode.data.label || "table");
+  const tableVarName = toVarName(tableName);
+  const columns = tableNode.data.columns || [];
+
+  const requiredImports = new Set<string>();
+  const drizzleTypes = new Set<string>(["sqliteTable"]);
+
+  const colDefinitions: string[] = [];
 
   if (columns.length === 0) {
-    return `CREATE TABLE IF NOT EXISTS ${tableName} (
-  id TEXT PRIMARY KEY,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);`;
-  }
-
-  const columnLines: string[] = [];
-  columns.forEach((col) => {
-    const colName = col.name.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-    const sqliteType = mapToSqliteType(col.type);
-    let line = `  ${colName} ${sqliteType}`;
-
-    if (col.isPrimaryKey) {
-      line += " PRIMARY KEY";
-    }
-    if (col.isNotNull || col.isPrimaryKey) {
-      line += " NOT NULL";
-    }
-    if (col.isUnique && !col.isPrimaryKey) {
-      line += " UNIQUE";
-    }
-    if (col.references?.table) {
-      const refTable = col.references.table.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-      const refCol = (col.references.column || "id").toLowerCase().replace(/[^a-z0-9_]/g, "_");
-      line += ` REFERENCES ${refTable}(${refCol})`;
-    }
-    columnLines.push(line);
-  });
-
-  let ddl = `CREATE TABLE IF NOT EXISTS ${tableName} (\n${columnLines.join(",\n")}\n);`;
-
-  // Generate indexes
-  const indexes = node.data.indexes || [];
-  if (indexes.length > 0) {
-    const indexDdls = indexes.map((idx) => {
-      const idxName = (idx.name || `idx_${tableName}_${idx.columns}`).toLowerCase().replace(/[^a-z0-9_]/g, "_");
-      const uniqueKw = idx.isUnique ? "UNIQUE " : "";
-      return `CREATE ${uniqueKw}INDEX IF NOT EXISTS ${idxName} ON ${tableName} (${idx.columns});`;
-    });
-    ddl += "\n\n" + indexDdls.join("\n");
-  }
-
-  return ddl;
-}
-
-function generateEndpointHandler(ep: Endpoint, serviceName: string, connectedTables: BackendNode[]): string {
-  const method = (ep.type || "GET").toLowerCase();
-  const path = ep.name || "/";
-  const summary = ep.summary || `Handler for ${ep.type || "GET"} ${path}`;
-
-  const headers = ep.headers || [];
-  const pathParams = ep.pathParams || [];
-  const queryParams = ep.queryParams || [];
-  const requiredRoles = ep.requiredRoles || [];
-  const requiredScopes = ep.requiredScopes || [];
-  const publishedEvents = ep.publishedEvents || [];
-
-  const parsedReqSchema = parseSchemaJson(ep.requestBody?.rawJson);
-  const parsedResSchema = parseSchemaJson(ep.responseBody?.rawJson);
-
-  let code = `/**
- * ${ep.type || "GET"} ${path}
- * ${summary}
-`;
-  if (requiredRoles.length > 0) {
-    code += ` * @roles ${requiredRoles.join(", ")}\n`;
-  }
-  if (requiredScopes.length > 0) {
-    code += ` * @scopes ${requiredScopes.join(", ")}\n`;
-  }
-  code += ` */\n`;
-
-  code += `router.${method}("${path}", async (req: Request, res: Response) => {
-  try {`;
-
-  // --- 1. BUSINESS LOGIC & AI AGENT DIRECTIVES (FIRST & PROMINENT) ---
-  code += `\n    // =========================================================================`;
-  code += `\n    // 🤖 AI CODING AGENT DIRECTIVE:`;
-  code += `\n    // Implement the endpoint domain logic for: ${ep.type || "GET"} ${path}`;
-  code += `\n    // Description: ${summary}`;
-  code += `\n    // =========================================================================`;
-  if (ep.businessLogic && ep.businessLogic.trim()) {
-    const lines = ep.businessLogic.split("\n");
-    lines.forEach((line, idx) => {
-      if (line.trim()) {
-        code += `\n    // STEP ${idx + 1}: ${line.trim()}`;
-      }
-    });
+    drizzleTypes.add("text");
+    colDefinitions.push(`  id: text("id").primaryKey(),`);
+    colDefinitions.push(`  createdAt: text("created_at")`);
   } else {
-    code += `\n    // STEP 1: Validate incoming parameters and payload`;
-    code += `\n    // STEP 2: Perform domain query/mutation`;
-    code += `\n    // STEP 3: Return formatted JSON response`;
-  }
-  code += `\n    // TODO: Write custom implementation below this line\n`;
+    columns.forEach((col) => {
+      const dbColName = col.name.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      const varName = toVarName(dbColName);
+      const { drizzleType, mode } = mapToDrizzleSqliteType(col.type);
 
-  // 2. Authorization Guard
-  if (requiredRoles.length > 0 || requiredScopes.length > 0) {
-    code += `\n    // --- Authorization Guard ---`;
-    code += `\n    const authReq = req as Request & { user?: { roles?: string[]; scopes?: string[] } };`;
-    if (requiredRoles.length > 0) {
-      code += `\n    const userRoles = authReq.user?.roles || [];\n`;
-      code += `    const hasRequiredRole = ${JSON.stringify(requiredRoles)}.some(role => userRoles.includes(role));\n`;
-      code += `    if (!hasRequiredRole) {\n      return res.status(403).json({ error: "Forbidden: Required roles [${requiredRoles.join(", ")}] missing" });\n    }\n`;
-    }
-    if (requiredScopes.length > 0) {
-      code += `\n    const userScopes = authReq.user?.scopes || [];\n`;
-      code += `    const hasRequiredScope = ${JSON.stringify(requiredScopes)}.some(scope => userScopes.includes(scope));\n`;
-      code += `    if (!hasRequiredScope) {\n      return res.status(403).json({ error: "Forbidden: Required scopes [${requiredScopes.join(", ")}] missing" });\n    }\n`;
-    }
-  }
+      drizzleTypes.add(drizzleType);
 
-  // 3. Header Validation
-  const requiredHeaders = headers.filter((h) => h.required && h.name);
-  if (requiredHeaders.length > 0) {
-    code += `\n    // --- Header Validation ---`;
-    requiredHeaders.forEach((h) => {
-      const headerKey = h.name.toLowerCase();
-      code += `\n    if (!req.headers["${headerKey}"]) {\n      return res.status(400).json({ error: "Missing required header: ${h.name}" });\n    }`;
-    });
-    code += `\n`;
-  }
+      let colDef = `  ${varName}: ${drizzleType}("${dbColName}"${mode ? `, ${mode}` : ""})`;
 
-  // 4. Path Parameters Extraction
-  if (pathParams.length > 0) {
-    code += `\n    // --- Path Parameters ---`;
-    const paramNames = pathParams.map((p) => p.name).filter(Boolean);
-    if (paramNames.length > 0) {
-      code += `\n    const { ${paramNames.join(", ")} } = req.params;`;
-      pathParams.forEach((p) => {
-        if (p.required) {
-          code += `\n    if (!${p.name}) return res.status(400).json({ error: "Path parameter '${p.name}' is required" });`;
-        }
-      });
-      code += `\n`;
-    }
-  }
-
-  // 5. Query Parameters Extraction
-  if (queryParams.length > 0) {
-    code += `\n    // --- Query Parameters ---`;
-    const queryNames = queryParams.map((q) => q.name).filter(Boolean);
-    if (queryNames.length > 0) {
-      code += `\n    const { ${queryNames.join(", ")} } = req.query;`;
-      queryParams.forEach((q) => {
-        if (q.required) {
-          code += `\n    if (!${q.name}) return res.status(400).json({ error: "Query parameter '${q.name}' is required" });`;
-        }
-      });
-      code += `\n`;
-    }
-  }
-
-  // 6. Request Body & Schema Validation
-  if (ep.type !== "GET" && ep.type !== "DELETE") {
-    code += `\n    // --- Request Body & Payload ---`;
-    if (parsedReqSchema && typeof parsedReqSchema === "object" && !Array.isArray(parsedReqSchema)) {
-      const reqKeys = Object.keys(parsedReqSchema);
-      if (reqKeys.length > 0) {
-        code += `\n    const { ${reqKeys.join(", ")} } = req.body || {};`;
-      } else {
-        code += `\n    const payload = req.body;`;
+      if (col.isPrimaryKey) {
+        colDef += `.primaryKey()`;
       }
-    } else {
-      code += `\n    const payload = req.body;`;
-    }
-    code += `\n`;
-  }
+      if (col.isNotNull && !col.isPrimaryKey) {
+        colDef += `.notNull()`;
+      }
+      if (col.isUnique && !col.isPrimaryKey) {
+        colDef += `.unique()`;
+      }
+      if (col.references?.table) {
+        const refTableName = toTableName(col.references.table);
+        const refTableVar = toVarName(refTableName);
+        const refColVar = toVarName(col.references.column || "id");
 
-  // 7. Event Publishing Triggers
-  if (publishedEvents.length > 0) {
-    code += `\n    // --- Event Triggers ---`;
-    publishedEvents.forEach((ev) => {
-      const funcName = `publish${(ev.name || "Event").replace(/[^a-zA-Z0-9]/g, "")}`;
-      code += `\n    await ${funcName}({\n      triggeredBy: "${method.toUpperCase()} ${path}",\n      timestamp: new Date().toISOString(),\n      payload: ${ep.type !== "GET" ? "req.body" : "req.query"}\n    });`;
+        if (refTableName !== tableName) {
+          requiredImports.add(refTableVar);
+        }
+        colDef += `.references(() => ${refTableVar}.${refColVar}, { onDelete: "cascade" })`;
+      }
+
+      colDefinitions.push(`${colDef},`);
     });
-    code += `\n`;
   }
 
-  // 8. Response
-  code += `\n    // --- Response ---`;
-  let responseData: string;
-  if (parsedResSchema) {
-    responseData = JSON.stringify(parsedResSchema, null, 6).replace(/\n/g, "\n    ");
-  } else {
-    responseData = `{\n      success: true,\n      message: "Successfully executed ${ep.type || "GET"} ${path}",\n      timestamp: new Date().toISOString()\n    }`;
+  let code = `import { ${Array.from(drizzleTypes).join(", ")} } from "drizzle-orm/sqlite-core";\n`;
+
+  if (requiredImports.size > 0) {
+    Array.from(requiredImports).forEach((imp) => {
+      code += `import { ${imp} } from "./${imp}";\n`;
+    });
   }
+  code += `\n`;
 
-  const statusCode = ep.type === "POST" ? 201 : 200;
-  code += `\n    return res.status(${statusCode}).json(${responseData});`;
-
-  code += `\n  } catch (error) {\n    console.error("Error in ${method.toUpperCase()} ${path}:", error);\n    return res.status(500).json({ error: "Internal Server Error", details: (error as Error).message });\n  }\n});`;
+  code += `export const ${tableVarName} = sqliteTable("${tableName}", {\n`;
+  code += colDefinitions.join("\n");
+  code += `\n});\n`;
 
   return code;
 }
 
-function generateE2eTestSuite(
-  serviceNode: BackendNode,
-  serviceName: string,
-  port: string,
-  endpoints: Endpoint[],
-  testCases: SimulationTestCase[]
-): string {
-  let code = `import { describe, it } from "node:test";
-import assert from "node:assert";
+/**
+ * Compiles the top-level database folder (db/) containing Drizzle ORM schema per table
+ */
+export function compileDatabaseNodes(
+  allNodes: BackendNode[],
+  allEdges: BackendEdge[]
+): CompiledDatabaseResult {
+  const entityNodes = allNodes.filter((n) => n.type === "entity" || n.type === "db_ref");
+  const enrichedTables = enrichEntitiesWithForeignKeys(entityNodes, allNodes, allEdges);
 
-const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:${port}";
+  const files: CompiledFile[] = [];
+  const schemaExports: string[] = [];
 
-describe("E2E Test Suite for ${serviceName}", () => {
-  it("Health check endpoint responds with UP status", async () => {
-    const res = await fetch(\`\${BASE_URL}/health\`);
-    assert.strictEqual(res.status, 200);
-    const data = (await res.json()) as { status: string; service: string };
-    assert.strictEqual(data.status, "UP");
-  });
-`;
-
-  // Filter test cases that explicitly belong to this ServiceNode or its endpoints
-  const validTestCases = testCases.filter((tc) => {
-    if (tc.enabled === false) return false;
-    if (tc.targetNodeId === serviceNode.id) return true;
-    return endpoints.some((ep) => ep.id === tc.targetEventId || ep.id === tc.targetNodeId);
-  });
-
-  if (validTestCases.length > 0) {
-    validTestCases.forEach((tc, idx) => {
-      const matchedEndpoint = endpoints.find((ep) => ep.id === tc.targetEventId || ep.id === tc.targetNodeId) || endpoints[0];
-      const method = (matchedEndpoint?.type || tc.request?.headers?.["x-method"] || "GET").toUpperCase();
-      const rawPath = matchedEndpoint?.name || "/";
-      const routePath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
-      const tcName = tc.name && !tc.name.startsWith("Test Case ") ? tc.name : `${method} ${routePath} - ${tc.name || `Scenario #${idx + 1}`}`;
-      const expectedStatus = tc.expectedStatus || (method === "POST" ? 201 : 200);
-
-      code += `
-  it("${tcName.replace(/"/g, '\\"')}", async () => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...${JSON.stringify(tc.request?.headers || {})}
+  if (enrichedTables.length === 0) {
+    // Generate default sample schema if no entity nodes exist
+    const defaultTable: BackendNode = {
+      id: "default_entity",
+      type: "entity",
+      fractionalIndex: "a0",
+      position: { x: 0, y: 0 },
+      data: {
+        label: "users",
+        columns: [
+          { name: "id", type: "string", isPrimaryKey: true },
+          { name: "name", type: "string", isNotNull: true },
+          { name: "created_at", type: "string" },
+        ],
+      },
     };
-    const body = ${tc.request?.body ? JSON.stringify(tc.request.body) : "undefined"};
-
-    const res = await fetch(\`\${BASE_URL}/api${routePath}\`, {
-      method: "${method}",
-      headers,
-      body: body ? JSON.stringify(body) : undefined
+    const schemaCode = generateDrizzleTableSchema(defaultTable, [defaultTable]);
+    files.push({
+      filename: "schema/users.ts",
+      language: "typescript",
+      content: schemaCode,
     });
-
-    assert.strictEqual(res.status, ${expectedStatus}, "Expected HTTP status ${expectedStatus}");
-    const data = await res.json();
-    assert.ok(data, "Response body should be defined");
-  });
-`;
-    });
+    schemaExports.push(`export * from "./schema/users";`);
   } else {
-    // Generate clean E2E tests matching each endpoint on this service
-    endpoints.forEach((ep) => {
-      const method = (ep.type || "GET").toUpperCase();
-      const rawPath = ep.name || "/";
-      const routePath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
-      const expectedStatus = method === "POST" ? 201 : 200;
+    enrichedTables.forEach((table) => {
+      const tableName = toTableName(table.data.label || "table");
+      const tableVarName = toVarName(tableName);
+      const schemaCode = generateDrizzleTableSchema(table, enrichedTables);
 
-      code += `
-  it("E2E Test: ${method} /api${routePath}", async () => {
-    const res = await fetch(\`\${BASE_URL}/api${routePath}\`, {
-      method: "${method}",
-      headers: { "Content-Type": "application/json" }
+      files.push({
+        filename: `schema/${tableVarName}.ts`,
+        language: "typescript",
+        content: schemaCode,
+      });
+      schemaExports.push(`export * from "./schema/${tableVarName}";`);
     });
-    assert.strictEqual(res.status, ${expectedStatus});
+  }
+
+  // Generate db/schema/index.ts
+  files.push({
+    filename: "schema/index.ts",
+    language: "typescript",
+    content: `${schemaExports.join("\n")}\n`,
   });
+
+  // Generate db/index.ts
+  const dbIndexCode = `import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import path from "path";
+import * as schema from "./schema";
+
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "sqlite.db");
+const sqlite = new Database(dbPath);
+
+export const db = drizzle(sqlite, { schema });
+export { schema };
 `;
-    });
-  }
+  files.push({
+    filename: "index.ts",
+    language: "typescript",
+    content: dbIndexCode,
+  });
 
-  code += `});\n`;
-  return code;
+  // Generate db/package.json
+  const dbPackageJson = JSON.stringify(
+    {
+      name: "blueprint-db",
+      version: "1.0.0",
+      description: "Generated Drizzle ORM database schemas",
+      main: "index.ts",
+      scripts: {
+        generate: "drizzle-kit generate:sqlite",
+        push: "drizzle-kit push:sqlite",
+      },
+      dependencies: {
+        "drizzle-orm": "^0.30.0",
+        "better-sqlite3": "^11.3.0",
+      },
+      devDependencies: {
+        "drizzle-kit": "^0.20.0",
+        "@types/better-sqlite3": "^7.6.11",
+        typescript: "^5.3.3",
+      },
+    },
+    null,
+    2
+  );
+  files.push({
+    filename: "package.json",
+    language: "json",
+    content: dbPackageJson,
+  });
+
+  // Generate db/drizzle.config.ts
+  const drizzleConfig = `import type { Config } from "drizzle-kit";
+
+export default {
+  schema: "./schema/*",
+  out: "./drizzle",
+  driver: "better-sqlite",
+  dbCredentials: {
+    url: "./sqlite.db",
+  },
+} satisfies Config;
+`;
+  files.push({
+    filename: "drizzle.config.ts",
+    language: "typescript",
+    content: drizzleConfig,
+  });
+
+  return { files };
 }
 
-function resolveLinkedEndpoint(
-  eventId: string,
-  fromNodeId: string,
-  allNodes: BackendNode[],
-  allEdges: BackendEdge[],
-  allEndpoints: (Endpoint & { nodeId?: string })[]
-): { targetNode: BackendNode; endpoint: Endpoint } | null {
-  const edge = allEdges.find((e) => e.source === fromNodeId && e.sourceHandle === `events-${eventId}`);
-  if (!edge || !edge.targetHandle) return null;
-
-  const targetNode = allNodes.find((n) => n.id === edge.target);
-  if (!targetNode) return null;
-
-  const parts = edge.targetHandle.split("-in-");
-  const endpointId = parts[parts.length - 1];
-  if (!endpointId) return null;
-
-  let endpoint = allEndpoints.find((ep) => ep.nodeId === targetNode.id && ep.id === endpointId);
-  if (!endpoint && targetNode.data?.endpoints) {
-    endpoint = (targetNode.data.endpoints as Endpoint[]).find((ep) => ep.id === endpointId);
-  }
-  if (!endpoint && targetNode.data?.routeGroups) {
-    for (const group of targetNode.data.routeGroups as any[]) {
-      endpoint = group.endpoints?.find((ep: Endpoint) => ep.id === endpointId);
-      if (endpoint) break;
-    }
-  }
-
-  return endpoint ? { targetNode, endpoint } : null;
-}
-
-function generateWebClientSdk(
-  webClientNodes: BackendNode[],
-  allNodes: BackendNode[],
-  allEdges: BackendEdge[],
-  allEndpoints: (Endpoint & { nodeId?: string })[],
-  port: string
-): string {
-  let code = `/**
- * Web Client API SDK
- * Typed client fetchers generated for Web Client pages
+/**
+ * Compiles a single Service Node into its modular microservice directory structure
  */
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:${port}";
-
-`;
-
-  if (webClientNodes.length === 0) {
-    code += `export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const res = await fetch(\`\${BASE_URL}\${endpoint}\`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
-    ...options
-  });
-  return res.json();
-}
-`;
-    return code;
-  }
-
-  webClientNodes.forEach((clientNode) => {
-    const pageTitle = clientNode.data.label || "WebPage";
-    const clientEvents = (clientNode.data.events || []) as UIEventItem[];
-
-    code += `// --- ${pageTitle} Client API ---\n`;
-    clientEvents.forEach((evt) => {
-      const eventType = "event" in evt && typeof (evt as { event?: string }).event === "string" ? (evt as { event?: string }).event : "event";
-      const funcName = `trigger${(evt.name || "Action").replace(/[^a-zA-Z0-9]/g, "")}`;
-
-      // Resolve linked edge & target route endpoint
-      const linked = resolveLinkedEndpoint(evt.id, clientNode.id, allNodes, allEdges, allEndpoints);
-      const targetService = linked?.targetNode.data?.label || "Service";
-      const method = (linked?.endpoint.type || "POST").toUpperCase();
-      const rawPath = linked?.endpoint.name || "/";
-      const routePath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
-      const fullUrlPath = `/api${routePath}`;
-
-      code += `/**
- * Web Client Action: "${evt.name}" (${eventType})
- * Target Service: ${targetService}
- * Connected Route: ${method} ${fullUrlPath}
- */
-export async function ${funcName}(payload?: Record<string, unknown>, headers?: Record<string, string>) {
-  const res = await fetch(\`\${BASE_URL}${fullUrlPath}\`, {
-    method: "${method}",
-    headers: { "Content-Type": "application/json", ...headers },
-    ${method !== "GET" && method !== "HEAD" ? "body: payload ? JSON.stringify(payload) : undefined" : ""}
-  });
-  return res.json();
-}
-
-`;
-    });
-  });
-
-  return code;
-}
-
 export function compileServiceNode(
   node: BackendNode,
   endpoints: (Endpoint & { nodeId: string })[] = [],
@@ -423,166 +369,276 @@ export function compileServiceNode(
   const cors = node.data.cors || false;
   const corsOrigins = node.data.corsOrigins || "*";
 
-  const nodeEndpoints = endpoints.filter((e) => e.nodeId === node.id);
-  const nodeConsumedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "consume");
-  const nodePublishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
-  const webClientNodes = allNodes.filter((n) => n.type === "webClient");
-
-  // Discover connected SQLite database table references
-  const connectedEdges = allEdges.filter((e) => e.source === node.id || e.target === node.id);
-  const connectedNodeIds = connectedEdges.map((e) => (e.source === node.id ? e.target : e.source));
-
-  const connectedDbNodes = allNodes.filter(
-    (n) => connectedNodeIds.includes(n.id) && (n.type === "db_ref" || n.type === "entity" || n.type === "database")
-  );
-
-  // Resolve entity nodes (table schemas)
-  const connectedTables: BackendNode[] = [];
-  connectedDbNodes.forEach((dbNode) => {
-    if (dbNode.type === "entity") {
-      connectedTables.push(dbNode);
-    } else if (dbNode.type === "db_ref" && dbNode.data.tableRef) {
-      const entity = allNodes.find((n) => n.id === dbNode.data.tableRef && n.type === "entity");
-      if (entity && !connectedTables.some((t) => t.id === entity.id)) {
-        connectedTables.push(entity);
+  let nodeEndpoints = endpoints.filter((e) => e.nodeId === node.id);
+  if (nodeEndpoints.length === 0 && node.data?.endpoints) {
+    nodeEndpoints = node.data.endpoints as (Endpoint & { nodeId: string })[];
+  }
+  if (node.data?.routeGroups) {
+    for (const group of node.data.routeGroups as any[]) {
+      if (group.endpoints) {
+        nodeEndpoints = [...nodeEndpoints, ...group.endpoints];
       }
     }
-  });
-
-  // If no direct edges, check all entity nodes in canvas as general project tables
-  if (connectedTables.length === 0) {
-    allNodes.filter((n) => n.type === "entity" && n.data.dbType !== "vector").forEach((e) => connectedTables.push(e));
   }
 
-  // Collect all published event names
-  const allPublishedEventNames = new Set<string>();
-  nodePublishedEvents.forEach((e) => e.name && allPublishedEventNames.add(e.name));
-  nodeEndpoints.forEach((ep) => {
-    (ep.publishedEvents || []).forEach((ev) => ev.name && allPublishedEventNames.add(ev.name));
-  });
-
-  // 1. Generate db/schema.sql and db/sqlite.ts if tables exist
-  let sqliteDdl = `-- SQLite Schema generated for ${serviceName}\n-- Automatically initialized on startup\n\n`;
-  if (connectedTables.length > 0) {
-    sqliteDdl += connectedTables.map((t) => generateSqliteTableDdl(t)).join("\n\n");
-  } else {
-    sqliteDdl += `CREATE TABLE IF NOT EXISTS app_data (\n  id TEXT PRIMARY KEY,\n  key TEXT UNIQUE,\n  value TEXT,\n  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n);`;
+  let nodeConsumedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "consume");
+  if (nodeConsumedEvents.length === 0 && node.data?.consumedEvents) {
+    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "consume" }));
   }
 
-  const sqliteDbHelperCode = `import Database from "better-sqlite3";
-import fs from "fs";
-import path from "path";
-
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../../data.db");
-export const db = new Database(dbPath);
-
-// Enable foreign keys constraint
-db.pragma("foreign_keys = ON");
-
-/**
- * Automatically initializes SQLite schema on service startup.
- */
-export function initDatabase(): void {
-  try {
-    const schemaPath = path.join(__dirname, "schema.sql");
-    if (fs.existsSync(schemaPath)) {
-      const schemaSql = fs.readFileSync(schemaPath, "utf-8");
-      db.exec(schemaSql);
-      console.log("sqlite SQLite Database initialized with schema.sql");
-    }
-  } catch (error) {
-    console.error("Failed to initialize SQLite database:", error);
+  let nodePublishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
+  if (nodePublishedEvents.length === 0 && node.data?.publishedEvents) {
+    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "publish" }));
   }
-}
-`;
 
-  // 2. Generate routes/api.ts
-  let apiRoutesCode = `import { Router, Request, Response } from "express";
-${connectedTables.length > 0 ? `import { db } from "../db/sqlite";\n` : ""}
-${
-  allPublishedEventNames.size > 0
-    ? `import { ${Array.from(allPublishedEventNames)
-        .map((name) => `publish${name.replace(/[^a-zA-Z0-9]/g, "")}`)
-        .join(", ")} } from "../events/publishers";\n`
-    : ""
-}
-export const router = Router();
+  const files: CompiledFile[] = [];
 
-`;
+  // =========================================================================
+  // 1. GENERATE src/routes/ (individual file per endpoint)
+  // =========================================================================
+  const routeImports: string[] = [];
+  const routeRegistrations: string[] = [];
 
   if (nodeEndpoints.length === 0) {
-    apiRoutesCode += `// No endpoints configured on canvas for ${serviceName}.
-router.get("/example", async (_req: Request, res: Response) => {
-  res.json({ message: "Default service route operational." });
-});\n`;
-  } else {
-    apiRoutesCode += nodeEndpoints
-      .map((ep) => generateEndpointHandler(ep, serviceName, connectedTables))
-      .join("\n\n");
-  }
+    // Default endpoint handler if none configured
+    const defaultRouteCode = `import { Request, Response } from "express";
 
-  // 3. Generate events/publishers.ts & consumers.ts
-  let publishersCode = `/**
- * Event Publishers for ${serviceName}
- */
-`;
-  if (allPublishedEventNames.size === 0) {
-    publishersCode += `// No published events configured.\n`;
-  } else {
-    Array.from(allPublishedEventNames).forEach((eventName) => {
-      const funcName = `publish${eventName.replace(/[^a-zA-Z0-9]/g, "")}`;
-      publishersCode += `
-/**
- * Publish event: "${eventName}"
- */
-export async function ${funcName}(eventData: Record<string, unknown>): Promise<void> {
-  console.log(\`[EVENT PUBLISH] [${eventName}]\`, JSON.stringify(eventData, null, 2));
-  // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)
+export async function defaultHandler(_req: Request, res: Response) {
+  return res.status(200).json({
+    success: true,
+    message: "Default service route operational for ${serviceName}.",
+    timestamp: new Date().toISOString()
+  });
 }
 `;
+    files.push({
+      filename: "src/routes/defaultRoute.ts",
+      language: "typescript",
+      content: defaultRouteCode,
+    });
+    routeImports.push(`import { defaultHandler } from "./defaultRoute";`);
+    routeRegistrations.push(`router.get("/example", defaultHandler);`);
+  } else {
+    nodeEndpoints.forEach((ep) => {
+      const rawName = ep.name || ep.id;
+      const routeFileName = toVarName(rawName) || "endpoint";
+      const handlerName = `${routeFileName}Handler`;
+      const method = (ep.type || "GET").toLowerCase();
+      const path = ep.name?.startsWith("/") ? ep.name : `/${ep.name || ""}`;
+      const summary = ep.summary || `Handler for ${ep.type || "GET"} ${path}`;
+
+      const parsedResSchema = parseSchemaJson(ep.responseBody?.rawJson);
+      let responseData: string;
+      if (parsedResSchema) {
+        responseData = JSON.stringify(parsedResSchema, null, 6).replace(/\n/g, "\n    ");
+      } else {
+        responseData = `{\n      success: true,\n      message: "Successfully executed ${ep.type || "GET"} ${path}",\n      timestamp: new Date().toISOString()\n    }`;
+      }
+
+      let routeHandlerCode = `import { Request, Response } from "express";
+import { db } from "../lib/db.config";
+
+/**
+ * ${ep.type || "GET"} ${path}
+ * ${summary}
+ */
+export async function ${handlerName}(req: Request, res: Response) {
+  try {
+    // =========================================================================
+    // 🤖 AI CODING AGENT DIRECTIVE:
+    // Implement endpoint domain logic for: ${ep.type || "GET"} ${path}
+    // Description: ${summary}
+    // =========================================================================
+`;
+
+      if (ep.businessLogic && ep.businessLogic.trim()) {
+        ep.businessLogic.split("\n").forEach((line, idx) => {
+          if (line.trim()) routeHandlerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
+        });
+      } else {
+        routeHandlerCode += `    // STEP 1: Validate request payload and params\n`;
+        routeHandlerCode += `    // STEP 2: Execute database query/mutation\n`;
+        routeHandlerCode += `    // STEP 3: Return structured JSON response\n`;
+      }
+
+      const statusCode = ep.type === "POST" ? 201 : 200;
+      routeHandlerCode += `\n    return res.status(${statusCode}).json(${responseData});\n`;
+      routeHandlerCode += `  } catch (error) {\n    console.error("Error in ${method.toUpperCase()} ${path}:", error);\n    return res.status(500).json({ error: "Internal Server Error", details: (error as Error).message });\n  }\n}\n`;
+
+      files.push({
+        filename: `src/routes/${routeFileName}.ts`,
+        language: "typescript",
+        content: routeHandlerCode,
+      });
+
+      routeImports.push(`import { ${handlerName} } from "./${routeFileName}";`);
+      routeRegistrations.push(`router.${method}("${path}", ${handlerName});`);
     });
   }
 
-  let consumersCode = `/**
- * Event Consumers / Listeners for ${serviceName}
- */
+  // src/routes/index.ts
+  const routesIndexCode = `import { Router } from "express";
+${routeImports.join("\n")}
+
+export const router = Router();
+
+${routeRegistrations.join("\n")}
 `;
+  files.push({
+    filename: "src/routes/index.ts",
+    language: "typescript",
+    content: routesIndexCode,
+  });
+
+  // =========================================================================
+  // 2. GENERATE src/consumer/ (individual file per event consumer)
+  // =========================================================================
+  const consumerImports: string[] = [];
+  const consumerInits: string[] = [];
+
   if (nodeConsumedEvents.length === 0) {
-    consumersCode += `// No consumed events configured.\n`;
+    files.push({
+      filename: "src/consumer/index.ts",
+      language: "typescript",
+      content: `/**\n * Event Consumers for ${serviceName}\n */\nexport function initConsumers(): void {\n  // No consumed events configured for this service\n}\n`,
+    });
   } else {
     nodeConsumedEvents.forEach((ev) => {
-      const handlerName = `handle${ev.name.replace(/[^a-zA-Z0-9]/g, "")}`;
-      consumersCode += `
-/**
- * Listener for topic/event: "${ev.name}"
- * ${ev.description || "Processes incoming event payload"}
+      const consumerFileName = toVarName(ev.name || "event") || "consumer";
+      const handlerName = `handle${toPascalCase(ev.name || "event")}`;
+
+      const consumerCode = `/**
+ * Event Consumer for: "${ev.name}"
+ * Description: ${ev.description || "Processes incoming event payload"}
  */
 export async function ${handlerName}(payload: Record<string, unknown>): Promise<void> {
   console.log(\`[EVENT CONSUME] [${ev.name}]\`, payload);
-  // Handler Logic: ${ev.handlerLogic || "Process event"}
+  // Handler Logic: ${ev.handlerLogic || "Process event payload"}
 }
 `;
+      files.push({
+        filename: `src/consumer/${consumerFileName}.ts`,
+        language: "typescript",
+        content: consumerCode,
+      });
+
+      consumerImports.push(`import { ${handlerName} } from "./${consumerFileName}";`);
+      consumerInits.push(`  console.log("Registered listener for topic: ${ev.name}");`);
+    });
+
+    const consumersIndexCode = `/**
+ * Event Consumers Initialization for ${serviceName}
+ */
+${consumerImports.join("\n")}
+
+export function initConsumers(): void {
+  console.log("Initializing event consumers...");
+${consumerInits.join("\n")}
+}
+`;
+    files.push({
+      filename: "src/consumer/index.ts",
+      language: "typescript",
+      content: consumersIndexCode,
     });
   }
 
-  // 4. Generate E2E Test Suite & Web Client SDK (Traces edges from WebClientNode events to target endpoints)
-  const e2eTestCode = generateE2eTestSuite(node, serviceName, port, nodeEndpoints, testCases);
-  const clientSdkCode = generateWebClientSdk(webClientNodes, allNodes, allEdges, endpoints, port);
+  // =========================================================================
+  // 3. GENERATE src/producer/ (individual file per event producer)
+  // =========================================================================
+  const producerExports: string[] = [];
 
-  // 5. Generate main server.ts
+  if (nodePublishedEvents.length === 0) {
+    files.push({
+      filename: "src/producer/index.ts",
+      language: "typescript",
+      content: `/**\n * Event Producers for ${serviceName}\n */\n// No published events configured for this service\n`,
+    });
+  } else {
+    nodePublishedEvents.forEach((ev) => {
+      const producerFileName = toVarName(ev.name || "event") || "producer";
+      const funcName = `publish${toPascalCase(ev.name || "event")}`;
+
+      const producerCode = `/**
+ * Event Producer for: "${ev.name}"
+ */
+export async function ${funcName}(eventData: Record<string, unknown>): Promise<void> {
+  console.log(\`[EVENT PUBLISH] [${ev.name}]\`, JSON.stringify(eventData, null, 2));
+  // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)
+}
+`;
+      files.push({
+        filename: `src/producer/${producerFileName}.ts`,
+        language: "typescript",
+        content: producerCode,
+      });
+
+      producerExports.push(`export * from "./${producerFileName}";`);
+    });
+
+    const producersIndexCode = `/**
+ * Event Producers for ${serviceName}
+ */
+${producerExports.join("\n")}
+`;
+    files.push({
+      filename: "src/producer/index.ts",
+      language: "typescript",
+      content: producersIndexCode,
+    });
+  }
+
+  // =========================================================================
+  // 4. GENERATE src/lib/ (db.config.ts and index.ts)
+  // =========================================================================
+  const dbConfigCode = `import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import path from "path";
+
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../../../db/sqlite.db");
+export const sqlite = new Database(dbPath);
+export const db = drizzle(sqlite);
+`;
+  files.push({
+    filename: "src/lib/db.config.ts",
+    language: "typescript",
+    content: dbConfigCode,
+  });
+
+  const libIndexCode = `export * from "./db.config";
+
+export function formatResponse<T>(data: T, message = "Success") {
+  return {
+    success: true,
+    message,
+    data,
+    timestamp: new Date().toISOString()
+  };
+}
+`;
+  files.push({
+    filename: "src/lib/index.ts",
+    language: "typescript",
+    content: libIndexCode,
+  });
+
+  // =========================================================================
+  // 5. GENERATE src/index.ts (main server config)
+  // =========================================================================
   const serverCode = `import express, { Request, Response } from "express";
-${cors ? 'import cors from "cors";\n' : ''}import { router as apiRouter } from "./routes/api";
-import { initDatabase } from "./db/sqlite";
+${cors ? 'import cors from "cors";\n' : ""}import dotenv from "dotenv";
+import { router as apiRouter } from "./routes";
+import { initConsumers } from "./consumer";
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || ${port};
 
-// Initialize SQLite database tables
-initDatabase();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-${cors ? `app.use(cors({ origin: "${corsOrigins}" }));\n` : ""}\n// --- Request Logger ---
+${cors ? `app.use(cors({ origin: "${corsOrigins}" }));\n` : "app.use(cors());\n"}
+// --- Request Logger ---
 app.use((req: Request, _res: Response, next) => {
   console.log(\`[\${new Date().toISOString()}] \${req.method} \${req.url}\`);
   next();
@@ -601,30 +657,41 @@ app.get("/health", (_req: Request, res: Response) => {
 // --- Mount Routes ---
 app.use("/api", apiRouter);
 
+// --- Initialize Event Consumers ---
+initConsumers();
+
 // --- Server Startup ---
 app.listen(PORT, () => {
   console.log(\`🚀 Service "${serviceName}" operational at http://localhost:\${PORT}\`);
   console.log(\`📋 Health check available at http://localhost:\${PORT}/health\`);
 });
 `;
+  files.push({
+    filename: "src/index.ts",
+    language: "typescript",
+    content: serverCode,
+  });
 
-  // 6. Generate package.json
+  // =========================================================================
+  // 6. GENERATE package.json, tsconfig.json, .env, .gitignore
+  // =========================================================================
   const packageJson = JSON.stringify(
     {
       name: `${sanitizedName}-service`,
       version: "1.0.0",
-      description: node.data.description || `Generated microservice template for ${serviceName}`,
-      main: "dist/server.js",
+      description: node.data.description || `Generated microservice for ${serviceName}`,
+      main: "dist/index.js",
       scripts: {
         build: "tsc",
-        start: "node dist/server.js",
-        dev: "ts-node-dev --respawn server.ts",
-        test: "tsc && node --test dist/tests/e2e.test.js"
+        start: "node dist/index.js",
+        dev: "ts-node-dev --respawn src/index.ts",
       },
       dependencies: {
         express: "^4.19.2",
+        dotenv: "^16.4.5",
+        "drizzle-orm": "^0.30.0",
         "better-sqlite3": "^11.3.0",
-        ...(cors ? { cors: "^2.8.5" } : {})
+        ...(cors ? { cors: "^2.8.5" } : {}),
       },
       devDependencies: {
         "@types/express": "^4.17.21",
@@ -632,14 +699,18 @@ app.listen(PORT, () => {
         ...(cors ? { "@types/cors": "^2.8.17" } : {}),
         "@types/node": "^20.11.0",
         "ts-node-dev": "^2.0.0",
-        typescript: "^5.3.3"
-      }
+        typescript: "^5.3.3",
+      },
     },
     null,
     2
   );
+  files.push({
+    filename: "package.json",
+    language: "json",
+    content: packageJson,
+  });
 
-  // 7. Generate tsconfig.json
   const tsconfig = JSON.stringify(
     {
       compilerOptions: {
@@ -647,57 +718,47 @@ app.listen(PORT, () => {
         module: "CommonJS",
         moduleResolution: "node",
         outDir: "./dist",
-        rootDir: "./",
+        rootDir: "./src",
         strict: true,
         esModuleInterop: true,
         skipLibCheck: true,
-        forceConsistentCasingInFileNames: true
+        forceConsistentCasingInFileNames: true,
       },
-      include: ["**/*.ts"]
+      include: ["src/**/*"],
     },
     null,
     2
   );
+  files.push({
+    filename: "tsconfig.json",
+    language: "json",
+    content: tsconfig,
+  });
 
-  // 8. Generate Dockerfile
-  const dockerfile = `# Dockerfile for ${serviceName}
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY --from=builder /app/dist ./dist
-
-EXPOSE ${port}
-CMD ["node", "dist/server.js"]
+  const envFile = `PORT=${port}
+NODE_ENV=development
+DATABASE_PATH=../../db/sqlite.db
 `;
+  files.push({
+    filename: ".env",
+    language: "dotenv",
+    content: envFile,
+  });
+
+  const gitignoreFile = `node_modules
+dist
+.env
+*.log
+`;
+  files.push({
+    filename: ".gitignore",
+    language: "gitignore",
+    content: gitignoreFile,
+  });
 
   return {
     serviceId: node.id,
     serviceName,
-    files: [
-      { filename: "server.ts", language: "typescript", content: serverCode },
-      { filename: "routes/api.ts", language: "typescript", content: apiRoutesCode },
-      { filename: "db/sqlite.ts", language: "typescript", content: sqliteDbHelperCode },
-      { filename: "db/schema.sql", language: "sql", content: sqliteDdl },
-      { filename: "tests/e2e.test.ts", language: "typescript", content: e2eTestCode },
-      { filename: "client/apiClient.ts", language: "typescript", content: clientSdkCode },
-      { filename: "events/publishers.ts", language: "typescript", content: publishersCode },
-      { filename: "events/consumers.ts", language: "typescript", content: consumersCode },
-      { filename: "package.json", language: "json", content: packageJson },
-      { filename: "tsconfig.json", language: "json", content: tsconfig },
-      { filename: "Dockerfile", language: "dockerfile", content: dockerfile }
-    ]
+    files,
   };
 }

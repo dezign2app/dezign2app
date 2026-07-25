@@ -114,10 +114,11 @@ export function CanvasToolbar({
       <div className="flex items-center space-x-2">
         <Button asChild variant={"secondary"}>
           <Link href={"/api-keys"}>
-            <Router className="mr-1"/>
+            <Router className="mr-1" />
             MCP
           </Link>
         </Button>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -130,11 +131,20 @@ export function CanvasToolbar({
               Build
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            prototype
+          <TooltipContent side="bottom" className="max-w-64 p-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 font-semibold text-xs text-background">
+                <Hammer className="w-3.5 h-3.5" />
+                <span>Monorepo Code Generator</span>
+              </div>
+              <p className="text-[11px] text-background/80 leading-relaxed">
+                Generates complete monorepo boilerplate & services architecture. Full AI business logic generation is under active development.
+              </p>
+            </div>
           </TooltipContent>
         </Tooltip>
         <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} />
+
         <Button
           variant={"secondary"}
           size="sm"

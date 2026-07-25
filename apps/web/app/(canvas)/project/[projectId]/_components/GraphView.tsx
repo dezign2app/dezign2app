@@ -96,12 +96,27 @@ export function GraphView({ projectId }: GraphViewProps) {
   const handleAddGraphNode = (type: "service" | "db_ref" | "queue" | "pubsub" | "eventstream" | "kafka" | "redis-streams" | "sqs" | "redis-pubsub" | "redis-cache" | "webClient" | "external" | "storage" | "worker" | "serverless" | "vector_db_ref" | "search_index" | "api_gateway" | "load_balancer" | "webhook" | "llm" | "mcp_server" | "identity_provider", label: string) => {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 100, center.y - 100, nodes);
+    let initialPort: string | undefined = undefined;
+    if (type === "service") {
+      const existingPorts = new Set(
+        nodes
+          .filter((n) => n.type === "service")
+          .map((n) => parseInt(n.data?.port || "8080", 10))
+          .filter((p) => !isNaN(p))
+      );
+      let nextPort = 8080;
+      while (existingPorts.has(nextPort)) {
+        nextPort++;
+      }
+      initialPort = String(nextPort);
+    }
     addNode({
       id: crypto.randomUUID(),
       type,
       position: { x, y },
       data: { 
         label,
+        port: initialPort,
         events: type === 'webClient' ? [] : undefined,
         inputs: type === 'service' ? [] : undefined,
         logic: type === 'service' ? [] : undefined,

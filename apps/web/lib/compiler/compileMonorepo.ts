@@ -38,6 +38,7 @@ export function compileMonorepo(
       scripts: {
         build: "turbo build",
         dev: "turbo dev",
+        test: "turbo test",
         lint: "turbo lint",
         "check-types": "turbo check-types",
         format: 'prettier --write "**/*.{ts,tsx,md}"',
@@ -47,6 +48,7 @@ export function compileMonorepo(
         prettier: "^3.7.4",
         turbo: "^2.6.3",
         typescript: "5.7.3",
+        vitest: "^1.6.0",
       },
       packageManager: "pnpm@10.4.1",
       engines: {
@@ -81,6 +83,7 @@ export function compileMonorepo(
           cache: false,
           persistent: true,
         },
+        test: {},
         lint: {},
         "check-types": {
           dependsOn: ["^check-types"],
@@ -232,7 +235,8 @@ dist
       events,
       nodes,
       edges,
-      projectName
+      projectName,
+      testCases
     );
 
     webClientResult.files.forEach((f) => {

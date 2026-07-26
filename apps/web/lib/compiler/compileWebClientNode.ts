@@ -1,4 +1,4 @@
-import { BackendNode, BackendEdge } from "@/types/canvas";
+import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource, UIEventItem } from "@workspace/canvas/types";
 import { CompiledFile, CompiledWebClientResult } from "./types";
 
@@ -124,7 +124,7 @@ export function resolveLinkedEndpoint(
     }
 
     const method = (ep?.type || "GET").toUpperCase();
-    const rawPath = ep?.name || "api/data";
+    const rawPath = ep?.name || "data";
     let path = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
 
     // Clean up dynamic path parameters (e.g. /users/:id -> /users/1, /products/{id} -> /products/1)
@@ -222,6 +222,8 @@ function slugToComponentName(slug: string): string {
   return camel.charAt(0).toUpperCase() + camel.slice(1) + "Page";
 }
 
+import { generateWebClientE2ETests } from "./generators/testGenerator";
+
 /**
  * Compiles a collection of WebClient nodes into a Next.js App Router project
  */
@@ -231,7 +233,8 @@ export function compileWebClientNodes(
   events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  projectName: string = "Blueprint Monorepo"
+  projectName: string = "Blueprint Monorepo",
+  testCases: SimulationTestCase[] = []
 ): CompiledWebClientResult {
   const files: CompiledFile[] = [];
 
@@ -282,6 +285,7 @@ export function compileWebClientNodes(
         build: "next build",
         start: "next start",
         lint: "next lint",
+        test: "vitest run",
       },
       dependencies: {
         "@workspace/ui": "workspace:*",
@@ -299,6 +303,7 @@ export function compileWebClientNodes(
         "@workspace/typescript-config": "workspace:*",
         tailwindcss: "^4.0.0",
         typescript: "^5.9.0",
+        vitest: "^1.6.0",
       },
     },
     null,
@@ -792,6 +797,16 @@ export default function WebClientIndexPage() {
       content: rootIndexPage,
     });
   }
+
+  const e2eFiles = generateWebClientE2ETests(
+    webClientNodes,
+    endpoints,
+    events,
+    allNodes,
+    allEdges,
+    testCases
+  );
+  files.push(...e2eFiles);
 
   return {
     webClientId: "web-client-app",

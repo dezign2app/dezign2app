@@ -9,6 +9,7 @@ import {
   generateServerFile,
   generateConfigFiles,
 } from "./generators/configGenerator";
+import { generateServiceUnitTests } from "./generators/testGenerator";
 
 /**
  * Compiles a single Service Node into its modular microservice directory structure
@@ -56,6 +57,7 @@ export function compileServiceNode(
     ...generateLibFiles(),
     generateServerFile(serviceName, port, cors, corsOrigins),
     ...generateConfigFiles(node, sanitizedName, serviceName, port, cors),
+    ...generateServiceUnitTests(serviceName, nodeEndpoints, testCases),
   ];
 
   return {

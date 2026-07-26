@@ -162,7 +162,7 @@ export async function ${handlerName}(
   const routesIndexCode = `import { Router } from "express";
 ${routeImports.join("\n")}
 
-export const router = Router();
+export const router: Router = Router();
 
 ${routeRegistrations.join("\n")}
 `;

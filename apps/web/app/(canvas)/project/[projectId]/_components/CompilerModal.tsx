@@ -36,6 +36,7 @@ interface CompilerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectName?: string;
+  projectId?: string;
 }
 
 interface FileTreeNode {
@@ -86,6 +87,15 @@ function buildFileTree(files: CompiledFile[]): FileTreeNode[] {
 
   sortNodes(root);
   return root;
+}
+
+function getParentPaths(filePath: string): string[] {
+  const parts = filePath.split("/");
+  const parents: string[] = [];
+  for (let i = 1; i < parts.length; i++) {
+    parents.push(parts.slice(0, i).join("/"));
+  }
+  return parents;
 }
 
 function FileTreeItem({
@@ -175,7 +185,7 @@ function FileTreeItem({
   );
 }
 
-export function CompilerModal({ open, onOpenChange, projectName }: CompilerModalProps) {
+export function CompilerModal({ open, onOpenChange, projectName, projectId }: CompilerModalProps) {
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
@@ -213,18 +223,64 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
 
   const fileTree = useMemo(() => buildFileTree(monorepoResult.files), [monorepoResult.files]);
 
-  // Default close all directories and show README.md when opening modal
+  // Restore last opened file and expanded folder structure when modal opens
   React.useEffect(() => {
-    if (open) {
-      setExpandedPaths(new Set());
-      const readme = monorepoResult.files.find((f) => f.filename.toLowerCase() === "readme.md");
-      if (readme) {
-        setSelectedFilename(readme.filename);
-      } else if (!monorepoResult.files.some((f) => f.filename === selectedFilename)) {
-        setSelectedFilename(monorepoResult.files[0]?.filename || "README.md");
+    if (!open) return;
+    const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+    let restoredFile: string | null = null;
+    let restoredExpanded: string[] = [];
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.selectedFilename && typeof parsed.selectedFilename === "string") {
+          restoredFile = parsed.selectedFilename;
+        }
+        if (Array.isArray(parsed.expandedPaths)) {
+          restoredExpanded = parsed.expandedPaths;
+        }
       }
+    } catch (e) {
+      console.error("Failed to restore compiler modal state", e);
     }
-  }, [open]);
+
+    const fileExists = restoredFile && monorepoResult.files.some((f) => f.filename === restoredFile);
+    let targetFile = fileExists ? restoredFile! : "";
+
+    if (!targetFile) {
+      const readme = monorepoResult.files.find((f) => f.filename.toLowerCase() === "readme.md");
+      targetFile = readme ? readme.filename : monorepoResult.files[0]?.filename || "README.md";
+    }
+
+    setSelectedFilename(targetFile);
+
+    const parents = getParentPaths(targetFile);
+    const newExpandedSet = new Set<string>([...restoredExpanded, ...parents]);
+    setExpandedPaths(newExpandedSet);
+  }, [open, projectId]);
+
+  const handleSelectFile = (filename: string) => {
+    setSelectedFilename(filename);
+    const parents = getParentPaths(filename);
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      parents.forEach((p) => next.add(p));
+      try {
+        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            selectedFilename: filename,
+            expandedPaths: Array.from(next),
+          })
+        );
+      } catch (e) {
+        console.error("Failed to save compiler modal state", e);
+      }
+      return next;
+    });
+  };
 
   const handleToggleExpand = (path: string) => {
     setExpandedPaths((prev) => {
@@ -233,6 +289,18 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
         next.delete(path);
       } else {
         next.add(path);
+      }
+      try {
+        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            selectedFilename,
+            expandedPaths: Array.from(next),
+          })
+        );
+      } catch (e) {
+        console.error("Failed to save compiler modal state", e);
       }
       return next;
     });
@@ -385,7 +453,7 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
                     activePath={activeFile?.filename || ""}
                     expandedPaths={expandedPaths}
                     onToggleExpand={handleToggleExpand}
-                    onSelectFile={setSelectedFilename}
+                    onSelectFile={handleSelectFile}
                   />
                 ))}
               </div>

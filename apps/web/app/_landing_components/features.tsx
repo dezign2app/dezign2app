@@ -514,20 +514,25 @@ export const EffortlessSection = () => {
       <div className="relative z-10 max-w-6xl w-full px-6 flex flex-col items-center justify-center min-h-[600px]">
         
         {/* Billing toggle at the top */}
-        <div className="z-50 flex items-center bg-gray-200/70 backdrop-blur-md rounded-full p-1 gap-1 mb-12 shadow-inner border border-gray-300 pointer-events-auto">
-          {(["monthly", "annually"] as const).map((cycle) => (
-            <button
-              key={cycle}
-              onClick={() => setBilling(cycle)}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 capitalize ${
-                billing === cycle
-                  ? "bg-[#1a1a1a] text-white shadow-md"
-                  : "text-gray-600 hover:text-black"
-              }`}
-            >
-              {cycle === "annually" ? "Annually" : "Monthly"}
-            </button>
-          ))}
+        <div className="flex flex-col items-center mb-12">
+          <div className="z-50 flex items-center bg-gray-200/70 backdrop-blur-md rounded-full p-1 gap-1 shadow-inner border border-gray-300 pointer-events-auto">
+            {(["monthly", "annually"] as const).map((cycle) => (
+              <button
+                key={cycle}
+                onClick={() => setBilling(cycle)}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 capitalize ${
+                  billing === cycle
+                    ? "bg-[#1a1a1a] text-white shadow-md"
+                    : "text-gray-600 hover:text-black"
+                }`}
+              >
+                {cycle === "annually" ? "Annually" : "Monthly"}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-green-600 font-semibold z-50">
+            🎉 2 months free with annual billing
+          </p>
         </div>
 
         {/* Floating Elements & Backgrounds */}

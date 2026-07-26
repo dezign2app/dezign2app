@@ -261,9 +261,23 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       .filter((c) => c.type === "remove")
       .map((c) => c.id);
 
-    const upserts = next.filter((n) =>
-      changes.some((c) => c.id === n.id && c.type !== "remove")
+    // Filter changes that are persistent (e.g. position change, manual resizing, node add/replace)
+    // Ignore purely ephemeral changes like initial measurement (dimensions without resizing) or selection changes
+    const persistentChangedNodeIds = new Set(
+      changes
+        .filter((c) => {
+          if (c.type === "position" || c.type === "add" || c.type === "replace") {
+            return true;
+          }
+          if (c.type === "dimensions" && "resizing" in c && Boolean((c as { resizing?: boolean }).resizing)) {
+            return true;
+          }
+          return false;
+        })
+        .map((c) => c.id)
     );
+
+    const upserts = next.filter((n) => persistentChangedNodeIds.has(n.id));
 
     set({
       nodes: next,
@@ -278,9 +292,13 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       .filter((c) => c.type === "remove")
       .map((c) => c.id);
 
-    const upserts = next.filter((e) =>
-      changes.some((c) => c.id === e.id && c.type !== "remove")
+    const persistentChangedEdgeIds = new Set(
+      changes
+        .filter((c) => c.type === "add" || c.type === "replace")
+        .map((c) => c.id)
     );
+
+    const upserts = next.filter((e) => persistentChangedEdgeIds.has(e.id));
 
     // Sync edge deletion back to node event dropdowns
     const removedEdges = get().edges.filter(e => removedIds.includes(e.id));

@@ -185,7 +185,7 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
   const serviceNodes = nodes.filter((n) => n.type === "service");
   const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
 
-  const [selectedFilename, setSelectedFilename] = useState<string>("package.json");
+  const [selectedFilename, setSelectedFilename] = useState<string>("README.md");
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
@@ -213,22 +213,15 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
 
   const fileTree = useMemo(() => buildFileTree(monorepoResult.files), [monorepoResult.files]);
 
-  // Default expand root directories when opening modal
+  // Default close all directories and show README.md when opening modal
   React.useEffect(() => {
     if (open) {
-      const initialExpanded = new Set<string>();
-      monorepoResult.files.forEach((f) => {
-        const parts = f.filename.split("/");
-        if (parts.length > 1) {
-          initialExpanded.add(parts[0]!);
-          if (parts.length > 2) {
-            initialExpanded.add(`${parts[0]}/${parts[1]}`);
-          }
-        }
-      });
-      setExpandedPaths(initialExpanded);
-      if (!monorepoResult.files.some((f) => f.filename === selectedFilename)) {
-        setSelectedFilename(monorepoResult.files[0]?.filename || "package.json");
+      setExpandedPaths(new Set());
+      const readme = monorepoResult.files.find((f) => f.filename.toLowerCase() === "readme.md");
+      if (readme) {
+        setSelectedFilename(readme.filename);
+      } else if (!monorepoResult.files.some((f) => f.filename === selectedFilename)) {
+        setSelectedFilename(monorepoResult.files[0]?.filename || "README.md");
       }
     }
   }, [open]);

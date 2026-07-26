@@ -4,7 +4,7 @@ import { Globe, Plus, X, Play, Settings, FlaskConical } from "lucide-react";
 import { BackendNode, Endpoint, UIEventItem } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, generateId } from "./shared";
+import { NodeHeader, generateId, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
@@ -322,9 +322,11 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
 
 export const WebClientNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} nodeType="webClient" icon={Globe} title="Web Client(page)" selected={selected} />
       
       {/* Description */}

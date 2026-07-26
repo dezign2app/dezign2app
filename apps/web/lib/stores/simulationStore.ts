@@ -57,8 +57,9 @@ export const useSimulationStore = create<SimulationState>((set) => ({
       start: (trace) => {
         const run = ++activeRun;
         const first = trace[0];
+        const firstFailed = first?.status === "failed";
         set({
-          status: trace.length <= 1 ? (first?.status === "failed" ? "failed" : "completed") : "running",
+          status: trace.length <= 1 ? (firstFailed ? "failed" : "completed") : (firstFailed ? "failed" : "running"),
           trace,
           activeIndex: first ? 0 : -1,
           activeNodeIds: first?.nodeId ? [first.nodeId] : [],
@@ -68,22 +69,31 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           terminalOpen: true,
         });
 
+        if (firstFailed) return;
+
+        let stopped = false;
         trace.slice(1).forEach((entry, offset) => {
           const index = offset + 1;
           window.setTimeout(() => {
-            if (run !== activeRun) return;
+            if (run !== activeRun || stopped) return;
             set((state) => {
               const visited = state.trace.slice(0, index + 1);
               const activeNodeIds = [...new Set(visited.flatMap((item) => item.nodeId ? [item.nodeId] : []))];
               const activeEdgeIds = [...new Set(visited.flatMap((item) => item.edgeId ? [item.edgeId] : []))];
-              const isFinal = index === trace.length - 1;
+              const isFailed = entry.status === "failed";
+              const isFinal = index === trace.length - 1 || isFailed;
+
+              if (isFailed) {
+                stopped = true;
+              }
+
               return {
                 activeIndex: index,
                 activeNodeIds,
                 activeEdgeIds,
                 currentNodeId: entry.nodeId,
                 currentEdgeId: entry.edgeId,
-                status: isFinal ? (entry.status === "failed" ? "failed" : "completed") : "running",
+                status: isFailed ? "failed" : isFinal ? "completed" : "running",
               };
             });
           }, index * 550);

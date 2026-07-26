@@ -7,7 +7,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, EndpointList, MessagingResourceList } from "./shared";
+import { NodeHeader, EndpointList, MessagingResourceList, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { toast } from "sonner";
 
@@ -17,6 +17,9 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateEvent = useBackendCanvasStore((s) => s.updateEvent);
   const deleteEvent = useBackendCanvasStore((s) => s.deleteEvent);
   const nodes = useBackendCanvasStore((s) => s.nodes);
+
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
 
   // Mandatory Port Initialization
   useEffect(() => {
@@ -71,7 +74,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const isConfigExpanded = configOpen || isPortOccupied;
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[300px] max-w-[400px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[300px] max-w-[400px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} nodeType="service" icon={Server} title="Service / API" colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-400" selected={selected} />
       
       {/* Description */}

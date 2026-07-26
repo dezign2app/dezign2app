@@ -8,7 +8,7 @@ import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 import { Textarea } from "@workspace/ui/components/textarea";
 
-import { NodeHeader } from "./shared";
+import { NodeHeader, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 
 export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -16,6 +16,9 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const storeEndpoints = useBackendCanvasStore((s) => s.endpoints);
+  
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
   
   const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity" && n.data.dbType !== "vector")));
 
@@ -83,7 +86,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
   }).filter((x): x is { id: string; serviceName: string; routeName: string; method: string } => x !== null);
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} nodeType="db_ref" icon={Database} title="Table Reference" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
       
       {/* Description */}

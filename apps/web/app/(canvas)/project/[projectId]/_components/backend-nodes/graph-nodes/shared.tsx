@@ -7,10 +7,49 @@ import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { BackendNode, Endpoint, Schema, AnyMessagingResource, Parameter, JSONValue, SERVICE_TECH_OPTIONS, WEB_CLIENT_TECH_OPTIONS, DATABASE_ENGINE_OPTIONS, DATABASE_ORM_OPTIONS, TechOption } from "@/types/canvas";
 import { ParameterEditor, SchemaEditor, ProcessingStepsEditor } from "./Editors";
 
 export const generateId = () => Math.random().toString(36).substring(2, 9);
+
+export function useSimulationNodeState(nodeId: string) {
+  const status = useSimulationStore((s) => s.status);
+  const activeNodeIds = useSimulationStore((s) => s.activeNodeIds);
+  const currentNodeId = useSimulationStore((s) => s.currentNodeId);
+  const trace = useSimulationStore((s) => s.trace);
+  const activeIndex = useSimulationStore((s) => s.activeIndex);
+
+  const hasRun = status !== "idle";
+  const isVisited = activeNodeIds.includes(nodeId);
+  const isCurrent = currentNodeId === nodeId;
+
+  const visitedTrace = trace.slice(0, activeIndex >= 0 ? activeIndex + 1 : trace.length);
+  const nodeEntries = visitedTrace.filter((t) => t.nodeId === nodeId);
+  const hasFailed = nodeEntries.some((t) => t.status === "failed") || (isCurrent && status === "failed");
+
+  return { hasRun, isVisited, isCurrent, hasFailed, overallStatus: status };
+}
+
+export function getSimulationNodeBorderClass(
+  simulation: ReturnType<typeof useSimulationNodeState>,
+  selected: boolean,
+  defaultBorder = "border-border"
+) {
+  if (!simulation.hasRun) {
+    return selected ? "border-primary shadow-sm" : defaultBorder;
+  }
+  if (simulation.hasFailed) {
+    return "border-destructive ring-2 ring-destructive ring-offset-2 ring-offset-background shadow-lg shadow-destructive/40 animate-pulse";
+  }
+  if (simulation.isCurrent) {
+    return "border-sky-500 ring-2 ring-sky-500 ring-offset-2 ring-offset-background shadow-lg shadow-sky-500/40 animate-pulse";
+  }
+  if (simulation.isVisited) {
+    return selected ? "border-emerald-500 ring-2 ring-emerald-500/50" : "border-emerald-500/80 shadow-md shadow-emerald-500/20";
+  }
+  return selected ? "border-primary opacity-50" : "border-border/40 opacity-40";
+}
 
 export function endpointInputParams(endpoint: Endpoint): Parameter[] {
   if (endpoint.params?.length) return endpoint.params.map((param) => ({ ...param, value: param.value ?? param.defaultValue ?? "" }));

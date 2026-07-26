@@ -5,14 +5,16 @@ import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, EditableNodeList } from "./shared";
+import { NodeHeader, EditableNodeList, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 import { Textarea } from "@workspace/ui/components/textarea";
 
 export const ExternalNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected), "border-border border-dashed");
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 border-dashed min-w-[250px] max-w-[350px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[250px] max-w-[350px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} icon={Globe} title="External API" colorClass="bg-gray-500/10 text-gray-700 dark:text-gray-400" selected={selected} />
       
       {/* Description */}

@@ -4,7 +4,7 @@ import { GitBranch, ChevronDown, ChevronUp } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader } from "./shared";
+import { NodeHeader, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
@@ -19,6 +19,9 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
+
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
 
   const [showReliability, setShowReliability] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -69,7 +72,7 @@ export const QueueNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   }).filter((x): x is { id: string; label: string } => x !== null);
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} icon={GitBranch} title="Queue" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
 
       <Handle type="target" position={Position.Left} className="w-2 h-2" style={{ top: '20px' }} />

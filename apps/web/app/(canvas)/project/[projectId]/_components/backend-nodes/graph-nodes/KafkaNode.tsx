@@ -4,7 +4,7 @@ import { Waves, ChevronDown, ChevronUp } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, MessagingResourceList } from "./shared";
+import { NodeHeader, MessagingResourceList, useSimulationNodeState, getSimulationNodeBorderClass } from "./shared";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Input } from "@workspace/ui/components/input";
@@ -12,6 +12,8 @@ import { Label } from "@workspace/ui/components/label";
 
 export const KafkaNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
 
   const [showReliability, setShowReliability] = useState(false);
   const [showBrokerConfig, setShowBrokerConfig] = useState(true);
@@ -32,7 +34,7 @@ export const KafkaNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   };
 
   return (
-    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col", selected ? "border-primary" : "border-border")}>
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[280px] max-w-[350px] flex flex-col transition-all duration-300", borderClass)}>
       <NodeHeader id={id} data={data} icon={Waves} title="Kafka" colorClass="bg-teal-500/10 text-teal-700 dark:text-teal-400" selected={selected} />
 
       {/* Description */}

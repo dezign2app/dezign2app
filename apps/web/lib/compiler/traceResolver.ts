@@ -41,6 +41,103 @@ function cleanPath(pathStr: string): string {
 }
 
 /**
+ * Formats configured database columns into a human-readable dataContext string
+ */
+export function formatDatabaseColumnsContext(node: BackendNode, allNodes: BackendNode[] = []): string {
+  let targetNode = node;
+
+  // If this is a Table Ref node, resolve the target Entity node
+  if (node.type === "db_ref" && (node.data as any)?.tableRef) {
+    const refEntity = allNodes.find((n) => n.id === (node.data as any).tableRef);
+    if (refEntity) {
+      targetNode = refEntity;
+    }
+  }
+
+  const columns = (targetNode.data as any)?.columns as Array<{
+    name: string;
+    type?: string;
+    isPrimaryKey?: boolean;
+    isNotNull?: boolean;
+    isUnique?: boolean;
+    isForeignKey?: boolean;
+  }> | undefined;
+
+  if (!columns || !Array.isArray(columns) || columns.length === 0) {
+    return "Schema Fields: (No columns configured)";
+  }
+
+  const fieldDefs = columns
+    .filter((col) => col && col.name && col.name.trim() !== "")
+    .map((col) => {
+      const typeStr = col.type ? `: ${col.type}` : "";
+      const flags: string[] = [];
+      if (col.isPrimaryKey) flags.push("PK");
+      if (col.isForeignKey) flags.push("FK");
+      if (col.isNotNull) flags.push("REQUIRED");
+      if (col.isUnique) flags.push("UNIQUE");
+      const flagsStr = flags.length > 0 ? ` [${flags.join(", ")}]` : "";
+      return `${col.name}${typeStr}${flagsStr}`;
+    });
+
+  if (fieldDefs.length === 0) {
+    return "Schema Fields: (No columns configured)";
+  }
+
+  return `Schema Fields: { ${fieldDefs.join(", ")} }`;
+}
+
+/**
+ * Formats endpoint request payload/query/path params into a human-readable dataContext string
+ */
+export function formatEndpointPayloadContext(endpoint: Endpoint): string {
+  const parts: string[] = [];
+
+  // Request body fields or rawJson
+  const reqBody = endpoint.requestBody as any;
+  if (reqBody) {
+    if (Array.isArray(reqBody.fields) && reqBody.fields.length > 0) {
+      const fieldsStr = reqBody.fields
+        .filter((f: any) => f && f.name)
+        .map((f: any) => `${f.name}${f.type ? `: ${f.type}` : ""}${f.required ? "!" : ""}`)
+        .join(", ");
+      if (fieldsStr) parts.push(`Body: { ${fieldsStr} }`);
+    } else if (reqBody.rawJson && typeof reqBody.rawJson === "string" && reqBody.rawJson.trim()) {
+      parts.push(`Body: ${reqBody.rawJson.replace(/\s+/g, " ").trim()}`);
+    }
+  }
+
+  // Path params
+  if (Array.isArray(endpoint.pathParams) && endpoint.pathParams.length > 0) {
+    const pathStr = endpoint.pathParams
+      .filter((p: any) => p && p.name)
+      .map((p: any) => `${p.name}${p.type ? `: ${p.type}` : ""}`)
+      .join(", ");
+    if (pathStr) parts.push(`Path Params: { ${pathStr} }`);
+  }
+
+  // Query params
+  if (Array.isArray(endpoint.queryParams) && endpoint.queryParams.length > 0) {
+    const queryStr = endpoint.queryParams
+      .filter((q: any) => q && q.name)
+      .map((q: any) => `${q.name}${q.type ? `: ${q.type}` : ""}`)
+      .join(", ");
+    if (queryStr) parts.push(`Query Params: { ${queryStr} }`);
+  }
+
+  // Legacy body string fallback
+  if (parts.length === 0 && endpoint.body && endpoint.body.trim()) {
+    parts.push(`Payload: ${endpoint.body.trim()}`);
+  }
+
+  if (parts.length > 0) {
+    return parts.join(" | ");
+  }
+
+  return "Payload: Request params/body (No specific fields defined)";
+}
+
+/**
  * Traverses incoming edges to an Endpoint on a Service Node
  */
 export function resolveEndpointTrace(
@@ -86,6 +183,7 @@ export function resolveEndpointTrace(
     if (!srcNode) return;
 
     const srcName = srcNode.data?.label || srcNode.id;
+    const srcTypeStr = srcNode.type as string;
 
     // A. WebClient Node
     if (srcNode.type === "webClient" || (srcNode.data as any)?.isWebClient) {
@@ -97,20 +195,26 @@ export function resolveEndpointTrace(
         eventDetail = `Trigger Event "${matchedEvt.name || "Action"}" (${matchedEvt.event || "click"})`;
       }
 
-      let payloadContext = "Sends request params/query/body payload";
-      if (endpoint.requestBody?.rawJson) {
-        payloadContext = `Request Body: ${endpoint.requestBody.rawJson.replace(/\s+/g, " ")}`;
-      }
-
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
         nodeType: "WebClient Page Node",
         detail: eventDetail,
-        dataContext: payloadContext,
+        dataContext: formatEndpointPayloadContext(endpoint),
       });
     }
-    // B. Service Node
+    // B. Database / Entity Node
+    else if (srcNode.type === "entity" || srcNode.type === "db_ref" || srcTypeStr === "db" || srcTypeStr === "database") {
+      const tableName = (srcNode.data as any)?.tableName || srcName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      incoming.push({
+        nodeId: srcNode.id,
+        nodeName: srcName,
+        nodeType: "Database Entity Node",
+        detail: `Database Table "${tableName}"`,
+        dataContext: formatDatabaseColumnsContext(srcNode, allNodes),
+      });
+    }
+    // C. Service Node
     else if (srcNode.type === "service") {
       incoming.push({
         nodeId: srcNode.id,
@@ -120,7 +224,7 @@ export function resolveEndpointTrace(
         dataContext: `Calls Port ${(serviceNode.data as any)?.port || "8080"}`,
       });
     }
-    // C. API Gateway / Load Balancer
+    // D. API Gateway / Load Balancer
     else if (srcNode.type === "api_gateway" || srcNode.type === "load_balancer") {
       incoming.push({
         nodeId: srcNode.id,
@@ -130,14 +234,14 @@ export function resolveEndpointTrace(
         dataContext: `Routes to ${epMethod} ${epPath}`,
       });
     }
-    // D. External API / Webhook / Other
+    // E. External API / Webhook / Other
     else {
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
         nodeType: `${srcNode.type} Node`,
         detail: `Incoming connection from ${srcName}`,
-        dataContext: `Data payload to ${epMethod} ${epPath}`,
+        dataContext: formatEndpointPayloadContext(endpoint),
       });
     }
   });
@@ -182,7 +286,7 @@ export function resolveEndpointTrace(
         nodeName: tgtName,
         nodeType: "Database Entity Node",
         detail: `Database Table "${tableName}"`,
-        dataContext: `Executes SQL query/mutation on ${tableName}`,
+        dataContext: formatDatabaseColumnsContext(tgtNode, allNodes),
       });
     }
     // B. Service Node

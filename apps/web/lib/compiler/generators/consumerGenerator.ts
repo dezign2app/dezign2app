@@ -1,6 +1,7 @@
 import { AnyMessagingResource } from "@workspace/canvas/types";
 import { CompiledFile } from "../types";
 import { toVarName, toPascalCase } from "../utils";
+import { schemaToZodSchema } from "./schemaToTypeScript";
 
 export function generateConsumers(
   serviceName: string,
@@ -29,9 +30,25 @@ export function initConsumers(): void {
   } else {
     nodeConsumedEvents.forEach((ev) => {
       const consumerFileName = toVarName(ev.name || "event") || "consumer";
-      const handlerName = `handle${toPascalCase(ev.name || "event")}`;
+      const eventPascalName = toPascalCase(ev.name || "event");
+      const handlerName = `handle${eventPascalName}`;
+      const payloadInterfaceName = `${eventPascalName}EventPayload`;
+      const schemaName = `${consumerFileName}PayloadSchema`;
 
-      const consumerCode = `import { createLogger } from "@workspace/logger";
+      const schemaObj = {
+        rawJson: ev.payloadSchema?.rawJson,
+      };
+      const zodRes = schemaToZodSchema(schemaName, schemaObj);
+
+      const typeImportsList = [payloadInterfaceName];
+      if (zodRes.hasContent) {
+        typeImportsList.push(schemaName);
+      }
+
+      let consumerCode = `import { createLogger } from "@workspace/logger";
+import {
+  ${typeImportsList.join(",\n  ")}
+} from "@workspace/types";
 
 const logger = createLogger("${serviceName}:Consumer:${ev.name}");
 
@@ -39,15 +56,28 @@ const logger = createLogger("${serviceName}:Consumer:${ev.name}");
  * Event Consumer for: "${ev.name}"
  * Description: ${ev.description || "Processes incoming event payload"}
  */
-export async function ${handlerName}(payload: Record<string, unknown>): Promise<void> {
+export async function ${handlerName}(rawPayload: unknown): Promise<void> {
   try {
-    logger.info(\`Consuming event [${ev.name}]\`, payload);
-    // Handler Logic: ${ev.handlerLogic || "Process event payload"}
-  } catch (error) {
-    logger.error(\`Error processing event [${ev.name}]:\`, error);
-  }
-}
+    logger.info(\`Consuming event [${ev.name}]\`, rawPayload);
 `;
+
+      if (zodRes.hasContent) {
+        consumerCode += `    const parsed = ${schemaName}.safeParse(rawPayload);\n`;
+        consumerCode += `    if (!parsed.success) {\n`;
+        consumerCode += `      logger.error(\`Invalid payload format for event [${ev.name}]:\`, parsed.error.flatten());\n`;
+        consumerCode += `      return;\n`;
+        consumerCode += `    }\n`;
+        consumerCode += `    const payload = parsed.data;\n`;
+      } else {
+        consumerCode += `    const payload = rawPayload as ${payloadInterfaceName};\n`;
+      }
+
+      consumerCode += `    // Handler Logic: ${ev.handlerLogic || "Process event payload"}\n`;
+      consumerCode += `  } catch (error) {\n`;
+      consumerCode += `    logger.error(\`Error processing event [${ev.name}]:\`, error);\n`;
+      consumerCode += `  }\n`;
+      consumerCode += `}\n`;
+
       files.push({
         filename: `src/consumer/${consumerFileName}.ts`,
         language: "typescript",
@@ -81,4 +111,3 @@ ${consumerInits.join("\n")}
 
   return files;
 }
-

@@ -6,6 +6,7 @@ import { compileDatabaseNodes } from "./compileDatabaseNodes";
 import { compileWebClientNodes } from "./compileWebClientNode";
 import { compileUiPackage } from "./compileUiPackage";
 import { generateLoggerPackage } from "./generators/loggerGenerator";
+import { generateTypesPackage } from "./generators/typesGenerator";
 
 /**
  * Compiles the entire system architecture canvas into a production-ready
@@ -186,6 +187,16 @@ dist
     });
   });
 
+  // 4.6 Generate Shared Package: packages/types (@workspace/types)
+  const compiledTypes = generateTypesPackage(nodes, endpoints, events);
+  compiledTypes.forEach((f) => {
+    files.push({
+      filename: `packages/types/${f.filename}`,
+      language: f.language,
+      content: f.content,
+    });
+  });
+
   // 5. Generate Apps: apps/<sanitizedName> for Service Nodes
   serviceNodes.forEach((srvNode) => {
     const rawName = srvNode.data.label || "Service";
@@ -239,6 +250,7 @@ dist
     { path: "packages/ui" },
     { path: "packages/db" },
     { path: "packages/logger" },
+    { path: "packages/types" },
     ...servicesInfo.map((s) => ({ path: `apps/${s.folderName}` })),
     ...webClientsInfo.map((w) => ({ path: `apps/${w.folderName}` })),
   ];
@@ -264,24 +276,20 @@ Generated Turborepo + pnpm monorepo architecture containing ${serviceNodes.lengt
 ## Workspace Structure
 
 - **Shared TS Config**: \`packages/typescript-config\` (\`@workspace/typescript-config\`)
+- **Shared Types & Schemas**: \`packages/types\` (\`@workspace/types\`)
 - **Shared UI Package (Shadcn UI)**: \`packages/ui\` (\`@workspace/ui\`)
 - **Database Package**: \`packages/db\` (\`@workspace/db\`)
 - **Logger Package**: \`packages/logger\` (\`@workspace/logger\`)
 ${servicesInfo.map((s) => `- **${s.name}**: \`apps/${s.folderName}\``).join("\n")}
 ${webClientsInfo.map((w) => `- **${w.name} (Next.js App)**: \`apps/${w.folderName}\``).join("\n")}
 
-## Logging Configuration
+## Shared Types & API Contracts
 
-Each microservice and web client app utilizes the shared \`@workspace/logger\` package.
-You can configure the active log level via environment variable in each app's \`.env\` file:
+All API request/response contracts, route params, and event schemas are stored in \`packages/types\` (\`@workspace/types\`).
+Microservices and frontend applications import shared types directly:
 
-\`\`\`env
-LOG_LEVEL=info # Options: debug | info | warn | error | none
-\`\`\`
-
-For Next.js frontend client apps:
-\`\`\`env
-NEXT_PUBLIC_LOG_LEVEL=info
+\`\`\`typescript
+import { GetUsersResponse, PostCreateUserBody, postCreateUserBodySchema } from "@workspace/types";
 \`\`\`
 
 ## Getting Started

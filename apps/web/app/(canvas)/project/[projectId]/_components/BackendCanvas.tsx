@@ -55,6 +55,13 @@ function Flow({ projectId, view }: BackendCanvasProps) {
     }
   }, [selectedCaseId, projectId]);
 
+  // Clear runtime simulation state when switching projects or unmounting the canvas page
+  React.useEffect(() => {
+    return () => {
+      useSimulationStore.getState().clear();
+    };
+  }, [projectId]);
+
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-background text-muted-foreground">

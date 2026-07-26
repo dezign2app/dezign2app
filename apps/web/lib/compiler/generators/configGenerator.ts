@@ -1,5 +1,7 @@
 import { CompiledFile } from "../types";
-import { BackendNode } from "@/types/canvas";
+import { BackendNode, BackendEdge } from "@/types/canvas";
+import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
+import { resolveEndpointTrace, resolveConsumerTrace, resolveProducerTrace } from "../traceResolver";
 
 export function generateLibFiles(): CompiledFile[] {
   const libIndexCode = `export { db, schema } from "@workspace/db";
@@ -63,7 +65,6 @@ app.get("/health", (_req: Request, res: Response) => {
 // --- Mount Routes ---
 app.use("/", apiRouter);
 
-
 // --- Initialize Event Consumers ---
 initConsumers();
 
@@ -86,14 +87,18 @@ export function generateConfigFiles(
   sanitizedName: string,
   serviceName: string,
   port: string,
-  cors: boolean
+  cors: boolean,
+  endpoints: (Endpoint & { nodeId: string })[] = [],
+  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = []
 ): CompiledFile[] {
   const packageJson = JSON.stringify(
     {
       name: `@workspace/${sanitizedName}`,
       version: "0.0.0",
       private: true,
-      description: node.data.description || `Generated microservice for ${serviceName}`,
+      description: node.data?.description || `Generated microservice for ${serviceName}`,
       main: "dist/index.js",
       scripts: {
         build: "tsc",
@@ -152,6 +157,70 @@ dist
 *.log
 `;
 
+  // Build service-level README.md
+  let readmeLines = [
+    `# ${serviceName} Microservice`,
+    ``,
+    `Port: \`${port}\``,
+    `Description: ${node.data?.description || "Modular microservice compiled from Blueprint architecture canvas."}`,
+    ``,
+    `## Connected Routes & Endpoint Data Flow`,
+    ``,
+  ];
+
+  const srvEndpoints = endpoints.filter((e) => e.nodeId === node.id);
+  if (srvEndpoints.length === 0) {
+    readmeLines.push(`- Default route: \`GET /example\``);
+  } else {
+    srvEndpoints.forEach((ep) => {
+      const trace = resolveEndpointTrace(node, ep, allNodes, allEdges, endpoints);
+      readmeLines.push(`### \`${(ep.type || "GET").toUpperCase()} ${ep.name || "/"}\``);
+      readmeLines.push(`- **Summary**: ${ep.summary || "Endpoint handler"}`);
+
+      readmeLines.push(`- **Incoming Callers**:`);
+      if (trace.incoming.length > 0) {
+        trace.incoming.forEach((inc) => {
+          readmeLines.push(`  - ${inc.nodeName} (${inc.nodeType}): ${inc.detail}`);
+        });
+      } else {
+        readmeLines.push(`  - Direct HTTP Clients`);
+      }
+
+      readmeLines.push(`- **Outgoing Destinations**:`);
+      if (trace.outgoing.length > 0) {
+        trace.outgoing.forEach((out) => {
+          readmeLines.push(`  - ${out.nodeName} (${out.nodeType}): ${out.detail}`);
+        });
+      } else {
+        readmeLines.push(`  - HTTP Response`);
+      }
+      readmeLines.push(``);
+    });
+  }
+
+  const consumedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "consume");
+  if (consumedEvents.length > 0) {
+    readmeLines.push(`## Consumed Events`);
+    consumedEvents.forEach((ev) => {
+      const trace = resolveConsumerTrace(node, ev, allNodes, allEdges);
+      readmeLines.push(`### Event: \`${ev.name}\``);
+      readmeLines.push(`- **Incoming Source**: ${trace.incoming.map((i) => `${i.nodeName} (${i.detail})`).join(", ")}`);
+      readmeLines.push(`- **Outgoing Target**: ${trace.outgoing.map((o) => `${o.nodeName} (${o.detail})`).join(", ") || "Domain Logic"}`);
+      readmeLines.push(``);
+    });
+  }
+
+  const publishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
+  if (publishedEvents.length > 0) {
+    readmeLines.push(`## Published Events`);
+    publishedEvents.forEach((ev) => {
+      const trace = resolveProducerTrace(node, ev, allNodes, allEdges);
+      readmeLines.push(`### Event: \`${ev.name}\``);
+      readmeLines.push(`- **Destination Broker/Consumers**: ${trace.outgoing.map((o) => `${o.nodeName} (${o.detail})`).join(", ")}`);
+      readmeLines.push(``);
+    });
+  }
+
   return [
     {
       filename: "package.json",
@@ -172,6 +241,11 @@ dist
       filename: ".gitignore",
       language: "gitignore",
       content: gitignoreFile,
+    },
+    {
+      filename: "README.md",
+      language: "markdown",
+      content: readmeLines.join("\n"),
     },
   ];
 }

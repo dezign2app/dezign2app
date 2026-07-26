@@ -1,11 +1,16 @@
 import { AnyMessagingResource } from "@workspace/canvas/types";
+import { BackendNode, BackendEdge } from "@/types/canvas";
 import { CompiledFile } from "../types";
 import { toVarName, toPascalCase } from "../utils";
 import { schemaToZodSchema } from "./schemaToTypeScript";
+import { resolveConsumerTrace } from "../traceResolver";
 
 export function generateConsumers(
   serviceName: string,
-  nodeConsumedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[]
+  nodeConsumedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[],
+  serviceNode?: BackendNode,
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = []
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const consumerImports: string[] = [];
@@ -40,6 +45,10 @@ export function initConsumers(): void {
       };
       const zodRes = schemaToZodSchema(schemaName, schemaObj);
 
+      const trace = serviceNode
+        ? resolveConsumerTrace(serviceNode, ev, allNodes, allEdges)
+        : { incoming: [], outgoing: [] };
+
       const typeImportsList = [payloadInterfaceName];
       if (zodRes.hasContent) {
         typeImportsList.push(schemaName);
@@ -72,7 +81,31 @@ export async function ${handlerName}(rawPayload: unknown): Promise<void> {
         consumerCode += `    const payload = rawPayload as ${payloadInterfaceName};\n`;
       }
 
+      consumerCode += `\n    // =========================================================================\n`;
+      consumerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
+      consumerCode += `    // Process consumed event: "${ev.name}"\n`;
       consumerCode += `    // Handler Logic: ${ev.handlerLogic || "Process event payload"}\n`;
+      consumerCode += `    //\n`;
+      consumerCode += `    // 📥 CONNECTED INCOMING EVENT NODE(S):\n`;
+      if (trace.incoming.length > 0) {
+        trace.incoming.forEach((inc) => {
+          consumerCode += `    // - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          if (inc.dataContext) consumerCode += `    //   Data Payload: ${inc.dataContext}\n`;
+        });
+      } else {
+        consumerCode += `    // - Event Topic/Channel "${ev.name}"\n`;
+      }
+      consumerCode += `    //\n`;
+      consumerCode += `    // 📤 CONNECTED OUTGOING IMPACT NODE(S):\n`;
+      if (trace.outgoing.length > 0) {
+        trace.outgoing.forEach((out) => {
+          consumerCode += `    // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+        });
+      } else {
+        consumerCode += `    // - Executes domain side-effects for ${ev.name}\n`;
+      }
+      consumerCode += `    // =========================================================================\n`;
+
       consumerCode += `  } catch (error) {\n`;
       consumerCode += `    logger.error(\`Error processing event [${ev.name}]:\`, error);\n`;
       consumerCode += `  }\n`;

@@ -21,6 +21,38 @@ export type SimulationTraceEntry = {
   detail?: string;
 };
 
+export function getStatusText(status: number): string {
+  const statusTexts: Record<number, string> = {
+    200: "OK",
+    201: "Created",
+    202: "Accepted",
+    204: "No Content",
+    300: "Multiple Choices",
+    301: "Moved Permanently",
+    302: "Found",
+    304: "Not Modified",
+    400: "Bad Request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    405: "Method Not Allowed",
+    408: "Request Timeout",
+    409: "Conflict",
+    422: "Unprocessable Entity",
+    429: "Too Many Requests",
+    500: "Internal Server Error",
+    501: "Not Implemented",
+    502: "Bad Gateway",
+    503: "Service Unavailable",
+    504: "Gateway Timeout",
+  };
+  return statusTexts[status] ?? (status >= 200 && status < 300 ? "OK" : status >= 400 && status < 500 ? "Client Error" : "Server Error");
+}
+
+export function is2xxStatus(status: number): boolean {
+  return status >= 200 && status < 300;
+}
+
 export type SimulationResult = {
   status: number;
   statusText: string;
@@ -136,11 +168,14 @@ function findEndpointDatabaseRefs(serviceId: string, endpoint: Endpoint, nodes: 
     ...(endpoint.databaseNodeId ? [endpoint.databaseNodeId] : []),
   ]);
   const connected = edges
-    .filter((edge) => edge.source === serviceId && edge.sourceHandle === `endpoints-out-${endpoint.id}` && edge.targetHandle === "database-target")
+    .filter((edge) => edge.source === serviceId && (
+      edge.sourceHandle === `endpoint-out-${endpoint.id}` ||
+      edge.sourceHandle === `endpoints-out-${endpoint.id}`
+    ) && (edge.targetHandle === "database-target" || edge.targetHandle === "database-source"))
     .map((edge) => edge.target);
   const ids = declared.size > 0 ? [...declared] : connected;
   return ids
-    .map((id) => nodes.find((node) => node.id === id && (node.type === "database" || node.type === "db_ref")))
+    .map((id) => nodes.find((node) => node.id === id && (node.type === "database" || node.type === "db_ref" || node.type === "vector_db_ref")))
     .filter((node): node is BackendNode => Boolean(node));
 }
 
@@ -187,8 +222,8 @@ export async function simulateEndpoint(args: {
     const edge = edges.find((candidate) =>
       candidate.source === service.id &&
       candidate.target === ref.id &&
-      candidate.sourceHandle === `endpoint-out-${endpoint.id}` &&
-      candidate.targetHandle === "database-target"
+      (candidate.sourceHandle === `endpoint-out-${endpoint.id}` || candidate.sourceHandle === `endpoints-out-${endpoint.id}`) &&
+      (candidate.targetHandle === "database-target" || candidate.targetHandle === "database-source")
     );
     return { ref, rows, tableId, edge };
   };
@@ -214,9 +249,31 @@ export async function simulateEndpoint(args: {
       // Short-circuit: the user has explicitly defined what this endpoint returns.
       const body = clone(endpointMock.returnData);
       const status = endpointMock.status || 200;
-      trace.push({ id: endpoint.id, kind: "endpoint", label: `${endpoint.type} ${endpoint.name}`, status: "completed", nodeId: service.id, edgeId: ingressEdge?.id, input: clone(context.data), output: body });
-      trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `[MOCKED] ${status} ${status === 201 ? "Created" : "OK"}`, status: "completed", nodeId: service.id, output: clone(body) });
-      return { status, statusText: status === 201 ? "Created" : "OK", headers: { "content-type": "application/json", "x-simulated": "true" }, body, trace };
+      const isSuccess = is2xxStatus(status);
+      const statusText = getStatusText(status);
+      trace.push({ id: endpoint.id, kind: "endpoint", label: `${endpoint.type} ${endpoint.name}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, edgeId: ingressEdge?.id, input: clone(context.data), output: body });
+      
+      if (isSuccess) {
+        for (const ref of refs) {
+          const dbEdge = edges.find((e) =>
+            e.source === service.id &&
+            e.target === ref.id &&
+            (e.sourceHandle === `endpoint-out-${endpoint.id}` || e.sourceHandle === `endpoints-out-${endpoint.id}`)
+          );
+          trace.push({
+            id: `${ref.id}-db`,
+            kind: "database",
+            label: `[MOCKED] ${ref.data.label ?? ref.id}`,
+            status: "completed",
+            nodeId: ref.id,
+            edgeId: dbEdge?.id,
+            output: body,
+          });
+        }
+      }
+
+      trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `[MOCKED] ${status} ${statusText}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, output: clone(body), detail: !isSuccess ? `Mock returned HTTP ${status} ${statusText}` : undefined });
+      return { status, statusText, headers: { "content-type": "application/json", "x-simulated": "true" }, body, trace };
     }
 
     trace.push({ id: endpoint.id, kind: "endpoint", label: `${endpoint.type} ${endpoint.name}`, status: "completed", nodeId: service.id, edgeId: ingressEdge?.id, input: clone(context.data) });
@@ -296,8 +353,29 @@ export async function simulateEndpoint(args: {
     const status = context.response?.status ?? (endpoint.type === "POST" ? 201 : 200);
     const schemaErrors = validateSchema(body, endpoint.responseBody);
     if (schemaErrors.length) throw new Error(schemaErrors.join(" "));
-    const statusText = status === 201 ? "Created" : status === 204 ? "No Content" : "OK";
-    trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `${status} ${statusText}`, status: "completed", nodeId: service.id, output: clone(body) });
+    const isSuccess = is2xxStatus(status);
+    const statusText = getStatusText(status);
+
+    if (isSuccess && !trace.some((t) => t.kind === "database") && refs.length > 0) {
+      for (const ref of refs) {
+        const dbEdge = edges.find((e) =>
+          e.source === service.id &&
+          e.target === ref.id &&
+          (e.sourceHandle === `endpoint-out-${endpoint.id}` || e.sourceHandle === `endpoints-out-${endpoint.id}`)
+        );
+        trace.push({
+          id: `${ref.id}-db`,
+          kind: "database",
+          label: `db_access ${ref.data.label ?? ref.id}`,
+          status: "completed",
+          nodeId: ref.id,
+          edgeId: dbEdge?.id,
+          output: body,
+        });
+      }
+    }
+
+    trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `${status} ${statusText}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, output: clone(body), detail: !isSuccess ? `HTTP ${status} ${statusText}` : undefined });
     return { status, statusText, headers: { "content-type": "application/json", "x-simulated": "true" }, body, trace };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -610,7 +688,7 @@ export async function simulateTestCase(args: {
     });
     trace.push(...result.trace);
     body = clone(result.body);
-    if (result.status >= 400) break;
+    if (!is2xxStatus(result.status)) break;
 
     // ── Direct service-to-service hop (HTTP) ──────────────────────────────
     const outgoing: BackendEdge | undefined = args.edges.find((edge) =>

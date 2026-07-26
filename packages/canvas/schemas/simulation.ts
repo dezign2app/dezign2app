@@ -29,13 +29,13 @@ export const simulationTestCaseInputSchema = z.object({
     params: z.record(z.string()).optional().describe("Path or query parameters for test execution"),
     body: z.unknown().optional().describe("Request payload / body data for the test case"),
   }).optional().describe("Request configuration for the test case"),
-  expectedStatus: z.number().optional().describe("Expected HTTP status code (e.g., 200, 201, 400, 404)"),
+  expectedStatus: z.number().optional().describe("Expected HTTP status code (e.g., 200, 201, 400, 404, 500). Non-2xx status codes (outside 200-299) mark node execution as failed and stop canvas animation."),
   expectedBody: z.unknown().optional().describe("Expected response body or output data structure"),
   enabled: z.boolean().optional().describe("Whether this test case is active"),
   mocks: z.record(z.object({
     status: z.number().optional(),
     returnData: z.unknown().optional()
-  })).optional().describe("Mock definitions for downstream dependencies during test execution"),
+  })).optional().describe("Mock definitions for downstream dependencies during test execution. Setting a non-2xx mock status halts execution at that node."),
 }).describe("Test case schema for defining unit, integration, and simulation test cases.");
 
 

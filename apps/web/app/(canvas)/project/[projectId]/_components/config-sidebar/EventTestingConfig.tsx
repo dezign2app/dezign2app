@@ -19,7 +19,8 @@ import { TestCaseEditor } from "./TestCaseEditor";
 import { Endpoint, BackendNode, UIEventItem, Parameter, JSONValue } from "@/types/canvas";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { JsonPayloadEditor } from "../backend-nodes/graph-nodes/Editors";
-import { simulateEndpoint, simulateTestCase, SimulationTraceEntry } from "@/lib/simulation/runtime";
+import { cn } from "@workspace/ui/lib/utils";
+import { simulateEndpoint, simulateTestCase, SimulationTraceEntry, is2xxStatus } from "@/lib/simulation/runtime";
 
 export interface EventTestingConfigProps {
   id: string; // The event ID
@@ -42,6 +43,7 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
   const clearSimulation = useSimulationStore((state) => state.clear);
   const selectedGlobalCaseId = useSimulationStore((state) => state.selectedCaseId) || "none";
   const activeIndex = useSimulationStore((state) => state.activeIndex);
+  const simulationStatus = useSimulationStore((state) => state.status);
 
   const upsertBackendTestCase = useMutation(api.canvas.upsertBackendTestCase);
   const removeBackendTestCase = useMutation(api.canvas.removeBackendTestCase);
@@ -94,6 +96,11 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
   const [body, setBody] = useState<JSONValue | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<{ headers?: Record<string, string>; status?: number; statusText?: string; body?: unknown; trace?: SimulationTraceEntry[] } | null>(null);
+
+  const isExecutionFinished =
+    simulationStatus === "completed" ||
+    simulationStatus === "failed" ||
+    (response?.trace ? activeIndex >= response.trace.length - 1 : false);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -666,9 +673,21 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
                 <div className="flex items-center justify-between border-b pb-3">
                   <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Simulated Response</h4>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 rounded text-[11px] font-bold font-mono border bg-muted text-muted-foreground shadow-sm">
-                      {response.status} {response.statusText}
-                    </span>
+                    {isExecutionFinished ? (
+                      <span className={cn(
+                        "px-2 py-1 rounded text-[11px] font-bold font-mono border shadow-sm transition-all",
+                        response.status && is2xxStatus(response.status)
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                          : "bg-destructive/10 text-destructive border-destructive/20"
+                      )}>
+                        {response.status} {response.statusText}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded text-[11px] font-bold font-mono border bg-sky-500/10 text-sky-500 border-sky-500/20 shadow-sm flex items-center gap-1.5">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Executing...
+                      </span>
+                    )}
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive transition-colors" onClick={() => { setResponse(null); clearSimulation(); }} title="Clear Response">
                       <Trash className="w-3.5 h-3.5" />
                     </Button>
@@ -715,20 +734,29 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
                   </div>
                 )}
 
-                {response.headers && Object.keys(response.headers).length > 0 && (
-                  <div className="p-3 border rounded-lg bg-background/50 flex flex-col gap-1.5 text-xs font-mono text-muted-foreground">
-                    {Object.entries((response.headers as Record<string, string>) || {}).map(([k, v]: [string, string]) => (
-                      <div key={k} className="flex gap-4">
-                        <span className="w-1/3 truncate">{k}:</span>
-                        <span className="text-foreground flex-1 break-all">{String(v)}</span>
+                {isExecutionFinished ? (
+                  <>
+                    {response.headers && Object.keys(response.headers).length > 0 && (
+                      <div className="p-3 border rounded-lg bg-background/50 flex flex-col gap-1.5 text-xs font-mono text-muted-foreground">
+                        {Object.entries((response.headers as Record<string, string>) || {}).map(([k, v]: [string, string]) => (
+                          <div key={k} className="flex gap-4">
+                            <span className="w-1/3 truncate">{k}:</span>
+                            <span className="text-foreground flex-1 break-all">{String(v)}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+
+                    <pre className="p-4 border rounded-lg bg-secondary/30 font-mono text-xs overflow-x-auto text-foreground whitespace-pre-wrap">
+                      {typeof response.body === "string" ? response.body : JSON.stringify(response.body, null, 2)}
+                    </pre>
+                  </>
+                ) : (
+                  <div className="p-4 border rounded-lg bg-secondary/10 border-dashed text-xs font-mono text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Executing step-by-step canvas simulation...
                   </div>
                 )}
-
-                <pre className="p-4 border rounded-lg bg-secondary/30 font-mono text-xs overflow-x-auto text-foreground whitespace-pre-wrap">
-                  {typeof response.body === "string" ? response.body : JSON.stringify(response.body, null, 2)}
-                </pre>
               </div>
             )}
           </TabsContent>

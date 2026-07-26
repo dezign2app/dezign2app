@@ -9,31 +9,12 @@ import { BackendEdge } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 
-function useSimulationEdgeState(edgeId: string, sourceId?: string, targetId?: string) {
-  const { status, activeEdgeIds, currentEdgeId, activeNodeIds, trace, activeIndex } = useSimulationStore();
+function useSimulationEdgeState(edgeId: string) {
+  const { status, activeEdgeIds, currentEdgeId, trace, activeIndex } = useSimulationStore();
   const hasRun = status !== "idle";
-  let isVisited = activeEdgeIds.includes(edgeId);
-  let isCurrent = currentEdgeId === edgeId;
-
-  if (targetId) {
-    const targetNode = useBackendCanvasStore.getState().nodes.find(n => n.id === targetId);
-    if (targetNode && (targetNode.type === "database" || targetNode.type === "db_ref")) {
-      if (sourceId && activeNodeIds.includes(sourceId)) {
-        const edge = useBackendCanvasStore.getState().edges.find(e => e.id === edgeId);
-        const sourceHandle = edge?.sourceHandle;
-        
-        if (sourceHandle?.startsWith("endpoint-out-")) {
-          const endpointId = sourceHandle.replace("endpoint-out-", "");
-          const activeEndpointIds = trace.slice(0, activeIndex + 1).filter(t => t.kind === "endpoint").map(t => t.id);
-          if (activeEndpointIds.includes(endpointId)) {
-            isVisited = true;
-          }
-        } else {
-          isVisited = true;
-        }
-      }
-    }
-  }
+  const visitedTrace = trace.slice(0, activeIndex + 1);
+  const isVisited = activeEdgeIds.includes(edgeId) || visitedTrace.some(t => t.edgeId === edgeId);
+  const isCurrent = currentEdgeId === edgeId;
 
   return { hasRun, isVisited, isCurrent };
 }
@@ -104,7 +85,7 @@ const EdgeMarkers = () => (
 // 3. Database Reference Edge (Amber/Orange Dashed)
 export const DatabaseRefEdge = (props: EdgeProps<BackendEdge>) => {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
-  const simulation = useSimulationEdgeState(props.id, props.source, props.target);
+  const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
     sourceX,
@@ -153,7 +134,7 @@ export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
   const targetNode = useBackendCanvasStore(
     (s) => s.nodes.find((n) => n.id === props.target)
   );
-  const simulation = useSimulationEdgeState(props.id, props.source, props.target);
+  const simulation = useSimulationEdgeState(props.id);
 
   if (targetNode?.type === "database") {
     return <DatabaseRefEdge {...props} />;
@@ -218,7 +199,7 @@ export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
 // 2. Messaging Edge (Purple/Lavender)
 export const MessagingEdge = (props: EdgeProps<BackendEdge>) => {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
-  const simulation = useSimulationEdgeState(props.id, props.source, props.target);
+  const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
     sourceX,
@@ -277,7 +258,7 @@ export const MessagingEdge = (props: EdgeProps<BackendEdge>) => {
 // 4. Identity Connection Edge (Emerald/Teal Dashed)
 export const IdentityConnectionEdge = (props: EdgeProps<BackendEdge>) => {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
-  const simulation = useSimulationEdgeState(props.id, props.source, props.target);
+  const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
     sourceX,

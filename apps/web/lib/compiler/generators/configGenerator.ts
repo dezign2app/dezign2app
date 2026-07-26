@@ -97,7 +97,7 @@ export function generateConfigFiles(
       scripts: {
         build: "tsc",
         start: "node dist/index.js",
-        dev: "ts-node-dev --respawn src/index.ts",
+        dev: "ts-node-dev --respawn --watch .env src/index.ts",
       },
       dependencies: {
         "@workspace/db": "workspace:*",

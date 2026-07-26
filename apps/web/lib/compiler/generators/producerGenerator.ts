@@ -22,16 +22,19 @@ export function generateProducers(
   } else {
     nodePublishedEvents.forEach((ev) => {
       const producerFileName = toVarName(ev.name || "event") || "producer";
-      const funcName = `publish${toPascalCase(ev.name || "event")}`;
+      const eventPascalName = toPascalCase(ev.name || "event");
+      const funcName = `publish${eventPascalName}`;
+      const payloadInterfaceName = `${eventPascalName}EventPayload`;
 
       const producerCode = `import { createLogger } from "@workspace/logger";
+import { ${payloadInterfaceName} } from "@workspace/types";
 
 const logger = createLogger("${serviceName}:Producer:${ev.name}");
 
 /**
  * Event Producer for: "${ev.name}"
  */
-export async function ${funcName}(eventData: Record<string, unknown>): Promise<void> {
+export async function ${funcName}(eventData: ${payloadInterfaceName}): Promise<void> {
   logger.info(\`Publishing event [${ev.name}]\`, eventData);
   // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)
 }
@@ -59,4 +62,3 @@ ${producerExports.join("\n")}
 
   return files;
 }
-

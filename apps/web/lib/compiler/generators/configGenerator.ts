@@ -61,7 +61,8 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // --- Mount Routes ---
-app.use("/api", apiRouter);
+app.use("/", apiRouter);
+
 
 // --- Initialize Event Consumers ---
 initConsumers();
@@ -102,9 +103,11 @@ export function generateConfigFiles(
       dependencies: {
         "@workspace/db": "workspace:*",
         "@workspace/logger": "workspace:*",
+        "@workspace/types": "workspace:*",
         express: "^4.19.2",
         cors: "^2.8.5",
         dotenv: "^16.4.5",
+        zod: "^3.24.2",
         "drizzle-orm": "^0.30.0",
         "better-sqlite3": "^11.3.0",
       },

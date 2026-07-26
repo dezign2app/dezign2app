@@ -325,7 +325,7 @@ export const WebClientNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <NodeHeader id={id} data={data} icon={Globe} title="Web Client(page)" selected={selected} />
+      <NodeHeader id={id} data={data} nodeType="webClient" icon={Globe} title="Web Client(page)" selected={selected} />
       
       {/* Description */}
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">

@@ -7,7 +7,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { BackendNode, Endpoint, Schema, AnyMessagingResource, Parameter, JSONValue } from "@/types/canvas";
+import { BackendNode, Endpoint, Schema, AnyMessagingResource, Parameter, JSONValue, SERVICE_TECH_OPTIONS, WEB_CLIENT_TECH_OPTIONS, DATABASE_ENGINE_OPTIONS, DATABASE_ORM_OPTIONS, TechOption } from "@/types/canvas";
 import { ParameterEditor, SchemaEditor, ProcessingStepsEditor } from "./Editors";
 
 export const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -425,13 +425,14 @@ export const EndpointList = ({
 export interface NodeHeaderProps {
   id: string;
   data: BackendNode["data"];
+  nodeType?: string;
   icon: React.ElementType;
   title?: string;
   colorClass?: string;
   selected?: boolean;
 }
 
-export const NodeHeader = ({ id, data, icon: Icon, title, colorClass, selected }: NodeHeaderProps) => {
+export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, selected }: NodeHeaderProps) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const [isEditing, setIsEditing] = useState(data.label === "" || data.label === "Untitled");
@@ -442,35 +443,153 @@ export const NodeHeader = ({ id, data, icon: Icon, title, colorClass, selected }
     setIsEditing(false);
   };
 
+  let techOptions: readonly TechOption[] | null = null;
+  if (nodeType === "service") techOptions = SERVICE_TECH_OPTIONS;
+  if (nodeType === "webClient") techOptions = WEB_CLIENT_TECH_OPTIONS;
+
+  const currentTech = data.techStack || (nodeType === "service" ? "express" : nodeType === "webClient" ? "nextjs" : undefined);
+  const currentTechObj = techOptions?.find((t) => t.value === currentTech) || techOptions?.[0];
+  const versionOptions = currentTechObj?.versions || [];
+  const currentVersion = data.techVersion || currentTechObj?.defaultVersion || versionOptions[0]?.value;
+
+  const currentDbEngine = data.dbEngine || "sqlite";
+  const currentOrm = data.orm || "drizzle";
+
   return (
-    <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-xl", colorClass)}>
-      <div className="flex items-center flex-1">
-        <Icon size={14} className="mr-2 shrink-0" />
-        {isEditing ? (
-          <LocalInput 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            className="h-6 text-xs px-1 bg-background/50" 
-            autoFocus 
-            onKeyDown={(e:React.KeyboardEvent) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setIsEditing(false); }}
-            onBlur={handleSave}
-          />
-        ) : (
-          <div className="flex flex-col cursor-pointer flex-1" onClick={() => setIsEditing(true)}>
-             <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">{title}</span>
-             <span className="font-semibold text-sm truncate">{data.label || "Untitled"}</span>
-          </div>
-        )}
+    <div className={cn("px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-xl", colorClass)}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center flex-1 min-w-0">
+          <Icon size={14} className="mr-2 shrink-0" />
+          {isEditing ? (
+            <LocalInput 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              className="h-6 text-xs px-1 bg-background/50" 
+              autoFocus 
+              onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setIsEditing(false); }}
+              onBlur={handleSave}
+            />
+          ) : (
+            <div className="flex flex-col cursor-pointer flex-1 min-w-0" onClick={() => setIsEditing(true)}>
+               <span className="text-[9px] uppercase font-bold tracking-wider opacity-70 truncate">{title}</span>
+               <span className="font-semibold text-sm truncate">{data.label || "Untitled"}</span>
+            </div>
+          )}
+        </div>
+        <div 
+          className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-black/10 transition-all cursor-pointer ml-1 shrink-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteNode(id);
+          }}
+        >
+          <Trash2 size={14} />
+        </div>
       </div>
-      <div 
-        className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-black/10 transition-all cursor-pointer ml-2 shrink-0"
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteNode(id);
-        }}
-      >
-        <Trash2 size={14} />
-      </div>
+
+      {techOptions && (
+        <div className="flex items-center gap-1.5 nodrag pt-0.5 border-t border-black/5 dark:border-white/5">
+          <Select
+            value={currentTech}
+            onValueChange={(val) => {
+              const selectedTech = techOptions.find((t) => t.value === val);
+              updateNode(id, {
+                data: {
+                  ...data,
+                  techStack: val as any,
+                  techVersion: selectedTech?.defaultVersion as any,
+                },
+              });
+            }}
+          >
+            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {techOptions.map((t) => (
+                <SelectItem key={t.value} value={t.value} className="text-xs">
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {versionOptions.length > 0 && (
+            <Select
+              value={currentVersion}
+              onValueChange={(val) => {
+                updateNode(id, {
+                  data: {
+                    ...data,
+                    techVersion: val as any,
+                  },
+                });
+              }}
+            >
+              <SelectTrigger className="h-5 text-[10px] font-mono font-medium bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {versionOptions.map((v) => (
+                  <SelectItem key={v.value} value={v.value} className="text-xs font-mono">
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      )}
+
+      {(nodeType === "entity" || nodeType === "database" || nodeType === "db_ref") && (
+        <div className="flex items-center gap-1.5 nodrag pt-0.5 border-t border-black/5 dark:border-white/5">
+          <Select
+            value={currentDbEngine}
+            onValueChange={(val) => {
+              updateNode(id, {
+                data: {
+                  ...data,
+                  dbEngine: val as any,
+                },
+              });
+            }}
+          >
+            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DATABASE_ENGINE_OPTIONS.map((e) => (
+                <SelectItem key={e.value} value={e.value} className="text-xs">
+                  {e.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={currentOrm}
+            onValueChange={(val) => {
+              updateNode(id, {
+                data: {
+                  ...data,
+                  orm: val as any,
+                },
+              });
+            }}
+          >
+            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DATABASE_ORM_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value} className="text-xs">
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 };

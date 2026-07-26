@@ -334,10 +334,11 @@ export function CompilerModal({ open, onOpenChange, projectName }: CompilerModal
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                  Monorepo Compiler Engine
+                  Monorepo Compiler Engine 
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Turborepo + pnpm workspace code generation engine
+                <DialogDescription className="text-xs mt-0.5 text-orange-500">
+                  NOTICE: 🚧 Automated AI Business logic implementation,Testing & Deployment is under construction🚧
+                  <span className="block text-yellow-500"> Now download the repo and continue with your AI Coding Agents..!</span>
                 </DialogDescription>
               </div>
             </div>

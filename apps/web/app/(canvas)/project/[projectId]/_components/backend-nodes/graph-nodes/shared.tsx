@@ -452,9 +452,6 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
   const versionOptions = currentTechObj?.versions || [];
   const currentVersion = data.techVersion || currentTechObj?.defaultVersion || versionOptions[0]?.value;
 
-  const currentDbEngine = data.dbEngine || "sqlite";
-  const currentOrm = data.orm || "drizzle";
-
   return (
     <div className={cn("px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-xl", colorClass)}>
       <div className="flex items-center justify-between gap-2">
@@ -538,56 +535,6 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
               </SelectContent>
             </Select>
           )}
-        </div>
-      )}
-
-      {(nodeType === "entity" || nodeType === "database" || nodeType === "db_ref") && (
-        <div className="flex items-center gap-1.5 nodrag pt-0.5 border-t border-black/5 dark:border-white/5">
-          <Select
-            value={currentDbEngine}
-            onValueChange={(val) => {
-              updateNode(id, {
-                data: {
-                  ...data,
-                  dbEngine: val as any,
-                },
-              });
-            }}
-          >
-            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATABASE_ENGINE_OPTIONS.map((e) => (
-                <SelectItem key={e.value} value={e.value} className="text-xs">
-                  {e.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={currentOrm}
-            onValueChange={(val) => {
-              updateNode(id, {
-                data: {
-                  ...data,
-                  orm: val as any,
-                },
-              });
-            }}
-          >
-            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATABASE_ORM_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       )}
     </div>

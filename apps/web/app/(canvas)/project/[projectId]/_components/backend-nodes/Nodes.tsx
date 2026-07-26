@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Database, Table2, User, Globe, Plus, Check, X, Trash2, ChevronUp, ChevronDown } from "lucide-react";
-import { BackendNode } from "@/types/canvas";
+import { BackendNode, DATABASE_ENGINE_OPTIONS, DATABASE_ORM_OPTIONS } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
@@ -345,6 +345,9 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     setIsEditingName(false);
   };
 
+  const currentDbEngine = data.dbEngine || "sqlite";
+  const currentOrm = data.orm || "drizzle";
+
   return (
     <div 
       ref={nodeRef}
@@ -352,63 +355,115 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
       className={cn("shadow-md rounded-xl bg-card border-2 min-w-[250px] max-w-[350px] focus:outline-none", selected ? "border-primary" : "border-border")}
     >
       <Handle type="target" position={Position.Top} className="w-2 h-2" />
-      <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-[10px]", data.dbType === "vector" ? "bg-violet-500/10 text-violet-700 dark:text-violet-400" : "bg-secondary/80")}>
-        <div className="flex items-center flex-1">
-          {data.dbType === "vector" ? (
-            <Database size={14} className="mr-2 shrink-0" />
-          ) : (
-            <Table2 size={14} className="mr-2 text-muted-foreground shrink-0" />
-          )}
-          {isEditingName ? (
-            <div className="flex flex-1 items-center gap-1">
-              <Input 
-                ref={inputRef}
-                value={editingName} 
-                onChange={(e) => {
-                  setEditingName(e.target.value);
-                  if (nameError) setNameError(false);
-                }} 
-                className={cn("h-6 text-xs px-1", nameError && "border-destructive focus-visible:ring-destructive")} 
-                autoFocus 
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveName(e);
-                  if (e.key === "Escape") {
-                    setEditingName(data.label);
-                    setNameError(false);
-                    setIsEditingName(false);
-                  }
-                }}
-                onBlur={saveName}
-              />
-            </div>
-          ) : (
-            <span 
-              className="font-semibold text-sm cursor-pointer hover:text-primary transition-colors flex-1 truncate"
-              onClick={() => setIsEditingName(true)}
+      <div className={cn("px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-[10px]", data.dbType === "vector" ? "bg-violet-500/10 text-violet-700 dark:text-violet-400" : "bg-secondary/80")}>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center flex-1">
+            {data.dbType === "vector" ? (
+              <Database size={14} className="mr-2 shrink-0" />
+            ) : (
+              <Table2 size={14} className="mr-2 text-muted-foreground shrink-0" />
+            )}
+            {isEditingName ? (
+              <div className="flex flex-1 items-center gap-1">
+                <Input 
+                  ref={inputRef}
+                  value={editingName} 
+                  onChange={(e) => {
+                    setEditingName(e.target.value);
+                    if (nameError) setNameError(false);
+                  }} 
+                  className={cn("h-6 text-xs px-1", nameError && "border-destructive focus-visible:ring-destructive")} 
+                  autoFocus 
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveName(e);
+                    if (e.key === "Escape") {
+                      setEditingName(data.label);
+                      setNameError(false);
+                      setIsEditingName(false);
+                    }
+                  }}
+                  onBlur={saveName}
+                />
+              </div>
+            ) : (
+              <span 
+                className="font-semibold text-sm cursor-pointer hover:text-primary transition-colors flex-1 truncate"
+                onClick={() => setIsEditingName(true)}
+              >
+                {data.label}
+              </span>
+            )}
+          </div>
+          <div 
+            className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer ml-2 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              const cols = data.columns || [];
+              const idxs = data.indexes || [];
+              const isEmpty = cols.length === 0 && idxs.length === 0;
+              const isInitial = cols.length === 1 && cols[0]?.name === "_id" && idxs.length === 0;
+              
+              if (!isEmpty && !isInitial) {
+                const node = useBackendCanvasStore.getState().nodes.find(n => n.id === id);
+                if (node) setNodesPendingDeletion([node]);
+              } else {
+                useBackendCanvasStore.getState().deleteNode(id);
+              }
+            }}
+          >
+            <Trash2 size={14} />
+          </div>
+        </div>
+
+        {data.dbType !== "vector" && (
+          <div className="flex items-center gap-1.5 nodrag pt-0.5 border-t border-border/40">
+            <Select
+              value={currentDbEngine}
+              onValueChange={(val) => {
+                updateNode(id, {
+                  data: {
+                    ...data,
+                    dbEngine: val as any,
+                  },
+                });
+              }}
             >
-              {data.label}
-            </span>
-          )}
-        </div>
-        <div 
-          className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer ml-2 shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            const cols = data.columns || [];
-            const idxs = data.indexes || [];
-            const isEmpty = cols.length === 0 && idxs.length === 0;
-            const isInitial = cols.length === 1 && cols[0]?.name === "_id" && idxs.length === 0;
-            
-            if (!isEmpty && !isInitial) {
-              const node = useBackendCanvasStore.getState().nodes.find(n => n.id === id);
-              if (node) setNodesPendingDeletion([node]);
-            } else {
-              useBackendCanvasStore.getState().deleteNode(id);
-            }
-          }}
-        >
-          <Trash2 size={14} />
-        </div>
+              <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-border/40 px-1.5 py-0 shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATABASE_ENGINE_OPTIONS.map((e) => (
+                  <SelectItem key={e.value} value={e.value} className="text-xs">
+                    {e.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={currentOrm}
+              onValueChange={(val) => {
+                updateNode(id, {
+                  data: {
+                    ...data,
+                    orm: val as any,
+                  },
+                });
+              }}
+            >
+              <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-border/40 px-1.5 py-0 shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATABASE_ORM_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
       
       {/* Description */}

@@ -180,7 +180,7 @@ dist
       readmeLines.push(`- **Incoming Callers**:`);
       if (trace.incoming.length > 0) {
         trace.incoming.forEach((inc) => {
-          readmeLines.push(`  - ${inc.nodeName} (${inc.nodeType}): ${inc.detail}`);
+          readmeLines.push(`  - ${inc.nodeName} (${inc.nodeType}): ${inc.detail}${inc.dataContext ? ` — ${inc.dataContext}` : ""}`);
         });
       } else {
         readmeLines.push(`  - Direct HTTP Clients`);
@@ -189,7 +189,7 @@ dist
       readmeLines.push(`- **Outgoing Destinations**:`);
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
-          readmeLines.push(`  - ${out.nodeName} (${out.nodeType}): ${out.detail}`);
+          readmeLines.push(`  - ${out.nodeName} (${out.nodeType}): ${out.detail}${out.dataContext ? ` — ${out.dataContext}` : ""}`);
         });
       } else {
         readmeLines.push(`  - HTTP Response`);

@@ -84,7 +84,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <NodeHeader id={id} data={data} nodeType="entity" icon={Database} title="Table Reference" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
+      <NodeHeader id={id} data={data} nodeType="db_ref" icon={Database} title="Table Reference" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
       
       {/* Description */}
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">

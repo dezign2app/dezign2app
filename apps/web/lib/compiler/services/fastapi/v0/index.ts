@@ -241,6 +241,7 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       if (trace.incoming.length > 0) {
         trace.incoming.forEach((inc) => {
           routeCode += `    - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          if (inc.dataContext) routeCode += `      Data Context: ${inc.dataContext}\n`;
         });
       } else {
         routeCode += `    - Direct HTTP Client\n`;
@@ -250,6 +251,7 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
           routeCode += `    - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          if (out.dataContext) routeCode += `      Data Context: ${out.dataContext}\n`;
         });
       } else {
         routeCode += `    - Returns HTTP response\n`;

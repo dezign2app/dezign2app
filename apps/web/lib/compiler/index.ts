@@ -6,6 +6,13 @@ export * from "./compileServiceNode";
 export * from "./compileWebClientNode";
 export * from "./compileUiPackage";
 export * from "./compileMonorepo";
+
+// Tech & Version Specific Compilers
+export * from "./services/express/v4";
+export * from "./webClients/nextjs/v16";
+export * from "./databases/sqlite/drizzle";
+
+// Legacy / Utility Generators
 export * from "./generators/routeGenerator";
 export * from "./generators/consumerGenerator";
 export * from "./generators/producerGenerator";

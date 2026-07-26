@@ -1,5 +1,7 @@
 import type { MessagingResourceType, MessagingNodeType } from "./constants";
+import type { ServiceTechStack, ServiceTechVersion, WebClientTechStack, WebClientTechVersion, DatabaseEngine, DatabaseEngineVersion, DatabaseORM, DatabaseOrmVersion } from "./techStack";
 export type { MessagingResourceType, MessagingNodeType };
+export * from "./techStack";
 
 export type HandleKind =
   // --- Entity (schema view) ---
@@ -216,7 +218,12 @@ export type BackendNode = {
     tableRef?: string; // Reference to an entity node ID
     seedRows?: Record<string, string | number | boolean | null>[];
     graphPosition?: { x: number; y: number };
-    techStack?: string;
+    techStack?: ServiceTechStack | WebClientTechStack;
+    techVersion?: ServiceTechVersion | WebClientTechVersion;
+    dbEngine?: DatabaseEngine;
+    dbEngineVersion?: DatabaseEngineVersion;
+    orm?: DatabaseORM;
+    ormVersion?: DatabaseOrmVersion;
     baseUrl?: string;
     cors?: boolean;
     corsOrigins?: string;
@@ -515,6 +522,8 @@ export type DeliveryGuarantee = "EXACTLY_ONCE" | "AT_LEAST_ONCE" | "AT_MOST_ONCE
 export type EventOrdering = "NONE" | "GLOBAL" | "PER_ENTITY" | "PER_AGGREGATE";
 export type EventCategory = "DOMAIN" | "INTEGRATION" | "INTERNAL" | "NOTIFICATION";
 export type SchemaVersion = "v1" | "v2" | "v3";
+
+export * from "./techStack";
 
 export type ArchitectureMetadata = {
   createdAt?: number;

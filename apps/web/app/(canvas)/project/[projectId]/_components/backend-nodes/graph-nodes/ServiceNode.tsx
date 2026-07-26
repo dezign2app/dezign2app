@@ -72,7 +72,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[300px] max-w-[400px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <NodeHeader id={id} data={data} icon={Server} title="Service / API" colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-400" selected={selected} />
+      <NodeHeader id={id} data={data} nodeType="service" icon={Server} title="Service / API" colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-400" selected={selected} />
       
       {/* Description */}
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">

@@ -8,6 +8,8 @@ import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 import { Textarea } from "@workspace/ui/components/textarea";
 
+import { NodeHeader } from "./shared";
+
 export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
@@ -82,20 +84,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
 
   return (
     <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col", selected ? "border-primary" : "border-border")}>
-      <div className={cn("px-3 py-2 border-b flex items-center justify-between group rounded-t-xl bg-orange-500/10 text-orange-700 dark:text-orange-400")}>
-        <div className="flex items-center flex-1">
-          <Database size={14} className="mr-2 shrink-0" />
-          <div className="flex flex-col flex-1">
-             <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">Table Reference</span>
-          </div>
-        </div>
-        <div 
-          className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-black/10 transition-all cursor-pointer ml-2 shrink-0"
-          onClick={(e) => { e.stopPropagation(); deleteNode(id); }}
-        >
-          <Trash2 size={14} />
-        </div>
-      </div>
+      <NodeHeader id={id} data={data} nodeType="entity" icon={Database} title="Table Reference" colorClass="bg-orange-500/10 text-orange-700 dark:text-orange-400" selected={selected} />
       
       {/* Description */}
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">

@@ -51,12 +51,12 @@ export function compileServiceNode(
   }
 
   const files: CompiledFile[] = [
-    ...generateRoutes(serviceName, nodeEndpoints),
-    ...generateConsumers(serviceName, nodeConsumedEvents),
-    ...generateProducers(serviceName, nodePublishedEvents),
+    ...generateRoutes(serviceName, nodeEndpoints, node, allNodes, allEdges, endpoints),
+    ...generateConsumers(serviceName, nodeConsumedEvents, node, allNodes, allEdges),
+    ...generateProducers(serviceName, nodePublishedEvents, node, allNodes, allEdges),
     ...generateLibFiles(),
     generateServerFile(serviceName, port, cors, corsOrigins),
-    ...generateConfigFiles(node, sanitizedName, serviceName, port, cors),
+    ...generateConfigFiles(node, sanitizedName, serviceName, port, cors, endpoints, events, allNodes, allEdges),
     ...generateServiceUnitTests(serviceName, nodeEndpoints, testCases),
   ];
 

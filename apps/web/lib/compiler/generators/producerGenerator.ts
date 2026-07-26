@@ -1,10 +1,15 @@
 import { AnyMessagingResource } from "@workspace/canvas/types";
+import { BackendNode, BackendEdge } from "@/types/canvas";
 import { CompiledFile } from "../types";
 import { toVarName, toPascalCase } from "../utils";
+import { resolveProducerTrace } from "../traceResolver";
 
 export function generateProducers(
   serviceName: string,
-  nodePublishedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[]
+  nodePublishedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[],
+  serviceNode?: BackendNode,
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = []
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const producerExports: string[] = [];
@@ -26,7 +31,11 @@ export function generateProducers(
       const funcName = `publish${eventPascalName}`;
       const payloadInterfaceName = `${eventPascalName}EventPayload`;
 
-      const producerCode = `import { createLogger } from "@workspace/logger";
+      const trace = serviceNode
+        ? resolveProducerTrace(serviceNode, ev, allNodes, allEdges)
+        : { incoming: [], outgoing: [] };
+
+      let producerCode = `import { createLogger } from "@workspace/logger";
 import { ${payloadInterfaceName} } from "@workspace/types";
 
 const logger = createLogger("${serviceName}:Producer:${ev.name}");
@@ -35,10 +44,28 @@ const logger = createLogger("${serviceName}:Producer:${ev.name}");
  * Event Producer for: "${ev.name}"
  */
 export async function ${funcName}(eventData: ${payloadInterfaceName}): Promise<void> {
-  logger.info(\`Publishing event [${ev.name}]\`, eventData);
-  // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)
-}
+  // =========================================================================
+  // 🤖 AI CODING AGENT DIRECTIVE:
+  // Publish event: "${ev.name}"
+  //
+  // 📥 CONNECTED TRIGGER NODE:
+  // - Triggered by route handler or domain logic within ${serviceNode?.data?.label || serviceName}
+  //
+  // 📤 CONNECTED OUTGOING DESTINATION NODE(S):
 `;
+      if (trace.outgoing.length > 0) {
+        trace.outgoing.forEach((out) => {
+          producerCode += `  // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          if (out.dataContext) producerCode += `  //   Details: ${out.dataContext}\n`;
+        });
+      } else {
+        producerCode += `  // - Publishes topic/event "${ev.name}"\n`;
+      }
+      producerCode += `  // =========================================================================\n`;
+      producerCode += `  logger.info(\`Publishing event [${ev.name}]\`, eventData);\n`;
+      producerCode += `  // TODO: Connect message broker (Kafka / NATS / RabbitMQ / Redis)\n`;
+      producerCode += `}\n`;
+
       files.push({
         filename: `src/producer/${producerFileName}.ts`,
         language: "typescript",

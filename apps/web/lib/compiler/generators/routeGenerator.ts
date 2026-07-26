@@ -1,14 +1,20 @@
 import { Endpoint } from "@workspace/canvas/types";
+import { BackendNode, BackendEdge } from "@/types/canvas";
 import { CompiledFile } from "../types";
 import { parseSchemaJson, toVarName, toPascalCase } from "../utils";
 import {
   parametersToTsInterface,
   schemaToTsInterface,
 } from "./schemaToTypeScript";
+import { resolveEndpointTrace } from "../traceResolver";
 
 export function generateRoutes(
   serviceName: string,
-  nodeEndpoints: (Endpoint & { nodeId: string })[]
+  nodeEndpoints: (Endpoint & { nodeId: string })[],
+  serviceNode?: BackendNode,
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = [],
+  allEndpoints: (Endpoint & { nodeId: string })[] = []
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const routeImports: string[] = [];
@@ -65,10 +71,14 @@ export async function defaultHandler(_req: Request, res: Response) {
         responseData = `{\n      success: true,\n      message: "Successfully executed ${ep.type || "GET"} ${path}",\n      timestamp: new Date().toISOString()\n    }`;
       }
 
-      const paramsTypeRes = parametersToTsInterface(`${pascalName}Params`, ep.pathParams, true);
       const queryTypeRes = parametersToTsInterface(`${pascalName}Query`, ep.queryParams, false);
       const bodyTypeRes = schemaToTsInterface(`${pascalName}Body`, ep.requestBody);
       const isBodyMethod = ["post", "put", "patch"].includes(method);
+
+      // Resolve targeted connection trace for this endpoint
+      const trace = serviceNode
+        ? resolveEndpointTrace(serviceNode, ep, allNodes, allEdges, allEndpoints)
+        : { incoming: [], outgoing: [] };
 
       // Build imports from @workspace/types
       const typeImportsList = [
@@ -131,6 +141,26 @@ export async function ${handlerName}(
       routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
       routeHandlerCode += `    // Implement endpoint domain logic for: ${ep.type || "GET"} ${path}\n`;
       routeHandlerCode += `    // Description: ${summary}\n`;
+      routeHandlerCode += `    //\n`;
+      routeHandlerCode += `    // 📥 CONNECTED INCOMING NODE(S):\n`;
+      if (trace.incoming.length > 0) {
+        trace.incoming.forEach((inc) => {
+          routeHandlerCode += `    // - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          if (inc.dataContext) routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
+        });
+      } else {
+        routeHandlerCode += `    // - Direct API request (Method: ${ep.type || "GET"}, Path: ${path})\n`;
+      }
+      routeHandlerCode += `    //\n`;
+      routeHandlerCode += `    // 📤 CONNECTED OUTGOING NODE(S):\n`;
+      if (trace.outgoing.length > 0) {
+        trace.outgoing.forEach((out) => {
+          routeHandlerCode += `    // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          if (out.dataContext) routeHandlerCode += `    //   Data Context: ${out.dataContext}\n`;
+        });
+      } else {
+        routeHandlerCode += `    // - Returns HTTP ${ep.type === "POST" ? 201 : 200} JSON response\n`;
+      }
       routeHandlerCode += `    // =========================================================================\n`;
 
       if (ep.businessLogic && ep.businessLogic.trim()) {

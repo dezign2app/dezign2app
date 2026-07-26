@@ -9,6 +9,7 @@ export * from "./compileMonorepo";
 
 // Tech & Version Specific Compilers
 export * from "./services/express/v4";
+export * from "./services/fastapi/v0";
 export * from "./webClients/nextjs/v16";
 export * from "./databases/sqlite/drizzle";
 

@@ -18,6 +18,12 @@ export const SERVICE_TECH_OPTIONS = [
     versions: [{ value: "4.x", label: "4.x" }],
     defaultVersion: "4.x",
   },
+  {
+    value: "fastapi",
+    label: "FastAPI (Python)",
+    versions: [{ value: "0.110.x", label: "0.110.x" }],
+    defaultVersion: "0.110.x",
+  },
 ] as const;
 
 export const WEB_CLIENT_TECH_OPTIONS = [

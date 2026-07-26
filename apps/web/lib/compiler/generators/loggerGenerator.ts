@@ -51,18 +51,25 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   none: 4,
 };
 
+function normalizeLevel(raw: unknown): LogLevel | undefined {
+  const normalized = String(raw).trim().toLowerCase().replace(/['"]/g, "") as LogLevel;
+  return LOG_LEVELS[normalized] !== undefined ? normalized : undefined;
+}
+
 function getActiveLogLevel(overrideLevel?: LogLevel): LogLevel {
-  if (overrideLevel && LOG_LEVELS[overrideLevel] !== undefined) {
-    return overrideLevel;
+  const normalizedOverride = overrideLevel ? normalizeLevel(overrideLevel) : undefined;
+  if (normalizedOverride) {
+    return normalizedOverride;
   }
+
   const envLevel =
     (typeof process !== "undefined" &&
       (process.env.LOG_LEVEL ||
        process.env.NEXT_PUBLIC_LOG_LEVEL ||
        process.env.REACT_APP_LOG_LEVEL)) ||
     "info";
-  const normalized = String(envLevel).trim().toLowerCase().replace(/['"]/g, "") as LogLevel;
-  return LOG_LEVELS[normalized] !== undefined ? normalized : "info";
+
+  return normalizeLevel(envLevel) ?? "info";
 }
 
 export class Logger {

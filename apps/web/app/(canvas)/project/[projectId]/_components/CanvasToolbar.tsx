@@ -143,7 +143,7 @@ export function CanvasToolbar({
             </div>
           </TooltipContent>
         </Tooltip>
-        <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} projectName={projectName} />
+        <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} projectName={projectName} projectId={projectId} />
 
         <Button
           variant={"secondary"}

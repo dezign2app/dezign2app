@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useParams } from "next/navigation";
-import { Plus, FlaskConical } from "lucide-react";
+import { Plus, FlaskConical, Sparkles } from "lucide-react";
 import { SimulationTestCase } from "@workspace/canvas";
 import { TestCaseEditor } from "../../config-sidebar/TestCaseEditor";
 import { Endpoint, BackendNode, UIEventItem } from "@/types/canvas";
@@ -47,6 +47,54 @@ export const TestCaseSheet = ({ isOpen, onClose, event, nodeId, targetNode, endp
 
   const [newTcOpen, setNewTcOpen] = useState(false);
   const [newTcName, setNewTcName] = useState("");
+
+  const handleAutoGenerate = () => {
+    if (!endpoint) return;
+
+    const eventName = event.name || event.event || "Event";
+    const initialBody = getInitialBody(endpoint) ?? { sampleData: "test_value" };
+    const method = (endpoint.type || "GET").toUpperCase();
+
+    const successCase: SimulationTestCase = {
+      id: generateId(),
+      name: `200 OK - Standard ${eventName}`,
+      targetNodeId: nodeId,
+      targetEventId: event.id,
+      request: {
+        headers: { "content-type": "application/json" },
+        params: {},
+        body: initialBody,
+      },
+      expectedStatus: method === "POST" ? 201 : 200,
+      expectedBody: { success: true, message: `Successfully executed ${method} ${endpoint.name || ""}` },
+      mocks: {},
+    };
+
+    const errorCase: SimulationTestCase = {
+      id: generateId(),
+      name: `400 Bad Request - Validation Error (${eventName})`,
+      targetNodeId: nodeId,
+      targetEventId: event.id,
+      request: {
+        headers: { "content-type": "application/json" },
+        params: {},
+        body: {},
+      },
+      expectedStatus: 400,
+      expectedBody: { error: "Validation Error", details: "Invalid request payload" },
+      mocks: {},
+    };
+
+    addTestCase(successCase);
+    addTestCase(errorCase);
+
+    if (projectId) {
+      upsertBackendTestCase({ projectId, testCaseId: successCase.id, data: successCase });
+      upsertBackendTestCase({ projectId, testCaseId: errorCase.id, data: errorCase });
+    }
+
+    toast.success("Auto-generated Success & Validation test cases");
+  };
 
   const getDownstreamMocks = () => {
     if (!endpoint || !targetNode) return [];
@@ -181,40 +229,50 @@ export const TestCaseSheet = ({ isOpen, onClose, event, nodeId, targetNode, endp
           <div className="flex items-center justify-between pb-2 border-b">
             <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Saved Cases</h4>
             {endpoint && (
-              <Dialog open={newTcOpen} onOpenChange={setNewTcOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setNewTcName(`Test for ${event.name || event.event}`)}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> New
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="font-sans">
-                  <DialogHeader>
-                    <DialogTitle>Create Test Case</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-2 flex flex-col gap-2">
-                    <Label className="text-xs font-mono text-muted-foreground">Test Case Name</Label>
-                    <Input 
-                      value={newTcName} 
-                      onChange={e => setNewTcName(e.target.value)} 
-                      placeholder="Enter test case name"
-                      autoFocus
-                      className="text-xs h-8 bg-background"
-                      onKeyDown={(e) => {
-                         if (e.key === "Enter" && newTcName.trim()) {
-                            handleCreateNew(newTcName);
-                            setNewTcOpen(false);
-                         }
-                      }}
-                    />
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline" size="sm">Cancel</Button>
-                    </DialogClose>
-                    <Button size="sm" onClick={() => { handleCreateNew(newTcName); setNewTcOpen(false); }} disabled={!newTcName.trim()}>Create</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-xs px-2 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                  onClick={handleAutoGenerate}
+                >
+                  <Sparkles className="h-3 w-3 mr-1 text-indigo-500" /> Auto-Generate
+                </Button>
+                <Dialog open={newTcOpen} onOpenChange={setNewTcOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setNewTcName(`Test for ${event.name || event.event}`)}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> New
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="font-sans">
+                    <DialogHeader>
+                      <DialogTitle>Create Test Case</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-2 flex flex-col gap-2">
+                      <Label className="text-xs font-mono text-muted-foreground">Test Case Name</Label>
+                      <Input 
+                        value={newTcName} 
+                        onChange={e => setNewTcName(e.target.value)} 
+                        placeholder="Enter test case name"
+                        autoFocus
+                        className="text-xs h-8 bg-background"
+                        onKeyDown={(e) => {
+                           if (e.key === "Enter" && newTcName.trim()) {
+                              handleCreateNew(newTcName);
+                              setNewTcOpen(false);
+                           }
+                        }}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline" size="sm">Cancel</Button>
+                      </DialogClose>
+                      <Button size="sm" onClick={() => { handleCreateNew(newTcName); setNewTcOpen(false); }} disabled={!newTcName.trim()}>Create</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             )}
           </div>
 

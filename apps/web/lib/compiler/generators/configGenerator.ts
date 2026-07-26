@@ -2,7 +2,7 @@ import { CompiledFile } from "../types";
 import { BackendNode } from "@/types/canvas";
 
 export function generateLibFiles(): CompiledFile[] {
-  const libIndexCode = `export { db, sqlite, schema } from "@workspace/db";
+  const libIndexCode = `export { db, schema } from "@workspace/db";
 
 export function formatResponse<T>(data: T, message = "Success") {
   return {
@@ -99,6 +99,7 @@ export function generateConfigFiles(
         build: "tsc",
         start: "node dist/index.js",
         dev: "ts-node-dev --respawn --watch .env src/index.ts",
+        test: "vitest run",
       },
       dependencies: {
         "@workspace/db": "workspace:*",
@@ -119,6 +120,7 @@ export function generateConfigFiles(
         "@types/node": "^20.11.0",
         "ts-node-dev": "^2.0.0",
         typescript: "^5.3.3",
+        vitest: "^1.6.0",
       },
     },
     null,

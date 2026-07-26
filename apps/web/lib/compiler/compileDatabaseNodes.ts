@@ -209,7 +209,7 @@ export function compileDatabaseNodes(
       language: "typescript",
       content: schemaCode,
     });
-    schemaExports.push(`export * from "./schema/users";`);
+    schemaExports.push(`export * from "./users";`);
   } else {
     enrichedTables.forEach((table) => {
       const tableName = toTableName(table.data.label || "table");
@@ -221,7 +221,10 @@ export function compileDatabaseNodes(
         language: "typescript",
         content: schemaCode,
       });
-      schemaExports.push(`export * from "./schema/${tableVarName}";`);
+      const exportLine = `export * from "./${tableVarName}";`;
+      if (!schemaExports.includes(exportLine)) {
+        schemaExports.push(exportLine);
+      }
     });
   }
 
@@ -229,7 +232,7 @@ export function compileDatabaseNodes(
   files.push({
     filename: "schema/index.ts",
     language: "typescript",
-    content: `${schemaExports.join("\n")}\n`,
+    content: `${Array.from(new Set(schemaExports)).join("\n")}\n`,
   });
 
   // Generate db/index.ts
@@ -239,7 +242,7 @@ import path from "path";
 import * as schema from "./schema";
 
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, "sqlite.db");
-const sqlite = new Database(dbPath);
+export const sqlite: Database.Database = new Database(dbPath);
 
 export const db = drizzle(sqlite, { schema });
 export { schema };

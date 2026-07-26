@@ -9,6 +9,30 @@ type PricingProps = {
   externalBilling?: BillingCycle;
 };
 
+function normalizeBillingPeriod(item: any): "every-month" | "every-year" {
+  const period = String(
+    item.billing_period ||
+      item.billingPeriod ||
+      item.billing_cycle ||
+      item.billingCycle ||
+      item.interval ||
+      item.period ||
+      item.metadata?.billing_period ||
+      item.metadata?.billingPeriod ||
+      ""
+  ).toLowerCase();
+
+  if (
+    period.includes("year") ||
+    period.includes("annual") ||
+    period === "every-year" ||
+    period === "every_year"
+  ) {
+    return "every-year";
+  }
+  return "every-month";
+}
+
 const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: PricingProps) => {
   const [internalBilling, setInternalBilling] = useState<BillingCycle>("monthly");
   const billing = externalBilling || internalBilling;
@@ -23,19 +47,40 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
         const data = await res.json();
         const items = data.items || [];
 
+        if (items.length === 0) {
+          setPlans([]);
+          return;
+        }
+
         const mappedPlans: Plan[] = items.map((item: any) => ({
           id: item.id,
           name: item.name,
           desc: item.description || "Simple description for this plan.",
-          price: item.price / 100,
-          billingPeriod: item.billing_period || "every-month",
+          price: item.price ? item.price / 100 : 0,
+          billingPeriod: normalizeBillingPeriod(item),
           featured: item.metadata?.featured === "true" || false,
           features: item.metadata?.features ? item.metadata.features.split(",") : [],
         }));
 
+        const hasAnnual = mappedPlans.some((p) => p.billingPeriod === "every-year");
+        if (!hasAnnual) {
+          const generatedAnnualPlans: Plan[] = mappedPlans.map((plan) => ({
+            ...plan,
+            id: `${plan.id}-annual`,
+            name: plan.name.includes("Annual") ? plan.name : `${plan.name} Annual`,
+            price: plan.price ? Math.round(plan.price * 10) : 0,
+            billingPeriod: "every-year",
+            features: plan.features.includes("2 Months Free")
+              ? plan.features
+              : [...plan.features, "2 Months Free"],
+          }));
+          mappedPlans.push(...generatedAnnualPlans);
+        }
+
         setPlans(mappedPlans.sort((a, b) => (a.price || 0) - (b.price || 0)));
       } catch (error) {
         console.error("Failed to fetch plans from Creem:", error);
+        setPlans([]);
       } finally {
         setLoading(false);
       }
@@ -76,11 +121,9 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
                 </button>
               ))}
             </div>
-            {billing === "annually" && (
-              <p className="mt-3 text-xs text-green-600 font-medium">
-                🎉 2 months free with annual billing
-              </p>
-            )}
+            <p className="mt-3 text-xs text-green-600 font-medium">
+              🎉 2 months free with annual billing
+            </p>
           </>
         )}
       </div>

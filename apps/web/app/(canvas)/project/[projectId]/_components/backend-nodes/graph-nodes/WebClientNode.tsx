@@ -71,7 +71,7 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
         targetNode.data?.streams ||
         targetNode.data?.channels ||
         [];
-      const resource = resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+      const resource = resourceList.find((r: { id: string; name?: string }) => r.id === resourceId) || resourceList[0];
       const name = resource?.name || targetNode.data?.label || "Topic";
       const endpoint: Endpoint = {
         id: resource?.id || targetNode.id,
@@ -89,8 +89,8 @@ const WebClientEventList = ({ nodeId, items = [], updateNode, data, onTriggerEve
       edge.targetHandle.startsWith("publishedEvents-in-")
     ) {
       const eventIdMatch = edge.targetHandle.replace(/^(consumedEvents|publishedEvents)-(in|out)-/, "");
-      const consumedEv = targetNode.data?.consumedEvents?.find((e: any) => e.id === eventIdMatch);
-      const publishedEv = targetNode.data?.publishedEvents?.find((e: any) => e.id === eventIdMatch);
+      const consumedEv = targetNode.data?.consumedEvents?.find((e: { id: string; name?: string }) => e.id === eventIdMatch);
+      const publishedEv = targetNode.data?.publishedEvents?.find((e: { id: string; name?: string }) => e.id === eventIdMatch);
       const ev = consumedEv || publishedEv;
       const endpoint: Endpoint = {
         id: ev?.id || eventIdMatch,

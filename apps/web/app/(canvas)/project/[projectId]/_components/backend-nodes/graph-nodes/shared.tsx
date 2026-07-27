@@ -532,8 +532,8 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
               updateNode(id, {
                 data: {
                   ...data,
-                  techStack: val as any,
-                  techVersion: selectedTech?.defaultVersion as any,
+                  techStack: val as BackendNode["data"]["techStack"],
+                  techVersion: selectedTech?.defaultVersion as BackendNode["data"]["techVersion"],
                 },
               });
             }}
@@ -557,7 +557,7 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
                 updateNode(id, {
                   data: {
                     ...data,
-                    techVersion: val as any,
+                    techVersion: val as BackendNode["data"]["techVersion"],
                   },
                 });
               }}

@@ -88,9 +88,14 @@ export const WorkerNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     </div>
   );
 };
+  
+interface WorkerTask {
+  id: string;
+  name: string;
+}
 
 // --- Custom Task List for WorkerNode ---
-const WorkerTaskList = ({ nodeId, tasks, data, updateNode }: { nodeId: string, tasks: any[], data: any, updateNode: any }) => {
+const WorkerTaskList = ({ nodeId, tasks, data, updateNode }: { nodeId: string; tasks: WorkerTask[]; data: BackendNode["data"]; updateNode: (id: string, changes: Partial<BackendNode>) => void }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);

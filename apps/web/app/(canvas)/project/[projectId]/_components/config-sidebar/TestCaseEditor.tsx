@@ -24,6 +24,7 @@ export const TestCaseEditor = ({
   onSave: (updated: SimulationTestCase) => void;
   onDelete: () => void;
 }) => {
+  const [name, setName] = useState<string>(initialCase.name);
   const [headers, setHeaders] = useState<Parameter[]>(() => 
     endpoint.headers?.map((h) => ({ ...h, key: h.key ?? h.name, value: initialCase.request?.headers?.[(h.name || "").toLowerCase()] ?? h.defaultValue ?? "" })) || []
   );
@@ -37,6 +38,10 @@ export const TestCaseEditor = ({
   const [expectedBody, setExpectedBody] = useState<JSONValue | undefined>(initialCase.expectedBody);
   const [mocks, setMocks] = useState<Record<string, { returnData: JSONValue; status: number }>>(initialCase.mocks || {});
   
+  useEffect(() => {
+    setName(initialCase.name);
+  }, [initialCase.id]);
+
   const isMounted = useRef(false);
   useEffect(() => {
     if (!isMounted.current) {
@@ -51,6 +56,7 @@ export const TestCaseEditor = ({
        
        onSave({
          ...initialCase,
+         name,
          request: { headers: reqHeaders, params: queryParams, body },
          expectedStatus,
          expectedBody,
@@ -58,7 +64,7 @@ export const TestCaseEditor = ({
        });
     }, 500);
     return () => clearTimeout(handler);
-  }, [headers, params, body, expectedStatus, expectedBody, mocks]);
+  }, [name, headers, params, body, expectedStatus, expectedBody, mocks]);
 
   return (
     <div className="flex flex-col gap-4 bg-secondary/5 border rounded-lg p-3 font-sans mt-2" onClick={(e) => e.stopPropagation()}>
@@ -83,6 +89,16 @@ export const TestCaseEditor = ({
              </AlertDialogFooter>
            </AlertDialogContent>
          </AlertDialog>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs font-mono text-muted-foreground">Test Case Name</Label>
+        <Input 
+          className="h-7 text-xs bg-background font-medium" 
+          value={name} 
+          placeholder="Test Case Name"
+          onChange={(e) => setName(e.target.value)}
+        />
       </div>
 
       {(params.length > 0 || headers.length > 0) && (

@@ -1,5 +1,6 @@
 import type {
   LangGraphStateChannel,
+  LangGraphInputChannel,
   LangGraphOutputPort,
   LangGraphStepConfig,
   LangGraphEdgeConfig,
@@ -35,6 +36,7 @@ export const LANGGRAPH_STARTER_TEMPLATE: {
   version: number;
   recursionLimit: number;
   stepTimeoutMs: number;
+  inputChannels: LangGraphInputChannel[];
   stateChannels: LangGraphStateChannel[];
   outputPorts: LangGraphOutputPort[];
   tools: LangGraphToolDefinition[];
@@ -45,6 +47,7 @@ export const LANGGRAPH_STARTER_TEMPLATE: {
   version: 2,
   recursionLimit: 25,
   stepTimeoutMs: 30000,
+  inputChannels: [],
   stateChannels: [
     { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
     { key: "summary", type: "string", reducer: "replace", defaultValue: "" },

@@ -148,6 +148,14 @@ export type LangGraphStateChannel = {
   defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
 };
 
+export type LangGraphInputChannel = {
+  key: string;
+  type: "string" | "messages" | "json" | "number" | "boolean" | "object" | "array";
+  required?: boolean;
+  description?: string;
+  defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
+};
+
 export type LangGraphOutputPort = {
   id: string;
   label: string;
@@ -409,6 +417,7 @@ export type BackendNode = {
     issuerUrl?: string;
     discoveryUrl?: string;
     // --- LangGraph Agent Node & Step ---
+    inputChannels?: LangGraphInputChannel[];
     stateChannels?: LangGraphStateChannel[];
     graphSteps?: LangGraphStepConfig[];
     graphEdges?: LangGraphEdgeConfig[];

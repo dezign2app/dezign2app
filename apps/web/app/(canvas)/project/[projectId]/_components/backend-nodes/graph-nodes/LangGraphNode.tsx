@@ -22,6 +22,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
     setEditorOpen(true);
   };
 
+  const inputChannels = data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels;
   const stateChannels = data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels;
   const graphSteps = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
   const graphEdges = data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges;
@@ -39,7 +40,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         )}
         onDoubleClick={handleOpenEditor}
       >
-        {/* Input Handle */}
+        {/* Main Entry Input Handle */}
         <Handle
           type="target"
           position={Position.Left}
@@ -55,17 +56,18 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             </div>
             <div>
               <Input
-                className="h-6 text-sm font-bold bg-transparent border-none shadow-none p-0 focus-visible:ring-0 text-foreground w-[180px] nodrag"
+                className="h-6 px-1 text-sm font-bold bg-transparent border-none shadow-none focus-visible:ring-0 text-foreground w-[180px] nodrag"
                 value={data.label || "LangGraph Agent"}
                 onChange={(e) => updateNode(id, { data: { ...data, label: e.target.value } })}
               />
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <ShieldCheck className="w-3 h-3 text-primary" />
-                <span>{graphSteps.length} steps · {graphEdges.length} edges · {stateChannels.length} channels</span>
+                <span>{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} channels</span>
               </div>
             </div>
           </div>
         </div>
+
 
         {/* Summary Preview */}
         <div className="p-3 flex flex-col gap-2 nodrag">

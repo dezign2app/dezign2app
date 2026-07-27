@@ -633,6 +633,15 @@ export const vectorStoreConfigSchema = z.object({
 });
 export type VectorStoreConfig = z.infer<typeof vectorStoreConfigSchema>;
 
+export const inputChannelSchema = z.object({
+  key: z.string(),
+  type: z.enum(["string", "messages", "json", "number", "boolean", "object", "array"]).default("string"),
+  required: z.boolean().default(true),
+  description: z.string().optional(),
+  defaultValue: z.any().optional(),
+});
+export type InputChannel = z.infer<typeof inputChannelSchema>;
+
 export const outputPortSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -699,6 +708,8 @@ export const langgraphDataSchema = baseNodeDataSchema
     version: z.number().default(2),
     recursionLimit: z.number().default(25),
     stepTimeoutMs: z.number().default(30000),
+
+    inputChannels: z.array(inputChannelSchema).default([]),
 
     stateChannels: z
       .array(

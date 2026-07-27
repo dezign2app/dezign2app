@@ -324,10 +324,21 @@ export function InspectorSidebar({
                 <Input
                   className="h-7 text-xs font-mono font-bold bg-background flex-1"
                   placeholder="field_name"
+                  autoFocus={!ch.key}
                   value={ch.key}
                   onChange={(e) => {
                     const key = e.target.value;
                     setStateChannels(stateChannels.map((c, i) => i === idx ? { ...c, key } : c));
+                  }}
+                  onBlur={() => {
+                    if (!ch.key || !ch.key.trim()) {
+                      setStateChannels(stateChannels.filter((_, i) => i !== idx));
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      (e.target as HTMLInputElement).blur();
+                    }
                   }}
                 />
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:bg-red-500/20 shrink-0"

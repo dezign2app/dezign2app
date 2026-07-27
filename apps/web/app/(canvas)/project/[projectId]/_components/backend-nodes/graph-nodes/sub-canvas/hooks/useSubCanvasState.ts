@@ -135,6 +135,17 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
     return () => clearTimeout(timer);
   }, [triggerFitView]);
 
+  const handleAddChannel = useCallback(() => {
+    const newChannel: LangGraphStateChannel = {
+      key: "",
+      type: "string",
+      reducer: "replace",
+      defaultValue: "",
+    };
+    setStateChannels((prev) => [...prev, newChannel]);
+    setActiveSideTab("state");
+  }, []);
+
   useEffect(() => {
     setNodes((nds) => {
       const hasStateGlobal = nds.some((n) => n.id === "STATE_GLOBAL");
@@ -144,7 +155,15 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
           return { ...n, data: { ...n.data, inputChannels } };
         }
         if (n.id === "STATE_GLOBAL" && n.type === "state_global") {
-          return { ...n, data: { ...n.data, stateChannels, onOpenStateTab: () => setActiveSideTab("state") } };
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              stateChannels,
+              onOpenStateTab: () => setActiveSideTab("state"),
+              onAddChannel: handleAddChannel,
+            },
+          };
         }
         if (n.type === "step") {
           return { ...n, data: { ...n.data, availableStateChannels: stateChannels } };
@@ -161,6 +180,7 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
             label: "Global Graph State",
             stateChannels,
             onOpenStateTab: () => setActiveSideTab("state"),
+            onAddChannel: handleAddChannel,
           },
           deletable: false,
         };
@@ -169,7 +189,7 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
 
       return updated;
     });
-  }, [inputChannels, stateChannels]);
+  }, [inputChannels, stateChannels, handleAddChannel]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<SubCanvasNode>[]) => setNodes((nds) => applyNodeChanges<SubCanvasNode>(changes, nds)),

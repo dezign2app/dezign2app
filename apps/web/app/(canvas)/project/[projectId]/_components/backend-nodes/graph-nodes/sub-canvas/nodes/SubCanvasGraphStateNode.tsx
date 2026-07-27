@@ -1,12 +1,19 @@
 import React from "react";
 import { NodeProps } from "@xyflow/react";
 import { Database, Plus } from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
 import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import type { StateGlobalNode } from "../types";
 
 export const SubCanvasGraphStateNode = ({ data, selected }: NodeProps<StateGlobalNode>) => {
   const channels = data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels;
+
+  const handleAdd = () => {
+    if (data.onAddChannel) {
+      data.onAddChannel();
+    } else if (data.onOpenStateTab) {
+      data.onOpenStateTab();
+    }
+  };
 
   return (
     <div
@@ -30,9 +37,22 @@ export const SubCanvasGraphStateNode = ({ data, selected }: NodeProps<StateGloba
       </div>
 
       <div className="flex flex-col gap-1.5 nodrag">
-        {channels.slice(0, 5).map((ch) => (
-          <div key={ch.key} className="flex items-center justify-between bg-secondary/40 px-2 py-1 rounded text-[10px] font-mono border border-border/40">
-            <span className="font-bold text-foreground truncate max-w-[110px]">{ch.key}</span>
+        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1 py-0.5 bg-secondary/30 rounded border border-border/30 group">
+          <span>State Fields</span>
+          {(data.onAddChannel || data.onOpenStateTab) && (
+            <button
+              type="button"
+              className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-all nodrag"
+              onClick={handleAdd}
+              title="Add State Field"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        {channels.slice(0, 5).map((ch, idx) => (
+          <div key={ch.key || idx} className="flex items-center justify-between bg-secondary/40 px-2 py-1 rounded text-[10px] font-mono border border-border/40">
+            <span className="font-bold text-foreground truncate max-w-[110px]">{ch.key || "(unnamed)"}</span>
             <div className="flex items-center gap-1">
               <span className="text-[9px] text-muted-foreground">{ch.type}</span>
               <span className="text-[9px] px-1 rounded bg-secondary text-[#006ddd] font-semibold">{ch.reducer}</span>
@@ -43,17 +63,6 @@ export const SubCanvasGraphStateNode = ({ data, selected }: NodeProps<StateGloba
           <span className="text-[9px] text-muted-foreground text-center font-mono">+{channels.length - 5} more fields</span>
         )}
       </div>
-
-      {data.onOpenStateTab && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full h-6 text-[10px] font-semibold text-[#006ddd] hover:text-[#006ddd] hover:bg-[#006ddd]/10 gap-1 mt-0.5 border border-[#006ddd]/20 rounded-lg nodrag"
-          onClick={data.onOpenStateTab}
-        >
-          <Plus className="w-3 h-3" /> Manage State Schema
-        </Button>
-      )}
     </div>
   );
 };

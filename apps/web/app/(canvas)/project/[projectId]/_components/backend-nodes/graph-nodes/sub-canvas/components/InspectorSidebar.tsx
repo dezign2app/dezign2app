@@ -14,14 +14,18 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData } from "../types";
+import type { StepNodeData, CustomLLMNodeData } from "../types";
+import { LocalTextarea } from "../../shared";
+import { Globe, Key, Code, Shield } from "lucide-react";
 
 interface InspectorSidebarProps {
   activeSideTab: "inspector" | "inputs" | "state" | "memory";
   setActiveSideTab: (tab: "inspector" | "inputs" | "state" | "memory") => void;
   selectedStepData: StepNodeData | null;
+  selectedLLMData?: CustomLLMNodeData | null;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
+  onUpdateLLM?: (changes: Partial<CustomLLMNodeData>) => void;
   inputChannels: LangGraphInputChannel[];
   setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
@@ -30,12 +34,53 @@ interface InspectorSidebarProps {
   setMemoryConfig: React.Dispatch<React.SetStateAction<LangGraphMemoryConfig>>;
 }
 
+const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; defaultUrl: string; models: string[] }> = {
+  openai: {
+    label: "OpenAI (ChatGPT)",
+    defaultModel: "gpt-4o-mini",
+    defaultUrl: "https://api.openai.com/v1/chat/completions",
+    models: ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1"],
+  },
+  anthropic: {
+    label: "Anthropic (Claude)",
+    defaultModel: "claude-3-5-sonnet-20241022",
+    defaultUrl: "https://api.anthropic.com/v1/messages",
+    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+  },
+  google: {
+    label: "Google (Gemini)",
+    defaultModel: "gemini-1.5-flash",
+    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/models",
+    models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash"],
+  },
+  groq: {
+    label: "Groq",
+    defaultModel: "llama-3.3-70b-versatile",
+    defaultUrl: "https://api.groq.com/openai/v1/chat/completions",
+    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "deepseek-r1-distill-llama-70b"],
+  },
+  ollama: {
+    label: "Ollama / Local",
+    defaultModel: "llama3:8b",
+    defaultUrl: "http://localhost:11434/v1",
+    models: ["llama3:8b", "mistral", "deepseek-r1"],
+  },
+  custom: {
+    label: "Custom RAW API",
+    defaultModel: "custom-model",
+    defaultUrl: "http://localhost:8080/v1",
+    models: [],
+  },
+};
+
 export function InspectorSidebar({
   activeSideTab,
   setActiveSideTab,
   selectedStepData,
+  selectedLLMData,
   onDeleteStep,
   onUpdateStep,
+  onUpdateLLM,
   inputChannels,
   setInputChannels,
   stateChannels,
@@ -43,10 +88,36 @@ export function InspectorSidebar({
   memoryConfig,
   setMemoryConfig,
 }: InspectorSidebarProps) {
+  const activeProviderKey = selectedLLMData?.provider || "openai";
+  const activePreset = PROVIDER_PRESETS[activeProviderKey] || PROVIDER_PRESETS.custom;
+  const currentModels = activePreset?.models || [];
+
+  const defaultBody = JSON.stringify(
+    {
+      model: selectedLLMData?.model || activePreset?.defaultModel || "gpt-4o-mini",
+      messages: [{ role: "user", content: "{{input}}" }],
+      temperature: selectedLLMData?.temperature ?? 0.7,
+    },
+    null,
+    2
+  );
+
+  const defaultHeaders = JSON.stringify(
+    {
+      "Content-Type": "application/json",
+      Authorization: selectedLLMData?.apiKeyHeader ? `Bearer ${selectedLLMData.apiKeyHeader}` : "Bearer YOUR_API_KEY",
+    },
+    null,
+    2
+  );
+
   return (
-    <div className="w-[340px] border-l border-border bg-card flex flex-col overflow-hidden shrink-0">
-      <Tabs value={activeSideTab} onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)} className="flex-1 flex flex-col">
-        <TabsList className="grid grid-cols-4 bg-secondary/30 p-1 rounded-none border-b border-border/40">
+    <div
+      className="w-[340px] border-l border-border bg-card flex flex-col h-full min-h-0 overflow-hidden shrink-0"
+      onWheel={(e) => e.stopPropagation()}
+    >
+      <Tabs value={activeSideTab} onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)} className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+        <TabsList className="grid grid-cols-4 bg-secondary/30 p-1 rounded-none border-b border-border/40 shrink-0">
           <TabsTrigger value="inspector" className="text-[11px] px-1">Inspector</TabsTrigger>
           <TabsTrigger value="inputs" className="text-[11px] px-1">Inputs ({inputChannels.length})</TabsTrigger>
           <TabsTrigger value="state" className="text-[11px] px-1">State ({stateChannels.length})</TabsTrigger>
@@ -54,8 +125,161 @@ export function InspectorSidebar({
         </TabsList>
 
         {/* ── Inspector ── */}
-        <TabsContent value="inspector" className="flex-1 p-4 overflow-y-auto m-0">
-          {selectedStepData ? (
+        <TabsContent value="inspector" className="flex-1 min-h-0 overflow-y-auto p-4 m-0 data-[state=active]:flex data-[state=active]:flex-col">
+          {selectedLLMData ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-foreground">LLM Config</span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-sky-500/10 text-sky-400 rounded border border-sky-500/20 uppercase">
+                    {activeProviderKey}
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400 hover:bg-red-500/20" onClick={onDeleteStep}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                </Button>
+              </div>
+
+              {/* Label */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium">Node Label</Label>
+                <Input className="h-8 text-xs bg-background"
+                  value={selectedLLMData.label || ""}
+                  onChange={(e) => onUpdateLLM?.({ label: e.target.value })} />
+              </div>
+
+              {/* Provider Preset */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium">Provider Preset</Label>
+                <Select
+                  value={activeProviderKey}
+                  onValueChange={(val: string) => {
+                    const preset = PROVIDER_PRESETS[val];
+                    if (preset) {
+                      onUpdateLLM?.({
+                        provider: val,
+                        url: preset.defaultUrl,
+                        baseUrl: preset.defaultUrl,
+                        model: preset.defaultModel,
+                      });
+                    } else {
+                      onUpdateLLM?.({ provider: val });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
+                    <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                    <SelectItem value="google">Google (Gemini)</SelectItem>
+                    <SelectItem value="groq">Groq</SelectItem>
+                    <SelectItem value="ollama">Ollama / Local</SelectItem>
+                    <SelectItem value="custom">Custom RAW API</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Model Identifier */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium">Model Identifier</Label>
+                {currentModels.length > 0 ? (
+                  <Select
+                    value={selectedLLMData.model || activePreset?.defaultModel}
+                    onValueChange={(val: string) => onUpdateLLM?.({ model: val })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background font-mono"><SelectValue placeholder="Select model" /></SelectTrigger>
+                    <SelectContent>
+                      {currentModels.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    className="h-8 text-xs bg-background font-mono"
+                    placeholder="e.g. gpt-4o, claude-3-5-sonnet, llama3:8b"
+                    value={selectedLLMData.model || ""}
+                    onChange={(e) => onUpdateLLM?.({ model: e.target.value })}
+                  />
+                )}
+              </div>
+
+              {/* Method & URL - Only show for custom provider */}
+              {activeProviderKey === "custom" && (
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5 text-sky-400" /> Base URL / Endpoint
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <Select
+                      value={selectedLLMData.method || "POST"}
+                      onValueChange={(val: string) => onUpdateLLM?.({ method: val })}
+                    >
+                      <SelectTrigger className="h-8 w-20 text-xs font-bold font-mono text-sky-400 bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="POST">POST</SelectItem>
+                        <SelectItem value="GET">GET</SelectItem>
+                        <SelectItem value="PUT">PUT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      className="h-8 text-xs bg-background font-mono flex-1"
+                      placeholder="https://api.openai.com/v1/chat/completions"
+                      value={selectedLLMData.url || selectedLLMData.baseUrl || activePreset?.defaultUrl || ""}
+                      onChange={(e) => onUpdateLLM?.({ url: e.target.value, baseUrl: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Auth Key */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-amber-400" /> Secret API Key (Optional)
+                </Label>
+                <Input
+                  type="password"
+                  className="h-8 text-xs bg-background font-mono"
+                  placeholder="Bearer sk-... or secret token"
+                  value={selectedLLMData.apiKeyHeader || ""}
+                  onChange={(e) => onUpdateLLM?.({ apiKeyHeader: e.target.value })}
+                />
+              </div>
+
+              {/* Headers & Body JSON - Only show for custom provider */}
+              {activeProviderKey === "custom" && (
+                <>
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                    <Label className="text-xs font-semibold flex items-center gap-1 text-foreground">
+                      <Key className="w-3.5 h-3.5 text-amber-400" /> Headers (JSON)
+                    </Label>
+                    <LocalTextarea
+                      className="min-h-[80px] max-h-[140px] text-xs bg-background border border-border/60 rounded p-2 font-mono"
+                      placeholder='{\n  "Content-Type": "application/json"\n}'
+                      rows={4}
+                      value={selectedLLMData.headersJson !== undefined ? selectedLLMData.headersJson : defaultHeaders}
+                      onChange={(e) => onUpdateLLM?.({ headersJson: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                    <Label className="text-xs font-semibold flex items-center gap-1 text-foreground">
+                      <Code className="w-3.5 h-3.5 text-emerald-400" /> Request Payload (JSON Body)
+                    </Label>
+                    <LocalTextarea
+                      className="min-h-[110px] max-h-[200px] text-xs bg-background border border-border/60 rounded p-2 font-mono"
+                      placeholder='{\n  "model": "gpt-4o",\n  "messages": [{"role": "user", "content": "{{input}}"}]\n}'
+                      rows={6}
+                      value={selectedLLMData.bodyJson !== undefined ? selectedLLMData.bodyJson : defaultBody}
+                      onChange={(e) => onUpdateLLM?.({ bodyJson: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          ) : selectedStepData ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <span className="font-bold text-sm text-foreground">Configure Step</span>
@@ -92,6 +316,8 @@ export function InspectorSidebar({
                       <SelectItem value="groq">Groq</SelectItem>
                       <SelectItem value="openai">OpenAI</SelectItem>
                       <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="other">Other (Custom LLM)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -221,7 +447,7 @@ export function InspectorSidebar({
         </TabsContent>
 
         {/* ── Input State ── */}
-        <TabsContent value="inputs" className="flex-1 p-4 overflow-y-auto m-0 flex flex-col gap-3">
+        <TabsContent value="inputs" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-xs font-bold text-foreground">Input Payload State</span>
@@ -298,7 +524,7 @@ export function InspectorSidebar({
         </TabsContent>
 
         {/* ── State Schema ── */}
-        <TabsContent value="state" className="flex-1 p-4 overflow-y-auto m-0 flex flex-col gap-3">
+        <TabsContent value="state" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-xs font-bold text-foreground">Graph State Schema</span>
@@ -397,7 +623,7 @@ export function InspectorSidebar({
         </TabsContent>
 
         {/* ── Memory ── */}
-        <TabsContent value="memory" className="flex-1 p-4 overflow-y-auto m-0 flex flex-col gap-4">
+        <TabsContent value="memory" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4">
           <span className="text-xs font-bold text-foreground">Checkpointer</span>
           <Select value={memoryConfig.checkpointer || "convex"}
             onValueChange={(v: string) => setMemoryConfig({ ...memoryConfig, checkpointer: v as LangGraphMemoryConfig["checkpointer"] })}>

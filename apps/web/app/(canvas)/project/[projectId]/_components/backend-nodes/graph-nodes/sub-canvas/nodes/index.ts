@@ -2,12 +2,14 @@ import { LangGraphCanvasStateNode } from "./LangGraphCanvasStateNode";
 import { LangGraphCanvasStepNode } from "./LangGraphCanvasStepNode";
 import { LangGraphCanvasStartNode } from "./LangGraphCanvasStartNode";
 import { LangGraphCanvasPortNode } from "./LangGraphCanvasPortNode";
+import { LangGraphCanvasLLMNode } from "./LangGraphCanvasLLMNode";
 
 export const langGraphCanvasNodeTypes = {
   step: LangGraphCanvasStepNode,
   start: LangGraphCanvasStartNode,
   port: LangGraphCanvasPortNode,
   state_global: LangGraphCanvasStateNode,
+  custom_llm: LangGraphCanvasLLMNode,
 };
 
 export {
@@ -15,4 +17,6 @@ export {
   LangGraphCanvasStepNode,
   LangGraphCanvasStartNode,
   LangGraphCanvasPortNode,
+  LangGraphCanvasLLMNode,
 };
+

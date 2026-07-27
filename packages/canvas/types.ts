@@ -176,11 +176,18 @@ export type LangGraphStepConfig = {
   name: string;
   type: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
   modelConfig?: {
-    provider?: "groq" | "openai" | "anthropic";
+    provider?: "groq" | "openai" | "anthropic" | "google" | "other" | (string & {});
     model?: string;
     temperature?: number;
     maxTokens?: number;
     systemPrompt?: string;
+    baseUrl?: string;
+    url?: string;
+    method?: string;
+    headersJson?: string;
+    bodyJson?: string;
+    apiKeyHeader?: string;
+    customLlmNodeId?: string;
   };
   humanGateConfig?: {
     approvalPrompt: string;
@@ -428,6 +435,21 @@ export type BackendNode = {
     graphEdges?: LangGraphEdgeConfig[];
     outputPorts?: LangGraphOutputPort[];
     memoryConfig?: LangGraphMemoryConfig;
+    customLlmNodes?: {
+      id: string;
+      label: string;
+      provider?: string;
+      url?: string;
+      baseUrl?: string;
+      method?: string;
+      headersJson?: string;
+      bodyJson?: string;
+      model?: string;
+      apiKeyHeader?: string;
+      temperature?: number;
+      maxTokens?: number;
+      position?: { x: number; y: number };
+    }[];
     stepId?: string;
     stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
     modelConfig?: LangGraphStepConfig["modelConfig"];

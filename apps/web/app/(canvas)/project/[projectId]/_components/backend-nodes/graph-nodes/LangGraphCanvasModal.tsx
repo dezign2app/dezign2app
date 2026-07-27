@@ -85,11 +85,13 @@ function LangGraphCanvasContent({
     activeSideTab,
     setActiveSideTab,
     selectedStepData,
+    selectedLLMData,
     onNodesChange,
     onEdgesChange,
     onConnect,
     handleAddStep,
     updateSelectedStep,
+    updateSelectedLLM,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
@@ -176,8 +178,10 @@ function LangGraphCanvasContent({
           activeSideTab={activeSideTab}
           setActiveSideTab={setActiveSideTab}
           selectedStepData={selectedStepData}
+          selectedLLMData={selectedLLMData}
           onDeleteStep={handleDeleteStep}
           onUpdateStep={updateSelectedStep}
+          onUpdateLLM={updateSelectedLLM}
           inputChannels={inputChannels}
           setInputChannels={setInputChannels}
           stateChannels={stateChannels}

@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from "react";
+import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
+import { Globe, Trash2, Code, Key, Shield, Sparkles, Brain } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
+import type { CustomLLMNode, LangGraphCanvasNode } from "../types";
+import { LocalInput, LocalTextarea } from "../../shared";
+
+const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; defaultUrl: string; defaultApiKeyEnv: string; models: string[] }> = {
+  openai: {
+    label: "OpenAI (ChatGPT)",
+    defaultModel: "gpt-4o-mini",
+    defaultUrl: "https://api.openai.com/v1/chat/completions",
+    defaultApiKeyEnv: "OPENAI_API_KEY",
+    models: ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1"],
+  },
+  anthropic: {
+    label: "Anthropic (Claude)",
+    defaultModel: "claude-3-5-sonnet-20241022",
+    defaultUrl: "https://api.anthropic.com/v1/messages",
+    defaultApiKeyEnv: "ANTHROPIC_API_KEY",
+    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+  },
+  google: {
+    label: "Google (Gemini)",
+    defaultModel: "gemini-1.5-flash",
+    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/models",
+    defaultApiKeyEnv: "GEMINI_API_KEY",
+    models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash"],
+  },
+  groq: {
+    label: "Groq",
+    defaultModel: "llama-3.3-70b-versatile",
+    defaultUrl: "https://api.groq.com/openai/v1/chat/completions",
+    defaultApiKeyEnv: "GROQ_API_KEY",
+    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "deepseek-r1-distill-llama-70b"],
+  },
+  ollama: {
+    label: "Ollama / Local",
+    defaultModel: "llama3:8b",
+    defaultUrl: "http://localhost:11434/v1",
+    defaultApiKeyEnv: "",
+    models: ["llama3:8b", "mistral", "deepseek-r1"],
+  },
+  custom: {
+    label: "Custom RAW API",
+    defaultModel: "custom-model",
+    defaultUrl: "http://localhost:8080/v1",
+    defaultApiKeyEnv: "CUSTOM_API_KEY",
+    models: [],
+  },
+};
+
+export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<CustomLLMNode>) => {
+  const { setNodes } = useReactFlow<LangGraphCanvasNode>();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(data.label || "LLM Node");
+
+  useEffect(() => {
+    setNameValue(data.label || "LLM Node");
+  }, [data.label]);
+
+  const updateLLMData = (changes: Partial<typeof data>) => {
+    setNodes((nds) =>
+      nds.map((n) => (n.id === id && n.type === "custom_llm" ? { ...n, data: { ...n.data, ...changes } } : n))
+    );
+  };
+
+  const handleNameSave = () => {
+    setIsEditingName(false);
+    const trimmed = nameValue.trim() || "LLM Node";
+    setNameValue(trimmed);
+    if (trimmed !== data.label) {
+      updateLLMData({ label: trimmed });
+    }
+  };
+
+  const activeProviderKey = data.provider || "openai";
+  const activePreset = PROVIDER_PRESETS[activeProviderKey] || PROVIDER_PRESETS.custom;
+  const currentModels = activePreset?.models || [];
+
+  const defaultBody = JSON.stringify(
+    {
+      model: data.model || activePreset?.defaultModel || "gpt-4o-mini",
+      messages: [{ role: "user", content: "{{input}}" }],
+      temperature: data.temperature ?? 0.7,
+    },
+    null,
+    2
+  );
+
+  const defaultHeaders = JSON.stringify(
+    {
+      "Content-Type": "application/json",
+      Authorization: data.apiKeyHeader ? `Bearer ${data.apiKeyHeader}` : "Bearer YOUR_API_KEY",
+    },
+    null,
+    2
+  );
+
+  return (
+    <div
+      className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[300px] max-w-[360px] p-3 flex flex-col gap-2.5 transition-all duration-200 shadow-xl relative group ${
+        selected ? "border-sky-400 ring-4 ring-sky-400/20 shadow-sky-400/10" : "border-sky-500/40 hover:border-sky-400/80"
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400 shrink-0 border border-sky-500/20">
+            <Brain className="w-4 h-4" />
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            {isEditingName ? (
+              <div
+                className="nodrag"
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <LocalInput
+                  autoFocus
+                  className="h-6 text-xs bg-background p-1 font-bold flex-1 nodrag"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onBlur={handleNameSave}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") handleNameSave();
+                    if (e.key === "Escape") {
+                      setNameValue(data.label || "LLM Node");
+                      setIsEditingName(false);
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <span
+                className="font-bold text-xs text-foreground truncate max-w-[140px] cursor-pointer hover:text-sky-400 transition-colors nodrag"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingName(true);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingName(true);
+                }}
+                title="Click to rename LLM Node"
+              >
+                {data.label || "LLM Node"}
+              </span>
+            )}
+            <span className="text-[9px] font-mono text-muted-foreground">{data.llmId}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono border border-sky-500/20">
+            {activeProviderKey.toUpperCase()}
+          </span>
+          {data.onDeleteLLM && (
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all opacity-0 group-hover:opacity-100 nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onDeleteLLM?.();
+              }}
+              title="Delete LLM Node"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Provider Selector Row */}
+      <div className="flex flex-col gap-1 nodrag">
+        <label className="text-[9px] font-medium text-muted-foreground flex items-center justify-between">
+          <span>Provider Preset</span>
+          <span className="text-sky-400 font-mono text-[9px]">{activePreset?.label}</span>
+        </label>
+        <Select
+          value={activeProviderKey}
+          onValueChange={(val: string) => {
+            const preset = PROVIDER_PRESETS[val];
+            if (preset) {
+              updateLLMData({
+                provider: val,
+                url: preset.defaultUrl,
+                baseUrl: preset.defaultUrl,
+                model: preset.defaultModel,
+              });
+            } else {
+              updateLLMData({ provider: val });
+            }
+          }}
+        >
+          <SelectTrigger className="h-6 text-[10px] bg-background border border-border/60 rounded px-2 font-medium text-foreground nodrag">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="nodrag">
+            <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
+            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+            <SelectItem value="google">Google (Gemini)</SelectItem>
+            <SelectItem value="groq">Groq</SelectItem>
+            <SelectItem value="ollama">Ollama / Local</SelectItem>
+            <SelectItem value="custom">Custom RAW API</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Model & API Key Configuration */}
+      {activeProviderKey === "custom" ? (
+        <Tabs defaultValue="endpoint" className="w-full text-xs nodrag">
+          <TabsList className="grid grid-cols-3 h-7 bg-secondary/50 p-0.5 rounded-lg border border-border/50 text-[10px] nodrag">
+            <TabsTrigger value="endpoint" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-sky-400 nodrag">
+              Endpoint
+            </TabsTrigger>
+            <TabsTrigger value="headers" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-amber-400 nodrag">
+              Headers
+            </TabsTrigger>
+            <TabsTrigger value="body" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-emerald-400 nodrag">
+              Body
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Custom Endpoint URL */}
+          <TabsContent value="endpoint" className="flex flex-col gap-2 pt-2 nodrag">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] font-medium text-muted-foreground">Model Identifier</label>
+              <LocalInput
+                className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                placeholder="e.g. gpt-4o, claude-3-5-sonnet, llama3:8b"
+                value={data.model || ""}
+                onChange={(e) => updateLLMData({ model: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
+                <Globe className="w-3 h-3 text-sky-400" /> Base URL / Endpoint
+              </label>
+              <div className="flex items-center gap-1.5">
+                <Select
+                  value={data.method || "POST"}
+                  onValueChange={(val: string) => updateLLMData({ method: val })}
+                >
+                  <SelectTrigger className="h-6 w-16 text-[9.5px] bg-background border border-border/60 rounded px-1 font-bold font-mono text-sky-400 nodrag">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="nodrag">
+                    <SelectItem value="POST">POST</SelectItem>
+                    <SelectItem value="GET">GET</SelectItem>
+                    <SelectItem value="PUT">PUT</SelectItem>
+                  </SelectContent>
+                </Select>
+                <LocalInput
+                  className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground flex-1 nodrag"
+                  placeholder="https://api.openai.com/v1/chat/completions"
+                  value={data.url || data.baseUrl || activePreset?.defaultUrl || ""}
+                  onChange={(e) => updateLLMData({ url: e.target.value, baseUrl: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
+                <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret Token (Optional)
+              </label>
+              <LocalInput
+                type="password"
+                className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                placeholder="Bearer sk-... or secret token"
+                value={data.apiKeyHeader || ""}
+                onChange={(e) => updateLLMData({ apiKeyHeader: e.target.value })}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Tab 2: Headers */}
+          <TabsContent value="headers" className="flex flex-col gap-1.5 pt-2 nodrag">
+            <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
+              <Key className="w-3 h-3 text-amber-400" /> Request Headers (JSON)
+            </label>
+            <LocalTextarea
+              className="min-h-[90px] max-h-[160px] text-[9.5px] bg-background border border-border/60 rounded p-1.5 font-mono text-foreground nodrag resize-y"
+              placeholder='{\n  "Content-Type": "application/json"\n}'
+              rows={4}
+              value={data.headersJson !== undefined ? data.headersJson : defaultHeaders}
+              onChange={(e) => updateLLMData({ headersJson: e.target.value })}
+            />
+          </TabsContent>
+
+          {/* Tab 3: Request Body */}
+          <TabsContent value="body" className="flex flex-col gap-1.5 pt-2 nodrag">
+            <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
+              <Code className="w-3 h-3 text-emerald-400" /> Request Payload (JSON Body)
+            </label>
+            <LocalTextarea
+              className="min-h-[100px] max-h-[180px] text-[9.5px] bg-background border border-border/60 rounded p-1.5 font-mono text-foreground nodrag resize-y"
+              placeholder='{\n  "model": "gpt-4o",\n  "messages": [{"role": "user", "content": "{{input}}"}]\n}'
+              rows={5}
+              value={data.bodyJson !== undefined ? data.bodyJson : defaultBody}
+              onChange={(e) => updateLLMData({ bodyJson: e.target.value })}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <div className="flex flex-col gap-2 nodrag">
+          {/* Model Selection */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] font-medium text-muted-foreground flex items-center justify-between">
+              <span>Model Identifier</span>
+              <span className="font-mono text-[8.5px] text-sky-400">{data.model || activePreset?.defaultModel}</span>
+            </label>
+            {currentModels.length > 0 ? (
+              <Select
+                value={data.model || activePreset?.defaultModel}
+                onValueChange={(val: string) => updateLLMData({ model: val })}
+              >
+                <SelectTrigger className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent className="nodrag">
+                  {currentModels.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <LocalInput
+                className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                placeholder="e.g. gpt-4o, claude-3-5-sonnet, llama3:8b"
+                value={data.model || ""}
+                onChange={(e) => updateLLMData({ model: e.target.value })}
+              />
+            )}
+          </div>
+
+          {/* API Key / Secret Token */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
+              <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret Token (Optional)
+            </label>
+            <LocalInput
+              type="password"
+              className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+              placeholder="Bearer sk-... or secret token"
+              value={data.apiKeyHeader || ""}
+              onChange={(e) => updateLLMData({ apiKeyHeader: e.target.value })}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Output Handle to connect edge to step nodes */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="llm_out"
+        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
+        title="Connect to Step Node LLM Config"
+      />
+    </div>
+  );
+};

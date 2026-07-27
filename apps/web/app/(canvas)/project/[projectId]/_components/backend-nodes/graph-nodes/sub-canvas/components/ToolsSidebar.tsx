@@ -4,7 +4,7 @@ import type { LangGraphStepConfig } from "@/types/canvas";
 import { TOOL_PALETTE_ITEMS } from "../types";
 
 interface ToolsSidebarProps {
-  onAddStep: (type: LangGraphStepConfig["type"], label: string) => void;
+  onAddStep: (type: LangGraphStepConfig["type"] | "custom_llm", label: string) => void;
 }
 
 export function ToolsSidebar({ onAddStep }: ToolsSidebarProps) {

@@ -18,6 +18,7 @@ import type {
   LangGraphMemoryConfig,
   LangGraphOutputPort,
   LangGraphEdgeConfig,
+  LangGraphRouterBranch,
 } from "@/types/canvas";
 import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
@@ -44,6 +45,7 @@ import {
   makePortNodeId,
   stripPortPrefix,
   STEP_TYPE_LLM_CALL,
+  STEP_TYPE_ROUTER,
   TARGET_KIND_STEP,
   TARGET_KIND_PORT,
   LLM_PROVIDER_OLLAMA,
@@ -107,7 +109,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         data: {
           label: cLLM.label,
           llmId: cLLM.id,
-          provider: (cLLM.provider || "custom") as any,
+          provider: cLLM.provider || "custom",
           url: cLLM.url || cLLM.baseUrl || "http://localhost:11434/v1/chat/completions",
           baseUrl: cLLM.baseUrl || cLLM.url || "http://localhost:11434/v1",
           method: cLLM.method || "POST",
@@ -229,6 +231,24 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             data: {
               ...n.data,
               availableStateChannels: stateChannels,
+              onOpenInspector: () => {
+                setSelectedNodeId(n.id);
+                setActiveSideTab("inspector");
+              },
+              onOpenInspectorRoute: (branchId: string) => {
+                setSelectedNodeId(n.id);
+                setNodes((nds) =>
+                  nds.map((node) =>
+                    node.id === n.id && node.type === SUB_CANVAS_NODE_STEP
+                      ? { ...node, data: { ...node.data, activeBranchId: branchId } }
+                      : node
+                  )
+                );
+                setActiveSideTab("inspector");
+              },
+              onSelectNode: () => {
+                setSelectedNodeId(n.id);
+              },
               onDeleteStep: () => {
                 setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
                 setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
@@ -272,8 +292,37 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
   const onConnect = useCallback(
     (params: Connection) =>
-      setEdges((eds) => rfAddEdge({ ...params, animated: true, style: { stroke: "#a1a1aa", strokeWidth: 2 } }, eds)),
-    []
+      setEdges((eds) => {
+        const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === SUB_CANVAS_NODE_STEP);
+        const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
+
+        const label = routerBranch
+          ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
+          : undefined;
+
+        const style = routerBranch
+          ? { stroke: "#38bdf8", strokeWidth: 2 }
+          : { stroke: "#a1a1aa", strokeWidth: 2 };
+
+        const labelStyle = routerBranch
+          ? { fill: "#bae6fd", fontSize: 10, fontWeight: "bold" }
+          : undefined;
+
+        const labelBgStyle = routerBranch
+          ? { fill: "#0c4a6e", rx: 4, ry: 4 }
+          : undefined;
+
+        return rfAddEdge(
+          {
+            ...params,
+            animated: true,
+            ...(label ? { label, labelStyle, labelBgStyle } : {}),
+            style,
+          },
+          eds
+        );
+      }),
+    [nodes]
   );
 
   const selectedStepData = useMemo((): StepNodeData | null => {
@@ -309,16 +358,27 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       return;
     }
 
-    const stepId = `step_${Date.now().toString(36).slice(-4)}`;
+    const stepId = type === STEP_TYPE_ROUTER ? `router_${Date.now().toString(36).slice(-4)}` : `step_${Date.now().toString(36).slice(-4)}`;
     const newNode: StepNode = {
       id: stepId,
       type: SUB_CANVAS_NODE_STEP,
       position: { x: 360 + Math.random() * 180, y: 160 + Math.random() * 100 },
       data: {
-        label,
+        label: label || (type === STEP_TYPE_ROUTER ? "Conditional Router" : "Node"),
         stepId,
         stepType: type,
-        modelConfig: { provider: LLM_PROVIDER_GROQ, model: "llama-3.3-70b-versatile", temperature: 0.2 },
+        ...(type === STEP_TYPE_ROUTER
+          ? {
+              routerConfig: {
+                branches: [
+                  { id: `b_${Date.now()}_1`, label: "Value == true", field: "messages", operator: "eq", value: "true" },
+                  { id: `b_${Date.now()}_def`, label: "Default Branch", field: "", operator: "eq", value: "", isDefault: true },
+                ],
+              },
+            }
+          : {
+              modelConfig: { provider: LLM_PROVIDER_GROQ, model: "llama-3.3-70b-versatile", temperature: 0.2 },
+            }),
         stateUpdates: [],
         availableStateChannels: stateChannels,
         onDeleteStep: () => {
@@ -394,6 +454,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         ...(n.data.modelConfig ? { modelConfig: n.data.modelConfig } : {}),
         ...(n.data.humanGateConfig ? { humanGateConfig: n.data.humanGateConfig } : {}),
         ...(n.data.customCode ? { customCode: n.data.customCode } : {}),
+        ...(n.data.routerConfig ? { routerConfig: n.data.routerConfig } : {}),
         ...(n.data.stateUpdates ? { stateUpdates: n.data.stateUpdates } : {}),
       }));
 

@@ -49,6 +49,7 @@ export const STEP_TYPE_CUSTOM_CODE    = "custom_code" as const;
 export const STEP_TYPE_HUMAN_GATE     = "human_gate" as const;
 export const STEP_TYPE_INTERRUPT      = "interrupt" as const;
 export const STEP_TYPE_VECTOR_SEARCH  = "vector_search" as const;
+export const STEP_TYPE_ROUTER         = "router" as const;
 
 // ─── Edge Target & Connection Kinds ───────────────────────────────────────────
 export const TARGET_KIND_STEP = "step" as const;

@@ -661,6 +661,7 @@ export const graphStepSchema = z.object({
     "human_gate",
     "interrupt",
     "vector_search",
+    "router",
   ]),
   modelConfig: z
     .object({
@@ -698,6 +699,31 @@ export const graphStepSchema = z.object({
       body: z.string(),
       timeoutMs: z.number().default(1000),
       memoryLimitMb: z.number().default(128),
+    })
+    .optional(),
+  routerConfig: z
+    .object({
+      branches: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          field: z.string(),
+          operator: z.enum([
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "contains",
+            "is_not_null",
+            "has_tool_calls",
+            "expression",
+          ]),
+          value: z.string().optional(),
+          isDefault: z.boolean().optional(),
+        })
+      ),
     })
     .optional(),
   tools: z.array(z.string()).default([]),

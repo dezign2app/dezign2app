@@ -678,6 +678,8 @@ import {
   MCPServerNode,
   VectorDBRefNode,
   IdentityProviderNode,
+  LangGraphNode,
+  LangGraphStepNode,
 } from "./graph-nodes";
 import { Badge } from "@workspace/ui/components/badge";
 
@@ -709,4 +711,6 @@ export const nodeTypes = {
   mcp_server: MCPServerNode,
   vector_db_ref: VectorDBRefNode,
   identity_provider: IdentityProviderNode,
+  langgraph: LangGraphNode,
+  langgraph_step: LangGraphStepNode,
 };

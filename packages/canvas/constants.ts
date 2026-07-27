@@ -1,3 +1,11 @@
+import type {
+  LangGraphStateChannel,
+  LangGraphOutputPort,
+  LangGraphStepConfig,
+  LangGraphEdgeConfig,
+  LangGraphMemoryConfig,
+} from "./types";
+
 export const RULES_VERSION = 1;
 
 export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
@@ -18,6 +26,78 @@ export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   webhook: "webhook",
   llm: "llm",
   mcp_server: "mcp_server",
+  langgraph: "langgraph",
+  langgraph_step: "langgraph_step",
+};
+
+export const LANGGRAPH_STARTER_TEMPLATE: {
+  version: number;
+  recursionLimit: number;
+  stepTimeoutMs: number;
+  stateChannels: LangGraphStateChannel[];
+  outputPorts: LangGraphOutputPort[];
+  tools: any[];
+  graphSteps: LangGraphStepConfig[];
+  graphEdges: LangGraphEdgeConfig[];
+  memoryConfig: LangGraphMemoryConfig;
+} = {
+  version: 2,
+  recursionLimit: 25,
+  stepTimeoutMs: 30000,
+  stateChannels: [
+    { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+    { key: "summary", type: "string", reducer: "replace", defaultValue: "" },
+    { key: "intent", type: "string", reducer: "replace", defaultValue: "" },
+  ],
+  outputPorts: [
+    { id: "tool_call", label: "Tool Output Port" },
+    { id: "human_gate", label: "Human Approval Port" },
+    { id: "completed", label: "Completed Output Port" },
+    { id: "error", label: "Error Output Port" },
+  ],
+  tools: [],
+  graphSteps: [
+    {
+      id: "classify",
+      name: "Classify Intent",
+      type: "evaluator",
+      modelConfig: { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0 },
+    },
+    {
+      id: "agent_llm",
+      name: "Agent LLM Reasoning",
+      type: "llm_call",
+      modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 },
+    },
+    { id: "memory_sync", name: "Memory Summarizer", type: "summarizer" },
+  ],
+  graphEdges: [
+    { id: "e1", source: "START", targets: [{ id: "classify", kind: "step" }] },
+    { id: "e2", source: "classify", targets: [{ id: "agent_llm", kind: "step" }] },
+    {
+      id: "e3",
+      source: "agent_llm",
+      targets: [{ id: "tool_call", kind: "port" }],
+      condition: { field: "messages", operator: "has_tool_calls" },
+    },
+    {
+      id: "e4",
+      source: "agent_llm",
+      targets: [{ id: "memory_sync", kind: "step" }],
+      isDefault: true,
+    },
+    {
+      id: "e5",
+      source: "memory_sync",
+      targets: [{ id: "completed", kind: "port" }],
+    },
+  ],
+  memoryConfig: {
+    checkpointer: "convex",
+    threadScope: "session",
+    autoSummarize: true,
+    maxWindowMessages: 10,
+  },
 };
 
 export const MESSAGING_RESOURCE_TYPES = [

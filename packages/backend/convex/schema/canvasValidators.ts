@@ -27,6 +27,8 @@ import {
   vectorDbRefDataSchema,
   endpointSchema,
   identityProviderDataSchema,
+  langgraphDataSchema,
+  langgraphStepDataSchema,
   identityProviderSchema,
   publishedEventSchema,
   consumedEventSchema,
@@ -38,8 +40,153 @@ export const backendTestCaseDataValidator = zodToConvex(simulationTestCaseSchema
 // Edge Data Validator
 export const backendEdgeDataValidator = zodToConvex(edgeDataSchema);
 
+export const langgraphConvexDataValidator = v.object({
+  label: v.optional(v.string()),
+  description: v.optional(v.string()),
+  parentId: v.optional(v.string()),
+  position: v.optional(v.object({ x: v.number(), y: v.number() })),
+  style: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean(), v.null()))),
+  width: v.optional(v.number()),
+  height: v.optional(v.number()),
+  version: v.optional(v.number()),
+  recursionLimit: v.optional(v.number()),
+  stepTimeoutMs: v.optional(v.number()),
+  stateChannels: v.optional(
+    v.array(
+      v.object({
+        key: v.string(),
+        type: v.string(),
+        reducer: v.string(),
+        defaultValue: v.optional(v.union(v.string(), v.number(), v.boolean(), v.null(), v.array(v.union(v.string(), v.number(), v.boolean(), v.null())))),
+      })
+    )
+  ),
+  outputPorts: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        label: v.string(),
+        description: v.optional(v.string()),
+      })
+    )
+  ),
+  tools: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        description: v.string(),
+        source: v.string(),
+        endpointUrl: v.optional(v.string()),
+      })
+    )
+  ),
+  graphSteps: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        type: v.string(),
+        modelConfig: v.optional(
+          v.object({
+            provider: v.optional(v.string()),
+            model: v.optional(v.string()),
+            temperature: v.optional(v.number()),
+            maxTokens: v.optional(v.number()),
+            systemPrompt: v.optional(v.string()),
+          })
+        ),
+        humanGateConfig: v.optional(
+          v.object({
+            approvalPrompt: v.string(),
+            timeoutMs: v.optional(v.number()),
+            requiredRole: v.optional(v.string()),
+          })
+        ),
+        interruptConfig: v.optional(
+          v.object({
+            callbackKey: v.string(),
+            timeoutMs: v.optional(v.number()),
+          })
+        ),
+        customCode: v.optional(
+          v.object({
+            body: v.string(),
+            timeoutMs: v.optional(v.number()),
+            memoryLimitMb: v.optional(v.number()),
+          })
+        ),
+        tools: v.optional(v.array(v.string())),
+        retryPolicy: v.optional(
+          v.object({
+            maxAttempts: v.number(),
+            backoffFactor: v.number(),
+          })
+        ),
+      })
+    )
+  ),
+  graphEdges: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        source: v.string(),
+        targets: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              kind: v.string(),
+            })
+          )
+        ),
+        condition: v.optional(
+          v.object({
+            field: v.optional(v.string()),
+            operator: v.optional(v.string()),
+            value: v.optional(v.union(v.string(), v.number(), v.boolean(), v.null(), v.array(v.union(v.string(), v.number(), v.boolean(), v.null())))),
+          })
+        ),
+        isDefault: v.optional(v.boolean()),
+        sendConfig: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            itemsField: v.optional(v.string()),
+            itemTarget: v.optional(
+              v.object({
+                id: v.string(),
+                kind: v.string(),
+              })
+            ),
+            joinStepId: v.optional(v.string()),
+            batchErrorPolicy: v.optional(v.string()),
+          })
+        ),
+      })
+    )
+  ),
+  memoryConfig: v.optional(
+    v.object({
+      checkpointer: v.optional(v.string()),
+      checkpointerConnectionId: v.optional(v.string()),
+      threadScope: v.optional(v.string()),
+      autoSummarize: v.optional(v.boolean()),
+      maxWindowMessages: v.optional(v.number()),
+      vectorStore: v.optional(
+        v.object({
+          enabled: v.optional(v.boolean()),
+          provider: v.optional(v.string()),
+          embeddingModel: v.optional(v.string()),
+          collection: v.optional(v.string()),
+          topK: v.optional(v.number()),
+          similarityThreshold: v.optional(v.number()),
+        })
+      ),
+    })
+  ),
+});
+
 // Node Data Validator
-// Using zodToConvex to keep database schemas in sync with frontend/AI Zod schemas
+// Using zodToConvex & explicit validators to keep database schemas in sync
 export const backendNodeDataValidator = v.union(
   zodToConvex(serviceDataSchema),
   zodToConvex(dbRefDataSchema),
@@ -64,6 +211,8 @@ export const backendNodeDataValidator = v.union(
   zodToConvex(mcpServerDataSchema),
   zodToConvex(vectorDbRefDataSchema),
   zodToConvex(identityProviderDataSchema),
+  langgraphConvexDataValidator,
+  zodToConvex(langgraphStepDataSchema),
   // Fallback for completely empty data (allowable in some updates)
   v.object({
     label: v.optional(v.string()),

@@ -137,7 +137,98 @@ export type BackendNodeType =
   | "llm"
   | "mcp_server"
   | "vector_db_ref"
-  | "identity_provider";
+  | "identity_provider"
+  | "langgraph"
+  | "langgraph_step";
+
+export type LangGraphStateChannel = {
+  key: string;
+  type: "messages" | "string" | "json" | "number" | "boolean";
+  reducer: "add_messages" | "append" | "replace" | "merge_object" | "concat_array";
+  defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
+};
+
+export type LangGraphOutputPort = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+export type LangGraphToolDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  source: "inline" | "mcp_server" | "canvas_edge" | "api_endpoint";
+  endpointUrl?: string;
+  parametersJsonSchema?: Record<string, unknown>;
+};
+
+export type LangGraphStepConfig = {
+  id: string;
+  name: string;
+  type: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
+  modelConfig?: {
+    provider?: "groq" | "openai" | "anthropic";
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    systemPrompt?: string;
+  };
+  humanGateConfig?: {
+    approvalPrompt: string;
+    timeoutMs?: number;
+    requiredRole?: string;
+  };
+  interruptConfig?: {
+    callbackKey: string;
+    timeoutMs?: number;
+  };
+  customCode?: {
+    body: string;
+    timeoutMs?: number;
+    memoryLimitMb?: number;
+  };
+  tools?: string[];
+  retryPolicy?: {
+    maxAttempts: number;
+    backoffFactor: number;
+  };
+};
+
+export type LangGraphEdgeConfig = {
+  id: string;
+  source: string;
+  targets: { id: string; kind: "step" | "port" | "end" }[];
+  condition?: {
+    field?: string;
+    operator?: string;
+    value?: unknown;
+  };
+  isDefault?: boolean;
+  sendConfig?: {
+    enabled?: boolean;
+    itemsField?: string;
+    itemTarget?: { id: string; kind: "step" | "port" | "end" };
+    joinStepId?: string;
+    batchErrorPolicy?: string;
+  };
+};
+
+export type LangGraphMemoryConfig = {
+  checkpointer?: "convex" | "redis" | "postgres" | "memory";
+  checkpointerConnectionId?: string;
+  threadScope?: "session" | "user" | "global";
+  autoSummarize?: boolean;
+  maxWindowMessages?: number;
+  vectorStore?: {
+    enabled?: boolean;
+    provider?: "convex" | "pinecone" | "pgvector" | "qdrant";
+    embeddingModel?: string;
+    collection?: string;
+    topK?: number;
+    similarityThreshold?: number;
+  };
+};
 
 export type BackendNode = {
   id: string;
@@ -317,6 +408,29 @@ export type BackendNode = {
     provider?: string;
     issuerUrl?: string;
     discoveryUrl?: string;
+    // --- LangGraph Agent Node & Step ---
+    stateChannels?: LangGraphStateChannel[];
+    graphSteps?: LangGraphStepConfig[];
+    graphEdges?: LangGraphEdgeConfig[];
+    outputPorts?: LangGraphOutputPort[];
+    memoryConfig?: LangGraphMemoryConfig;
+    stepId?: string;
+    stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
+    modelConfig?: LangGraphStepConfig["modelConfig"];
+    humanGateConfig?: {
+      approvalPrompt: string;
+      timeoutMs?: number;
+      requiredRole?: string;
+    };
+    interruptConfig?: {
+      callbackKey: string;
+      timeoutMs?: number;
+    };
+    customCode?: {
+      body: string;
+      timeoutMs?: number;
+      memoryLimitMb?: number;
+    };
     jwksUrl?: string;
     audiences?: string[];
     supportedAlgorithms?: string[];

@@ -551,7 +551,384 @@ export const mcpServerDataSchema = baseNodeDataSchema.extend({
 }).strict();
 export type McpServerNodeData = z.infer<typeof mcpServerDataSchema>;
 
-export const nodeDataSchemas: Record<string, z.ZodTypeAny> = {
+// ----------------------------------------------------------------------------
+// LANGGRAPH AGENT SCHEMAS & TOPOLOGY VALIDATOR (v2.5)
+// ----------------------------------------------------------------------------
+export const leafComparisonSchema = z.object({
+  field: z.string(),
+  operator: z.enum([
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "contains",
+    "in",
+    "is_not_null",
+    "has_tool_calls",
+  ]),
+  value: z.any().optional(),
+});
+
+export type LeafComparison = z.infer<typeof leafComparisonSchema>;
+
+export type ConditionAst =
+  | LeafComparison
+  | { and: ConditionAst[] }
+  | { or: ConditionAst[] }
+  | { not: ConditionAst };
+
+export const conditionAstSchema: z.ZodType<ConditionAst> = z.lazy(() =>
+  z.union([
+    leafComparisonSchema,
+    z.object({ and: z.array(conditionAstSchema) }),
+    z.object({ or: z.array(conditionAstSchema) }),
+    z.object({ not: conditionAstSchema }),
+  ])
+);
+
+export const graphEdgeTargetSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["step", "port", "end"]),
+});
+export type GraphEdgeTarget = z.infer<typeof graphEdgeTargetSchema>;
+
+export const sendConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  itemsField: z.string(),
+  itemTarget: graphEdgeTargetSchema,
+  joinStepId: z.string(),
+  batchErrorPolicy: z.enum(["fail_fast", "ignore_failures", "collect_errors"]).default("fail_fast"),
+});
+export type SendConfig = z.infer<typeof sendConfigSchema>;
+
+export const graphEdgeSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  targets: z.array(graphEdgeTargetSchema).default([]),
+  condition: conditionAstSchema.optional(),
+  isDefault: z.boolean().default(false),
+  sendConfig: sendConfigSchema.optional(),
+});
+export type GraphEdge = z.infer<typeof graphEdgeSchema>;
+
+export const toolDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  source: z.enum(["inline", "mcp_server", "canvas_edge", "api_endpoint"]),
+  parametersJsonSchema: z.record(z.any()).optional(),
+  endpointUrl: z.string().optional(),
+});
+export type ToolDefinition = z.infer<typeof toolDefinitionSchema>;
+
+export const vectorStoreConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  provider: z.enum(["convex", "pinecone", "pgvector", "qdrant"]).default("convex"),
+  embeddingModel: z.string().default("text-embedding-3-small"),
+  collection: z.string().default("agent_memories"),
+  topK: z.number().default(5),
+  similarityThreshold: z.number().default(0.75),
+});
+export type VectorStoreConfig = z.infer<typeof vectorStoreConfigSchema>;
+
+export const outputPortSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string().optional(),
+});
+export type OutputPort = z.infer<typeof outputPortSchema>;
+
+export const graphStepSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum([
+    "llm_call",
+    "tool_node",
+    "evaluator",
+    "summarizer",
+    "custom_code",
+    "human_gate",
+    "interrupt",
+    "vector_search",
+  ]),
+  modelConfig: z
+    .object({
+      provider: z.enum(["groq", "openai", "anthropic"]).default("groq"),
+      model: z.string().default("llama-3.3-70b-versatile"),
+      temperature: z.number().default(0.2),
+      maxTokens: z.number().default(4000),
+      systemPrompt: z.string().optional(),
+    })
+    .optional(),
+  humanGateConfig: z
+    .object({
+      approvalPrompt: z.string(),
+      timeoutMs: z.number().optional(),
+      requiredRole: z.string().optional(),
+    })
+    .optional(),
+  interruptConfig: z
+    .object({
+      callbackKey: z.string(),
+      expectedPayloadSchema: z.record(z.any()).optional(),
+      timeoutMs: z.number().default(86400000),
+    })
+    .optional(),
+  vectorSearchConfig: vectorStoreConfigSchema.optional(),
+  customCode: z
+    .object({
+      body: z.string(),
+      timeoutMs: z.number().default(1000),
+      memoryLimitMb: z.number().default(128),
+    })
+    .optional(),
+  tools: z.array(z.string()).default([]),
+  retryPolicy: z
+    .object({
+      maxAttempts: z.number().default(3),
+      backoffFactor: z.number().default(2),
+    })
+    .optional(),
+});
+export type GraphStep = z.infer<typeof graphStepSchema>;
+
+export const langgraphDataSchema = baseNodeDataSchema
+  .extend({
+    version: z.number().default(2),
+    recursionLimit: z.number().default(25),
+    stepTimeoutMs: z.number().default(30000),
+
+    stateChannels: z
+      .array(
+        z.object({
+          key: z.string(),
+          type: z.enum(["messages", "string", "json", "number", "boolean"]),
+          reducer: z.enum(["add_messages", "append", "replace", "merge_object", "concat_array"]),
+          defaultValue: z.any(),
+        })
+      )
+      .default([
+        { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+        { key: "summary", type: "string", reducer: "replace", defaultValue: "" },
+        { key: "intent", type: "string", reducer: "replace", defaultValue: "" },
+      ]),
+
+    outputPorts: z
+      .array(outputPortSchema)
+      .default([
+        { id: "tool_call", label: "Tool Output Port" },
+        { id: "human_gate", label: "Human Approval Port" },
+        { id: "completed", label: "Completed Output Port" },
+        { id: "error", label: "Error Output Port" },
+      ]),
+
+    tools: z.array(toolDefinitionSchema).default([]),
+    graphSteps: z.array(graphStepSchema).default([]),
+    graphEdges: z.array(graphEdgeSchema).default([]),
+    memoryConfig: z
+      .object({
+        checkpointer: z.enum(["memory", "redis", "convex", "postgres"]).default("convex"),
+        checkpointerConnectionId: z.string().optional(),
+        threadScope: z.enum(["session", "user", "global"]).default("session"),
+        autoSummarize: z.boolean().default(true),
+        maxWindowMessages: z.number().default(10),
+        vectorStore: vectorStoreConfigSchema.optional(),
+      })
+      .default({}),
+  })
+  .superRefine((data, ctx) => {
+    const stepIds = new Set(data.graphSteps.map((s) => s.id));
+    const toolIds = new Set(data.tools.map((t) => t.id));
+    const portIds = new Set(data.outputPorts.map((p) => p.id));
+
+    // 1. Enforce Step Type Restrictions on retryPolicy & Tool Integrity
+    data.graphSteps.forEach((step, idx) => {
+      if (
+        ["human_gate", "interrupt", "custom_code"].includes(step.type) &&
+        step.retryPolicy !== undefined
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Step type "${step.type}" cannot have a retryPolicy. Retries are restricted to llm_call, tool_node, vector_search, evaluator, and summarizer.`,
+          path: ["graphSteps", idx, "retryPolicy"],
+        });
+      }
+
+      step.tools.forEach((toolId, tIdx) => {
+        if (!toolIds.has(toolId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Step "${step.id}" references undefined tool ID "${toolId}".`,
+            path: ["graphSteps", idx, "tools", tIdx],
+          });
+        }
+      });
+    });
+
+    // 2. Validate Edge Topologies, Mutual Exclusivity, & sendConfig
+    const sourcesWithConditionalEdge = new Set<string>();
+    const sourcesWithDefaultOrUnconditional = new Set<string>();
+
+    data.graphEdges.forEach((edge, idx) => {
+      if (edge.isDefault && edge.condition !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `An edge cannot be marked as isDefault: true while also having a condition defined.`,
+          path: ["graphEdges", idx, "isDefault"],
+        });
+      }
+
+      if (edge.source !== "START" && !stepIds.has(edge.source)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Edge source "${edge.source}" does not exist in graphSteps.`,
+          path: ["graphEdges", idx, "source"],
+        });
+      }
+
+      if (edge.condition !== undefined) {
+        sourcesWithConditionalEdge.add(edge.source);
+      }
+      if (edge.isDefault || edge.condition === undefined) {
+        if (edge.isDefault && sourcesWithDefaultOrUnconditional.has(edge.source)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Multiple edges from source "${edge.source}" marked as isDefault or unconditional.`,
+            path: ["graphEdges", idx, "isDefault"],
+          });
+        }
+        sourcesWithDefaultOrUnconditional.add(edge.source);
+      }
+
+      if (edge.sendConfig?.enabled) {
+        if (edge.targets.length > 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Edge cannot have both targets and sendConfig.enabled=true simultaneously.`,
+            path: ["graphEdges", idx, "targets"],
+          });
+        }
+
+        if (!edge.sendConfig.joinStepId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `When sendConfig.enabled is true, joinStepId must be specified.`,
+            path: ["graphEdges", idx, "sendConfig", "joinStepId"],
+          });
+        } else if (!stepIds.has(edge.sendConfig.joinStepId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `sendConfig joinStepId "${edge.sendConfig.joinStepId}" does not exist in graphSteps.`,
+            path: ["graphEdges", idx, "sendConfig", "joinStepId"],
+          });
+        }
+
+        const itemTarget = edge.sendConfig.itemTarget;
+        if (itemTarget.kind === "step" && itemTarget.id !== "END" && !stepIds.has(itemTarget.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `sendConfig itemTarget step "${itemTarget.id}" does not exist in graphSteps.`,
+            path: ["graphEdges", idx, "sendConfig", "itemTarget", "id"],
+          });
+        } else if (itemTarget.kind === "port" && !portIds.has(itemTarget.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `sendConfig itemTarget port "${itemTarget.id}" does not exist in outputPorts.`,
+            path: ["graphEdges", idx, "sendConfig", "itemTarget", "id"],
+          });
+        }
+      }
+
+      edge.targets.forEach((target, tIdx) => {
+        if (target.kind === "step") {
+          if (target.id === "END") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Target with id "END" must use kind: "end" instead of kind: "step".`,
+              path: ["graphEdges", idx, "targets", tIdx, "kind"],
+            });
+          } else if (!stepIds.has(target.id)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Edge target step "${target.id}" does not exist in graphSteps.`,
+              path: ["graphEdges", idx, "targets", tIdx, "id"],
+            });
+          }
+        } else if (target.kind === "port" && !portIds.has(target.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Edge target port "${target.id}" does not exist in outputPorts.`,
+            path: ["graphEdges", idx, "targets", tIdx, "id"],
+          });
+        }
+      });
+    });
+
+    sourcesWithConditionalEdge.forEach((source) => {
+      if (!sourcesWithDefaultOrUnconditional.has(source)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Source "${source}" has conditional edges but no default/unconditional fallback branch (isDefault: true). Graph execution would dead-end at runtime.`,
+          path: ["graphEdges"],
+        });
+      }
+    });
+
+    // 3. Reachability Check (BFS from START)
+    if (data.graphSteps.length > 0) {
+      const visited = new Set<string>();
+      const queue: string[] = ["START"];
+
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        if (visited.has(curr)) continue;
+        visited.add(curr);
+
+        const outgoing = data.graphEdges.filter((e) => e.source === curr);
+        outgoing.forEach((e) => {
+          if (e.sendConfig?.enabled) {
+            if (e.sendConfig.itemTarget.kind === "step") {
+              queue.push(e.sendConfig.itemTarget.id);
+            }
+            if (e.sendConfig.joinStepId) {
+              queue.push(e.sendConfig.joinStepId);
+            }
+          }
+          e.targets.forEach((t) => {
+            if (t.kind === "step") queue.push(t.id);
+          });
+        });
+      }
+
+      data.graphSteps.forEach((step, idx) => {
+        if (!visited.has(step.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Orphaned step "${step.id}" is unreachable from START.`,
+            path: ["graphSteps", idx],
+          });
+        }
+      });
+    }
+  });
+
+export type LangGraphNodeData = z.infer<typeof langgraphDataSchema>;
+
+export const langgraphStepDataSchema = baseNodeDataSchema.extend({
+  stepId: z.string().optional(),
+  stepType: z.string().optional(),
+  modelConfig: z.any().optional(),
+  humanGateConfig: z.any().optional(),
+  interruptConfig: z.any().optional(),
+  customCode: z.any().optional(),
+});
+
+export const nodeDataSchemas: Record<string, z.ZodSchema> = {
+  queue: simpleDataSchema,
+  pubsub: simpleDataSchema,
+  eventstream: simpleDataSchema,
   kafka: kafkaDataSchema,
   sqs: sqsDataSchema,
   "redis-pubsub": redisPubSubDataSchema,
@@ -575,4 +952,6 @@ export const nodeDataSchemas: Record<string, z.ZodTypeAny> = {
   mcp_server: mcpServerDataSchema,
   vector_db_ref: vectorDbRefDataSchema,
   identity_provider: identityProviderDataSchema,
+  langgraph: langgraphDataSchema,
+  langgraph_step: langgraphStepDataSchema,
 };

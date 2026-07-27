@@ -7,7 +7,7 @@ const ALL_BACKEND_NODE_TYPES = [
   "redis-streams", "sqs", "redis-pubsub", "redis-cache", "entity", 
   "webClient", "external", "group", "db_ref", "storage",
   "worker", "serverless", "search_index", "api_gateway", 
-  "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref"
+  "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref", "langgraph"
 ] as const;
 
 export function isBackendNode(type: string): type is BackendNodeType {

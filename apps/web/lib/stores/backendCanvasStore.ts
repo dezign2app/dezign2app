@@ -186,6 +186,7 @@ interface BackendCanvasState {
   // Manual actions
   addNode: (node: Omit<BackendNode, "fractionalIndex">) => void;
   addTableNode: (parentId?: string, position?: { x: number; y: number }) => void;
+  addLangGraphStepNode: (parentId: string, position?: { x: number; y: number }, name?: string, stepType?: string) => void;
   updateNode: (id: string, changes: Partial<BackendNode>) => void;
   deleteNode: (id: string) => void;
   addEdge: (edge: Omit<BackendEdge, "fractionalIndex">) => void;
@@ -442,6 +443,34 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         columns: [{ name: "_id", type: "UUID", isPrimaryKey: true }] 
       },
       selected: true
+    };
+    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
+    set({
+      nodes: next,
+      pendingNodeUpserts: [...get().pendingNodeUpserts, node],
+    });
+  },
+
+  addLangGraphStepNode: (parentId, position, name, stepType) => {
+    const existingCount = get().nodes.filter(n => n.parentId === parentId).length;
+    const defaultPos = position || { x: 40 + existingCount * 220, y: 120 };
+    const lastNodeIndex = getLastIndex(get().nodes);
+    const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
+    const stepId = `step_${Date.now().toString(36).slice(-4)}`;
+    const stepName = name || `Step ${existingCount + 1}`;
+    const node: BackendNode = {
+      id: crypto.randomUUID(),
+      type: "langgraph_step",
+      position: defaultPos,
+      parentId,
+      fractionalIndex,
+      data: {
+        label: stepName,
+        stepId,
+        stepType: (stepType as NonNullable<BackendNode["data"]["stepType"]>) || "llm_call",
+        modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 },
+      },
+      selected: true,
     };
     const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
     set({

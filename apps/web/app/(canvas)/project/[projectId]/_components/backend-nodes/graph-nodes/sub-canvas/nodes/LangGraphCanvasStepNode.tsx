@@ -1,28 +1,99 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
-import { Code2, Zap, Trash2 } from "lucide-react";
-import type { StepNode, LangGraphCanvasNode } from "../types";
-import { LocalInput } from "../../shared";
+import { NodeProps, Handle, Position, useReactFlow, Edge } from "@xyflow/react";
+import { Code2, Zap, Trash2, Brain, ChevronDown, ChevronUp, X, Globe, Link2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import type { StepNode, LangGraphCanvasNode, StepNodeData, CustomLLMNode } from "../types";
+import { LocalInput, LocalTextarea } from "../../shared";
 
 export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNode>) => {
   const stepType = data.stepType || "custom_code";
   const Icon = Code2;
-  const { setNodes } = useReactFlow<LangGraphCanvasNode>();
+  const { setNodes, getNodes, getEdges } = useReactFlow<LangGraphCanvasNode>();
+  const allNodes = getNodes();
+  const allEdges = getEdges();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.label || "Node");
+  const [isLLMExpanded, setIsLLMExpanded] = useState(!!data.modelConfig);
+
+  // Detect custom LLM nodes on canvas
+  const customLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is CustomLLMNode => n.type === "custom_llm");
+
+  // Detect edge connected directly from a custom LLM node to this step node's llm_in handle
+  const connectedEdge = allEdges.find(
+    (e: Edge) =>
+      e.target === id &&
+      (e.targetHandle === "llm_in" || !e.targetHandle) &&
+      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === "custom_llm")
+  );
+  const connectedLLMNode = connectedEdge ? customLLMNodes.find((n: CustomLLMNode) => n.id === connectedEdge.source) : null;
+
+  // Selected linked LLM node (via edge connection or explicit dropdown selection)
+  const linkedCustomLLM = connectedLLMNode || customLLMNodes.find((n: CustomLLMNode) => n.id === data.modelConfig?.customLlmNodeId);
 
   useEffect(() => {
     setNameValue(data.label || "Node");
   }, [data.label]);
+
+  useEffect(() => {
+    if (data.modelConfig) {
+      setIsLLMExpanded(true);
+    }
+  }, [!!data.modelConfig]);
+
+  // Sync connected LLM node data if linked via edge
+  useEffect(() => {
+    if (connectedLLMNode) {
+      handleUpdateModelConfig({
+        provider: "other",
+        customLlmNodeId: connectedLLMNode.id,
+        baseUrl: connectedLLMNode.data.baseUrl,
+        model: connectedLLMNode.data.model || "custom-model",
+        apiKeyHeader: connectedLLMNode.data.apiKeyHeader,
+        temperature: connectedLLMNode.data.temperature ?? 0.7,
+      });
+    }
+  }, [connectedLLMNode?.id, connectedLLMNode?.data.baseUrl, connectedLLMNode?.data.model]);
 
   const handleNameSave = () => {
     setIsEditingName(false);
     const trimmed = nameValue.trim() || "Node";
     setNameValue(trimmed);
     if (trimmed !== data.label) {
-      setNodes((nds) => nds.map((n) => (n.id === id && n.type === "step" ? { ...n, data: { ...n.data, label: trimmed } } : n)));
+      setNodes((nds: LangGraphCanvasNode[]) => nds.map((n: LangGraphCanvasNode) => (n.id === id && n.type === "step" ? { ...n, data: { ...n.data, label: trimmed } } : n)));
     }
+  };
+
+  const modelConfig = data.modelConfig;
+
+  const handleUpdateModelConfig = (updates: Partial<NonNullable<StepNodeData["modelConfig"]>> | null) => {
+    setNodes((nds: LangGraphCanvasNode[]) =>
+      nds.map((n: LangGraphCanvasNode) => {
+        if (n.id === id && n.type === "step") {
+          if (updates === null) {
+            const { modelConfig, ...restData } = n.data;
+            return { ...n, data: restData };
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              modelConfig: {
+                provider: updates.provider ?? n.data.modelConfig?.provider ?? "groq",
+                model: updates.model ?? n.data.modelConfig?.model ?? "llama-3.3-70b-versatile",
+                temperature: updates.temperature ?? n.data.modelConfig?.temperature,
+                maxTokens: updates.maxTokens ?? n.data.modelConfig?.maxTokens,
+                systemPrompt: updates.systemPrompt ?? n.data.modelConfig?.systemPrompt,
+                baseUrl: updates.baseUrl ?? n.data.modelConfig?.baseUrl,
+                apiKeyHeader: updates.apiKeyHeader ?? n.data.modelConfig?.apiKeyHeader,
+                customLlmNodeId: updates.customLlmNodeId ?? n.data.modelConfig?.customLlmNodeId,
+              },
+            },
+          };
+        }
+        return n;
+      })
+    );
   };
 
   const stateUpdates = data.stateUpdates || [];
@@ -30,7 +101,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
 
   return (
     <div
-      className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[220px] max-w-[280px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative group ${
+      className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[240px] max-w-[300px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative group ${
         selected ? "border-primary ring-4 ring-primary/20 shadow-primary/10" : "border-border hover:border-border/80"
       }`}
       onClick={(e) => e.stopPropagation()}
@@ -108,11 +179,240 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
         </div>
       </div>
 
-      {data.modelConfig && (
-        <div className="text-[10px] font-mono text-muted-foreground/90 bg-secondary/40 px-2 py-1 rounded border border-border/40 truncate">
-          {data.modelConfig.provider}:{data.modelConfig.model}
+      {/* LLM Configuration Option */}
+      <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2 mt-0.5 nodrag relative">
+        {!linkedCustomLLM && (
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="llm_in"
+            className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[19px]"
+            title="Connect Custom LLM Node"
+          />
+        )}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors nodrag"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!modelConfig) {
+                handleUpdateModelConfig({ provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.7 });
+                setIsLLMExpanded(true);
+              } else {
+                setIsLLMExpanded(!isLLMExpanded);
+              }
+            }}
+          >
+            <Brain className="w-3.5 h-3.5 text-sky-400" />
+            <span>LLM Config</span>
+            {modelConfig ? (
+              isLLMExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />
+            ) : (
+              <span className="text-[9px] font-mono text-muted-foreground/70 normal-case font-normal">(Off)</span>
+            )}
+          </button>
+
+          {modelConfig && (
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 truncate max-w-[90px]">
+                {linkedCustomLLM ? linkedCustomLLM.data.label : (modelConfig.provider || "groq")}
+              </span>
+              <button
+                type="button"
+                className="text-[9px] text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10 transition-colors nodrag"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUpdateModelConfig(null);
+                }}
+                title="Remove LLM Config"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {modelConfig && isLLMExpanded && (
+          <div
+            className="flex flex-col gap-2 p-2 rounded-lg bg-secondary/30 border border-border/60 text-xs nodrag"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Connected LLM Info Card if linked */}
+            {linkedCustomLLM ? (
+              <div className="flex flex-col gap-1 p-2 rounded bg-sky-500/10 border border-sky-500/30 nodrag">
+                <div className="flex items-center justify-between text-[10px] font-bold text-sky-400">
+                  <span className="flex items-center gap-1">
+                    <Link2 className="w-3.5 h-3.5" /> {linkedCustomLLM.data.label}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-[9px] text-muted-foreground hover:text-destructive px-1 py-0.5 rounded hover:bg-destructive/10 transition-colors"
+                    onClick={() => handleUpdateModelConfig({ provider: "groq", customLlmNodeId: undefined })}
+                    title="Disconnect Custom LLM"
+                  >
+                    Unlink
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground">
+                  <span className="uppercase font-semibold">{linkedCustomLLM.data.provider}</span>
+                  <span className="truncate max-w-[130px]">{linkedCustomLLM.data.baseUrl || "http://localhost:11434/v1"}</span>
+                </div>
+              </div>
+            ) : (
+              /* Provider & Model Row when no custom LLM is linked */
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-medium text-muted-foreground">Provider</label>
+                  <Select
+                    value={modelConfig.customLlmNodeId ? `node_${modelConfig.customLlmNodeId}` : (modelConfig.provider || "groq")}
+                    onValueChange={(val: string) => {
+                      if (val.startsWith("node_")) {
+                        const nodeId = val.replace("node_", "");
+                        const targetNode = customLLMNodes.find((n) => n.id === nodeId);
+                        if (targetNode) {
+                          handleUpdateModelConfig({
+                            provider: "other",
+                            customLlmNodeId: nodeId,
+                            baseUrl: targetNode.data.baseUrl,
+                            model: targetNode.data.model || "custom-model",
+                            apiKeyHeader: targetNode.data.apiKeyHeader,
+                            temperature: targetNode.data.temperature ?? 0.7,
+                          });
+                        }
+                        return;
+                      }
+
+                      const provider = val as "groq" | "openai" | "anthropic" | "google" | "other";
+                      const defaultModels: Record<string, string> = {
+                        groq: "llama-3.3-70b-versatile",
+                        openai: "gpt-4o-mini",
+                        anthropic: "claude-3-5-sonnet-20241022",
+                        google: "gemini-1.5-flash",
+                        other: "custom-model",
+                      };
+                      handleUpdateModelConfig({
+                        provider,
+                        customLlmNodeId: undefined,
+                        model: defaultModels[provider] || modelConfig.model || "",
+                        baseUrl: provider === "other" ? (modelConfig.baseUrl || "http://localhost:11434/v1") : undefined,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-6 text-[10px] bg-background border border-border/60 rounded px-2 font-medium text-foreground nodrag">
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent className="nodrag">
+                      <SelectItem value="groq">Groq</SelectItem>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="other">Other (Inline Custom)</SelectItem>
+
+                      {customLLMNodes.length > 0 && (
+                        <>
+                          <div className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-400 border-t border-border/40 mt-1">
+                            Canvas Custom LLMs
+                          </div>
+                          {customLLMNodes.map((cllm: CustomLLMNode) => (
+                            <SelectItem key={cllm.id} value={`node_${cllm.id}`}>
+                              🔗 {cllm.data.label}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-medium text-muted-foreground">Model</label>
+                  <LocalInput
+                    className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                    placeholder="e.g. gpt-4o"
+                    value={modelConfig.model || ""}
+                    onChange={(e) => handleUpdateModelConfig({ model: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Inline Custom LLM Endpoint / Base URL Configuration when provider is "other" and no linked node */}
+            {modelConfig.provider === "other" && !modelConfig.customLlmNodeId && (
+              <div className="flex flex-col gap-1.5 p-2 rounded bg-background/50 border border-sky-500/20 nodrag">
+                <span className="text-[9px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                  <Globe className="w-3 h-3" /> Inline Custom LLM
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-medium text-muted-foreground">Base URL / Endpoint</label>
+                  <LocalInput
+                    className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                    placeholder="e.g. http://localhost:11434/v1"
+                    value={modelConfig.baseUrl || ""}
+                    onChange={(e) => handleUpdateModelConfig({ baseUrl: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-medium text-muted-foreground">API Key / Auth Header (Optional)</label>
+                  <LocalInput
+                    type="password"
+                    className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                    placeholder="Bearer ... or header value"
+                    value={modelConfig.apiKeyHeader || ""}
+                    onChange={(e) => handleUpdateModelConfig({ apiKeyHeader: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Temperature & Max Tokens Row */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-medium text-muted-foreground flex justify-between">
+                  <span>Temp</span>
+                  <span className="font-mono text-sky-400">{modelConfig.temperature ?? 0.7}</span>
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  className="h-4 accent-sky-500 cursor-pointer nodrag"
+                  value={modelConfig.temperature ?? 0.7}
+                  onChange={(e) => handleUpdateModelConfig({ temperature: parseFloat(e.target.value) })}
+                />
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] font-medium text-muted-foreground">Max Tokens</label>
+                <LocalInput
+                  type="number"
+                  className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
+                  placeholder="4096"
+                  value={modelConfig.maxTokens ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                    handleUpdateModelConfig({ maxTokens: val });
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* System Prompt (Textarea) */}
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[9px] font-medium text-muted-foreground">System Prompt</label>
+              <LocalTextarea
+                className="min-h-[50px] max-h-[120px] text-[10px] bg-background border border-border/60 rounded p-1.5 font-mono text-foreground nodrag resize-y"
+                placeholder="Optional system prompt..."
+                rows={2}
+                value={modelConfig.systemPrompt || ""}
+                onChange={(e) => handleUpdateModelConfig({ systemPrompt: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* State Channel Updates Section */}
       <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2 mt-0.5 nodrag">
@@ -161,3 +461,4 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     </div>
   );
 };
+

@@ -26,7 +26,9 @@ import {
   StepNode,
   PortNode,
   StateGlobalNode,
+  CustomLLMNode,
   StepNodeData,
+  CustomLLMNodeData,
   getStepData,
 } from "../types";
 
@@ -53,7 +55,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
   const { fitView: triggerFitView } = useReactFlow();
 
-  // ── Build initial nodes from graphSteps ──
+  // ── Build initial nodes from graphSteps & customLlmNodes ──
   const initialNodes = useMemo((): LangGraphCanvasNode[] => {
     const steps: LangGraphStepConfig[] = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
     const ports: LangGraphOutputPort[] = data.outputPorts || LANGGRAPH_STARTER_TEMPLATE.outputPorts;
@@ -77,6 +79,30 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         deletable: false,
       },
     ];
+
+    const savedCustomLLMs = data.customLlmNodes || [];
+    savedCustomLLMs.forEach((cLLM) => {
+      const customNode: CustomLLMNode = {
+        id: cLLM.id,
+        type: "custom_llm",
+        position: cLLM.position || { x: 340, y: 80 },
+        data: {
+          label: cLLM.label,
+          llmId: cLLM.id,
+          provider: (cLLM.provider || "custom") as any,
+          url: cLLM.url || cLLM.baseUrl || "http://localhost:11434/v1/chat/completions",
+          baseUrl: cLLM.baseUrl || cLLM.url || "http://localhost:11434/v1",
+          method: cLLM.method || "POST",
+          headersJson: cLLM.headersJson,
+          bodyJson: cLLM.bodyJson,
+          model: cLLM.model,
+          apiKeyHeader: cLLM.apiKeyHeader,
+          temperature: cLLM.temperature,
+          maxTokens: cLLM.maxTokens,
+        },
+      };
+      result.push(customNode);
+    });
 
     steps.forEach((step, idx) => {
       const stepNode: StepNode = {
@@ -166,6 +192,19 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             },
           };
         }
+        if (n.type === "custom_llm") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              onDeleteLLM: () => {
+                setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
+                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setSelectedNodeId((curr) => (curr === n.id ? null : curr));
+              },
+            },
+          };
+        }
         if (n.type === "step") {
           return {
             ...n,
@@ -224,8 +263,34 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? getStepData(found) : null;
   }, [nodes, selectedNodeId]);
 
-  // ── Add step ──
-  const handleAddStep = (type: LangGraphStepConfig["type"], label: string) => {
+  // ── Add step or custom_llm ──
+  const handleAddStep = (type: LangGraphStepConfig["type"] | "custom_llm", label: string) => {
+    if (type === "custom_llm") {
+      const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
+      const newLLMNode: CustomLLMNode = {
+        id: llmId,
+        type: "custom_llm",
+        position: { x: 360 + Math.random() * 140, y: 100 + Math.random() * 80 },
+        data: {
+          label: label || "LLM Node",
+          llmId,
+          provider: "ollama",
+          baseUrl: "http://localhost:11434/v1",
+          model: "llama3:8b",
+          temperature: 0.7,
+          onDeleteLLM: () => {
+            setNodes((nodes) => nodes.filter((node) => node.id !== llmId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== llmId && edge.target !== llmId));
+            setSelectedNodeId((curr) => (curr === llmId ? null : curr));
+          },
+        },
+      };
+
+      setNodes((nds) => [...nds, newLLMNode]);
+      setSelectedNodeId(llmId);
+      return;
+    }
+
     const stepId = `step_${Date.now().toString(36).slice(-4)}`;
     const newNode: StepNode = {
       id: stepId,
@@ -251,11 +316,24 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     setActiveSideTab("inspector");
   };
 
-  // ── Update selected step ──
+  const selectedLLMData = useMemo((): CustomLLMNodeData | null => {
+    const found = nodes.find((n): n is CustomLLMNode => n.id === selectedNodeId && n.type === "custom_llm");
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
+
   const updateSelectedStep = (changes: Partial<StepNodeData>) => {
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
       n.id === selectedNodeId && n.type === "step"
+        ? { ...n, data: { ...n.data, ...changes } }
+        : n
+    ));
+  };
+
+  const updateSelectedLLM = (changes: Partial<CustomLLMNodeData>) => {
+    if (!selectedNodeId) return;
+    setNodes((nds) => nds.map((n) =>
+      n.id === selectedNodeId && n.type === "custom_llm"
         ? { ...n, data: { ...n.data, ...changes } }
         : n
     ));
@@ -271,6 +349,24 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
   // ── Save ──
   const handleSave = () => {
+    const customLlmNodes = nodes
+      .filter((n): n is CustomLLMNode => n.type === "custom_llm")
+      .map((n) => ({
+        id: n.id,
+        label: n.data.label,
+        provider: n.data.provider,
+        url: n.data.url,
+        baseUrl: n.data.baseUrl,
+        method: n.data.method,
+        headersJson: n.data.headersJson,
+        bodyJson: n.data.bodyJson,
+        model: n.data.model,
+        apiKeyHeader: n.data.apiKeyHeader,
+        temperature: n.data.temperature,
+        maxTokens: n.data.maxTokens,
+        position: n.position,
+      }));
+
     const graphSteps: LangGraphStepConfig[] = nodes
       .filter((n): n is StepNode => n.type === "step")
       .map((n) => ({
@@ -301,6 +397,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       inputChannels,
       stateChannels,
       memoryConfig,
+      customLlmNodes,
     });
 
     updateNode(node.id, {
@@ -335,11 +432,13 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     activeSideTab,
     setActiveSideTab,
     selectedStepData,
+    selectedLLMData,
     onNodesChange,
     onEdgesChange,
     onConnect,
     handleAddStep,
     updateSelectedStep,
+    updateSelectedLLM,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,

@@ -31,6 +31,7 @@ declare module "@xyflow/react" {
     labelBgStyle?: React.CSSProperties;
     labelBgPadding?: [number, number];
     labelBgBorderRadius?: number;
+    animated?: boolean;
   }
 
   export interface Connection {
@@ -65,12 +66,13 @@ declare module "@xyflow/react" {
   }
 
   export type NodeChange<TNode = Node> =
-    | { id: string; type: "add" | "remove" | "replace" | "select" | "dimensions" }
+    | { id: string; type: "add" | "remove" | "replace" | "select" | "dimensions"; selected?: boolean }
     | { id: string; type: "position"; position?: XYPosition; dragging?: boolean };
 
   export type EdgeChange<TEdge = Edge> = {
     id: string;
     type: "add" | "remove" | "replace" | "select";
+    selected?: boolean;
   };
 
   export type OnNodesChange<TNode = Node> = (
@@ -127,6 +129,10 @@ declare module "@xyflow/react" {
     screenToFlowPosition: (position: XYPosition) => XYPosition;
     setViewport: (viewport: Viewport, options?: Record<string, unknown>) => void;
     getViewport: () => Viewport;
+    setNodes: (nodes: TNode[] | ((nodes: TNode[]) => TNode[])) => void;
+    setEdges: (edges: TEdge[] | ((edges: TEdge[]) => TEdge[])) => void;
+    getNodes: () => TNode[];
+    getEdges: () => TEdge[];
   };
 
   export function applyNodeChanges<TNode = Node>(

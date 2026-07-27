@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   Background,
   Controls,
   MiniMap,
@@ -38,7 +39,7 @@ import {
 } from "lucide-react";
 import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphMemoryConfig, LangGraphOutputPort, LangGraphEdgeConfig } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
+import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import { toast } from "sonner";
 
 // ─── Typed Node Data Interfaces ────────────────────────
@@ -143,12 +144,22 @@ interface LangGraphSubCanvasModalProps {
 export function LangGraphSubCanvasModal({ open, onOpenChange, nodeId }: LangGraphSubCanvasModalProps) {
   const node = useBackendCanvasStore((s) => s.nodes.find((n) => n.id === nodeId));
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const { setNodes: setOuterNodes } = useReactFlow<BackendNode>();
+
+  useEffect(() => {
+    if (open) {
+      setOuterNodes((nds: BackendNode[]) => nds.map((n: BackendNode) => (n.selected ? { ...n, selected: false } : n)));
+    }
+  }, [open, setOuterNodes]);
 
   if (!node) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[96vw] !sm:max-w-[96vw] !w-[96vw] !h-[92vh] !max-h-[92vh] p-0 gap-0 border-border bg-card overflow-hidden flex flex-col shadow-2xl [&>button]:hidden">
+      <DialogContent
+        className="!max-w-[96vw] !sm:max-w-[96vw] !w-[96vw] !h-[92vh] !max-h-[92vh] p-0 gap-0 border-border bg-card overflow-hidden flex flex-col shadow-2xl [&>button]:hidden"
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         <DialogTitle className="sr-only">{node.data.label || "LangGraph Sub-Canvas"}</DialogTitle>
         <DialogDescription className="sr-only">LangGraph Agent Sub-Canvas Studio Editor</DialogDescription>
         <ReactFlowProvider>
@@ -287,7 +298,21 @@ function SubCanvasContent({
       position: { x: 320 + Math.random() * 180, y: 160 + Math.random() * 100 },
       data: { label, stepId, stepType: type, modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 } },
     };
+
+    const sourceId = (selectedNodeId && selectedNodeId !== "START" && !selectedNodeId.startsWith("port_"))
+      ? selectedNodeId
+      : (nodes.find((n) => n.type === "step")?.id || "START");
+
+    const newEdge: Edge = {
+      id: `edge_${sourceId}_${stepId}`,
+      source: sourceId,
+      target: stepId,
+      animated: true,
+      style: { stroke: "#a1a1aa", strokeWidth: 2 },
+    };
+
     setNodes((nds) => [...nds, newNode]);
+    setEdges((eds) => [...eds, newEdge]);
     setSelectedNodeId(stepId);
     setActiveSideTab("inspector");
   };
@@ -332,8 +357,16 @@ function SubCanvasContent({
       }],
     }));
 
+    const sanitizedData = ensureLangGraphDataReachability({
+      ...data,
+      graphSteps,
+      graphEdges,
+      stateChannels,
+      memoryConfig,
+    });
+
     updateNode(node.id, {
-      data: { ...data, graphSteps, graphEdges, stateChannels, memoryConfig },
+      data: sanitizedData,
     });
 
     toast.success("Sub-Canvas saved!");

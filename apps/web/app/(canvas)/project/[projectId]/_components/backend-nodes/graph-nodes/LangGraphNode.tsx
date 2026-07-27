@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NodeProps, Handle, Position } from "@xyflow/react";
+import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import {
   Network, ShieldCheck, Sparkles, ExternalLink,
 } from "lucide-react";
@@ -14,6 +14,13 @@ import { LangGraphSubCanvasModal } from "./LangGraphSubCanvasModal";
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const [editorOpen, setEditorOpen] = useState(false);
+  const { setNodes } = useReactFlow<BackendNode>();
+
+  const handleOpenEditor = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setNodes((nds: BackendNode[]) => nds.map((n: BackendNode) => (n.selected ? { ...n, selected: false } : n)));
+    setEditorOpen(true);
+  };
 
   const stateChannels = data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels;
   const graphSteps = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
@@ -30,7 +37,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             ? "border-primary ring-4 ring-primary/20 shadow-primary/10"
             : "border-border hover:border-border/80"
         )}
-        onDoubleClick={() => setEditorOpen(true)}
+        onDoubleClick={handleOpenEditor}
       >
         {/* Input Handle */}
         <Handle
@@ -92,7 +99,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             variant="outline"
             size="sm"
             className="w-full h-9 text-xs font-semibold border-border hover:bg-secondary gap-2 mt-1 transition-all"
-            onClick={() => setEditorOpen(true)}
+            onClick={handleOpenEditor}
           >
             <Sparkles className="w-4 h-4 text-primary" />
             Open Sub-Canvas Editor

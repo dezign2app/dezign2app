@@ -15,6 +15,14 @@ import type {
   LangGraphMemoryConfig,
 } from "@/types/canvas";
 import type { StepNodeData, LangGraphLLMNodeData } from "../types";
+import {
+  STEP_TYPE_CUSTOM_CODE,
+  LLM_PROVIDER_GROQ,
+  LLM_PROVIDER_OPENAI,
+  LLM_PROVIDER_ANTHROPIC,
+  LLM_PROVIDER_GOOGLE,
+  LLM_PROVIDER_OTHER,
+} from "../constants";
 import { LocalTextarea } from "../../shared";
 import { Globe, Key, Code, Shield } from "lucide-react";
 
@@ -295,11 +303,11 @@ export function InspectorSidebar({
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-medium">Step Type</Label>
-                <Select value={selectedStepData.stepType || "custom_code"}
+                <Select value={selectedStepData.stepType || STEP_TYPE_CUSTOM_CODE}
                   onValueChange={(v: string) => onUpdateStep({ stepType: v as LangGraphStepConfig["type"] })}>
                   <SelectTrigger className="h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="custom_code">Node</SelectItem>
+                    <SelectItem value={STEP_TYPE_CUSTOM_CODE}>Node</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -309,15 +317,15 @@ export function InspectorSidebar({
                 <span className="text-xs font-semibold text-foreground flex items-center gap-1"><Brain className="w-3.5 h-3.5" /> Model Config</span>
                 <div className="flex flex-col gap-1">
                   <Label className="text-[11px] text-muted-foreground">Provider</Label>
-                  <Select value={selectedStepData.modelConfig?.provider || "groq"}
+                  <Select value={selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ}
                     onValueChange={(v: string) => onUpdateStep({ modelConfig: { ...selectedStepData.modelConfig, provider: v as NonNullable<LangGraphStepConfig["modelConfig"]>["provider"] } })}>
                     <SelectTrigger className="h-7 text-xs bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="groq">Groq</SelectItem>
-                      <SelectItem value="openai">OpenAI</SelectItem>
-                      <SelectItem value="anthropic">Anthropic</SelectItem>
-                      <SelectItem value="google">Google</SelectItem>
-                      <SelectItem value="other">Other (Custom LLM)</SelectItem>
+                      <SelectItem value={LLM_PROVIDER_GROQ}>Groq</SelectItem>
+                      <SelectItem value={LLM_PROVIDER_OPENAI}>OpenAI</SelectItem>
+                      <SelectItem value={LLM_PROVIDER_ANTHROPIC}>Anthropic</SelectItem>
+                      <SelectItem value={LLM_PROVIDER_GOOGLE}>Google</SelectItem>
+                      <SelectItem value={LLM_PROVIDER_OTHER}>Other (Custom LLM)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

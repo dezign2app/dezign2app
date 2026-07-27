@@ -3,10 +3,16 @@ import { NodeProps, Handle, Position, useReactFlow, Edge } from "@xyflow/react";
 import { Code2, Zap, Trash2, Brain, ChevronDown, ChevronUp, X, Globe, Link2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
+import {
+  SUB_CANVAS_NODE_STEP,
+  SUB_CANVAS_NODE_LLM,
+  STEP_TYPE_CUSTOM_CODE,
+  LLM_PROVIDER_OTHER,
+} from "../constants";
 import { LocalInput, LocalTextarea } from "../../shared";
 
 export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNode>) => {
-  const stepType = data.stepType || "custom_code";
+  const stepType = data.stepType || STEP_TYPE_CUSTOM_CODE;
   const Icon = Code2;
   const { setNodes, getNodes, getEdges } = useReactFlow<LangGraphCanvasNode>();
   const allNodes = getNodes();
@@ -17,14 +23,14 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const [isLLMExpanded, setIsLLMExpanded] = useState(!!data.modelConfig);
 
   // Detect LLM nodes on canvas
-  const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === "langgraph_llm");
+  const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === SUB_CANVAS_NODE_LLM);
 
   // Detect edge connected directly from an LLM node to this step node's llm_in handle
   const connectedEdge = allEdges.find(
     (e: Edge) =>
       e.target === id &&
       (e.targetHandle === "llm_in" || !e.targetHandle) &&
-      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === "langgraph_llm")
+      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === SUB_CANVAS_NODE_LLM)
   );
   const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
 
@@ -45,7 +51,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   useEffect(() => {
     if (connectedLLMNode) {
       handleUpdateModelConfig({
-        provider: "other",
+        provider: LLM_PROVIDER_OTHER,
         customLlmNodeId: connectedLLMNode.id,
         baseUrl: connectedLLMNode.data.baseUrl,
         model: connectedLLMNode.data.model || "custom-model",
@@ -60,7 +66,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     const trimmed = nameValue.trim() || "Node";
     setNameValue(trimmed);
     if (trimmed !== data.label) {
-      setNodes((nds: LangGraphCanvasNode[]) => nds.map((n: LangGraphCanvasNode) => (n.id === id && n.type === "step" ? { ...n, data: { ...n.data, label: trimmed } } : n)));
+      setNodes((nds: LangGraphCanvasNode[]) => nds.map((n: LangGraphCanvasNode) => (n.id === id && n.type === SUB_CANVAS_NODE_STEP ? { ...n, data: { ...n.data, label: trimmed } } : n)));
     }
   };
 
@@ -69,7 +75,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const handleUpdateModelConfig = (updates: Partial<NonNullable<StepNodeData["modelConfig"]>> | null) => {
     setNodes((nds: LangGraphCanvasNode[]) =>
       nds.map((n: LangGraphCanvasNode) => {
-        if (n.id === id && n.type === "step") {
+        if (n.id === id && n.type === SUB_CANVAS_NODE_STEP) {
           if (updates === null) {
             const { modelConfig, ...restData } = n.data;
             return { ...n, data: restData };

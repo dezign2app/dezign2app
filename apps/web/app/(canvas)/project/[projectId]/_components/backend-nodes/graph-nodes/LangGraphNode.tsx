@@ -3,7 +3,7 @@ import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import {
   Network, ShieldCheck, Sparkles, ExternalLink,
 } from "lucide-react";
-import { BackendNode } from "@/types/canvas";
+import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphOutputPort } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -62,7 +62,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
               />
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <ShieldCheck className="w-3 h-3 text-primary" />
-                <span>{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} channels</span>
+                <span>{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} state fields</span>
               </div>
             </div>
           </div>
@@ -71,13 +71,45 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
 
         {/* Summary Preview */}
         <div className="p-3 flex flex-col gap-2 nodrag">
+          {/* State schema preview */}
+          <div className="flex flex-col gap-1 bg-[#006ddd]/10 p-2 rounded-xl border border-[#006ddd]/30">
+            <div className="flex items-center justify-between text-[10px] font-bold text-[#006ddd]">
+              <span>GRAPH STATE SCHEMA</span>
+              <span className="font-mono">{stateChannels.length} fields</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {stateChannels.slice(0, 3).map((ch: LangGraphStateChannel) => (
+                <span key={ch.key} className="text-[9px] px-1.5 py-0.5 rounded bg-[#006ddd]/15 text-[#006ddd] font-mono border border-[#006ddd]/30 font-semibold">
+                  {ch.key}
+                </span>
+              ))}
+              {stateChannels.length > 3 && (
+                <span className="text-[9px] px-1 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                  +{stateChannels.length - 3}
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Steps mini-list */}
           <div className="flex flex-wrap gap-1.5">
-            {graphSteps.slice(0, 4).map((step: any) => (
-              <span key={step.id} className="text-[10px] px-2 py-0.5 rounded-md bg-secondary text-foreground border border-border/50 font-mono">
-                {step.name || step.id}
-              </span>
-            ))}
+            {graphSteps.slice(0, 4).map((step: LangGraphStepConfig) => {
+              const hasUpdates = Boolean(step.stateUpdates && step.stateUpdates.length > 0);
+              return (
+                <span
+                  key={step.id}
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded-md border font-mono flex items-center gap-1",
+                    hasUpdates
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                      : "bg-secondary text-foreground border-border/50"
+                  )}
+                >
+                  {step.name || step.id}
+                  {hasUpdates && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+                </span>
+              );
+            })}
             {graphSteps.length > 4 && (
               <span className="text-[10px] px-2 py-0.5 rounded-md bg-secondary/40 text-muted-foreground border border-border/50 font-mono">
                 +{graphSteps.length - 4} more
@@ -111,7 +143,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
 
         {/* Output Ports */}
         <div className="px-3 py-2 bg-secondary/20 border-t border-border/50 rounded-b-2xl flex flex-col gap-1 nodrag">
-          {outputPorts.map((port: any) => (
+          {outputPorts.map((port: LangGraphOutputPort) => (
             <div key={port.id} className="relative flex items-center justify-between py-0.5 px-2">
               <span className="text-[10px] font-mono text-muted-foreground font-medium">{port.id}</span>
               <Handle

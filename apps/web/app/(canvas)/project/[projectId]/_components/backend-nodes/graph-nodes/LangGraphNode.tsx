@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import {
   Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil,
@@ -6,8 +6,8 @@ import {
 import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphOutputPort } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { LocalInput } from "./shared";
 import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import { LangGraphCanvasModal } from "./LangGraphCanvasModal";
 
@@ -15,7 +15,20 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(data.label === "" || data.label === "Untitled");
+  const [name, setName] = useState(data.label || "LangGraph Agent");
   const { setNodes } = useReactFlow<BackendNode>();
+
+  useEffect(() => {
+    setName(data.label || "LangGraph Agent");
+  }, [data.label]);
+
+  const handleSaveName = () => {
+    const finalName = name.trim() || "LangGraph Agent";
+    setName(finalName);
+    updateNode(id, { data: { ...data, label: finalName } });
+    setIsEditing(false);
+  };
 
   const handleOpenEditor = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -51,23 +64,60 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b border-border/60 rounded-t-2xl">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
               <Network className="w-4 h-4" />
             </div>
-            <div>
-              <Input
-                className="h-6 px-1 text-sm font-bold bg-transparent border-none shadow-none focus-visible:ring-0 text-foreground w-[160px] nodrag"
-                value={data.label || "LangGraph Agent"}
-                onChange={(e) => updateNode(id, { data: { ...data, label: e.target.value } })}
-              />
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <ShieldCheck className="w-3 h-3 text-primary" />
-                <span>{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} state fields</span>
+            <div className="flex flex-col flex-1 min-w-0">
+              {isEditing ? (
+                <div
+                  className="nodrag"
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <LocalInput
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-6 text-xs px-1 bg-background/80 font-semibold flex-1 nodrag"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") handleSaveName();
+                      if (e.key === "Escape") {
+                        setName(data.label || "LangGraph Agent");
+                        setIsEditing(false);
+                      }
+                    }}
+                    onBlur={handleSaveName}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="flex flex-col cursor-pointer flex-1 min-w-0 nodrag group/title"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  title="Click to edit name"
+                >
+                  <span className="text-[9px] uppercase font-bold tracking-wider opacity-70 truncate text-muted-foreground">
+                    LangGraph Agent
+                  </span>
+                  <span className="font-semibold text-sm truncate text-foreground group-hover/title:text-primary transition-colors">
+                    {data.label || "LangGraph Agent"}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
+                <span className="truncate">{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} state fields</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
             <Button
               variant="ghost"
               size="icon"

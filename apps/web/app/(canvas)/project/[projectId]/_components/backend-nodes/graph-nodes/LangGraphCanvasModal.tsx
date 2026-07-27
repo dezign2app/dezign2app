@@ -121,6 +121,7 @@ function LangGraphCanvasContent({
       {/* Header */}
       <LangGraphCanvasHeader
         label={node.data.label}
+        onUpdateLabel={(newLabel) => updateNode(node.id, { data: { ...node.data, label: newLabel } })}
         onSave={handleSave}
         onClose={onClose}
       />

@@ -40,7 +40,7 @@ export function ToolsSidebar({ onAddStep }: ToolsSidebarProps) {
 
       <div className="mt-auto pt-3 border-t border-border/40 text-[10px] text-muted-foreground flex items-center gap-1.5 px-1">
         <HelpCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        <span>Click any tool to spawn a step on the canvas</span>
+        <span>Click Node to add a node to the canvas</span>
       </div>
     </div>
   );

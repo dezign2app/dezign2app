@@ -3,7 +3,7 @@ import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import { Globe, Trash2, Code, Key, Shield, Sparkles, Brain } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
-import type { CustomLLMNode, LangGraphCanvasNode } from "../types";
+import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
 import { LocalInput, LocalTextarea } from "../../shared";
 
 const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; defaultUrl: string; defaultApiKeyEnv: string; models: string[] }> = {
@@ -51,18 +51,18 @@ const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; de
   },
 };
 
-export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<CustomLLMNode>) => {
+export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGraphLLMNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(data.label || "LLM Node");
+  const [nameValue, setNameValue] = useState(data.label || "LLM");
 
   useEffect(() => {
-    setNameValue(data.label || "LLM Node");
+    setNameValue(data.label || "LLM");
   }, [data.label]);
 
   const updateLLMData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === "custom_llm" ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === "langgraph_llm" ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

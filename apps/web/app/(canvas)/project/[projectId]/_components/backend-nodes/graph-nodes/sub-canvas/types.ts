@@ -7,7 +7,7 @@ import type {
 } from "@/types/canvas";
 import { Edge } from "@xyflow/react";
 
-export type CustomLLMNodeData = {
+export type LangGraphLLMNodeData = {
   label: string;
   llmId: string;
   provider?: "openai" | "anthropic" | "google" | "groq" | "ollama" | "custom" | (string & {});
@@ -53,7 +53,9 @@ export type StateGlobalNodeData = {
   onAddChannel?: () => void;
 };
 
-export type CustomLLMNode = Node<CustomLLMNodeData, "custom_llm">;
+export type LangGraphLLMNode = Node<LangGraphLLMNodeData, "langgraph_llm">;
+export type CustomLLMNode = LangGraphLLMNode; // Backwards compatible alias
+export type CustomLLMNodeData = LangGraphLLMNodeData; // Backwards compatible alias
 export type StepNode = Node<StepNodeData, "step">;
 export type StartNode = Node<StartNodeData, "start">;
 export type PortNode = Node<PortNodeData, "port">;
@@ -63,7 +65,7 @@ export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type LangGraphCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode | CustomLLMNode;
+export type LangGraphCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode | LangGraphLLMNode;
 
 export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   if (node.type === "step") return node.data;
@@ -71,7 +73,7 @@ export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
 }
 
 export type ToolPaletteItem = {
-  type: LangGraphStepConfig["type"] | "custom_llm";
+  type: LangGraphStepConfig["type"] | "langgraph_llm";
   label: string;
   desc: string;
   icon: typeof Brain;
@@ -79,6 +81,6 @@ export type ToolPaletteItem = {
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
   { type: "custom_code", label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
-  { type: "custom_llm", label: "LLM Node", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
+  { type: "langgraph_llm", label: "LLM Node", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
 ];
 

@@ -9,7 +9,7 @@ export const langGraphCanvasNodeTypes = {
   start: LangGraphCanvasStartNode,
   port: LangGraphCanvasPortNode,
   state_global: LangGraphCanvasStateNode,
-  custom_llm: LangGraphCanvasLLMNode,
+  langgraph_llm: LangGraphCanvasLLMNode,
 };
 
 export {

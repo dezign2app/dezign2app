@@ -14,7 +14,7 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, CustomLLMNodeData } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData } from "../types";
 import { LocalTextarea } from "../../shared";
 import { Globe, Key, Code, Shield } from "lucide-react";
 
@@ -22,10 +22,10 @@ interface InspectorSidebarProps {
   activeSideTab: "inspector" | "inputs" | "state" | "memory";
   setActiveSideTab: (tab: "inspector" | "inputs" | "state" | "memory") => void;
   selectedStepData: StepNodeData | null;
-  selectedLLMData?: CustomLLMNodeData | null;
+  selectedLLMData?: LangGraphLLMNodeData | null;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
-  onUpdateLLM?: (changes: Partial<CustomLLMNodeData>) => void;
+  onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   inputChannels: LangGraphInputChannel[];
   setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];

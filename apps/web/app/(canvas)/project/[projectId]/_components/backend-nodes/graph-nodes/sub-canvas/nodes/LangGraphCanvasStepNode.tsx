@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Edge } from "@xyflow/react";
 import { Code2, Zap, Trash2, Brain, ChevronDown, ChevronUp, X, Globe, Link2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import type { StepNode, LangGraphCanvasNode, StepNodeData, CustomLLMNode } from "../types";
+import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
 import { LocalInput, LocalTextarea } from "../../shared";
 
 export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNode>) => {
@@ -16,20 +16,20 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const [nameValue, setNameValue] = useState(data.label || "Node");
   const [isLLMExpanded, setIsLLMExpanded] = useState(!!data.modelConfig);
 
-  // Detect custom LLM nodes on canvas
-  const customLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is CustomLLMNode => n.type === "custom_llm");
+  // Detect LLM nodes on canvas
+  const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === "langgraph_llm");
 
-  // Detect edge connected directly from a custom LLM node to this step node's llm_in handle
+  // Detect edge connected directly from an LLM node to this step node's llm_in handle
   const connectedEdge = allEdges.find(
     (e: Edge) =>
       e.target === id &&
       (e.targetHandle === "llm_in" || !e.targetHandle) &&
-      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === "custom_llm")
+      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === "langgraph_llm")
   );
-  const connectedLLMNode = connectedEdge ? customLLMNodes.find((n: CustomLLMNode) => n.id === connectedEdge.source) : null;
+  const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
 
   // Selected linked LLM node (via edge connection or explicit dropdown selection)
-  const linkedCustomLLM = connectedLLMNode || customLLMNodes.find((n: CustomLLMNode) => n.id === data.modelConfig?.customLlmNodeId);
+  const linkedCustomLLM = connectedLLMNode || langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === data.modelConfig?.customLlmNodeId);
 
   useEffect(() => {
     setNameValue(data.label || "Node");
@@ -270,7 +270,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                     onValueChange={(val: string) => {
                       if (val.startsWith("node_")) {
                         const nodeId = val.replace("node_", "");
-                        const targetNode = customLLMNodes.find((n) => n.id === nodeId);
+                        const targetNode = langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === nodeId);
                         if (targetNode) {
                           handleUpdateModelConfig({
                             provider: "other",
@@ -310,12 +310,12 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                       <SelectItem value="google">Google</SelectItem>
                       <SelectItem value="other">Other (Inline Custom)</SelectItem>
 
-                      {customLLMNodes.length > 0 && (
+                      {langGraphLLMNodes.length > 0 && (
                         <>
                           <div className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-400 border-t border-border/40 mt-1">
-                            Canvas Custom LLMs
+                            Canvas LLM Nodes
                           </div>
-                          {customLLMNodes.map((cllm: CustomLLMNode) => (
+                          {langGraphLLMNodes.map((cllm: LangGraphLLMNode) => (
                             <SelectItem key={cllm.id} value={`node_${cllm.id}`}>
                               🔗 {cllm.data.label}
                             </SelectItem>

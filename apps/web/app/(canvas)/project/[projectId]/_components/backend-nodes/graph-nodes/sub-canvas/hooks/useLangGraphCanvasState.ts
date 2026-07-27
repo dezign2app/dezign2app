@@ -26,9 +26,9 @@ import {
   StepNode,
   PortNode,
   StateGlobalNode,
-  CustomLLMNode,
+  LangGraphLLMNode,
   StepNodeData,
-  CustomLLMNodeData,
+  LangGraphLLMNodeData,
   getStepData,
 } from "../types";
 
@@ -82,9 +82,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
     const savedCustomLLMs = data.customLlmNodes || [];
     savedCustomLLMs.forEach((cLLM) => {
-      const customNode: CustomLLMNode = {
+      const customNode: LangGraphLLMNode = {
         id: cLLM.id,
-        type: "custom_llm",
+        type: "langgraph_llm",
         position: cLLM.position || { x: 340, y: 80 },
         data: {
           label: cLLM.label,
@@ -192,7 +192,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             },
           };
         }
-        if (n.type === "custom_llm") {
+        if (n.type === "langgraph_llm") {
           return {
             ...n,
             data: {
@@ -264,12 +264,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   }, [nodes, selectedNodeId]);
 
   // ── Add step or custom_llm ──
-  const handleAddStep = (type: LangGraphStepConfig["type"] | "custom_llm", label: string) => {
-    if (type === "custom_llm") {
+  const handleAddStep = (type: LangGraphStepConfig["type"] | "langgraph_llm", label: string) => {
+    if (type === "langgraph_llm") {
       const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
-      const newLLMNode: CustomLLMNode = {
+      const newLLMNode: LangGraphLLMNode = {
         id: llmId,
-        type: "custom_llm",
+        type: "langgraph_llm",
         position: { x: 360 + Math.random() * 140, y: 100 + Math.random() * 80 },
         data: {
           label: label || "LLM Node",
@@ -316,8 +316,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     setActiveSideTab("inspector");
   };
 
-  const selectedLLMData = useMemo((): CustomLLMNodeData | null => {
-    const found = nodes.find((n): n is CustomLLMNode => n.id === selectedNodeId && n.type === "custom_llm");
+  const selectedLLMData = useMemo((): LangGraphLLMNodeData | null => {
+    const found = nodes.find((n): n is LangGraphLLMNode => n.id === selectedNodeId && n.type === "langgraph_llm");
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
 
@@ -330,10 +330,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     ));
   };
 
-  const updateSelectedLLM = (changes: Partial<CustomLLMNodeData>) => {
+  const updateSelectedLLM = (changes: Partial<LangGraphLLMNodeData>) => {
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
-      n.id === selectedNodeId && n.type === "custom_llm"
+      n.id === selectedNodeId && n.type === "langgraph_llm"
         ? { ...n, data: { ...n.data, ...changes } }
         : n
     ));
@@ -350,7 +350,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   // ── Save ──
   const handleSave = () => {
     const customLlmNodes = nodes
-      .filter((n): n is CustomLLMNode => n.type === "custom_llm")
+      .filter((n): n is LangGraphLLMNode => n.type === "langgraph_llm")
       .map((n) => ({
         id: n.id,
         label: n.data.label,

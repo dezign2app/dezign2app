@@ -17,7 +17,7 @@ export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<C
 
   const updateLLMData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === "custom_llm" ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === "langgraph_llm" ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

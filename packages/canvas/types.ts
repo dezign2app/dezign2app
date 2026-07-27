@@ -143,7 +143,7 @@ export type BackendNodeType =
 
 export type LangGraphStateChannel = {
   key: string;
-  type: "messages" | "string" | "json" | "number" | "boolean";
+  type: "messages" | "string" | "json" | "number" | "boolean" | "array" | "object";
   reducer: "add_messages" | "append" | "replace" | "merge_object" | "concat_array";
   defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
 };
@@ -201,6 +201,11 @@ export type LangGraphStepConfig = {
     maxAttempts: number;
     backoffFactor: number;
   };
+  stateUpdates?: {
+    channelKey: string;
+    value?: string;
+    mode?: "set" | "append" | "expression";
+  }[];
 };
 
 export type LangGraphEdgeConfig = {

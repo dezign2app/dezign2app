@@ -31,6 +31,7 @@ export type StateGlobalNodeData = {
   label: string;
   stateChannels: LangGraphStateChannel[];
   onOpenStateTab?: () => void;
+  onAddChannel?: () => void;
 };
 
 export type StepNode = Node<StepNodeData, "step">;

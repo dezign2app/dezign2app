@@ -2,9 +2,10 @@ import React from "react";
 import { Wrench, HelpCircle } from "lucide-react";
 import type { LangGraphStepConfig } from "@/types/canvas";
 import { TOOL_PALETTE_ITEMS } from "../types";
+import { SUB_CANVAS_NODE_LLM } from "../constants";
 
 interface ToolsSidebarProps {
-  onAddStep: (type: LangGraphStepConfig["type"] | "langgraph_llm", label: string) => void;
+  onAddStep: (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM, label: string) => void;
 }
 
 export function ToolsSidebar({ onAddStep }: ToolsSidebarProps) {

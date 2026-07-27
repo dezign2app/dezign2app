@@ -36,8 +36,9 @@ import {
   Network, Plus, Brain, Wrench, ShieldCheck, Zap,
   Layers, Save, Trash2, Code2, Search, Sparkles, ArrowLeft,
   X, HelpCircle, Database,
+  LogIn,
 } from "lucide-react";
-import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphMemoryConfig, LangGraphOutputPort, LangGraphEdgeConfig } from "@/types/canvas";
+import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphInputChannel, LangGraphMemoryConfig, LangGraphOutputPort, LangGraphEdgeConfig } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import { toast } from "sonner";
@@ -54,6 +55,7 @@ type StepNodeData = {
 
 type StartNodeData = {
   label: string;
+  inputChannels?: LangGraphInputChannel[];
 };
 
 type PortNodeData = {
@@ -110,14 +112,25 @@ const SubCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
   );
 };
 
-// ─── Sub-Canvas Start Node ─────────────────────────────
-const SubCanvasStartNode = () => (
-  <div className="px-4 py-2.5 rounded-xl bg-card border-2 border-primary text-primary font-bold text-xs flex items-center gap-2 shadow-lg shadow-primary/10">
-    <Zap className="w-4 h-4 text-primary animate-pulse" />
-    <span>START</span>
-    <Handle type="source" position={Position.Right} id="out" className="!bg-primary !w-3.5 !h-3.5" />
-  </div>
-);
+// ─── Sub-Canvas Start Entry Node ─────────────────────────
+const SubCanvasStartNode = ({ data, selected }: NodeProps<StartNode>) => {
+  const channels = data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels;
+
+  return (
+    <div
+      className={`px-4 py-2.5 rounded-xl bg-card border-2 border-primary text-primary font-bold text-xs flex items-center gap-2.5 shadow-lg shadow-primary/10 transition-all cursor-pointer ${
+        selected ? "ring-4 ring-primary/20 scale-105" : "hover:border-primary/80"
+      }`}
+    >
+      <Zap className="w-4 h-4 text-primary animate-pulse shrink-0" />
+      <span className="tracking-wide font-extrabold">START</span>
+      <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 ml-1">
+        {channels.length} inputs
+      </span>
+      <Handle type="source" position={Position.Right} id="out" className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform" />
+    </div>
+  );
+};
 
 // ─── Sub-Canvas Port Node ──────────────────────────────
 const SubCanvasPortNode = ({ data }: NodeProps<PortNode>) => (
@@ -202,6 +215,9 @@ function SubCanvasContent({
 }) {
   const data = node.data;
 
+  const [inputChannels, setInputChannels] = useState<LangGraphInputChannel[]>(
+    data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels
+  );
   const [stateChannels, setStateChannels] = useState<LangGraphStateChannel[]>(
     data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels
   );
@@ -209,7 +225,7 @@ function SubCanvasContent({
     data.memoryConfig || LANGGRAPH_STARTER_TEMPLATE.memoryConfig
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [activeSideTab, setActiveSideTab] = useState<"inspector" | "state" | "memory">("inspector");
+  const [activeSideTab, setActiveSideTab] = useState<"inspector" | "inputs" | "state" | "memory">("inspector");
 
   // ── Build initial nodes from graphSteps ──
   const initialNodes = useMemo((): SubCanvasNode[] => {
@@ -217,7 +233,7 @@ function SubCanvasContent({
     const ports: LangGraphOutputPort[] = data.outputPorts || LANGGRAPH_STARTER_TEMPLATE.outputPorts;
 
     const result: SubCanvasNode[] = [
-      { id: "START", type: "start", position: { x: 40, y: 200 }, data: { label: "START" }, deletable: false },
+      { id: "START", type: "start", position: { x: 40, y: 200 }, data: { label: "INPUT State", inputChannels: data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels }, deletable: false },
     ];
 
     steps.forEach((step, idx) => {
@@ -268,6 +284,16 @@ function SubCanvasContent({
 
   const [nodes, setNodes] = useState<SubCanvasNode[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((n): SubCanvasNode =>
+        n.id === "START" && n.type === "start"
+          ? { ...n, data: { ...n.data, inputChannels } }
+          : n
+      )
+    );
+  }, [inputChannels]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<SubCanvasNode>[]) => setNodes((nds) => applyNodeChanges<SubCanvasNode>(changes, nds)),
@@ -361,6 +387,7 @@ function SubCanvasContent({
       ...data,
       graphSteps,
       graphEdges,
+      inputChannels,
       stateChannels,
       memoryConfig,
     });
@@ -446,7 +473,10 @@ function SubCanvasContent({
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             nodeTypes={subCanvasNodeTypes}
-            onNodeClick={(_: React.MouseEvent, n: SubCanvasNode) => { setSelectedNodeId(n.id); setActiveSideTab("inspector"); }}
+            onNodeClick={(_: React.MouseEvent, n: SubCanvasNode) => {
+              setSelectedNodeId(n.id);
+              setActiveSideTab(n.id === "START" ? "inputs" : "inspector");
+            }}
             onPaneClick={() => setSelectedNodeId(null)}
             fitView
             fitViewOptions={{ padding: 0.2 }}
@@ -461,10 +491,11 @@ function SubCanvasContent({
         {/* ── Inspector Sidebar (Right Panel) ── */}
         <div className="w-[340px] border-l border-border bg-card flex flex-col overflow-hidden shrink-0">
           <Tabs value={activeSideTab} onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)} className="flex-1 flex flex-col">
-            <TabsList className="grid grid-cols-3 bg-secondary/30 p-1 rounded-none border-b border-border/40">
-              <TabsTrigger value="inspector" className="text-xs">Inspector</TabsTrigger>
-              <TabsTrigger value="state" className="text-xs">State ({stateChannels.length})</TabsTrigger>
-              <TabsTrigger value="memory" className="text-xs">Memory</TabsTrigger>
+            <TabsList className="grid grid-cols-4 bg-secondary/30 p-1 rounded-none border-b border-border/40">
+              <TabsTrigger value="inspector" className="text-[11px] px-1">Inspector</TabsTrigger>
+              <TabsTrigger value="inputs" className="text-[11px] px-1">Inputs ({inputChannels.length})</TabsTrigger>
+              <TabsTrigger value="state" className="text-[11px] px-1">State ({stateChannels.length})</TabsTrigger>
+              <TabsTrigger value="memory" className="text-[11px] px-1">Memory</TabsTrigger>
             </TabsList>
 
             {/* ── Inspector ── */}
@@ -528,6 +559,83 @@ function SubCanvasContent({
                   <span className="text-[11px]">Click any step on the canvas to configure it</span>
                 </div>
               )}
+            </TabsContent>
+
+            {/* ── Input State ── */}
+            <TabsContent value="inputs" className="flex-1 p-4 overflow-y-auto m-0 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-foreground">Input Payload State</span>
+                  <span className="text-[10px] text-muted-foreground">Fields accepted when invoking graph</span>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-xs border-border gap-1"
+                  onClick={() => {
+                    const newChan: LangGraphInputChannel = { key: `input_${inputChannels.length + 1}`, type: "string", required: true, description: "" };
+                    setInputChannels([...inputChannels, newChan]);
+                  }}>
+                  <Plus className="w-3 h-3" /> Add
+                </Button>
+              </div>
+
+              {inputChannels.map((input, idx) => (
+                <div key={idx} className="flex flex-col gap-2 p-2.5 rounded-xl bg-secondary/20 border border-border/50 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <Input
+                      className="h-7 text-xs font-mono font-bold bg-background flex-1"
+                      value={input.key}
+                      onChange={(e) => {
+                        const updated = { ...input, key: e.target.value };
+                        setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
+                      }}
+                      placeholder="field_key"
+                    />
+                    <Select
+                      value={input.type}
+                      onValueChange={(v: string) => {
+                        const updated = { ...input, type: v as LangGraphInputChannel["type"] };
+                        setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-[11px] w-24 bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="string">string</SelectItem>
+                        <SelectItem value="messages">messages</SelectItem>
+                        <SelectItem value="json">json</SelectItem>
+                        <SelectItem value="number">number</SelectItem>
+                        <SelectItem value="boolean">boolean</SelectItem>
+                        <SelectItem value="object">object</SelectItem>
+                        <SelectItem value="array">array</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:bg-red-500/20 shrink-0"
+                      onClick={() => setInputChannels(inputChannels.filter((_, i) => i !== idx))}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/30">
+                    <Input
+                      className="h-6 text-[10px] bg-background/50 flex-1"
+                      value={input.description || ""}
+                      onChange={(e) => {
+                        const updated = { ...input, description: e.target.value };
+                        setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
+                      }}
+                      placeholder="Description (optional)"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Label className="text-[10px] text-muted-foreground">Req</Label>
+                      <Switch
+                        checked={input.required ?? true}
+                        onCheckedChange={(c) => {
+                          const updated = { ...input, required: c };
+                          setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </TabsContent>
 
             {/* ── State Channels ── */}

@@ -17,12 +17,12 @@ import {
 } from "@workspace/ui/components/dialog";
 import type { BackendNode } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { subCanvasNodeTypes } from "./sub-canvas/nodes";
+import { langGraphCanvasNodeTypes } from "./sub-canvas/nodes";
 import { useLangGraphCanvasState } from "./sub-canvas/hooks/useLangGraphCanvasState";
-import { SubCanvasHeader } from "./sub-canvas/components/SubCanvasHeader";
+import { LangGraphCanvasHeader } from "./sub-canvas/components/LangGraphCanvasHeader";
 import { ToolsSidebar } from "./sub-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./sub-canvas/components/InspectorSidebar";
-import type { SubCanvasNode } from "./sub-canvas/types";
+import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./sub-canvas/types";
 
 export interface LangGraphCanvasModalProps {
   open: boolean;
@@ -53,7 +53,7 @@ export function LangGraphCanvasModal({ open, onOpenChange, nodeId }: LangGraphCa
         <DialogTitle className="sr-only">{node.data.label || "LangGraph Canvas"}</DialogTitle>
         <DialogDescription className="sr-only">LangGraph Agent Studio Editor</DialogDescription>
         <ReactFlowProvider>
-          <SubCanvasContent node={node} updateNode={updateNode} onClose={() => onOpenChange(false)} />
+          <LangGraphCanvasContent node={node} updateNode={updateNode} onClose={() => onOpenChange(false)} />
         </ReactFlowProvider>
       </DialogContent>
     </Dialog>
@@ -61,7 +61,7 @@ export function LangGraphCanvasModal({ open, onOpenChange, nodeId }: LangGraphCa
 }
 
 
-function SubCanvasContent({
+function LangGraphCanvasContent({
   node,
   updateNode,
   onClose,
@@ -119,7 +119,7 @@ function SubCanvasContent({
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground">
       {/* Header */}
-      <SubCanvasHeader
+      <LangGraphCanvasHeader
         label={node.data.label}
         onSave={handleSave}
         onClose={onClose}
@@ -138,15 +138,15 @@ function SubCanvasContent({
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            nodeTypes={subCanvasNodeTypes}
+            nodeTypes={langGraphCanvasNodeTypes}
             deleteKeyCode={["Backspace", "Delete"]}
             edgesReconnectable={true}
             edgesFocusable={true}
             elementsSelectable={true}
-            onEdgeClick={(_, edge) => {
+            onEdgeClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
               setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
             }}
-            onNodeClick={(_: React.MouseEvent, n: SubCanvasNode) => {
+            onNodeClick={(_: React.MouseEvent, n: LangGraphCanvasNode) => {
               setSelectedNodeId(n.id);
               if (n.id === "START") setActiveSideTab("inputs");
               else if (n.id === "STATE_GLOBAL") setActiveSideTab("state");

@@ -2,13 +2,13 @@ import React from "react";
 import { Network, Save, ArrowLeft, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
-interface SubCanvasHeaderProps {
+interface LangGraphCanvasHeaderProps {
   label?: string;
   onSave: () => void;
   onClose: () => void;
 }
 
-export function SubCanvasHeader({ label, onSave, onClose }: SubCanvasHeaderProps) {
+export function LangGraphCanvasHeader({ label, onSave, onClose }: LangGraphCanvasHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border shrink-0">
       <div className="flex items-center gap-3">

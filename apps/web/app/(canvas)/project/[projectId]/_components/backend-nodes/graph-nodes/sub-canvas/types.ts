@@ -41,13 +41,13 @@ export type StartNode = Node<StartNodeData, "start">;
 export type PortNode = Node<PortNodeData, "port">;
 export type StateGlobalNode = Node<StateGlobalNodeData, "state_global">;
 
-export type SubCanvasEdge = Edge & {
+export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type SubCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode;
+export type LangGraphCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode;
 
-export function getStepData(node: SubCanvasNode): StepNodeData | null {
+export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   if (node.type === "step") return node.data;
   return null;
 }

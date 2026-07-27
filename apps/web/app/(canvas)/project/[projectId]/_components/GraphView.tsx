@@ -31,6 +31,7 @@ import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
 import { HTTPConnectionEdge, MessagingEdge, IdentityConnectionEdge } from "./backend-nodes/CustomEdges";
 import { isValidConnection } from "@workspace/canvas";
+import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import { getOffsetPosition, useCanvasHandlers } from "./hooks/useCanvasHandlers";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 import { Badge } from "@workspace/ui/components/badge";
@@ -93,7 +94,7 @@ export function GraphView({ projectId }: GraphViewProps) {
     });
   };
 
-  const handleAddGraphNode = (type: "service" | "db_ref" | "queue" | "pubsub" | "eventstream" | "kafka" | "redis-streams" | "sqs" | "redis-pubsub" | "redis-cache" | "webClient" | "external" | "storage" | "worker" | "serverless" | "vector_db_ref" | "search_index" | "api_gateway" | "load_balancer" | "webhook" | "llm" | "mcp_server" | "identity_provider", label: string) => {
+  const handleAddGraphNode = (type: "service" | "db_ref" | "queue" | "pubsub" | "eventstream" | "kafka" | "redis-streams" | "sqs" | "redis-pubsub" | "redis-cache" | "webClient" | "external" | "storage" | "worker" | "serverless" | "vector_db_ref" | "search_index" | "api_gateway" | "load_balancer" | "webhook" | "llm" | "mcp_server" | "identity_provider" | "langgraph", label: string) => {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 100, center.y - 100, nodes);
     let initialPort: string | undefined = undefined;
@@ -138,6 +139,7 @@ export function GraphView({ projectId }: GraphViewProps) {
         prompts: (type === 'llm' || type === 'mcp_server') ? [] : undefined,
         tools: (type === 'llm' || type === 'mcp_server') ? [] : undefined,
         resources: type === 'mcp_server' ? [] : undefined,
+        ...(type === 'langgraph' ? LANGGRAPH_STARTER_TEMPLATE : {}),
       },
     });
   };
@@ -333,6 +335,10 @@ export function GraphView({ projectId }: GraphViewProps) {
 
           {/* AI */}
           <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">AI</div>
+          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0" onClick={() => handleAddGraphNode('langgraph', 'LangGraph Agent')}>
+            <Network className="w-3.5 h-3.5 mr-2 text-emerald-500" />
+            LangGraph Agent
+          </Button>
           <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0" onClick={() => handleAddGraphNode('llm', 'LLM')}>
             <Brain className="w-3.5 h-3.5 mr-2 text-purple-500" />
             LLM

@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useParams } from "next/navigation";
-import { Plus, FlaskConical, Play, Send, Loader2, Trash, ChevronRight } from "lucide-react";
+import { Plus, FlaskConical, Play, Send, Loader2, Trash, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { SimulationTestCase } from "@workspace/canvas";
 import { TestCaseEditor } from "./TestCaseEditor";
 import { Endpoint, BackendNode, UIEventItem, Parameter, JSONValue } from "@/types/canvas";
@@ -21,6 +21,91 @@ import { Id } from "@workspace/backend/_generated/dataModel";
 import { JsonPayloadEditor } from "../backend-nodes/graph-nodes/Editors";
 import { cn } from "@workspace/ui/lib/utils";
 import { simulateEndpoint, simulateTestCase, SimulationTraceEntry, is2xxStatus } from "@/lib/simulation/runtime";
+
+const TestCaseAccordionHeader = ({ 
+  tc, 
+  onUpdateName 
+}: { 
+  tc: SimulationTestCase; 
+  onUpdateName: (newName: string) => void;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [nameInput, setNameInput] = useState(tc.name);
+
+  useEffect(() => {
+    setNameInput(tc.name);
+  }, [tc.name]);
+
+  const handleSave = (e?: React.SyntheticEvent) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    if (nameInput.trim() && nameInput.trim() !== tc.name) {
+      onUpdateName(nameInput.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setNameInput(tc.name);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-1.5 flex-1 mr-2" onClick={(e) => e.stopPropagation()}>
+        <Input
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave(e);
+            if (e.key === "Escape") handleCancel(e);
+          }}
+          autoFocus
+          className="h-6 text-xs bg-background font-medium py-0 px-2 flex-1"
+        />
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={handleSave}
+          className="p-1 hover:bg-emerald-500/15 text-emerald-600 rounded transition-colors cursor-pointer"
+          title="Save Name"
+        >
+          <Check className="w-3.5 h-3.5" />
+        </span>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={handleCancel}
+          className="p-1 hover:bg-secondary text-muted-foreground rounded transition-colors cursor-pointer"
+          title="Cancel"
+        >
+          <X className="w-3.5 h-3.5" />
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between flex-1 mr-2 group/tc">
+      <span className="truncate">{tc.name}</span>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setIsEditing(true);
+        }}
+        className="p-1 opacity-70 group-hover/tc:opacity-100 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+        title="Edit Test Case Name"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </span>
+    </div>
+  );
+};
 
 export interface EventTestingConfigProps {
   id: string; // The event ID
@@ -519,7 +604,7 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
   };
 
   const handleUpdateTc = (updated: SimulationTestCase) => {
-    updateTestCase(updated.id, { request: updated.request, expectedStatus: updated.expectedStatus, expectedBody: updated.expectedBody, mocks: updated.mocks });
+    updateTestCase(updated.id, { name: updated.name, request: updated.request, expectedStatus: updated.expectedStatus, expectedBody: updated.expectedBody, mocks: updated.mocks });
     if (projectId) {
       upsertBackendTestCase({ projectId, testCaseId: updated.id, data: updated });
     }
@@ -805,7 +890,10 @@ export const EventTestingConfig = ({ id, nodeId, targetNodeId, endpointId, initi
                 {triggerTestCases.map(tc => (
                   <AccordionItem key={tc.id} value={tc.id} className="bg-card/50 border rounded-xl overflow-hidden shadow-sm backdrop-blur-sm">
                     <AccordionTrigger className="text-sm font-semibold px-4 py-3 hover:bg-secondary/20 hover:no-underline">
-                      <span className="flex items-center gap-2">{tc.name}</span>
+                      <TestCaseAccordionHeader
+                        tc={tc}
+                        onUpdateName={(newName) => handleUpdateTc({ ...tc, name: newName })}
+                      />
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 pt-0">
                       <TestCaseEditor 

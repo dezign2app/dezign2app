@@ -153,6 +153,20 @@ export const langgraphConvexDataValidator = v.object({
             memoryLimitMb: v.optional(v.number()),
           })
         ),
+        routerConfig: v.optional(
+          v.object({
+            branches: v.array(
+              v.object({
+                id: v.string(),
+                label: v.string(),
+                field: v.string(),
+                operator: v.string(),
+                value: v.optional(v.string()),
+                isDefault: v.optional(v.boolean()),
+              })
+            ),
+          })
+        ),
         tools: v.optional(v.array(v.string())),
         retryPolicy: v.optional(
           v.object({

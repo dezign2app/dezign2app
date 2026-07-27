@@ -1,5 +1,5 @@
 import { Node } from "@xyflow/react";
-import { Brain, Code2, Cpu } from "lucide-react";
+import { Brain, Code2, Cpu, GitBranch } from "lucide-react";
 import type {
   LangGraphStepConfig,
   LangGraphStateChannel,
@@ -31,9 +31,14 @@ export type StepNodeData = {
   modelConfig?: LangGraphStepConfig["modelConfig"];
   humanGateConfig?: LangGraphStepConfig["humanGateConfig"];
   customCode?: LangGraphStepConfig["customCode"];
+  routerConfig?: LangGraphStepConfig["routerConfig"];
   stateUpdates?: LangGraphStepConfig["stateUpdates"];
   availableStateChannels?: LangGraphStateChannel[];
+  activeBranchId?: string;
   onDeleteStep?: () => void;
+  onOpenInspector?: () => void;
+  onOpenInspectorRoute?: (branchId: string) => void;
+  onSelectNode?: () => void;
 };
 
 export type StartNodeData = {
@@ -60,6 +65,7 @@ import {
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
   STEP_TYPE_CUSTOM_CODE,
+  STEP_TYPE_ROUTER,
 } from "./constants";
 
 export type LangGraphLLMNode = Node<LangGraphLLMNodeData, typeof SUB_CANVAS_NODE_LLM>;
@@ -90,6 +96,7 @@ export type ToolPaletteItem = {
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
   { type: STEP_TYPE_CUSTOM_CODE, label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
+  { type: STEP_TYPE_ROUTER, label: "Conditional Router", desc: "Routes execution dynamically based on comparison rules", icon: GitBranch },
   { type: SUB_CANVAS_NODE_LLM, label: "LLM Node", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
 ];
 

@@ -171,10 +171,23 @@ export type LangGraphToolDefinition = {
   parametersJsonSchema?: Record<string, unknown>;
 };
 
+export type LangGraphRouterBranch = {
+  id: string;
+  label: string;
+  field: string;
+  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "is_not_null" | "has_tool_calls" | "expression";
+  value?: string;
+  isDefault?: boolean;
+};
+
+export type LangGraphRouterConfig = {
+  branches: LangGraphRouterBranch[];
+};
+
 export type LangGraphStepConfig = {
   id: string;
   name: string;
-  type: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
+  type: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search" | "router";
   modelConfig?: {
     provider?: "groq" | "openai" | "anthropic" | "google" | "other" | (string & {});
     model?: string;
@@ -203,6 +216,7 @@ export type LangGraphStepConfig = {
     timeoutMs?: number;
     memoryLimitMb?: number;
   };
+  routerConfig?: LangGraphRouterConfig;
   tools?: string[];
   retryPolicy?: {
     maxAttempts: number;

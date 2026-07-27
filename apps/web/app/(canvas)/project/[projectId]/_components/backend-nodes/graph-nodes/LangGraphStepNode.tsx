@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { Brain, Trash2, Settings, ShieldCheck, Wrench, Code2, Database } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
-import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { LocalInput } from "./shared";
 
 export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -14,12 +14,18 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.label || "Graph Step");
 
+  useEffect(() => {
+    setNameValue(data.label || "Graph Step");
+  }, [data.label]);
+
   const stepType = data.stepType || "llm_call";
 
   const handleNameSave = () => {
     setIsEditingName(false);
-    if (nameValue.trim() && nameValue !== data.label) {
-      updateNode(id, { data: { ...data, label: nameValue.trim() } });
+    const trimmed = nameValue.trim() || "Graph Step";
+    setNameValue(trimmed);
+    if (trimmed !== data.label) {
+      updateNode(id, { data: { ...data, label: trimmed } });
     }
   };
 
@@ -35,11 +41,13 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
   return (
     <div
       className={cn(
-        "rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[200px] max-w-[260px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-lg relative group nodrag",
+        "rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[200px] max-w-[260px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-lg relative group",
         selected
           ? "border-emerald-400 ring-2 ring-emerald-400/20 shadow-emerald-500/10"
           : "border-emerald-500/30 hover:border-emerald-400/70"
       )}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* Input Handle on Left (Target) */}
       <Handle
@@ -52,7 +60,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
       {/* Header Bar */}
       <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
             {stepType === "llm_call" && <Brain className="w-3.5 h-3.5" />}
             {stepType === "tool_node" && <Wrench className="w-3.5 h-3.5" />}
             {stepType === "custom_code" && <Code2 className="w-3.5 h-3.5" />}
@@ -63,19 +71,41 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           </div>
 
           {isEditingName ? (
-            <Input
-              autoFocus
-              className="h-6 text-xs bg-background p-1"
-              value={nameValue}
-              onChange={(e) => setNameValue(e.target.value)}
-              onBlur={handleNameSave}
-              onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
-            />
+            <div
+              className="nodrag flex-1 min-w-0"
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <LocalInput
+                autoFocus
+                className="h-6 text-xs bg-background p-1 font-semibold flex-1 nodrag"
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                onBlur={handleNameSave}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") handleNameSave();
+                  if (e.key === "Escape") {
+                    setNameValue(data.label || "Graph Step");
+                    setIsEditingName(false);
+                  }
+                }}
+              />
+            </div>
           ) : (
             <span
-              className="font-bold text-xs truncate cursor-pointer hover:text-emerald-400 transition-colors"
-              onClick={() => setIsEditingName(true)}
-              title="Click to rename step"
+              className="font-bold text-xs truncate cursor-pointer hover:text-emerald-400 transition-colors flex-1 min-w-0 nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditingName(true);
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setIsEditingName(true);
+              }}
+              title="Click or double click to rename step"
             >
               {data.label || "Graph Step"}
             </span>
@@ -85,7 +115,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         <Button
           variant="ghost"
           size="icon"
-          className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-5 w-5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity nodrag"
           onClick={handleDelete}
           title="Delete step node"
         >

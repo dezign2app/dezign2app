@@ -1,29 +1,90 @@
-import React from "react";
-import { NodeProps, Handle, Position } from "@xyflow/react";
+import React, { useState, useEffect } from "react";
+import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import { Code2, Zap, Trash2 } from "lucide-react";
-import type { StepNode } from "../types";
+import type { StepNode, LangGraphCanvasNode } from "../types";
+import { LocalInput } from "../../shared";
 
-export const LangGraphCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
+export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNode>) => {
   const stepType = data.stepType || "custom_code";
   const Icon = Code2;
+  const { setNodes } = useReactFlow<LangGraphCanvasNode>();
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(data.label || "Node");
+
+  useEffect(() => {
+    setNameValue(data.label || "Node");
+  }, [data.label]);
+
+  const handleNameSave = () => {
+    setIsEditingName(false);
+    const trimmed = nameValue.trim() || "Node";
+    setNameValue(trimmed);
+    if (trimmed !== data.label) {
+      setNodes((nds) => nds.map((n) => (n.id === id && n.type === "step" ? { ...n, data: { ...n.data, label: trimmed } } : n)));
+    }
+  };
 
   const stateUpdates = data.stateUpdates || [];
   const availableFields = (data.availableStateChannels || []).map((c) => c.key);
 
   return (
-    <div className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[220px] max-w-[280px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative group ${
-      selected ? "border-primary ring-4 ring-primary/20 shadow-primary/10" : "border-border hover:border-border/80"
-    }`}>
+    <div
+      className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[220px] max-w-[280px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative group ${
+        selected ? "border-primary ring-4 ring-primary/20 shadow-primary/10" : "border-border hover:border-border/80"
+      }`}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
       <Handle type="target" position={Position.Left} id="in"
         className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform" />
 
       <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="p-1.5 rounded-lg bg-secondary text-foreground shrink-0">
             <Icon className="w-4 h-4" />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-bold text-xs text-foreground truncate max-w-[110px]">{data.label || "Node"}</span>
+          <div className="flex flex-col min-w-0 flex-1">
+            {isEditingName ? (
+              <div
+                className="nodrag"
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <LocalInput
+                  autoFocus
+                  className="h-6 text-xs bg-background p-1 font-bold flex-1 nodrag"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onBlur={handleNameSave}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") handleNameSave();
+                    if (e.key === "Escape") {
+                      setNameValue(data.label || "Node");
+                      setIsEditingName(false);
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <span
+                className="font-bold text-xs text-foreground truncate max-w-[130px] cursor-pointer hover:text-primary transition-colors nodrag"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingName(true);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingName(true);
+                }}
+                title="Click or double click to rename node"
+              >
+                {data.label || "Node"}
+              </span>
+            )}
             <span className="text-[9px] font-mono text-muted-foreground">{data.stepId}</span>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id, Doc } from "@workspace/backend/_generated/dataModel";
 import { useBackendCanvasStore, parseResourceHandle } from "@/lib/stores/backendCanvasStore";
+import { ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import { BackendCanvasView, BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 
 import { BackendCanvasAdapter } from "@/lib/canvas-adapters/backendAdapter";
@@ -248,19 +249,23 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
             cleanStyle = temp;
           }
 
+          const rawData = { 
+            ...n.data, 
+            position,
+            ...(n.parentId !== undefined && { parentId: n.parentId }), 
+            ...(cleanStyle !== undefined && { style: cleanStyle }), 
+            ...(n.width !== undefined && { width: n.width }), 
+            ...(n.height !== undefined && { height: n.height }) 
+          };
+
+          const finalData = n.type === "langgraph" ? ensureLangGraphDataReachability(rawData) : rawData;
+
           return upsertNode({
             projectId: pid,
             nodeId: n.id,
             type: n.type,
             position: position,
-            data: { 
-              ...n.data, 
-              position,
-              ...(n.parentId !== undefined && { parentId: n.parentId }), 
-              ...(cleanStyle !== undefined && { style: cleanStyle }), 
-              ...(n.width !== undefined && { width: n.width }), 
-              ...(n.height !== undefined && { height: n.height }) 
-            },
+            data: finalData,
             fractionalIndex: n.fractionalIndex,
           });
         }),

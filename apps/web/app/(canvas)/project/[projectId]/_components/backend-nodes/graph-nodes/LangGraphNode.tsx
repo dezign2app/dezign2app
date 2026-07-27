@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import {
-  Network, ShieldCheck, Sparkles, ExternalLink,
+  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil,
 } from "lucide-react";
 import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, LangGraphOutputPort } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
@@ -13,6 +13,7 @@ import { LangGraphSubCanvasModal } from "./LangGraphSubCanvasModal";
 
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const [editorOpen, setEditorOpen] = useState(false);
   const { setNodes } = useReactFlow<BackendNode>();
 
@@ -56,7 +57,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             </div>
             <div>
               <Input
-                className="h-6 px-1 text-sm font-bold bg-transparent border-none shadow-none focus-visible:ring-0 text-foreground w-[180px] nodrag"
+                className="h-6 px-1 text-sm font-bold bg-transparent border-none shadow-none focus-visible:ring-0 text-foreground w-[160px] nodrag"
                 value={data.label || "LangGraph Agent"}
                 onChange={(e) => updateNode(id, { data: { ...data, label: e.target.value } })}
               />
@@ -65,6 +66,29 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                 <span>{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} state fields</span>
               </div>
             </div>
+          </div>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary nodrag"
+              onClick={handleOpenEditor}
+              title="Open Sub-Canvas Editor"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteNode(id);
+              }}
+              title="Delete Node"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
 

@@ -92,6 +92,25 @@ export const langgraphConvexDataValidator = v.object({
       })
     )
   ),
+  customLlmNodes: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        label: v.string(),
+        provider: v.optional(v.string()),
+        url: v.optional(v.string()),
+        baseUrl: v.optional(v.string()),
+        method: v.optional(v.string()),
+        headersJson: v.optional(v.string()),
+        bodyJson: v.optional(v.string()),
+        model: v.optional(v.string()),
+        apiKeyHeader: v.optional(v.string()),
+        temperature: v.optional(v.number()),
+        maxTokens: v.optional(v.number()),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
+      })
+    )
+  ),
   graphSteps: v.optional(
     v.array(
       v.object({
@@ -105,6 +124,13 @@ export const langgraphConvexDataValidator = v.object({
             temperature: v.optional(v.number()),
             maxTokens: v.optional(v.number()),
             systemPrompt: v.optional(v.string()),
+            baseUrl: v.optional(v.string()),
+            url: v.optional(v.string()),
+            method: v.optional(v.string()),
+            headersJson: v.optional(v.string()),
+            bodyJson: v.optional(v.string()),
+            apiKeyHeader: v.optional(v.string()),
+            customLlmNodeId: v.optional(v.string()),
           })
         ),
         humanGateConfig: v.optional(
@@ -133,6 +159,15 @@ export const langgraphConvexDataValidator = v.object({
             maxAttempts: v.number(),
             backoffFactor: v.number(),
           })
+        ),
+        stateUpdates: v.optional(
+          v.array(
+            v.object({
+              channelKey: v.string(),
+              value: v.optional(v.string()),
+              mode: v.optional(v.string()),
+            })
+          )
         ),
       })
     )

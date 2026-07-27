@@ -4,7 +4,7 @@ import { Zap } from "lucide-react";
 import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import type { StartNode } from "../types";
 
-export const SubCanvasStartNode = ({ data, selected }: NodeProps<StartNode>) => {
+export const LangGraphCanvasStartNode = ({ data, selected }: NodeProps<StartNode>) => {
   const channels = data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels;
 
   return (

@@ -21,8 +21,8 @@ import type {
 } from "@/types/canvas";
 import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
-  SubCanvasNode,
-  SubCanvasEdge,
+  LangGraphCanvasNode,
+  LangGraphCanvasEdge,
   StepNode,
   PortNode,
   StateGlobalNode,
@@ -54,11 +54,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const { fitView: triggerFitView } = useReactFlow();
 
   // ── Build initial nodes from graphSteps ──
-  const initialNodes = useMemo((): SubCanvasNode[] => {
+  const initialNodes = useMemo((): LangGraphCanvasNode[] => {
     const steps: LangGraphStepConfig[] = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
     const ports: LangGraphOutputPort[] = data.outputPorts || LANGGRAPH_STARTER_TEMPLATE.outputPorts;
 
-    const result: SubCanvasNode[] = [
+    const result: LangGraphCanvasNode[] = [
       {
         id: "STATE_GLOBAL",
         type: "state_global",
@@ -112,7 +112,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   }, []); // computed once on mount
 
   // ── Build initial edges from graphEdges ──
-  const initialEdges: SubCanvasEdge[] = useMemo(() => {
+  const initialEdges: LangGraphCanvasEdge[] = useMemo(() => {
     const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges;
     return graphEdges.flatMap(
       (e) => (e.targets || []).map((t) => ({
@@ -126,8 +126,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     );
   }, []);
 
-  const [nodes, setNodes] = useState<SubCanvasNode[]>(initialNodes);
-  const [edges, setEdges] = useState<SubCanvasEdge[]>(initialEdges);
+  const [nodes, setNodes] = useState<LangGraphCanvasNode[]>(initialNodes);
+  const [edges, setEdges] = useState<LangGraphCanvasEdge[]>(initialEdges);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -151,7 +151,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     setNodes((nds) => {
       const hasStateGlobal = nds.some((n) => n.id === "STATE_GLOBAL");
 
-      let updated = nds.map((n): SubCanvasNode => {
+      let updated = nds.map((n): LangGraphCanvasNode => {
         if (n.id === "START" && n.type === "start") {
           return { ...n, data: { ...n.data, inputChannels } };
         }
@@ -204,7 +204,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   }, [inputChannels, stateChannels, handleAddChannel]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<SubCanvasNode>[]) => setNodes((nds) => applyNodeChanges<SubCanvasNode>(changes, nds)),
+    (changes: NodeChange<LangGraphCanvasNode>[]) => setNodes((nds) => applyNodeChanges<LangGraphCanvasNode>(changes, nds)),
     []
   );
 

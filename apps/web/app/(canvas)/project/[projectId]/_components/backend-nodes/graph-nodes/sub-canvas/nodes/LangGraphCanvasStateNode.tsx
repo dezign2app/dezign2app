@@ -4,7 +4,7 @@ import { Database, Plus } from "lucide-react";
 import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import type { StateGlobalNode } from "../types";
 
-export const SubCanvasGraphStateNode = ({ data, selected }: NodeProps<StateGlobalNode>) => {
+export const LangGraphCanvasStateNode = ({ data, selected }: NodeProps<StateGlobalNode>) => {
   const channels = data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels;
 
   const handleAdd = () => {

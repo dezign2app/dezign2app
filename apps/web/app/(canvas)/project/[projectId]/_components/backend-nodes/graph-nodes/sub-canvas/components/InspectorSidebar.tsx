@@ -1,33 +1,20 @@
 import React from "react";
-import {
-  Brain, Plus, Zap, Trash2, Sparkles, GitBranch,
-} from "lucide-react";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { Switch } from "@workspace/ui/components/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import type {
-  LangGraphStepConfig,
   LangGraphStateChannel,
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
 import type { StepNodeData, LangGraphLLMNodeData } from "../types";
-import {
-  STEP_TYPE_CUSTOM_CODE,
-  STEP_TYPE_ROUTER,
-  LLM_PROVIDER_GROQ,
-  LLM_PROVIDER_OPENAI,
-  LLM_PROVIDER_ANTHROPIC,
-  LLM_PROVIDER_GOOGLE,
-  LLM_PROVIDER_OTHER,
-} from "../constants";
-import { LocalTextarea } from "../../shared";
-import { Globe, Key, Code, Shield } from "lucide-react";
+import { PROVIDER_PRESETS } from "./inspector/constants";
+import { InspectorTabContent } from "./inspector/InspectorTabContent";
+import { InputsTabContent } from "./inspector/InputsTabContent";
+import { StateTabContent } from "./inspector/StateTabContent";
+import { MemoryTabContent } from "./inspector/MemoryTabContent";
 
-interface InspectorSidebarProps {
+export { PROVIDER_PRESETS };
+
+export interface InspectorSidebarProps {
   activeSideTab: "inspector" | "inputs" | "state" | "memory";
   setActiveSideTab: (tab: "inspector" | "inputs" | "state" | "memory") => void;
   selectedStepData: StepNodeData | null;
@@ -42,45 +29,6 @@ interface InspectorSidebarProps {
   memoryConfig: LangGraphMemoryConfig;
   setMemoryConfig: React.Dispatch<React.SetStateAction<LangGraphMemoryConfig>>;
 }
-
-const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; defaultUrl: string; models: string[] }> = {
-  openai: {
-    label: "OpenAI (ChatGPT)",
-    defaultModel: "gpt-4o-mini",
-    defaultUrl: "https://api.openai.com/v1/chat/completions",
-    models: ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1"],
-  },
-  anthropic: {
-    label: "Anthropic (Claude)",
-    defaultModel: "claude-3-5-sonnet-20241022",
-    defaultUrl: "https://api.anthropic.com/v1/messages",
-    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
-  },
-  google: {
-    label: "Google (Gemini)",
-    defaultModel: "gemini-1.5-flash",
-    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/models",
-    models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash"],
-  },
-  groq: {
-    label: "Groq",
-    defaultModel: "llama-3.3-70b-versatile",
-    defaultUrl: "https://api.groq.com/openai/v1/chat/completions",
-    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "deepseek-r1-distill-llama-70b"],
-  },
-  ollama: {
-    label: "Ollama / Local",
-    defaultModel: "llama3:8b",
-    defaultUrl: "http://localhost:11434/v1",
-    models: ["llama3:8b", "mistral", "deepseek-r1"],
-  },
-  custom: {
-    label: "Custom RAW API",
-    defaultModel: "custom-model",
-    defaultUrl: "http://localhost:8080/v1",
-    models: [],
-  },
-};
 
 export function InspectorSidebar({
   activeSideTab,
@@ -97,681 +45,58 @@ export function InspectorSidebar({
   memoryConfig,
   setMemoryConfig,
 }: InspectorSidebarProps) {
-  const activeProviderKey = selectedLLMData?.provider || "openai";
-  const activePreset = PROVIDER_PRESETS[activeProviderKey] || PROVIDER_PRESETS.custom;
-  const currentModels = activePreset?.models || [];
-
-  const defaultBody = JSON.stringify(
-    {
-      model: selectedLLMData?.model || activePreset?.defaultModel || "gpt-4o-mini",
-      messages: [{ role: "user", content: "{{input}}" }],
-      temperature: selectedLLMData?.temperature ?? 0.7,
-    },
-    null,
-    2
-  );
-
-  const defaultHeaders = JSON.stringify(
-    {
-      "Content-Type": "application/json",
-      Authorization: selectedLLMData?.apiKeyHeader ? `Bearer ${selectedLLMData.apiKeyHeader}` : "Bearer YOUR_API_KEY",
-    },
-    null,
-    2
-  );
-
   return (
     <div
       className="w-[340px] border-l border-border bg-card flex flex-col h-full min-h-0 overflow-hidden shrink-0"
       onWheel={(e) => e.stopPropagation()}
     >
-      <Tabs value={activeSideTab} onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)} className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+      <Tabs
+        value={activeSideTab}
+        onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)}
+        className="flex-1 flex flex-col h-full min-h-0 overflow-hidden"
+      >
         <TabsList className="grid grid-cols-4 bg-muted/40 p-1 rounded-none border-b border-border/50 shrink-0">
-          <TabsTrigger value="inspector" className="text-[11px] px-1 font-medium">Inspector</TabsTrigger>
-          <TabsTrigger value="inputs" className="text-[11px] px-1 font-medium">Inputs ({inputChannels.length})</TabsTrigger>
-          <TabsTrigger value="state" className="text-[11px] px-1 font-medium">State ({stateChannels.length})</TabsTrigger>
-          <TabsTrigger value="memory" className="text-[11px] px-1 font-medium">Memory</TabsTrigger>
+          <TabsTrigger value="inspector" className="text-[11px] px-1 font-medium">
+            Inspector
+          </TabsTrigger>
+          <TabsTrigger value="inputs" className="text-[11px] px-1 font-medium">
+            Inputs ({inputChannels.length})
+          </TabsTrigger>
+          <TabsTrigger value="state" className="text-[11px] px-1 font-medium">
+            State ({stateChannels.length})
+          </TabsTrigger>
+          <TabsTrigger value="memory" className="text-[11px] px-1 font-medium">
+            Memory
+          </TabsTrigger>
         </TabsList>
 
-        {/* ── Inspector ── */}
-        <TabsContent value="inspector" className="flex-1 min-h-0 overflow-y-auto p-4 m-0 data-[state=active]:flex data-[state=active]:flex-col gap-4">
-          {selectedLLMData ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-primary/15 text-primary rounded border border-primary/20 shadow-sm uppercase">
-                    {activeProviderKey}
-                  </span>
-                  <span className="text-base font-semibold tracking-tight text-foreground">LLM Config</span>
-                </div>
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={onDeleteStep}>
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                </Button>
-              </div>
+        {/* ── Inspector Tab ── */}
+        <InspectorTabContent
+          selectedStepData={selectedStepData}
+          selectedLLMData={selectedLLMData}
+          onDeleteStep={onDeleteStep}
+          onUpdateStep={onUpdateStep}
+          onUpdateLLM={onUpdateLLM}
+          stateChannels={stateChannels}
+        />
 
-              {/* Label */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Node Label</Label>
-                <Input
-                  className="h-8 text-xs bg-background/50"
-                  value={selectedLLMData.label || ""}
-                  onChange={(e) => onUpdateLLM?.({ label: e.target.value })}
-                />
-              </div>
+        {/* ── Inputs Tab ── */}
+        <InputsTabContent
+          inputChannels={inputChannels}
+          setInputChannels={setInputChannels}
+        />
 
-              {/* Provider Preset */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Provider Preset</Label>
-                <Select
-                  value={activeProviderKey}
-                  onValueChange={(val: string) => {
-                    const preset = PROVIDER_PRESETS[val];
-                    if (preset) {
-                      onUpdateLLM?.({
-                        provider: val,
-                        url: preset.defaultUrl,
-                        baseUrl: preset.defaultUrl,
-                        model: preset.defaultModel,
-                      });
-                    } else {
-                      onUpdateLLM?.({ provider: val });
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-8 text-xs bg-background/50"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
-                    <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                    <SelectItem value="google">Google (Gemini)</SelectItem>
-                    <SelectItem value="groq">Groq</SelectItem>
-                    <SelectItem value="ollama">Ollama / Local</SelectItem>
-                    <SelectItem value="custom">Custom RAW API</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* ── State Tab ── */}
+        <StateTabContent
+          stateChannels={stateChannels}
+          setStateChannels={setStateChannels}
+        />
 
-              {/* Model Identifier */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Model Identifier</Label>
-                {currentModels.length > 0 ? (
-                  <Select
-                    value={selectedLLMData.model || activePreset?.defaultModel}
-                    onValueChange={(val: string) => onUpdateLLM?.({ model: val })}
-                  >
-                    <SelectTrigger className="h-8 text-xs bg-background/50 font-mono"><SelectValue placeholder="Select model" /></SelectTrigger>
-                    <SelectContent>
-                      {currentModels.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    className="h-8 text-xs bg-background/50 font-mono"
-                    placeholder="e.g. gpt-4o, claude-3-5-sonnet, llama3:8b"
-                    value={selectedLLMData.model || ""}
-                    onChange={(e) => onUpdateLLM?.({ model: e.target.value })}
-                  />
-                )}
-              </div>
-
-              {/* Method & URL - Only show for custom provider */}
-              {activeProviderKey === "custom" && (
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs font-medium flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-muted-foreground" /> Base URL / Endpoint
-                  </Label>
-                  <div className="flex items-center gap-1.5">
-                    <Select
-                      value={selectedLLMData.method || "POST"}
-                      onValueChange={(val: string) => onUpdateLLM?.({ method: val })}
-                    >
-                      <SelectTrigger className="h-8 w-20 text-xs font-mono bg-background/50"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="POST">POST</SelectItem>
-                        <SelectItem value="GET">GET</SelectItem>
-                        <SelectItem value="PUT">PUT</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="h-8 text-xs bg-background/50 font-mono flex-1"
-                      placeholder="https://api.openai.com/v1/chat/completions"
-                      value={selectedLLMData.url || selectedLLMData.baseUrl || activePreset?.defaultUrl || ""}
-                      onChange={(e) => onUpdateLLM?.({ url: e.target.value, baseUrl: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Auth Key */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-muted-foreground" /> Secret API Key (Optional)
-                </Label>
-                <Input
-                  type="password"
-                  className="h-8 text-xs bg-background/50 font-mono"
-                  placeholder="Bearer sk-... or secret token"
-                  value={selectedLLMData.apiKeyHeader || ""}
-                  onChange={(e) => onUpdateLLM?.({ apiKeyHeader: e.target.value })}
-                />
-              </div>
-
-              {/* Headers & Body JSON - Only show for custom provider */}
-              {activeProviderKey === "custom" && (
-                <>
-                  <div className="flex flex-col gap-2.5 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-muted-foreground" /> Headers (JSON)
-                    </span>
-                    <LocalTextarea
-                      className="min-h-[80px] max-h-[140px] text-xs bg-background/50 focus-visible:ring-1 font-mono resize-none p-2.5 rounded-md"
-                      placeholder='{\n  "Content-Type": "application/json"\n}'
-                      rows={4}
-                      value={selectedLLMData.headersJson !== undefined ? selectedLLMData.headersJson : defaultHeaders}
-                      onChange={(e) => onUpdateLLM?.({ headersJson: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2.5 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Code className="w-3.5 h-3.5 text-muted-foreground" /> Request Payload (JSON Body)
-                    </span>
-                    <LocalTextarea
-                      className="min-h-[110px] max-h-[200px] text-xs bg-background/50 focus-visible:ring-1 font-mono resize-none p-2.5 rounded-md"
-                      placeholder='{\n  "model": "gpt-4o",\n  "messages": [{"role": "user", "content": "{{input}}"}]\n}'
-                      rows={6}
-                      value={selectedLLMData.bodyJson !== undefined ? selectedLLMData.bodyJson : defaultBody}
-                      onChange={(e) => onUpdateLLM?.({ bodyJson: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          ) : selectedStepData ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <span className="text-base font-semibold tracking-tight text-foreground">Configure Step</span>
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={onDeleteStep}>
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                </Button>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium">Label</Label>
-                <Input
-                  className="h-8 text-xs bg-background/50"
-                  value={selectedStepData.label || ""}
-                  onChange={(e) => onUpdateStep({ label: e.target.value })}
-                />
-              </div>
-
-              {/* Model Config Section - Only show for non-router nodes */}
-              {selectedStepData.stepType !== STEP_TYPE_ROUTER && (
-                <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Brain className="w-3.5 h-3.5 text-muted-foreground" /> Model Config
-                  </span>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Provider</Label>
-                    <Select value={selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ}
-                      onValueChange={(v: string) => onUpdateStep({ modelConfig: { ...selectedStepData.modelConfig, provider: v as NonNullable<LangGraphStepConfig["modelConfig"]>["provider"] } })}>
-                      <SelectTrigger className="h-8 text-xs bg-background/50"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={LLM_PROVIDER_GROQ}>Groq</SelectItem>
-                        <SelectItem value={LLM_PROVIDER_OPENAI}>OpenAI</SelectItem>
-                        <SelectItem value={LLM_PROVIDER_ANTHROPIC}>Anthropic</SelectItem>
-                        <SelectItem value={LLM_PROVIDER_GOOGLE}>Google</SelectItem>
-                        <SelectItem value={LLM_PROVIDER_OTHER}>Other (Custom LLM)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Model</Label>
-                    <Input className="h-8 text-xs bg-background/50 font-mono"
-                      value={selectedStepData.modelConfig?.model || ""}
-                      onChange={(e) => onUpdateStep({ modelConfig: { ...selectedStepData.modelConfig, model: e.target.value } })} />
-                  </div>
-                </div>
-              )}
-
-              {/* Single Condition Configuration Panel for Router Nodes */}
-              {selectedStepData.stepType === STEP_TYPE_ROUTER && (() => {
-                const branches = selectedStepData.routerConfig?.branches || [];
-                const activeBranchIdx = Math.max(0, branches.findIndex((b) => b.id === selectedStepData.activeBranchId));
-                const activeBranch = branches[activeBranchIdx];
-
-                if (!activeBranch) {
-                  return (
-                    <div className="flex flex-col gap-2 p-4 rounded-xl border bg-card/50 text-xs text-muted-foreground italic text-center">
-                      No route selected for configuration.
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-                    <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <GitBranch className="w-3.5 h-3.5 text-muted-foreground" /> Route Configuration
-                      </span>
-                      {branches.length > 1 && (
-                        <Select
-                          value={activeBranch.id}
-                          onValueChange={(val) => onUpdateStep({ activeBranchId: val })}
-                        >
-                          <SelectTrigger className="h-7 text-xs bg-background border border-border/60 w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches.map((b, idx) => (
-                              <SelectItem key={b.id || idx} value={b.id}>
-                                {b.label || (b.isDefault ? "Default" : `Route ${idx + 1}`)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-3 text-xs">
-                      <div className="flex flex-col gap-1.5">
-                        <Label className="text-xs">Route Label</Label>
-                        <Input
-                          className="h-8 text-xs bg-background/50"
-                          placeholder="Route Label (e.g. If success)"
-                          value={activeBranch.label || ""}
-                          onChange={(e) => {
-                            const updated = [...branches];
-                            updated[activeBranchIdx] = { ...activeBranch, label: e.target.value };
-                            onUpdateStep({ routerConfig: { branches: updated } });
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-3 pt-3 border-t border-border/50">
-                        <div className="flex flex-col gap-1.5">
-                          <Label className="text-xs">Field / State Channel</Label>
-                          <Input
-                            className="h-8 text-xs bg-background/50 font-mono"
-                            placeholder="e.g. intent, messages, response"
-                            value={activeBranch.field || ""}
-                            onChange={(e) => {
-                              const updated = [...branches];
-                              updated[activeBranchIdx] = { ...activeBranch, field: e.target.value };
-                              onUpdateStep({ routerConfig: { branches: updated } });
-                            }}
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <Label className="text-xs">Comparison Operator</Label>
-                          <Select
-                            value={activeBranch.operator}
-                            onValueChange={(v: any) => {
-                              const updated = [...branches];
-                              updated[activeBranchIdx] = { ...activeBranch, operator: v };
-                              onUpdateStep({ routerConfig: { branches: updated } });
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-background/50 font-mono">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="eq">== (equal)</SelectItem>
-                              <SelectItem value="neq">!= (not equal)</SelectItem>
-                              <SelectItem value="gt">&gt; (greater than)</SelectItem>
-                              <SelectItem value="gte">&gt;= (greater than or equal)</SelectItem>
-                              <SelectItem value="lt">&lt; (less than)</SelectItem>
-                              <SelectItem value="lte">&lt;= (less than or equal)</SelectItem>
-                              <SelectItem value="contains">contains</SelectItem>
-                              <SelectItem value="is_not_null">is not null</SelectItem>
-                              <SelectItem value="has_tool_calls">has tool calls</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <Label className="text-xs">Target Value</Label>
-                          <Input
-                            className="h-8 text-xs bg-background/50 font-mono"
-                            placeholder="e.g. success, support, true, 100"
-                            value={activeBranch.value || ""}
-                            onChange={(e) => {
-                              const updated = [...branches];
-                              updated[activeBranchIdx] = { ...activeBranch, value: e.target.value };
-                              onUpdateStep({ routerConfig: { branches: updated } });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* State Channel Updates Section in Inspector - Only for non-router nodes */}
-              {selectedStepData.stepType !== STEP_TYPE_ROUTER && (
-                <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-muted-foreground" /> State Channel Updates
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-border gap-1"
-                      onClick={() => {
-                        const current = selectedStepData.stateUpdates || [];
-                        const defaultKey = stateChannels[0]?.key || "summary";
-                        onUpdateStep({
-                          stateUpdates: [...current, { channelKey: defaultKey, mode: "set", value: "" }],
-                        });
-                      }}
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add Update
-                    </Button>
-                  </div>
-
-                  {(selectedStepData.stateUpdates || []).map((su, sIdx) => (
-                    <div key={sIdx} className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <Select
-                          value={su.channelKey}
-                          onValueChange={(v) => {
-                            const updated = [...(selectedStepData.stateUpdates || [])];
-                            const current = updated[sIdx];
-                            if (current) {
-                              updated[sIdx] = { ...current, channelKey: v };
-                              onUpdateStep({ stateUpdates: updated });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-7 text-xs bg-background font-mono flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {stateChannels.map((ch) => (
-                              <SelectItem key={ch.key} value={ch.key}>
-                                {ch.key} ({ch.type})
-                              </SelectItem>
-                            ))}
-                            {!stateChannels.some((c) => c.key === su.channelKey) && su.channelKey && (
-                              <SelectItem value={su.channelKey}>{su.channelKey}</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={su.mode || "set"}
-                          onValueChange={(v: "set" | "append" | "expression") => {
-                            const updated = [...(selectedStepData.stateUpdates || [])];
-                            const current = updated[sIdx];
-                            if (current) {
-                              updated[sIdx] = { ...current, mode: v };
-                              onUpdateStep({ stateUpdates: updated });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-7 text-[11px] w-24 bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="set">Set / Replace</SelectItem>
-                            <SelectItem value="append">Append</SelectItem>
-                            <SelectItem value="expression">Expression</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                          onClick={() => {
-                            const updated = (selectedStepData.stateUpdates || []).filter((_, i) => i !== sIdx);
-                            onUpdateStep({ stateUpdates: updated });
-                          }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-
-                      <Input
-                        className="h-7 text-[11px] bg-background font-mono"
-                        placeholder="Value / expression (e.g. state.messages + input)"
-                        value={su.value || ""}
-                        onChange={(e) => {
-                          const updated = [...(selectedStepData.stateUpdates || [])];
-                          const current = updated[sIdx];
-                          if (current) {
-                            updated[sIdx] = { ...current, value: e.target.value };
-                            onUpdateStep({ stateUpdates: updated });
-                          }
-                        }}
-                      />
-                    </div>
-                  ))}
-
-                  {(!selectedStepData.stateUpdates || selectedStepData.stateUpdates.length === 0) && (
-                    <span className="text-xs text-muted-foreground italic text-center py-1">
-                      No state updates configured for this step node.
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-2 p-6 text-muted-foreground">
-              <Sparkles className="w-8 h-8 text-muted-foreground/40 stroke-[1.5]" />
-              <span className="text-sm font-semibold text-foreground">Select a node</span>
-              <span className="text-xs text-muted-foreground">Click any step on the canvas to configure it</span>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* ── Input State ── */}
-        <TabsContent value="inputs" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-border/50 pb-3">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Input Payload State</span>
-              <span className="text-xs text-muted-foreground">Fields accepted when invoking graph</span>
-            </div>
-            <Button size="sm" variant="outline" className="h-7 text-xs border-border gap-1"
-              onClick={() => {
-                const newChan: LangGraphInputChannel = { key: `input_${inputChannels.length + 1}`, type: "string", required: true, description: "" };
-                setInputChannels([...inputChannels, newChan]);
-              }}>
-              <Plus className="w-3.5 h-3.5" /> Add
-            </Button>
-          </div>
-
-          {inputChannels.map((input, idx) => (
-            <div key={idx} className="flex flex-col gap-3 p-4 rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <Input
-                  className="h-7 text-xs font-mono font-medium bg-background flex-1"
-                  value={input.key}
-                  onChange={(e) => {
-                    const updated = { ...input, key: e.target.value };
-                    setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
-                  }}
-                  placeholder="field_key"
-                />
-                <Select
-                  value={input.type}
-                  onValueChange={(v: string) => {
-                    const updated = { ...input, type: v as LangGraphInputChannel["type"] };
-                    setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
-                  }}
-                >
-                  <SelectTrigger className="h-7 text-xs w-28 bg-background font-mono"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="string">string</SelectItem>
-                    <SelectItem value="messages">messages</SelectItem>
-                    <SelectItem value="json">json</SelectItem>
-                    <SelectItem value="number">number</SelectItem>
-                    <SelectItem value="boolean">boolean</SelectItem>
-                    <SelectItem value="object">object</SelectItem>
-                    <SelectItem value="array">array</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                  onClick={() => setInputChannels(inputChannels.filter((_, i) => i !== idx))}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
-                <Input
-                  className="h-7 text-xs bg-background/50 flex-1"
-                  value={input.description || ""}
-                  onChange={(e) => {
-                    const updated = { ...input, description: e.target.value };
-                    setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
-                  }}
-                  placeholder="Description (optional)"
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                  <Label className="text-xs text-muted-foreground">Req</Label>
-                  <Switch
-                    checked={input.required ?? true}
-                    onCheckedChange={(c) => {
-                      const updated = { ...input, required: c };
-                      setInputChannels(inputChannels.map((c, i) => i === idx ? updated : c));
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </TabsContent>
-
-        {/* ── State Schema ── */}
-        <TabsContent value="state" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-border/50 pb-3">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Graph State Schema</span>
-              <span className="text-xs text-muted-foreground">State schema fields & reducer functions</span>
-            </div>
-            <Button size="sm" variant="outline" className="h-7 text-xs border-border gap-1"
-              onClick={() => {
-                const newChannel: LangGraphStateChannel = { key: ``, type: "string", reducer: "replace", defaultValue: "" };
-                setStateChannels([...stateChannels, newChannel]);
-              }}>
-              <Plus className="w-3.5 h-3.5" /> Add Field
-            </Button>
-          </div>
-          {stateChannels.map((ch, idx) => (
-            <div key={idx} className="flex flex-col gap-3 p-4 rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <Input
-                  className="h-7 text-xs font-mono font-medium bg-background flex-1"
-                  placeholder="field_name"
-                  autoFocus={!ch.key}
-                  value={ch.key}
-                  onChange={(e) => {
-                    const key = e.target.value;
-                    setStateChannels(stateChannels.map((c, i) => i === idx ? { ...c, key } : c));
-                  }}
-                  onBlur={() => {
-                    if (!ch.key || !ch.key.trim()) {
-                      setStateChannels(stateChannels.filter((_, i) => i !== idx));
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                  onClick={() => setStateChannels(stateChannels.filter((_, i) => i !== idx))}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-
-              <div className="flex gap-2 pt-2 border-t border-border/50">
-                <div className="flex flex-col gap-1">
-                  <Label className="text-xs text-muted-foreground">Type</Label>
-                  <Select
-                    value={ch.type}
-                    onValueChange={(v) => {
-                      const type = v as LangGraphStateChannel["type"];
-                      const defaultReducer = type === "messages" ? "add_messages"
-                        : type === "array" ? "append"
-                        : type === "object" ? "merge_object"
-                        : "replace";
-                      setStateChannels(stateChannels.map((c, i) => i === idx ? { ...c, type, reducer: defaultReducer } : c));
-                    }}
-                  >
-                    <SelectTrigger className="h-7 text-xs bg-background font-mono">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="messages">messages</SelectItem>
-                      <SelectItem value="string">string</SelectItem>
-                      <SelectItem value="array">array</SelectItem>
-                      <SelectItem value="object">object</SelectItem>
-                      <SelectItem value="json">json</SelectItem>
-                      <SelectItem value="number">number</SelectItem>
-                      <SelectItem value="boolean">boolean</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <Label className="text-xs text-muted-foreground">Reducer</Label>
-                  <Select
-                    value={ch.reducer}
-                    onValueChange={(v) => {
-                      const reducer = v as LangGraphStateChannel["reducer"];
-                      setStateChannels(stateChannels.map((c, i) => i === idx ? { ...c, reducer } : c));
-                    }}
-                  >
-                    <SelectTrigger className="h-7 text-xs bg-background font-mono">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="replace">replace (override)</SelectItem>
-                      <SelectItem value="add_messages">add_messages</SelectItem>
-                      <SelectItem value="append">append (list)</SelectItem>
-                      <SelectItem value="concat_array">concat_array</SelectItem>
-                      <SelectItem value="merge_object">merge_object</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          ))}
-        </TabsContent>
-
-        {/* ── Memory ── */}
-        <TabsContent value="memory" className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Checkpointer</span>
-            <Select value={memoryConfig.checkpointer || "convex"}
-              onValueChange={(v: string) => setMemoryConfig({ ...memoryConfig, checkpointer: v as LangGraphMemoryConfig["checkpointer"] })}>
-              <SelectTrigger className="h-8 text-xs bg-background/50"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="convex">Convex DB</SelectItem>
-                <SelectItem value="redis">Redis</SelectItem>
-                <SelectItem value="postgres">PostgreSQL</SelectItem>
-                <SelectItem value="memory">In-Memory</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-xs text-muted-foreground">Persistence engine for graph checkpointing.</span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-foreground">Auto-Summarize</span>
-              <span className="text-xs text-muted-foreground">Compress history to save tokens</span>
-            </div>
-            <Switch checked={memoryConfig.autoSummarize ?? true}
-              onCheckedChange={(c) => setMemoryConfig({ ...memoryConfig, autoSummarize: c })} />
-          </div>
-        </TabsContent>
+        {/* ── Memory Tab ── */}
+        <MemoryTabContent
+          memoryConfig={memoryConfig}
+          setMemoryConfig={setMemoryConfig}
+        />
       </Tabs>
     </div>
   );

@@ -664,11 +664,18 @@ export const graphStepSchema = z.object({
   ]),
   modelConfig: z
     .object({
-      provider: z.enum(["groq", "openai", "anthropic"]).default("groq"),
+      provider: z.string().optional().default("groq"),
       model: z.string().default("llama-3.3-70b-versatile"),
       temperature: z.number().default(0.2),
       maxTokens: z.number().default(4000),
       systemPrompt: z.string().optional(),
+      baseUrl: z.string().optional(),
+      url: z.string().optional(),
+      method: z.string().optional(),
+      headersJson: z.string().optional(),
+      bodyJson: z.string().optional(),
+      apiKeyHeader: z.string().optional(),
+      customLlmNodeId: z.string().optional(),
     })
     .optional(),
   humanGateConfig: z
@@ -699,6 +706,15 @@ export const graphStepSchema = z.object({
       maxAttempts: z.number().default(3),
       backoffFactor: z.number().default(2),
     })
+    .optional(),
+  stateUpdates: z
+    .array(
+      z.object({
+        channelKey: z.string(),
+        value: z.string().optional(),
+        mode: z.enum(["set", "append", "expression"]).optional(),
+      })
+    )
     .optional(),
 });
 export type GraphStep = z.infer<typeof graphStepSchema>;
@@ -748,6 +764,26 @@ export const langgraphDataSchema = baseNodeDataSchema
         vectorStore: vectorStoreConfigSchema.optional(),
       })
       .default({}),
+    customLlmNodes: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          provider: z.string().optional(),
+          url: z.string().optional(),
+          baseUrl: z.string().optional(),
+          method: z.string().optional(),
+          headersJson: z.string().optional(),
+          bodyJson: z.string().optional(),
+          model: z.string().optional(),
+          apiKeyHeader: z.string().optional(),
+          temperature: z.number().optional(),
+          maxTokens: z.number().optional(),
+          position: z.object({ x: z.number(), y: z.number() }).optional(),
+        })
+      )
+      .optional()
+      .default([]),
   })
   .superRefine((data, ctx) => {
     const stepIds = new Set(data.graphSteps.map((s) => s.id));

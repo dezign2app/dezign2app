@@ -95,6 +95,7 @@ function LangGraphCanvasContent({
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
+    saveStatus,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
   useEffect(() => {
@@ -126,6 +127,7 @@ function LangGraphCanvasContent({
         onUpdateLabel={(newLabel) => updateNode(node.id, { data: { ...node.data, label: newLabel } })}
         onSave={handleSave}
         onClose={onClose}
+        saveStatus={saveStatus}
       />
 
       {/* Main Workspace */}

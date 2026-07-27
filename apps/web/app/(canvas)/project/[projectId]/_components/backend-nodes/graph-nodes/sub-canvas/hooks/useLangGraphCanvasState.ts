@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Edge,
   Connection,
@@ -365,8 +365,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     setSelectedNodeId(null);
   };
 
-  // ── Save ──
-  const handleSave = () => {
+  // ── Build sanitized graph data ──
+  const buildGraphData = useCallback(() => {
     const customLlmNodes = nodes
       .filter((n): n is LangGraphLLMNode => n.type === SUB_CANVAS_NODE_LLM)
       .map((n) => ({
@@ -408,7 +408,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         }],
       }));
 
-    const sanitizedData = ensureLangGraphDataReachability({
+    return ensureLangGraphDataReachability({
       ...data,
       graphSteps,
       graphEdges,
@@ -417,11 +417,72 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       memoryConfig,
       customLlmNodes,
     });
+  }, [nodes, edges, inputChannels, stateChannels, memoryConfig, data]);
 
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
+  const isFirstRenderRef = useRef(true);
+  const lastSavedJsonRef = useRef<string>(
+    JSON.stringify(
+      ensureLangGraphDataReachability({
+        ...data,
+        graphSteps: data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps,
+        graphEdges: data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges,
+        inputChannels: data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels,
+        stateChannels: data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels,
+        memoryConfig: data.memoryConfig || LANGGRAPH_STARTER_TEMPLATE.memoryConfig,
+        customLlmNodes: data.customLlmNodes || [],
+      })
+    )
+  );
+
+  // ── Auto-save with 400ms debounce ──
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+
+    const currentData = buildGraphData();
+    const currentJson = JSON.stringify(currentData);
+
+    if (currentJson === lastSavedJsonRef.current) {
+      return;
+    }
+
+    setSaveStatus("saving");
+
+    const timer = setTimeout(() => {
+      updateNode(node.id, { data: currentData });
+      lastSavedJsonRef.current = currentJson;
+      setSaveStatus("saved");
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges, inputChannels, stateChannels, memoryConfig, buildGraphData, node.id, updateNode]);
+
+  // ── Flush auto-save on unmount if pending changes exist ──
+  const buildGraphDataRef = useRef(buildGraphData);
+  buildGraphDataRef.current = buildGraphData;
+
+  useEffect(() => {
+    return () => {
+      const currentData = buildGraphDataRef.current();
+      const currentJson = JSON.stringify(currentData);
+      if (currentJson !== lastSavedJsonRef.current) {
+        updateNode(node.id, { data: currentData });
+        lastSavedJsonRef.current = currentJson;
+      }
+    };
+  }, [node.id, updateNode]);
+
+  // ── Manual Save & Close ──
+  const handleSave = () => {
+    const currentData = buildGraphData();
     updateNode(node.id, {
-      data: sanitizedData,
+      data: currentData,
     });
-
+    lastSavedJsonRef.current = JSON.stringify(currentData);
+    setSaveStatus("saved");
     toast.success("LangGraph saved!");
     onClose();
   };
@@ -460,6 +521,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
+    saveStatus,
   };
 }
+
 

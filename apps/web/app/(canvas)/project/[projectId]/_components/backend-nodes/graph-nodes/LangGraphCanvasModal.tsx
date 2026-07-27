@@ -18,19 +18,20 @@ import {
 import type { BackendNode } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { subCanvasNodeTypes } from "./sub-canvas/nodes";
-import { useSubCanvasState } from "./sub-canvas/hooks/useSubCanvasState";
+import { useLangGraphCanvasState } from "./sub-canvas/hooks/useLangGraphCanvasState";
 import { SubCanvasHeader } from "./sub-canvas/components/SubCanvasHeader";
 import { ToolsSidebar } from "./sub-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./sub-canvas/components/InspectorSidebar";
 import type { SubCanvasNode } from "./sub-canvas/types";
 
-interface LangGraphSubCanvasModalProps {
+export interface LangGraphCanvasModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nodeId: string;
 }
 
-export function LangGraphSubCanvasModal({ open, onOpenChange, nodeId }: LangGraphSubCanvasModalProps) {
+
+export function LangGraphCanvasModal({ open, onOpenChange, nodeId }: LangGraphCanvasModalProps) {
   const node = useBackendCanvasStore((s) => s.nodes.find((n) => n.id === nodeId));
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const { setNodes: setOuterNodes } = useReactFlow<BackendNode>();
@@ -49,8 +50,8 @@ export function LangGraphSubCanvasModal({ open, onOpenChange, nodeId }: LangGrap
         className="!max-w-[96vw] !sm:max-w-[96vw] !w-[96vw] !h-[92vh] !max-h-[92vh] p-0 gap-0 border-border bg-card overflow-hidden flex flex-col shadow-2xl [&>button]:hidden"
         onKeyDown={(e) => e.stopPropagation()}
       >
-        <DialogTitle className="sr-only">{node.data.label || "LangGraph Sub-Canvas"}</DialogTitle>
-        <DialogDescription className="sr-only">LangGraph Agent Sub-Canvas Studio Editor</DialogDescription>
+        <DialogTitle className="sr-only">{node.data.label || "LangGraph Canvas"}</DialogTitle>
+        <DialogDescription className="sr-only">LangGraph Agent Studio Editor</DialogDescription>
         <ReactFlowProvider>
           <SubCanvasContent node={node} updateNode={updateNode} onClose={() => onOpenChange(false)} />
         </ReactFlowProvider>
@@ -58,6 +59,7 @@ export function LangGraphSubCanvasModal({ open, onOpenChange, nodeId }: LangGrap
     </Dialog>
   );
 }
+
 
 function SubCanvasContent({
   node,
@@ -71,12 +73,14 @@ function SubCanvasContent({
   const {
     nodes,
     edges,
+    setEdges,
     inputChannels,
     setInputChannels,
     stateChannels,
     setStateChannels,
     memoryConfig,
     setMemoryConfig,
+    selectedNodeId,
     setSelectedNodeId,
     activeSideTab,
     setActiveSideTab,
@@ -87,8 +91,30 @@ function SubCanvasContent({
     handleAddStep,
     updateSelectedStep,
     handleDeleteStep,
+    handleDeleteSelected,
     handleSave,
-  } = useSubCanvasState({ node, updateNode, onClose });
+  } = useLangGraphCanvasState({ node, updateNode, onClose });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        handleDeleteSelected();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleDeleteSelected]);
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground">
@@ -113,16 +139,30 @@ function SubCanvasContent({
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             nodeTypes={subCanvasNodeTypes}
+            deleteKeyCode={["Backspace", "Delete"]}
+            edgesReconnectable={true}
+            edgesFocusable={true}
+            elementsSelectable={true}
+            onEdgeClick={(_, edge) => {
+              setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
+            }}
             onNodeClick={(_: React.MouseEvent, n: SubCanvasNode) => {
               setSelectedNodeId(n.id);
               if (n.id === "START") setActiveSideTab("inputs");
               else if (n.id === "STATE_GLOBAL") setActiveSideTab("state");
               else setActiveSideTab("inspector");
             }}
-            onPaneClick={() => setSelectedNodeId(null)}
+            onPaneClick={() => {
+              setSelectedNodeId(null);
+              setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+            }}
             fitView
             fitViewOptions={{ padding: 0.2 }}
-            defaultEdgeOptions={{ animated: true, style: { stroke: "#a1a1aa", strokeWidth: 2 } }}
+            defaultEdgeOptions={{
+              animated: true,
+              style: { stroke: "#a1a1aa", strokeWidth: 2 },
+              interactionWidth: 20,
+            }}
           >
             <Background variant={BackgroundVariant.Dots} gap={20} color="#3f3f46" size={1.5} />
             <Controls className="!bg-background !border-border !text-foreground" />

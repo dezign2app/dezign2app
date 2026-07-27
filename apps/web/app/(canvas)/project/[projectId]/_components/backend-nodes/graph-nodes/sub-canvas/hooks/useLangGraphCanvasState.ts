@@ -22,6 +22,7 @@ import type {
 import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
   SubCanvasNode,
+  SubCanvasEdge,
   StepNode,
   PortNode,
   StateGlobalNode,
@@ -29,13 +30,13 @@ import {
   getStepData,
 } from "../types";
 
-interface UseSubCanvasStateProps {
+interface UseLangGraphCanvasStateProps {
   node: BackendNode;
   updateNode: (id: string, changes: Partial<BackendNode>) => void;
   onClose: () => void;
 }
 
-export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasStateProps) {
+export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGraphCanvasStateProps) {
   const data = node.data;
 
   const [inputChannels, setInputChannels] = useState<LangGraphInputChannel[]>(
@@ -111,7 +112,7 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
   }, []); // computed once on mount
 
   // ── Build initial edges from graphEdges ──
-  const initialEdges: Edge[] = useMemo(() => {
+  const initialEdges: SubCanvasEdge[] = useMemo(() => {
     const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges;
     return graphEdges.flatMap(
       (e) => (e.targets || []).map((t) => ({
@@ -126,7 +127,7 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
   }, []);
 
   const [nodes, setNodes] = useState<SubCanvasNode[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [edges, setEdges] = useState<SubCanvasEdge[]>(initialEdges);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -166,7 +167,18 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
           };
         }
         if (n.type === "step") {
-          return { ...n, data: { ...n.data, availableStateChannels: stateChannels } };
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              availableStateChannels: stateChannels,
+              onDeleteStep: () => {
+                setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
+                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setSelectedNodeId((curr) => (curr === n.id ? null : curr));
+              },
+            },
+          };
         }
         return n;
       });
@@ -225,23 +237,16 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
         stepType: type,
         modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 },
         stateUpdates: [],
+        availableStateChannels: stateChannels,
+        onDeleteStep: () => {
+          setNodes((nodes) => nodes.filter((node) => node.id !== stepId));
+          setEdges((edges) => edges.filter((edge) => edge.source !== stepId && edge.target !== stepId));
+          setSelectedNodeId((curr) => (curr === stepId ? null : curr));
+        },
       },
     };
 
-    const sourceId = (selectedNodeId && selectedNodeId !== "START" && selectedNodeId !== "STATE_GLOBAL" && !selectedNodeId.startsWith("port_"))
-      ? selectedNodeId
-      : (nodes.find((n) => n.type === "step")?.id || "START");
-
-    const newEdge: Edge = {
-      id: `edge_${sourceId}_${stepId}`,
-      source: sourceId,
-      target: stepId,
-      animated: true,
-      style: { stroke: "#a1a1aa", strokeWidth: 2 },
-    };
-
     setNodes((nds) => [...nds, newNode]);
-    setEdges((eds) => [...eds, newEdge]);
     setSelectedNodeId(stepId);
     setActiveSideTab("inspector");
   };
@@ -302,13 +307,23 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
       data: sanitizedData,
     });
 
-    toast.success("Sub-Canvas saved!");
+    toast.success("LangGraph saved!");
     onClose();
   };
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedNodeId && selectedNodeId !== "START" && selectedNodeId !== "STATE_GLOBAL" && !selectedNodeId.startsWith("port_")) {
+      setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
+      setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+      setSelectedNodeId(null);
+    }
+    setEdges((eds) => eds.filter((e) => !e.selected));
+  }, [selectedNodeId]);
 
   return {
     nodes,
     edges,
+    setEdges,
     inputChannels,
     setInputChannels,
     stateChannels,
@@ -326,6 +341,8 @@ export function useSubCanvasState({ node, updateNode, onClose }: UseSubCanvasSta
     handleAddStep,
     updateSelectedStep,
     handleDeleteStep,
+    handleDeleteSelected,
     handleSave,
   };
 }
+

@@ -1,9 +1,9 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
-import { ShieldCheck, Code2, Search, Wrench, Brain, Zap } from "lucide-react";
+import { Code2, Zap, Trash2 } from "lucide-react";
 import type { StepNode } from "../types";
 
-export const SubCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
+export const LangGraphCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
   const stepType = data.stepType || "custom_code";
   const Icon = Code2;
 
@@ -11,25 +11,40 @@ export const SubCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
   const availableFields = (data.availableStateChannels || []).map((c) => c.key);
 
   return (
-    <div className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[220px] max-w-[280px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative ${
+    <div className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[220px] max-w-[280px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-xl relative group ${
       selected ? "border-primary ring-4 ring-primary/20 shadow-primary/10" : "border-border hover:border-border/80"
     }`}>
       <Handle type="target" position={Position.Left} id="in"
         className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform" />
 
       <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-secondary text-foreground">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1.5 rounded-lg bg-secondary text-foreground shrink-0">
             <Icon className="w-4 h-4" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-xs text-foreground truncate max-w-[140px]">{data.label || "Node"}</span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-xs text-foreground truncate max-w-[110px]">{data.label || "Node"}</span>
             <span className="text-[9px] font-mono text-muted-foreground">{data.stepId}</span>
           </div>
         </div>
-        <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono border border-border/40 shrink-0">
-          Node
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono border border-border/40">
+            Node
+          </span>
+          {data.onDeleteStep && (
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all opacity-0 group-hover:opacity-100 nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onDeleteStep?.();
+              }}
+              title="Delete Node"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {data.modelConfig && (

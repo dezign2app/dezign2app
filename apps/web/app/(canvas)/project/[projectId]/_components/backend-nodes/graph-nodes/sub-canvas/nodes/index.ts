@@ -1,10 +1,10 @@
 import { SubCanvasGraphStateNode } from "./SubCanvasGraphStateNode";
-import { SubCanvasStepNode } from "./SubCanvasStepNode";
+import { LangGraphCanvasStepNode } from "./LangGraphCanvasStepNode";
 import { SubCanvasStartNode } from "./SubCanvasStartNode";
 import { SubCanvasPortNode } from "./SubCanvasPortNode";
 
 export const subCanvasNodeTypes = {
-  step: SubCanvasStepNode,
+  step: LangGraphCanvasStepNode,
   start: SubCanvasStartNode,
   port: SubCanvasPortNode,
   state_global: SubCanvasGraphStateNode,
@@ -12,7 +12,7 @@ export const subCanvasNodeTypes = {
 
 export {
   SubCanvasGraphStateNode,
-  SubCanvasStepNode,
+  LangGraphCanvasStepNode,
   SubCanvasStartNode,
   SubCanvasPortNode,
 };

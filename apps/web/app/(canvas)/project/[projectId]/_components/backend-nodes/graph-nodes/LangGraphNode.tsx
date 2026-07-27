@@ -9,7 +9,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
-import { LangGraphSubCanvasModal } from "./LangGraphSubCanvasModal";
+import { LangGraphCanvasModal } from "./LangGraphCanvasModal";
 
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -73,7 +73,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-secondary nodrag"
               onClick={handleOpenEditor}
-              title="Open Sub-Canvas Editor"
+              title="Open LangGraph Studio"
             >
               <Pencil className="w-3.5 h-3.5" />
             </Button>
@@ -160,7 +160,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             onClick={handleOpenEditor}
           >
             <Sparkles className="w-4 h-4 text-primary" />
-            Open Sub-Canvas Editor
+            Open LangGraph Studio
             <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
           </Button>
         </div>
@@ -181,8 +181,8 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         </div>
       </div>
 
-      {/* Sub-Canvas Editor Modal */}
-      <LangGraphSubCanvasModal
+      {/* LangGraph Canvas Modal */}
+      <LangGraphCanvasModal
         open={editorOpen}
         onOpenChange={setEditorOpen}
         nodeId={id}

@@ -1,10 +1,11 @@
 import { Node } from "@xyflow/react";
-import { Brain, Wrench, Search, ShieldCheck, Code2, Sparkles, Database } from "lucide-react";
+import { Brain, Code2 } from "lucide-react";
 import type {
   LangGraphStepConfig,
   LangGraphStateChannel,
   LangGraphInputChannel,
 } from "@/types/canvas";
+import { Edge } from "@xyflow/react";
 
 export type StepNodeData = {
   label: string;
@@ -15,6 +16,7 @@ export type StepNodeData = {
   customCode?: LangGraphStepConfig["customCode"];
   stateUpdates?: LangGraphStepConfig["stateUpdates"];
   availableStateChannels?: LangGraphStateChannel[];
+  onDeleteStep?: () => void;
 };
 
 export type StartNodeData = {
@@ -38,6 +40,10 @@ export type StepNode = Node<StepNodeData, "step">;
 export type StartNode = Node<StartNodeData, "start">;
 export type PortNode = Node<PortNodeData, "port">;
 export type StateGlobalNode = Node<StateGlobalNodeData, "state_global">;
+
+export type SubCanvasEdge = Edge & {
+  selected?: boolean;
+};
 
 export type SubCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode;
 

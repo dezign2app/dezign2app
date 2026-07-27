@@ -54,11 +54,5 @@ export type ToolPaletteItem = {
 };
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
-  { type: "llm_call", label: "LLM Reasoner", desc: "AI decision & generation node", icon: Brain },
-  { type: "tool_node", label: "Tool Executor", desc: "Execute custom tools & APIs", icon: Wrench },
-  { type: "evaluator", label: "Evaluator", desc: "Route based on quality checks", icon: Search },
-  { type: "human_gate", label: "Human Gate", desc: "Pause for human approval", icon: ShieldCheck },
-  { type: "custom_code", label: "Custom Code", desc: "Execute sandboxed logic", icon: Code2 },
-  { type: "summarizer", label: "Summarizer", desc: "Compress message history", icon: Sparkles },
-  { type: "vector_search", label: "Vector Search", desc: "RAG & vector index search", icon: Database },
+  { type: "custom_code", label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
 ];

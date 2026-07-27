@@ -4,12 +4,8 @@ import { ShieldCheck, Code2, Search, Wrench, Brain, Zap } from "lucide-react";
 import type { StepNode } from "../types";
 
 export const SubCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
-  const stepType = data.stepType || "llm_call";
-  const Icon = stepType === "human_gate" ? ShieldCheck
-    : stepType === "custom_code" ? Code2
-    : stepType === "vector_search" ? Search
-    : stepType === "tool_node" ? Wrench
-    : Brain;
+  const stepType = data.stepType || "custom_code";
+  const Icon = Code2;
 
   const stateUpdates = data.stateUpdates || [];
   const availableFields = (data.availableStateChannels || []).map((c) => c.key);
@@ -27,12 +23,12 @@ export const SubCanvasStepNode = ({ data, selected }: NodeProps<StepNode>) => {
             <Icon className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-xs text-foreground truncate max-w-[140px]">{data.label || "Step"}</span>
+            <span className="font-bold text-xs text-foreground truncate max-w-[140px]">{data.label || "Node"}</span>
             <span className="text-[9px] font-mono text-muted-foreground">{data.stepId}</span>
           </div>
         </div>
         <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono border border-border/40 shrink-0">
-          {stepType}
+          Node
         </span>
       </div>
 

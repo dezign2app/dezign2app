@@ -71,17 +71,11 @@ export function InspectorSidebar({
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-medium">Step Type</Label>
-                <Select value={selectedStepData.stepType || "llm_call"}
+                <Select value={selectedStepData.stepType || "custom_code"}
                   onValueChange={(v: string) => onUpdateStep({ stepType: v as LangGraphStepConfig["type"] })}>
                   <SelectTrigger className="h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="llm_call">LLM Reasoner</SelectItem>
-                    <SelectItem value="tool_node">Tool Executor</SelectItem>
-                    <SelectItem value="evaluator">Evaluator</SelectItem>
-                    <SelectItem value="summarizer">Summarizer</SelectItem>
-                    <SelectItem value="human_gate">Human Gate</SelectItem>
-                    <SelectItem value="custom_code">Custom Code</SelectItem>
-                    <SelectItem value="vector_search">Vector Search</SelectItem>
+                    <SelectItem value="custom_code">Node</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -133,6 +133,17 @@ export function LLMNodeInspector({
         )}
       </div>
 
+      {/* System Prompt */}
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs font-medium">System Prompt / Instructions</Label>
+        <LocalTextarea
+          className="min-h-[90px] text-xs bg-background/50 p-2 font-mono leading-relaxed resize-y placeholder:text-muted-foreground/50"
+          placeholder="You are a helpful AI assistant..."
+          value={selectedLLMData.systemPrompt || ""}
+          onChange={(e) => onUpdateLLM?.({ systemPrompt: e.target.value })}
+        />
+      </div>
+
       {/* Method & URL - Only show for custom provider */}
       {activeProviderKey === "custom" && (
         <div className="flex flex-col gap-1.5">

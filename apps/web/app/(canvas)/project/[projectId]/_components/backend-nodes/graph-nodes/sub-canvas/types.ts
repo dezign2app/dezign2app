@@ -1,11 +1,26 @@
-import { Node } from "@xyflow/react";
-import { Brain, Code2, Cpu, GitBranch, Wrench } from "lucide-react";
+import { Node, Edge } from "@xyflow/react";
+import { Brain, Code2, Cpu, GitBranch, Wrench, Shield, Bot } from "lucide-react";
 import type {
   LangGraphStepConfig,
   LangGraphStateChannel,
   LangGraphInputChannel,
+  LangGraphMiddlewareDefinition,
+  LangGraphAgentDefinition,
 } from "@/types/canvas";
-import { Edge } from "@xyflow/react";
+
+export type MiddlewareNodeData = LangGraphMiddlewareDefinition & {
+  label: string;
+  onDeleteMiddleware?: () => void;
+  onOpenInspector?: () => void;
+  onSelectNode?: () => void;
+};
+
+export type AgentNodeData = LangGraphAgentDefinition & {
+  label: string;
+  onDeleteAgent?: () => void;
+  onOpenInspector?: () => void;
+  onSelectNode?: () => void;
+};
 
 export type LangGraphLLMNodeData = {
   label: string;
@@ -111,6 +126,8 @@ import {
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
   SUB_CANVAS_NODE_TOOL,
+  SUB_CANVAS_NODE_MIDDLEWARE,
+  SUB_CANVAS_NODE_AGENT,
   STEP_TYPE_CUSTOM_CODE,
   STEP_TYPE_ROUTER,
 } from "./constants";
@@ -124,12 +141,14 @@ export type PortNode = Node<PortNodeData, typeof SUB_CANVAS_NODE_PORT>;
 export type StateGlobalNode = Node<StateGlobalNodeData, typeof SUB_CANVAS_NODE_STATE_GLOBAL>;
 
 export type ToolNode = Node<ToolNodeData, typeof SUB_CANVAS_NODE_TOOL>;
+export type MiddlewareNode = Node<MiddlewareNodeData, typeof SUB_CANVAS_NODE_MIDDLEWARE>;
+export type AgentNode = Node<AgentNodeData, typeof SUB_CANVAS_NODE_AGENT>;
 
 export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type LangGraphCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode;
+export type LangGraphCanvasNode = StepNode | StartNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | AgentNode;
 
 export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   if (node.type === SUB_CANVAS_NODE_STEP) return node.data;
@@ -137,17 +156,19 @@ export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
 }
 
 export type ToolPaletteItem = {
-  type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM | typeof SUB_CANVAS_NODE_TOOL;
+  type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM | typeof SUB_CANVAS_NODE_TOOL | typeof SUB_CANVAS_NODE_MIDDLEWARE | typeof SUB_CANVAS_NODE_AGENT;
   label: string;
   desc: string;
   icon: typeof Brain;
 };
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
+  { type: SUB_CANVAS_NODE_AGENT, label: "Agent Node", desc: "Create an AI agent with LLM, tools & middleware", icon: Bot },
   { type: STEP_TYPE_CUSTOM_CODE, label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
   { type: STEP_TYPE_ROUTER, label: "Conditional Router", desc: "Routes execution dynamically based on comparison rules", icon: GitBranch },
   { type: SUB_CANVAS_NODE_LLM, label: "LLM Node", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
   { type: SUB_CANVAS_NODE_TOOL, label: "Tool Node", desc: "Configure an executable tool for LLMs", icon: Wrench },
+  { type: SUB_CANVAS_NODE_MIDDLEWARE, label: "Middleware Node", desc: "Interceptors for Human-in-the-loop, rate limit & tracing", icon: Shield },
 ];
 
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -23,6 +23,7 @@ import { LangGraphCanvasHeader } from "./sub-canvas/components/LangGraphCanvasHe
 import { ToolsSidebar } from "./sub-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./sub-canvas/components/InspectorSidebar";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./sub-canvas/types";
+import { HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./sub-canvas/constants";
 
 export interface LangGraphCanvasModalProps {
   open: boolean;
@@ -87,6 +88,8 @@ function LangGraphCanvasContent({
     selectedStepData,
     selectedLLMData,
     selectedToolData,
+    selectedMiddlewareData,
+    selectedAgentData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -95,11 +98,23 @@ function LangGraphCanvasContent({
     updateSelectedStep,
     updateSelectedLLM,
     updateSelectedTool,
+    updateSelectedMiddleware,
+    updateSelectedAgent,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
     saveStatus,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
+
+  const connectedToolsCount = useMemo(() => {
+    if (!selectedNodeId) return 0;
+    return edges.filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_TOOL_IN).length;
+  }, [edges, selectedNodeId]);
+
+  const connectedMiddlewareCount = useMemo(() => {
+    if (!selectedNodeId) return 0;
+    return edges.filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MIDDLEWARE_IN).length;
+  }, [edges, selectedNodeId]);
 
   return (
     <div
@@ -185,10 +200,16 @@ function LangGraphCanvasContent({
           selectedStepData={selectedStepData}
           selectedLLMData={selectedLLMData}
           selectedToolData={selectedToolData}
+          selectedMiddlewareData={selectedMiddlewareData}
+          selectedAgentData={selectedAgentData}
+          connectedToolsCount={connectedToolsCount}
+          connectedMiddlewareCount={connectedMiddlewareCount}
           onDeleteStep={handleDeleteStep}
           onUpdateStep={updateSelectedStep}
           onUpdateLLM={updateSelectedLLM}
           onUpdateTool={updateSelectedTool}
+          onUpdateMiddleware={updateSelectedMiddleware}
+          onUpdateAgent={updateSelectedAgent}
           inputChannels={inputChannels}
           setInputChannels={setInputChannels}
           stateChannels={stateChannels}

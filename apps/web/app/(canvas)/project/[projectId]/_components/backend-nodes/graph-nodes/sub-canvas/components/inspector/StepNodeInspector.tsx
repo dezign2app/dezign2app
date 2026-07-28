@@ -5,7 +5,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { Textarea } from "@workspace/ui/components/textarea";
+import { LocalTextarea } from "../../../shared";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
 import { STEP_TYPE_ROUTER, STEP_TYPE_LLM_CALL } from "../../constants";
@@ -30,23 +30,27 @@ export function StepNodeInspector({
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/50 pb-3">
-        <span className="text-base font-semibold tracking-tight text-foreground">Configure Step</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-base font-semibold tracking-tight text-foreground">
+            {isRouter ? "Router Config" : "Step Config"}
+          </span>
+        </div>
         <Button
           variant="ghost"
           size="sm"
           className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={onDeleteStep}
         >
-          <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+          <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Step
         </Button>
       </div>
 
       {/* Label */}
       <div className="flex flex-col gap-1.5">
-        <Label className="text-xs font-medium">Label</Label>
+        <Label className="text-xs font-medium">Step Label</Label>
         <Input
           className="h-8 text-xs bg-background/50"
-          value={selectedStepData.label || ""}
+          value={selectedStepData.label}
           onChange={(e) => onUpdateStep({ label: e.target.value })}
         />
       </div>
@@ -56,7 +60,7 @@ export function StepNodeInspector({
         <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5 text-muted-foreground" /> Model Config
+              <Brain className="w-3.5 h-3.5 text-primary" /> Model Configuration
             </span>
             <Switch
               checked={!!selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL}
@@ -77,9 +81,9 @@ export function StepNodeInspector({
 
           {(selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL) && (
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">AI Instructions</Label>
-              <Textarea
-                className="min-h-[80px] text-xs bg-background/50 p-2 font-sans resize-y placeholder:text-muted-foreground/50"
+              <Label className="text-xs font-medium">AI Instructions (System Prompt)</Label>
+              <LocalTextarea
+                className="min-h-[90px] text-xs bg-background/50 p-2 font-mono leading-relaxed resize-y placeholder:text-muted-foreground/50"
                 placeholder="Enter system prompt / AI instructions..."
                 value={selectedStepData.modelConfig?.systemPrompt || ""}
                 onChange={(e) =>

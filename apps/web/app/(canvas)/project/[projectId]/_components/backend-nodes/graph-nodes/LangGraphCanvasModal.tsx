@@ -152,9 +152,6 @@ function LangGraphCanvasContent({
             onEdgeClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
               setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
             }}
-            onEdgeDoubleClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
-              setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-            }}
             onNodeClick={(_: React.MouseEvent, n: LangGraphCanvasNode) => {
               setSelectedNodeId(n.id);
               if (n.id === "START") setActiveSideTab("inputs");

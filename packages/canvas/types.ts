@@ -44,6 +44,12 @@ export type HandleKind =
   | "index-in"
   | "index-out"
 
+  // --- LangGraph / LLM Nodes ---
+  | "llm-in"
+  | "llm-out"
+  | "step-in"
+  | "step-out"
+
   // --- Fallback ---
   | "unknown";
 
@@ -232,7 +238,9 @@ export type LangGraphStepConfig = {
 export type LangGraphEdgeConfig = {
   id: string;
   source: string;
-  targets: { id: string; kind: "step" | "port" | "end" }[];
+  sourceHandle?: string;
+  targetHandle?: string;
+  targets: { id: string; kind: "step" | "port" | "end"; targetHandle?: string }[];
   condition?: {
     field?: string;
     operator?: string;

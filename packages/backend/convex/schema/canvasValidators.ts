@@ -191,11 +191,14 @@ export const langgraphConvexDataValidator = v.object({
       v.object({
         id: v.string(),
         source: v.string(),
+        sourceHandle: v.optional(v.string()),
+        targetHandle: v.optional(v.string()),
         targets: v.optional(
           v.array(
             v.object({
               id: v.string(),
               kind: v.string(),
+              targetHandle: v.optional(v.string()),
             })
           )
         ),

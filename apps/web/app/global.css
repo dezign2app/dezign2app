@@ -6,6 +6,10 @@
   --workflow-edge-label-background: var(--color-background);
 }
 
+.react-flow__attribution {
+  display: none !important;
+}
+
 .dark {
   --workflow-edge-label-color: var(--color-background);
   --workflow-edge-label-background: var(--color-foreground);

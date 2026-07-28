@@ -56,6 +56,10 @@ export const TARGET_KIND_STEP = "step" as const;
 export const TARGET_KIND_PORT = "port" as const;
 export const TARGET_KIND_END  = "end" as const;
 
+// ─── Sub-Canvas Handle IDs ─────────────────────────────────────────────────────
+export const HANDLE_LLM_IN  = "llm_in" as const;
+export const HANDLE_LLM_OUT = "llm_out" as const;
+
 // ─── LLM Providers ─────────────────────────────────────────────────────────────
 export const LLM_PROVIDERS = {
   GROQ: "groq",

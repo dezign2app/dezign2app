@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position, useReactFlow, Edge } from "@xyflow/react";
+import { NodeProps, Handle, Position, useReactFlow, Edge, Connection } from "@xyflow/react";
 import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
 import {
   SUB_CANVAS_NODE_STEP,
   SUB_CANVAS_NODE_LLM,
+  HANDLE_LLM_IN,
+  HANDLE_LLM_OUT,
   STEP_TYPE_CUSTOM_CODE,
   STEP_TYPE_ROUTER,
   LLM_PROVIDER_OTHER,
@@ -92,7 +94,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const connectedEdge = allEdges.find(
     (e: Edge) =>
       e.target === id &&
-      (e.targetHandle === "llm_in" || !e.targetHandle) &&
+      e.targetHandle === HANDLE_LLM_IN &&
       allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === SUB_CANVAS_NODE_LLM)
   );
   const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
@@ -260,7 +262,8 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
             <Handle
               type="target"
               position={Position.Left}
-              id="llm_in"
+              id={HANDLE_LLM_IN}
+              isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT}
               className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
               title="Connect Custom LLM Node"
             />

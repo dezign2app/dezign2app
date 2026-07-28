@@ -618,12 +618,45 @@ export const graphEdgeSchema = z.object({
 export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 
 export const toolDefinitionSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
+  toolId: z.string().optional(),
+  label: z.string().optional().default("Tool"),
   name: z.string(),
   description: z.string(),
   source: z.enum(["inline", "mcp_server", "canvas_edge", "api_endpoint"]),
-  parametersJsonSchema: z.record(z.any()).optional(),
+  inputSchema: z.string().optional(),
   endpointUrl: z.string().optional(),
+  mcpConnectionId: z.string().optional(),
+  remoteToolName: z.string().optional(),
+  returnDirect: z.boolean().optional(),
+  returnType: z.enum(["string", "object", "content_blocks", "command"]).optional(),
+  outputSchema: z.string().optional(),
+  commandConfig: z.object({
+    stateUpdates: z.array(z.object({
+      channelKey: z.string(),
+      mode: z.enum(["set", "append", "expression"]).optional(),
+      value: z.string().optional(),
+    }))
+  }).optional(),
+  functionBody: z.string().optional(),
+  executionMode: z.enum(["sandboxed_vm", "disabled"]).optional(),
+  headless: z.boolean().optional(),
+  contextAccess: z.object({
+    enabled: z.boolean().optional(),
+    fields: z.array(z.string()).optional(),
+  }).optional(),
+  storeAccess: z.object({
+    enabled: z.boolean().optional(),
+    namespace: z.string().optional(),
+    operations: z.array(z.enum(["get", "put", "delete", "list"])).optional(),
+  }).optional(),
+  streamWriter: z.boolean().optional(),
+  errorHandling: z.object({
+    enabled: z.boolean().optional(),
+    retryCount: z.number().optional(),
+    customErrorMessage: z.string().optional(),
+  }).optional(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
 });
 export type ToolDefinition = z.infer<typeof toolDefinitionSchema>;
 
@@ -781,7 +814,8 @@ export const langgraphDataSchema = baseNodeDataSchema
         { id: "error", label: "Error Output Port" },
       ]),
 
-    tools: z.array(toolDefinitionSchema).default([]),
+    toolDefinitions: z.array(toolDefinitionSchema).default([]),
+    tools: z.array(z.any()).default([]), // For backwards compatibility if needed
     graphSteps: z.array(graphStepSchema).default([]),
     graphEdges: z.array(graphEdgeSchema).default([]),
     memoryConfig: z
@@ -817,7 +851,7 @@ export const langgraphDataSchema = baseNodeDataSchema
   })
   .superRefine((data, ctx) => {
     const stepIds = new Set(data.graphSteps.map((s) => s.id));
-    const toolIds = new Set(data.tools.map((t) => t.id));
+    const toolIds = new Set(data.toolDefinitions.map((t) => t.toolId || t.id).filter((id): id is string => Boolean(id)));
     const portIds = new Set(data.outputPorts.map((p) => p.id));
     const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
 
@@ -858,10 +892,15 @@ export const langgraphDataSchema = baseNodeDataSchema
         });
       }
 
-      if (edge.source !== "START" && !stepIds.has(edge.source) && !customLlmIds.has(edge.source)) {
+      if (
+        edge.source !== "START" &&
+        !stepIds.has(edge.source) &&
+        !customLlmIds.has(edge.source) &&
+        !toolIds.has(edge.source)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Edge source "${edge.source}" does not exist in graphSteps or customLlmNodes.`,
+          message: `Edge source "${edge.source}" does not exist in graphSteps, customLlmNodes, or toolDefinitions.`,
           path: ["graphEdges", idx, "source"],
         });
       }

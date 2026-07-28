@@ -19,6 +19,7 @@ import type {
   LangGraphOutputPort,
   LangGraphEdgeConfig,
   LangGraphRouterBranch,
+  LangGraphToolDefinition,
 } from "@/types/canvas";
 import { STEP_TYPE_ROUTER, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
@@ -30,6 +31,8 @@ import {
   LangGraphLLMNode,
   StepNodeData,
   LangGraphLLMNodeData,
+  ToolNode,
+  ToolNodeData,
   getStepData,
 } from "../types";
 import {
@@ -38,8 +41,11 @@ import {
   SUB_CANVAS_NODE_PORT,
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
+  SUB_CANVAS_NODE_TOOL,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
+  HANDLE_TOOL_IN,
+  HANDLE_TOOL_OUT,
   NODE_ID_START,
   NODE_ID_STATE_GLOBAL,
   NODE_ID_PREFIX_PORT,
@@ -138,6 +144,38 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       result.push(customNode);
     });
 
+    const savedTools = data.toolDefinitions || [];
+    savedTools.forEach((toolDef) => {
+      const toolNode: ToolNode = {
+        id: toolDef.id,
+        type: SUB_CANVAS_NODE_TOOL,
+        position: toolDef.position || { x: 340, y: 160 },
+        data: {
+          label: toolDef.name,
+          toolId: toolDef.id,
+          name: toolDef.name,
+          description: toolDef.description,
+          inputSchema: toolDef.inputSchema,
+          source: toolDef.source,
+          endpointUrl: toolDef.endpointUrl,
+          mcpConnectionId: toolDef.mcpConnectionId,
+          remoteToolName: toolDef.remoteToolName,
+          returnDirect: toolDef.returnDirect,
+          returnType: toolDef.returnType,
+          outputSchema: toolDef.outputSchema,
+          commandConfig: toolDef.commandConfig,
+          functionBody: toolDef.functionBody,
+          executionMode: toolDef.executionMode,
+          headless: toolDef.headless,
+          contextAccess: toolDef.contextAccess,
+          storeAccess: toolDef.storeAccess,
+          streamWriter: toolDef.streamWriter,
+          errorHandling: toolDef.errorHandling,
+        },
+      };
+      result.push(toolNode);
+    });
+
     steps.forEach((step, idx) => {
       const stepNode: StepNode = {
         id: step.id,
@@ -170,9 +208,13 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       .flatMap(
         (e) => (e.targets || []).map((t) => {
           const isLLMSource = e.sourceHandle === HANDLE_LLM_OUT || e.source.startsWith("llm_") || (data.customLlmNodes || []).some((c) => c.id === e.source);
-          const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : undefined);
-          const targetHandle = e.targetHandle || (t as any).targetHandle || (isLLMSource ? HANDLE_LLM_IN : undefined);
+          const isToolSource = e.sourceHandle === HANDLE_TOOL_OUT || e.source.startsWith("tool_") || (data.toolDefinitions || []).some((t) => t.id === e.source);
+          
+          const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : isToolSource ? HANDLE_TOOL_OUT : undefined);
+          const targetHandle = e.targetHandle || (t as any).targetHandle || (isLLMSource ? HANDLE_LLM_IN : isToolSource ? HANDLE_TOOL_IN : undefined);
+          
           const isLLM = isLLMSource || sourceHandle === HANDLE_LLM_OUT || targetHandle === HANDLE_LLM_IN;
+          const isTool = isToolSource || sourceHandle === HANDLE_TOOL_OUT || targetHandle === HANDLE_TOOL_IN;
 
           return {
             id: `${e.id}_${t.id}`,
@@ -183,6 +225,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             animated: true,
             style: isLLM 
               ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" } 
+              : isTool
+              ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
               : { stroke: "#a1a1aa", strokeWidth: 2 },
             ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
           };
@@ -239,6 +283,26 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
                 setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
                 setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
                 setSelectedNodeId((curr) => (curr === n.id ? null : curr));
+              },
+            },
+          };
+        }
+        if (n.type === SUB_CANVAS_NODE_TOOL) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              onDeleteTool: () => {
+                setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
+                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setSelectedNodeId((curr) => (curr === n.id ? null : curr));
+              },
+              onOpenInspector: () => {
+                setSelectedNodeId(n.id);
+                setActiveSideTab("inspector");
+              },
+              onSelectNode: () => {
+                setSelectedNodeId(n.id);
               },
             },
           };
@@ -316,9 +380,15 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const isLLMSource = connection.sourceHandle === HANDLE_LLM_OUT || sourceNode?.type === SUB_CANVAS_NODE_LLM || connection.source?.startsWith("llm_");
       const isLLMTarget = connection.targetHandle === HANDLE_LLM_IN;
+      
+      const isToolSource = connection.sourceHandle === HANDLE_TOOL_OUT || sourceNode?.type === SUB_CANVAS_NODE_TOOL || connection.source?.startsWith("tool_");
+      const isToolTarget = connection.targetHandle === HANDLE_TOOL_IN;
 
       if (isLLMSource && !isLLMTarget) return false;
       if (isLLMTarget && !isLLMSource) return false;
+      
+      if (isToolSource && !isToolTarget) return false;
+      if (isToolTarget && !isToolSource) return false;
 
       return true;
     },
@@ -331,11 +401,13 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         if (!isValidConnection(params)) return eds;
 
         const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN || Boolean(params.source?.startsWith("llm_"));
+        const isTool = params.sourceHandle === HANDLE_TOOL_OUT || params.targetHandle === HANDLE_TOOL_IN || Boolean(params.source?.startsWith("tool_"));
+        
         const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === SUB_CANVAS_NODE_STEP);
         const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
 
-        const sourceHandle = isLLM ? HANDLE_LLM_OUT : params.sourceHandle;
-        const targetHandle = isLLM ? HANDLE_LLM_IN : params.targetHandle;
+        const sourceHandle = isLLM ? HANDLE_LLM_OUT : isTool ? HANDLE_TOOL_OUT : params.sourceHandle;
+        const targetHandle = isLLM ? HANDLE_LLM_IN : isTool ? HANDLE_TOOL_IN : params.targetHandle;
 
         const label = routerBranch
           ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
@@ -343,6 +415,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
         const style = isLLM
           ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" }
+          : isTool
+          ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
           : routerBranch
           ? { stroke: "#38bdf8", strokeWidth: 2 }
           : { stroke: "#a1a1aa", strokeWidth: 2 };
@@ -375,8 +449,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? getStepData(found) : null;
   }, [nodes, selectedNodeId]);
 
-  // ── Add step or custom_llm ──
-  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM, label: string) => {
+  // ── Add step or custom_llm or tool ──
+  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM | typeof SUB_CANVAS_NODE_TOOL, label: string) => {
     if (type === SUB_CANVAS_NODE_LLM) {
       const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
       const defaultPreset = LLM_PROVIDER_PRESETS[DEFAULT_LLM_PROVIDER] ?? LLM_PROVIDER_PRESETS[LLM_PROVIDERS.CUSTOM];
@@ -403,6 +477,34 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
       setNodes((nds) => [...nds, newLLMNode]);
       setSelectedNodeId(llmId);
+      return;
+    }
+
+    if (type === SUB_CANVAS_NODE_TOOL) {
+      const toolId = `tool_${Date.now().toString(36).slice(-4)}`;
+      const newToolNode: ToolNode = {
+        id: toolId,
+        type: SUB_CANVAS_NODE_TOOL,
+        position: { x: 360 + Math.random() * 140, y: 160 + Math.random() * 80 },
+        data: {
+          label: label || "Tool Node",
+          toolId,
+          name: "my_tool",
+          description: "Description of the tool",
+          source: "inline",
+          executionMode: "sandboxed_vm",
+          returnType: "string",
+          onDeleteTool: () => {
+            setNodes((nodes) => nodes.filter((node) => node.id !== toolId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== toolId && edge.target !== toolId));
+            setSelectedNodeId((curr) => (curr === toolId ? null : curr));
+          },
+        },
+      };
+
+      setNodes((nds) => [...nds, newToolNode]);
+      setSelectedNodeId(toolId);
+      setActiveSideTab("inspector");
       return;
     }
 
@@ -446,6 +548,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     const found = nodes.find((n): n is LangGraphLLMNode => n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_LLM);
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
+  
+  const selectedToolData = useMemo((): ToolNodeData | null => {
+    const found = nodes.find((n): n is ToolNode => n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_TOOL);
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
 
   const updateSelectedStep = (changes: Partial<StepNodeData>) => {
     if (!selectedNodeId) return;
@@ -460,6 +567,15 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
       n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_LLM
+        ? { ...n, data: { ...n.data, ...changes } }
+        : n
+    ));
+  };
+  
+  const updateSelectedTool = (changes: Partial<ToolNodeData>) => {
+    if (!selectedNodeId) return;
+    setNodes((nds) => nds.map((n) =>
+      n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_TOOL
         ? { ...n, data: { ...n.data, ...changes } }
         : n
     ));
@@ -492,6 +608,33 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         maxTokens: n.data.maxTokens,
         position: n.position,
       }));
+      
+    const toolDefinitions: LangGraphToolDefinition[] = nodes
+      .filter((n): n is ToolNode => n.type === SUB_CANVAS_NODE_TOOL)
+      .map((n) => ({
+        id: n.data.toolId || n.id,
+        toolId: n.data.toolId || n.id,
+        label: n.data.label || n.data.name || "Tool",
+        name: n.data.name || "my_tool",
+        description: n.data.description || "",
+        inputSchema: n.data.inputSchema,
+        source: n.data.source || "inline",
+        endpointUrl: n.data.endpointUrl,
+        mcpConnectionId: n.data.mcpConnectionId,
+        remoteToolName: n.data.remoteToolName,
+        returnDirect: n.data.returnDirect,
+        returnType: n.data.returnType,
+        outputSchema: n.data.outputSchema,
+        commandConfig: n.data.commandConfig,
+        functionBody: n.data.functionBody,
+        executionMode: n.data.executionMode,
+        headless: n.data.headless,
+        contextAccess: n.data.contextAccess,
+        storeAccess: n.data.storeAccess,
+        streamWriter: n.data.streamWriter,
+        errorHandling: n.data.errorHandling,
+        position: n.position,
+      }));
 
     const graphSteps: LangGraphStepConfig[] = nodes
       .filter((n): n is StepNode => n.type === SUB_CANVAS_NODE_STEP)
@@ -504,6 +647,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         ...(n.data.customCode ? { customCode: n.data.customCode } : {}),
         ...(n.data.routerConfig ? { routerConfig: n.data.routerConfig } : {}),
         ...(n.data.stateUpdates ? { stateUpdates: n.data.stateUpdates } : {}),
+        tools: edges
+          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
+          .map((e) => e.source),
       }));
 
     const graphEdges: LangGraphEdgeConfig[] = edges
@@ -528,6 +674,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       stateChannels,
       memoryConfig,
       customLlmNodes,
+      toolDefinitions,
     });
   }, [nodes, edges, inputChannels, stateChannels, memoryConfig, data]);
 
@@ -550,6 +697,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           maxWindowMessages: 10,
         },
         customLlmNodes: data.customLlmNodes || [],
+        toolDefinitions: data.toolDefinitions || [],
       })
     )
   );
@@ -631,6 +779,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     setActiveSideTab,
     selectedStepData,
     selectedLLMData,
+    selectedToolData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -638,6 +787,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     handleAddStep,
     updateSelectedStep,
     updateSelectedLLM,
+    updateSelectedTool,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,

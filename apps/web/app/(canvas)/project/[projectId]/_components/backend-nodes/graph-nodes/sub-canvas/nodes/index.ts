@@ -3,6 +3,7 @@ import { LangGraphCanvasStepNode } from "./LangGraphCanvasStepNode";
 import { LangGraphCanvasStartNode } from "./LangGraphCanvasStartNode";
 import { LangGraphCanvasPortNode } from "./LangGraphCanvasPortNode";
 import { LangGraphCanvasLLMNode } from "./LangGraphCanvasLLMNode";
+import { LangGraphCanvasToolNode } from "./LangGraphCanvasToolNode";
 
 import {
   SUB_CANVAS_NODE_STEP,
@@ -10,6 +11,7 @@ import {
   SUB_CANVAS_NODE_PORT,
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
+  SUB_CANVAS_NODE_TOOL,
 } from "../constants";
 
 export const langGraphCanvasNodeTypes = {
@@ -18,6 +20,7 @@ export const langGraphCanvasNodeTypes = {
   [SUB_CANVAS_NODE_PORT]: LangGraphCanvasPortNode,
   [SUB_CANVAS_NODE_STATE_GLOBAL]: LangGraphCanvasStateNode,
   [SUB_CANVAS_NODE_LLM]: LangGraphCanvasLLMNode,
+  [SUB_CANVAS_NODE_TOOL]: LangGraphCanvasToolNode,
 };
 
 export {
@@ -26,5 +29,6 @@ export {
   LangGraphCanvasStartNode,
   LangGraphCanvasPortNode,
   LangGraphCanvasLLMNode,
+  LangGraphCanvasToolNode,
 };
 

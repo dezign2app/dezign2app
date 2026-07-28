@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Edge, Connection } from "@xyflow/react";
-import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check } from "lucide-react";
+import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check, Wrench, AlertCircle } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
 import {
@@ -8,6 +8,9 @@ import {
   SUB_CANVAS_NODE_LLM,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
+  HANDLE_TOOL_IN,
+  HANDLE_TOOL_OUT,
+  SUB_CANVAS_NODE_TOOL,
   STEP_TYPE_CUSTOM_CODE,
   STEP_TYPE_ROUTER,
   LLM_PROVIDER_OTHER,
@@ -98,6 +101,24 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
       allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === SUB_CANVAS_NODE_LLM)
   );
   const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
+
+  // Detect tool nodes on canvas
+  const langGraphToolNodes = allNodes.filter((n): n is any => n.type === SUB_CANVAS_NODE_TOOL);
+  
+  // Detect edges connected from tool nodes to this step node's tool_in handle
+  const connectedToolEdges = allEdges.filter(
+    (e: Edge) =>
+      e.target === id &&
+      e.targetHandle === HANDLE_TOOL_IN &&
+      allNodes.some((n) => n.id === e.source && n.type === SUB_CANVAS_NODE_TOOL)
+  );
+  
+  const connectedToolNodes = connectedToolEdges
+    .map(e => langGraphToolNodes.find(n => n.id === e.source))
+    .filter(Boolean);
+
+  const allToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.every(n => n.data.returnDirect);
+  const someToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.some(n => n.data.returnDirect) && !allToolsDirect;
 
   // Selected linked LLM node (via edge connection or explicit dropdown selection)
   const linkedCustomLLM = connectedLLMNode || langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === data.modelConfig?.customLlmNodeId);
@@ -274,7 +295,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
 
             <div className="flex items-center gap-2">
               <Switch
-                checked={!!modelConfig}
+                checked={!!modelConfig || stepType === "llm_call"}
                 onCheckedChange={(checked) => {
                   if (checked) {
                     handleUpdateModelConfig({ provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE });
@@ -286,6 +307,83 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
               />
             </div>
           </div>
+
+          {(!!modelConfig || stepType === "llm_call") && (
+            <div className="flex flex-col gap-1 mt-1 nodrag">
+              <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                AI Instructions
+              </span>
+              <LocalTextarea
+                className="min-h-[60px] text-xs bg-background/50 border-sky-500/30 p-2 resize-y nodrag placeholder:text-muted-foreground/50 focus-visible:ring-sky-400/50"
+                placeholder="Enter AI instructions..."
+                value={modelConfig?.systemPrompt || ""}
+                onChange={(e) => handleUpdateModelConfig({ systemPrompt: e.target.value })}
+                onKeyDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {/* Tools Configuration Option - Only for non-router nodes */}
+      {stepType !== STEP_TYPE_ROUTER && (
+        <div className="flex flex-col gap-1.5 border-t border-border/50 py-2.5 nodrag relative px-3">
+          <Handle
+            type="target"
+            position={Position.Left}
+            id={HANDLE_TOOL_IN}
+            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_TOOL_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
+            className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+            title="Connect Tool Node"
+            style={{ top: "30%" }}
+          />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Wrench className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                Tools
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                {connectedToolNodes.length}
+              </span>
+            </div>
+          </div>
+
+          {connectedToolNodes.length > 0 && (
+            <div className="flex flex-col gap-1 mt-1 nodrag">
+              {someToolsDirect && (
+                <div className="flex items-start gap-1 p-1 rounded bg-amber-500/10 border border-amber-500/20 mb-1" title="All tools invoked in a turn must have Return Direct enabled for short-circuit to take effect.">
+                  <AlertCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                  <span className="text-[8px] text-amber-500 leading-tight font-medium">Partial Return Direct - mixed state</span>
+                </div>
+              )}
+              {allToolsDirect && (
+                <div className="flex items-start gap-1 p-1 rounded bg-emerald-500/10 border border-emerald-500/20 mb-1">
+                  <Check className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
+                  <span className="text-[8px] text-emerald-500 leading-tight font-medium">Direct Short-Circuit Active</span>
+                </div>
+              )}
+              {connectedToolNodes.map((toolNode, idx) => (
+                <div key={idx} className="flex items-center justify-between px-2 py-1 bg-background/50 border border-border/50 rounded">
+                  <span className="text-[10px] font-mono font-bold text-foreground truncate max-w-[120px]">{toolNode.data.name || "Tool"}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8px] uppercase px-1 rounded bg-secondary/50 text-muted-foreground font-semibold">
+                      {toolNode.data.source === "inline" ? "in" : toolNode.data.source === "mcp_server" ? "mcp" : "api"}
+                    </span>
+                    {toolNode.data.returnDirect && (
+                      <span className="text-[8px] uppercase px-1 rounded bg-emerald-500/20 text-emerald-500 font-semibold" title="Return Direct">
+                        dir
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

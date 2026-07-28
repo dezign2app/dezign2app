@@ -5,9 +5,10 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import type { LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
+import { Textarea } from "@workspace/ui/components/textarea";
+import type { LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
-import { LLM_PROVIDER_OPTIONS, STEP_TYPE_ROUTER, DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL } from "../../constants";
+import { STEP_TYPE_ROUTER, STEP_TYPE_LLM_CALL } from "../../constants";
 import { RouterNodeInspector } from "./RouterNodeInspector";
 
 interface StepNodeInspectorProps {
@@ -58,13 +59,13 @@ export function StepNodeInspector({
               <Brain className="w-3.5 h-3.5 text-muted-foreground" /> Model Config
             </span>
             <Switch
-              checked={!!selectedStepData.modelConfig}
+              checked={!!selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL}
               onCheckedChange={(checked) => {
                 if (checked) {
                   onUpdateStep({
                     modelConfig: {
-                      provider: selectedStepData.modelConfig?.provider || DEFAULT_LLM_PROVIDER,
-                      model: selectedStepData.modelConfig?.model || DEFAULT_LLM_MODEL,
+                      ...selectedStepData.modelConfig,
+                      systemPrompt: selectedStepData.modelConfig?.systemPrompt || "",
                     },
                   });
                 } else {
@@ -74,46 +75,23 @@ export function StepNodeInspector({
             />
           </div>
 
-          {selectedStepData.modelConfig && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">Provider</Label>
-                <Select
-                  value={selectedStepData.modelConfig?.provider || DEFAULT_LLM_PROVIDER}
-                  onValueChange={(v: string) =>
-                    onUpdateStep({
-                      modelConfig: {
-                        ...selectedStepData.modelConfig,
-                        provider: v as NonNullable<LangGraphStepConfig["modelConfig"]>["provider"],
-                      },
-                    })
-                  }
-                >
-                  <SelectTrigger className="h-8 text-xs bg-background/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LLM_PROVIDER_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">Model</Label>
-                <Input
-                  className="h-8 text-xs bg-background/50 font-mono"
-                  value={selectedStepData.modelConfig?.model || ""}
-                  onChange={(e) =>
-                    onUpdateStep({
-                      modelConfig: { ...selectedStepData.modelConfig, model: e.target.value },
-                    })
-                  }
-                />
-              </div>
-            </>
+          {(selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL) && (
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-medium">AI Instructions</Label>
+              <Textarea
+                className="min-h-[80px] text-xs bg-background/50 p-2 font-sans resize-y placeholder:text-muted-foreground/50"
+                placeholder="Enter system prompt / AI instructions..."
+                value={selectedStepData.modelConfig?.systemPrompt || ""}
+                onChange={(e) =>
+                  onUpdateStep({
+                    modelConfig: {
+                      ...selectedStepData.modelConfig,
+                      systemPrompt: e.target.value,
+                    },
+                  })
+                }
+              />
+            </div>
           )}
         </div>
       )}

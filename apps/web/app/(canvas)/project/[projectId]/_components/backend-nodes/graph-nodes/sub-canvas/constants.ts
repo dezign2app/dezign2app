@@ -13,6 +13,11 @@ import {
   TARGET_KIND_END,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
+  HANDLE_TOOL_IN,
+  HANDLE_TOOL_OUT,
+  TOOL_SOURCE_INLINE,
+  TOOL_SOURCE_MCP_SERVER,
+  TOOL_SOURCE_API_ENDPOINT,
   LLM_PROVIDERS,
   LLM_PROVIDER_MAP,
   LLM_PROVIDER_GROQ,
@@ -37,6 +42,7 @@ export const SUB_CANVAS_NODE_START        = "start" as const;
 export const SUB_CANVAS_NODE_PORT         = "port" as const;
 export const SUB_CANVAS_NODE_STATE_GLOBAL = "state_global" as const;
 export const SUB_CANVAS_NODE_LLM          = "langgraph_llm" as const;
+export const SUB_CANVAS_NODE_TOOL         = "langgraph_tool" as const;
 
 // ─── Reserved Sub-Canvas Node IDs ─────────────────────────────────────────────
 export const NODE_ID_START        = "START" as const;
@@ -78,6 +84,11 @@ export {
   TARGET_KIND_END,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
+  HANDLE_TOOL_IN,
+  HANDLE_TOOL_OUT,
+  TOOL_SOURCE_INLINE,
+  TOOL_SOURCE_MCP_SERVER,
+  TOOL_SOURCE_API_ENDPOINT,
   LLM_PROVIDERS,
   LLM_PROVIDER_MAP,
   LLM_PROVIDER_GROQ,

@@ -2,25 +2,30 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData } from "../../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData } from "../../types";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
+import { ToolNodeInspector } from "./ToolNodeInspector";
 
 interface InspectorTabContentProps {
   selectedStepData: StepNodeData | null;
   selectedLLMData?: LangGraphLLMNodeData | null;
+  selectedToolData?: ToolNodeData | null;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
+  onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
   stateChannels: LangGraphStateChannel[];
 }
 
 export function InspectorTabContent({
   selectedStepData,
   selectedLLMData,
+  selectedToolData,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
+  onUpdateTool,
   stateChannels,
 }: InspectorTabContentProps) {
   return (
@@ -33,6 +38,13 @@ export function InspectorTabContent({
           selectedLLMData={selectedLLMData}
           onDeleteStep={onDeleteStep}
           onUpdateLLM={onUpdateLLM}
+        />
+      ) : selectedToolData ? (
+        <ToolNodeInspector
+          selectedToolData={selectedToolData}
+          onDeleteTool={onDeleteStep}
+          onUpdateTool={onUpdateTool!}
+          stateChannels={stateChannels}
         />
       ) : selectedStepData ? (
         <StepNodeInspector

@@ -57,21 +57,42 @@ export const TARGET_KIND_PORT = "port" as const;
 export const TARGET_KIND_END  = "end" as const;
 
 // ─── LLM Providers ─────────────────────────────────────────────────────────────
-export const LLM_PROVIDER_GROQ      = "groq" as const;
-export const LLM_PROVIDER_OPENAI    = "openai" as const;
-export const LLM_PROVIDER_ANTHROPIC = "anthropic" as const;
-export const LLM_PROVIDER_GOOGLE    = "google" as const;
-export const LLM_PROVIDER_OLLAMA    = "ollama" as const;
-export const LLM_PROVIDER_CUSTOM    = "custom" as const;
-export const LLM_PROVIDER_OTHER     = "other" as const;
+export const LLM_PROVIDERS = {
+  GROQ: "groq",
+  OPENAI: "openai",
+  ANTHROPIC: "anthropic",
+  GOOGLE: "google",
+  CUSTOM: "custom",
+} as const;
 
-export const LLM_PROVIDER_OPTIONS = [
-  { value: LLM_PROVIDER_GROQ, label: "Groq" },
-  { value: LLM_PROVIDER_OPENAI, label: "OpenAI" },
-  { value: LLM_PROVIDER_ANTHROPIC, label: "Anthropic" },
-  { value: LLM_PROVIDER_GOOGLE, label: "Google" },
-  { value: LLM_PROVIDER_OTHER, label: "Other" },
-] as const;
+export const ALL_LLM_PROVIDER_VALUES = Object.values(LLM_PROVIDERS) as [
+  (typeof LLM_PROVIDERS)[keyof typeof LLM_PROVIDERS],
+  ...(typeof LLM_PROVIDERS)[keyof typeof LLM_PROVIDERS][]
+];
+
+export const LLM_PROVIDER_MAP = {
+  [LLM_PROVIDERS.GROQ]: { value: LLM_PROVIDERS.GROQ, label: "Groq" },
+  [LLM_PROVIDERS.OPENAI]: { value: LLM_PROVIDERS.OPENAI, label: "OpenAI" },
+  [LLM_PROVIDERS.ANTHROPIC]: { value: LLM_PROVIDERS.ANTHROPIC, label: "Anthropic" },
+  [LLM_PROVIDERS.GOOGLE]: { value: LLM_PROVIDERS.GOOGLE, label: "Google" },
+  [LLM_PROVIDERS.CUSTOM]: { value: LLM_PROVIDERS.CUSTOM, label: "Custom / Other" },
+} as const;
+
+export const LLM_PROVIDER_OPTIONS = Object.values(LLM_PROVIDER_MAP);
+
+export const LLM_PROVIDER_GROQ      = LLM_PROVIDERS.GROQ;
+export const LLM_PROVIDER_OPENAI    = LLM_PROVIDERS.OPENAI;
+export const LLM_PROVIDER_ANTHROPIC = LLM_PROVIDERS.ANTHROPIC;
+export const LLM_PROVIDER_GOOGLE    = LLM_PROVIDERS.GOOGLE;
+export const LLM_PROVIDER_CUSTOM    = LLM_PROVIDERS.CUSTOM;
+export const LLM_PROVIDER_OTHER     = LLM_PROVIDERS.CUSTOM;
+
+// ─── Default LLM Configuration Constants ─────────────────────────────────────
+export const DEFAULT_LLM_PROVIDER = LLM_PROVIDERS.GROQ;
+export const DEFAULT_LLM_MODEL = "openai/gpt-oss-120b";
+export const DEFAULT_LLM_BASE_URL = "https://api.groq.com/openai/v1/chat/completions";
+export const DEFAULT_LLM_API_KEY_ENV = "GROQ_API_KEY";
+export const DEFAULT_LLM_TEMPERATURE = 0.2;
 
 
 
@@ -97,77 +118,7 @@ export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   langgraph_step: "langgraph_step",
 };
 
-export const LANGGRAPH_STARTER_TEMPLATE: {
-  version: number;
-  recursionLimit: number;
-  stepTimeoutMs: number;
-  inputChannels: LangGraphInputChannel[];
-  stateChannels: LangGraphStateChannel[];
-  outputPorts: LangGraphOutputPort[];
-  tools: LangGraphToolDefinition[];
-  graphSteps: LangGraphStepConfig[];
-  graphEdges: LangGraphEdgeConfig[];
-  memoryConfig: LangGraphMemoryConfig;
-} = {
-  version: 2,
-  recursionLimit: 25,
-  stepTimeoutMs: 30000,
-  inputChannels: [],
-  stateChannels: [
-    { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
-    { key: "summary", type: "string", reducer: "replace", defaultValue: "" },
-    { key: "intent", type: "string", reducer: "replace", defaultValue: "" },
-  ],
-  outputPorts: [
-    { id: "tool_call", label: "Tool Output Port" },
-    { id: "human_gate", label: "Human Approval Port" },
-    { id: "completed", label: "Completed Output Port" },
-    { id: "error", label: "Error Output Port" },
-  ],
-  tools: [],
-  graphSteps: [
-    {
-      id: "classify",
-      name: "Classify Intent",
-      type: "evaluator",
-      modelConfig: { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0 },
-    },
-    {
-      id: "agent_llm",
-      name: "Agent LLM Reasoning",
-      type: "llm_call",
-      modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 },
-    },
-    { id: "memory_sync", name: "Memory Summarizer", type: "summarizer" },
-  ],
-  graphEdges: [
-    { id: "e1", source: "START", targets: [{ id: "classify", kind: "step" }] },
-    { id: "e2", source: "classify", targets: [{ id: "agent_llm", kind: "step" }] },
-    {
-      id: "e3",
-      source: "agent_llm",
-      targets: [{ id: "tool_call", kind: "port" }],
-      condition: { field: "messages", operator: "has_tool_calls" },
-    },
-    {
-      id: "e4",
-      source: "agent_llm",
-      targets: [{ id: "memory_sync", kind: "step" }],
-      isDefault: true,
-    },
-    {
-      id: "e5",
-      source: "memory_sync",
-      targets: [{ id: "completed", kind: "port" }],
-    },
-  ],
-  memoryConfig: {
-    checkpointer: "convex",
-    threadScope: "session",
-    autoSummarize: true,
-    maxWindowMessages: 10,
-  },
-};
+
 
 export const MESSAGING_RESOURCE_TYPES = [
   "topics",

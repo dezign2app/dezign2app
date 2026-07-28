@@ -20,7 +20,7 @@ import type {
   LangGraphEdgeConfig,
   LangGraphRouterBranch,
 } from "@/types/canvas";
-import { LANGGRAPH_STARTER_TEMPLATE, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
+import { STEP_TYPE_ROUTER, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
@@ -45,11 +45,15 @@ import {
   makePortNodeId,
   stripPortPrefix,
   STEP_TYPE_LLM_CALL,
-  STEP_TYPE_ROUTER,
   TARGET_KIND_STEP,
   TARGET_KIND_PORT,
-  LLM_PROVIDER_OLLAMA,
-  LLM_PROVIDER_GROQ,
+  LLM_PROVIDERS,
+  LLM_PROVIDER_PRESETS,
+  DEFAULT_LLM_PROVIDER,
+  DEFAULT_LLM_MODEL,
+  DEFAULT_LLM_BASE_URL,
+  DEFAULT_LLM_API_KEY_ENV,
+  DEFAULT_LLM_TEMPERATURE,
 } from "../constants";
 
 interface UseLangGraphCanvasStateProps {
@@ -62,13 +66,20 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const data = node.data;
 
   const [inputChannels, setInputChannels] = useState<LangGraphInputChannel[]>(
-    data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels
+    data.inputChannels || []
   );
   const [stateChannels, setStateChannels] = useState<LangGraphStateChannel[]>(
-    data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels
+    data.stateChannels || [
+      { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+    ]
   );
   const [memoryConfig, setMemoryConfig] = useState<LangGraphMemoryConfig>(
-    data.memoryConfig || LANGGRAPH_STARTER_TEMPLATE.memoryConfig
+    data.memoryConfig || {
+      checkpointer: "convex",
+      threadScope: "session",
+      autoSummarize: true,
+      maxWindowMessages: 10,
+    }
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeSideTab, setActiveSideTab] = useState<"inspector" | "inputs" | "state" | "memory">("inspector");
@@ -77,7 +88,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
   // ── Build initial nodes from graphSteps & customLlmNodes ──
   const initialNodes = useMemo((): LangGraphCanvasNode[] => {
-    const steps: LangGraphStepConfig[] = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
+    const steps: LangGraphStepConfig[] = data.graphSteps || [];
 
     const result: LangGraphCanvasNode[] = [
       {
@@ -86,7 +97,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         position: { x: 100, y: 60 },
         data: {
           label: "Global Graph State",
-          stateChannels: data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels,
+          stateChannels: data.stateChannels || [
+            { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          ],
         },
         deletable: false,
       },
@@ -94,7 +107,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         id: NODE_ID_START,
         type: SUB_CANVAS_NODE_START,
         position: { x: 100, y: 320 },
-        data: { label: "INPUT State", inputChannels: data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels },
+        data: { label: "INPUT State", inputChannels: data.inputChannels || [] },
         deletable: false,
       },
     ];
@@ -136,7 +149,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           humanGateConfig: step.humanGateConfig,
           customCode: step.customCode,
           stateUpdates: step.stateUpdates || [],
-          availableStateChannels: data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels,
+          availableStateChannels: data.stateChannels || [
+            { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          ],
         },
       };
       result.push(stepNode);
@@ -147,7 +162,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
   // ── Build initial edges from graphEdges ──
   const initialEdges: LangGraphCanvasEdge[] = useMemo(() => {
-    const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges;
+    const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || [];
     return graphEdges
       .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
       .flatMap(
@@ -324,6 +339,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const handleAddStep = (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM, label: string) => {
     if (type === SUB_CANVAS_NODE_LLM) {
       const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
+      const defaultPreset = LLM_PROVIDER_PRESETS[DEFAULT_LLM_PROVIDER] ?? LLM_PROVIDER_PRESETS[LLM_PROVIDERS.CUSTOM];
+
       const newLLMNode: LangGraphLLMNode = {
         id: llmId,
         type: SUB_CANVAS_NODE_LLM,
@@ -331,10 +348,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         data: {
           label: label || "LLM Node",
           llmId,
-          provider: LLM_PROVIDER_OLLAMA,
-          baseUrl: "http://localhost:11434/v1",
-          model: "llama3:8b",
-          temperature: 0.7,
+          provider: DEFAULT_LLM_PROVIDER,
+          baseUrl: defaultPreset?.defaultUrl ?? DEFAULT_LLM_BASE_URL,
+          model: defaultPreset?.defaultModel ?? DEFAULT_LLM_MODEL,
+          apiKeyHeader: defaultPreset?.defaultApiKeyEnv ?? DEFAULT_LLM_API_KEY_ENV,
+          temperature: DEFAULT_LLM_TEMPERATURE,
           onDeleteLLM: () => {
             setNodes((nodes) => nodes.filter((node) => node.id !== llmId));
             setEdges((edges) => edges.filter((edge) => edge.source !== llmId && edge.target !== llmId));
@@ -367,7 +385,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
               },
             }
           : {
-              modelConfig: { provider: LLM_PROVIDER_GROQ, model: "llama-3.3-70b-versatile", temperature: 0.2 },
+              modelConfig: { provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE },
             }),
         stateUpdates: [],
         availableStateChannels: stateChannels,
@@ -476,11 +494,18 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     JSON.stringify(
       ensureLangGraphDataReachability({
         ...data,
-        graphSteps: data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps,
-        graphEdges: data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges,
-        inputChannels: data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels,
-        stateChannels: data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels,
-        memoryConfig: data.memoryConfig || LANGGRAPH_STARTER_TEMPLATE.memoryConfig,
+        graphSteps: data.graphSteps || [],
+        graphEdges: data.graphEdges || [],
+        inputChannels: data.inputChannels || [],
+        stateChannels: data.stateChannels || [
+          { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+        ],
+        memoryConfig: data.memoryConfig || {
+          checkpointer: "convex",
+          threadScope: "session",
+          autoSummarize: true,
+          maxWindowMessages: 10,
+        },
         customLlmNodes: data.customLlmNodes || [],
       })
     )

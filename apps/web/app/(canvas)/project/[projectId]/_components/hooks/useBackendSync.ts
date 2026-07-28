@@ -226,13 +226,13 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       const syncingIdentityProviderRemovals = [...pendingIdentityProviderRemovals];
 
       // Deduplicate for actual API calls
-      const uniqueNodesToSync = Array.from(new Map(syncingNodes.map(n => [n.id, n])).values());
-      const uniqueEdgesToSync = Array.from(new Map(syncingEdges.map(e => [e.id, e])).values());
-      const uniqueNodeRemovals = Array.from(new Set(syncingNodeRemovals));
-      const uniqueEdgeRemovals = Array.from(new Set(syncingEdgeRemovals));
-      const uniqueEndpointsToSync = Array.from(new Map(syncingEndpoints.map(e => [e.id, e])).values());
-      const uniqueEventsToSync = Array.from(new Map(syncingEvents.map(e => [e.id, e])).values());
-      const uniqueIdentityProvidersToSync = Array.from(new Map(syncingIdentityProviders.map(p => [p.id, p])).values());
+      const uniqueNodesToSync = Array.from(new Map(syncingNodes.filter((n): n is typeof n => Boolean(n?.id)).map(n => [n.id, n])).values());
+      const uniqueEdgesToSync = Array.from(new Map(syncingEdges.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
+      const uniqueNodeRemovals = Array.from(new Set(syncingNodeRemovals.filter(Boolean)));
+      const uniqueEdgeRemovals = Array.from(new Set(syncingEdgeRemovals.filter(Boolean)));
+      const uniqueEndpointsToSync = Array.from(new Map(syncingEndpoints.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
+      const uniqueEventsToSync = Array.from(new Map(syncingEvents.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
+      const uniqueIdentityProvidersToSync = Array.from(new Map(syncingIdentityProviders.filter((p): p is typeof p => Boolean(p?.id)).map(p => [p.id, p])).values());
 
       Promise.all([
         ...uniqueNodesToSync.map((n) => {

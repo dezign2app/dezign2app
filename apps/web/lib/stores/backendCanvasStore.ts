@@ -9,6 +9,7 @@ import {
   Connection,
 } from "@xyflow/react";
 import { Endpoint, AnyMessagingResource, MessagingResourceType, IdentityProvider } from "@workspace/canvas/types";
+import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "@workspace/canvas/constants";
 import { generateKeyBetween } from "fractional-indexing";
 import { isValidConnection } from "@workspace/canvas";
 
@@ -468,7 +469,7 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         label: stepName,
         stepId,
         stepType: (stepType as NonNullable<BackendNode["data"]["stepType"]>) || "llm_call",
-        modelConfig: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.2 },
+        modelConfig: { provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE },
       },
       selected: true,
     };
@@ -481,6 +482,8 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
   updateNode: (id, changes) => {
     console.log("backendCanvasStore: updateNode called for id", id, changes);
+    const updatedNode = get().nodes.find((n) => n.id === id);
+    if (!updatedNode) return;
     const next = get().nodes.map((n) => (n.id === id ? { ...n, ...changes } : n));
     const updated = next.find((n) => n.id === id)!;
     console.log("backendCanvasStore: adding to pendingNodeUpserts", updated);

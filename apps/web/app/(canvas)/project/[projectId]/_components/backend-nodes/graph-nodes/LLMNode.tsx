@@ -11,6 +11,8 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Input } from "@workspace/ui/components/input";
 
+import { LLM_PROVIDER_OPTIONS } from "@workspace/canvas/constants";
+
 export const LLMNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -39,13 +41,11 @@ export const LLMNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           >
             <SelectTrigger className="h-6 text-xs flex-1"><SelectValue placeholder="Select..." /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="OpenAI" className="text-xs">OpenAI</SelectItem>
-              <SelectItem value="Anthropic" className="text-xs">Anthropic</SelectItem>
-              <SelectItem value="Google Gemini" className="text-xs">Google Gemini</SelectItem>
-              <SelectItem value="Mistral" className="text-xs">Mistral</SelectItem>
-              <SelectItem value="Cohere" className="text-xs">Cohere</SelectItem>
-              <SelectItem value="Ollama" className="text-xs">Ollama</SelectItem>
-              <SelectItem value="Other" className="text-xs">Other</SelectItem>
+              {LLM_PROVIDER_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

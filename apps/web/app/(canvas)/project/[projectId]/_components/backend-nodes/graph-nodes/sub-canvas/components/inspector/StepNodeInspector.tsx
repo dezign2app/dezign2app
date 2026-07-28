@@ -7,14 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@workspace/ui/components/switch";
 import type { LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
-import {
-  STEP_TYPE_ROUTER,
-  LLM_PROVIDER_GROQ,
-  LLM_PROVIDER_OPENAI,
-  LLM_PROVIDER_ANTHROPIC,
-  LLM_PROVIDER_GOOGLE,
-  LLM_PROVIDER_OTHER,
-} from "../../constants";
+import { LLM_PROVIDER_OPTIONS, STEP_TYPE_ROUTER, DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL } from "../../constants";
 import { RouterNodeInspector } from "./RouterNodeInspector";
 
 interface StepNodeInspectorProps {
@@ -70,8 +63,8 @@ export function StepNodeInspector({
                 if (checked) {
                   onUpdateStep({
                     modelConfig: {
-                      provider: selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ,
-                      model: selectedStepData.modelConfig?.model || "llama-3.3-70b-versatile",
+                      provider: selectedStepData.modelConfig?.provider || DEFAULT_LLM_PROVIDER,
+                      model: selectedStepData.modelConfig?.model || DEFAULT_LLM_MODEL,
                     },
                   });
                 } else {
@@ -86,7 +79,7 @@ export function StepNodeInspector({
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">Provider</Label>
                 <Select
-                  value={selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ}
+                  value={selectedStepData.modelConfig?.provider || DEFAULT_LLM_PROVIDER}
                   onValueChange={(v: string) =>
                     onUpdateStep({
                       modelConfig: {
@@ -100,11 +93,11 @@ export function StepNodeInspector({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={LLM_PROVIDER_GROQ}>Groq</SelectItem>
-                    <SelectItem value={LLM_PROVIDER_OPENAI}>OpenAI</SelectItem>
-                    <SelectItem value={LLM_PROVIDER_ANTHROPIC}>Anthropic</SelectItem>
-                    <SelectItem value={LLM_PROVIDER_GOOGLE}>Google</SelectItem>
-                    <SelectItem value={LLM_PROVIDER_OTHER}>Other (Custom LLM)</SelectItem>
+                    {LLM_PROVIDER_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

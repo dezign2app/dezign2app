@@ -8,7 +8,6 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "./shared";
-import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import { LangGraphCanvasModal } from "./LangGraphCanvasModal";
 
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
@@ -36,10 +35,10 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
     setEditorOpen(true);
   };
 
-  const inputChannels = data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels;
-  const stateChannels = data.stateChannels || LANGGRAPH_STARTER_TEMPLATE.stateChannels;
-  const graphSteps = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
-  const memoryConfig = data.memoryConfig || LANGGRAPH_STARTER_TEMPLATE.memoryConfig;
+  const inputChannels = data.inputChannels || [];
+  const stateChannels = data.stateChannels || [];
+  const graphSteps = data.graphSteps || [];
+  const memoryConfig = data.memoryConfig || { checkpointer: "convex", threadScope: "session", autoSummarize: true, maxWindowMessages: 10 };
 
   return (
     <>

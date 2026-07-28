@@ -9,7 +9,8 @@ import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "./shared";
-import { LLM_PROVIDER_PRESETS } from "./sub-canvas/constants";
+
+import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "@workspace/canvas/constants";
 
 export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -23,12 +24,6 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
 
   const stepType = data.stepType || "llm_call";
 
-  const modelConfig = data.modelConfig as {
-    provider?: string;
-    model?: string;
-    temperature?: number;
-  } | undefined;
-
   const isLLMEnabled = !!data.modelConfig;
 
   const handleToggleLLMConfig = (enabled: boolean) => {
@@ -36,10 +31,10 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
       updateNode(id, {
         data: {
           ...data,
-          modelConfig: {
-            provider: modelConfig?.provider || "groq",
-            model: modelConfig?.model || "llama-3.3-70b",
-            temperature: modelConfig?.temperature ?? 0.7,
+          modelConfig: data.modelConfig || {
+            provider: DEFAULT_LLM_PROVIDER,
+            model: DEFAULT_LLM_MODEL,
+            temperature: DEFAULT_LLM_TEMPERATURE,
           },
         },
       });
@@ -47,20 +42,6 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
       const { modelConfig: _, ...restData } = data;
       updateNode(id, { data: restData });
     }
-  };
-
-  const handleUpdateModelConfig = (updates: Partial<NonNullable<typeof modelConfig>>) => {
-    updateNode(id, {
-      data: {
-        ...data,
-        modelConfig: {
-          provider: modelConfig?.provider || "groq",
-          model: modelConfig?.model || "llama-3.3-70b",
-          temperature: modelConfig?.temperature ?? 0.7,
-          ...updates,
-        },
-      },
-    });
   };
 
   const handleNameSave = () => {
@@ -92,16 +73,15 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
     >
-      {/* Input Handle on Left (Target) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input"
-        className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform"
-      />
-
       {/* Header Bar */}
-      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2 relative">
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="input"
+          className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+          title="Incoming connection"
+        />
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
             {stepType === "llm_call" && <Brain className="w-3.5 h-3.5" />}
@@ -186,7 +166,16 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
       </div>
 
       {/* LLM Config Toggle Section */}
-      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 mt-1 nodrag">
+      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
+        {isLLMEnabled && (
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="llm_in"
+            className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+            title="Connect LLM node"
+          />
+        )}
         <div className="flex items-center gap-1.5">
           <Brain className="w-3.5 h-3.5 text-emerald-400" />
           <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
@@ -199,69 +188,14 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           onCheckedChange={handleToggleLLMConfig}
           className="nodrag scale-75 origin-right"
         />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
+          title="Outgoing connection"
+        />
       </div>
-
-      {/* LLM Config Controls - Visible only when turned ON */}
-      {isLLMEnabled && modelConfig && (
-        <div className="flex flex-col gap-2 p-2 rounded-lg bg-secondary/30 border border-border/40 text-xs nodrag">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Provider</Label>
-            <Select
-              value={modelConfig.provider || "groq"}
-              onValueChange={(val) => {
-                const preset = LLM_PROVIDER_PRESETS[val];
-                handleUpdateModelConfig({
-                  provider: val,
-                  model: preset?.defaultModel || modelConfig.model || "custom-model",
-                });
-              }}
-            >
-              <SelectTrigger className="h-6 text-[10px] flex-1 bg-background/50 border-emerald-500/30">
-                <SelectValue placeholder="Provider" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(LLM_PROVIDER_PRESETS).map(([key, preset]) => (
-                  <SelectItem key={key} value={key}>
-                    {preset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Model</Label>
-            <LocalInput
-              className="h-6 text-[10px] flex-1 font-mono bg-background/50 border-emerald-500/30"
-              placeholder="e.g. llama-3.3-70b"
-              value={modelConfig.model || ""}
-              onChange={(e) => handleUpdateModelConfig({ model: e.target.value })}
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Temp</Label>
-            <LocalInput
-              type="number"
-              step="0.1"
-              min="0"
-              max="2"
-              className="h-6 text-[10px] flex-1 font-mono bg-background/50 border-emerald-500/30"
-              placeholder="0.7"
-              value={modelConfig.temperature ?? ""}
-              onChange={(e) => handleUpdateModelConfig({ temperature: parseFloat(e.target.value) || undefined })}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Output Handle on Right (Source) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform"
-      />
     </div>
   );
 };

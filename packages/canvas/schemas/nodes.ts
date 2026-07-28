@@ -10,6 +10,7 @@ import {
   ALL_DATABASE_ORM_VALUES,
   ALL_DATABASE_ORM_VERSION_VALUES,
 } from "../techStack";
+import { ALL_LLM_PROVIDER_VALUES, DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "../constants";
 
 export const baseNodeDataSchema = z.object({
   label: z.string().optional(),
@@ -522,7 +523,7 @@ export const llmDataSchema = baseNodeDataSchema.extend({
   // Core Resources (Basic)
   prompts:         z.array(resourceItemSchema).optional(),
   // Implementation (Basic)
-  implementation:  z.enum(["OpenAI", "Anthropic", "Google Gemini", "Mistral", "Cohere", "Ollama", "Other"]).optional(),
+  implementation:  z.enum(ALL_LLM_PROVIDER_VALUES).optional(),
   model:           z.string().optional(),                 // "gpt-4o", "claude-3-5-sonnet", etc.
   // Configuration (Advanced)
   temperature:     z.number().optional(),
@@ -665,9 +666,9 @@ export const graphStepSchema = z.object({
   ]),
   modelConfig: z
     .object({
-      provider: z.string().optional().default("groq"),
-      model: z.string().default("llama-3.3-70b-versatile"),
-      temperature: z.number().default(0.2),
+      provider: z.string().optional().default(DEFAULT_LLM_PROVIDER),
+      model: z.string().default(DEFAULT_LLM_MODEL),
+      temperature: z.number().default(DEFAULT_LLM_TEMPERATURE),
       maxTokens: z.number().default(4000),
       systemPrompt: z.string().optional(),
       baseUrl: z.string().optional(),
@@ -815,6 +816,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     const stepIds = new Set(data.graphSteps.map((s) => s.id));
     const toolIds = new Set(data.tools.map((t) => t.id));
     const portIds = new Set(data.outputPorts.map((p) => p.id));
+    const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
 
     // 1. Enforce Step Type Restrictions on retryPolicy & Tool Integrity
     data.graphSteps.forEach((step, idx) => {
@@ -853,10 +855,10 @@ export const langgraphDataSchema = baseNodeDataSchema
         });
       }
 
-      if (edge.source !== "START" && !stepIds.has(edge.source)) {
+      if (edge.source !== "START" && !stepIds.has(edge.source) && !customLlmIds.has(edge.source)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Edge source "${edge.source}" does not exist in graphSteps.`,
+          message: `Edge source "${edge.source}" does not exist in graphSteps or customLlmNodes.`,
           path: ["graphEdges", idx, "source"],
         });
       }

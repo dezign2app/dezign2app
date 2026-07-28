@@ -70,8 +70,6 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           ? "border-emerald-400 ring-2 ring-emerald-400/20 shadow-emerald-500/10"
           : "border-emerald-500/30 hover:border-emerald-400/70"
       )}
-      onClick={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* Header Bar */}
       <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2 relative">
@@ -167,16 +165,14 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
 
       {/* LLM Config Toggle Section */}
       <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
-        {isLLMEnabled && (
-          <Handle
-            type="target"
-            position={Position.Left}
-            id={HANDLE_LLM_IN}
-            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT}
-            className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-            title="Connect LLM node"
-          />
-        )}
+        <Handle
+          type="target"
+          position={Position.Left}
+          id={HANDLE_LLM_IN}
+          isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
+          className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+          title="Connect LLM node"
+        />
         <div className="flex items-center gap-1.5">
           <Brain className="w-3.5 h-3.5 text-emerald-400" />
           <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">

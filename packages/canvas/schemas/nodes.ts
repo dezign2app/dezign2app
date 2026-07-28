@@ -592,6 +592,7 @@ export const conditionAstSchema: z.ZodType<ConditionAst> = z.lazy(() =>
 export const graphEdgeTargetSchema = z.object({
   id: z.string(),
   kind: z.enum(["step", "port", "end"]),
+  targetHandle: z.string().optional(),
 });
 export type GraphEdgeTarget = z.infer<typeof graphEdgeTargetSchema>;
 
@@ -607,6 +608,8 @@ export type SendConfig = z.infer<typeof sendConfigSchema>;
 export const graphEdgeSchema = z.object({
   id: z.string(),
   source: z.string(),
+  sourceHandle: z.string().optional(),
+  targetHandle: z.string().optional(),
   targets: z.array(graphEdgeTargetSchema).default([]),
   condition: conditionAstSchema.optional(),
   isDefault: z.boolean().default(false),

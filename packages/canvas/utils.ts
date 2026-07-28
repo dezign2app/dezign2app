@@ -7,7 +7,7 @@ const ALL_BACKEND_NODE_TYPES = [
   "redis-streams", "sqs", "redis-pubsub", "redis-cache", "entity", 
   "webClient", "external", "group", "db_ref", "storage",
   "worker", "serverless", "search_index", "api_gateway", 
-  "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref", "langgraph"
+  "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref", "langgraph", "langgraph_step"
 ] as const;
 
 export function isBackendNode(type: string): type is BackendNodeType {
@@ -42,6 +42,20 @@ export function classifyHandle(
   handleDirection: "source" | "target",
 ): HandleKind {
   const id = handleId ?? "";
+
+  if (id === "llm_out" || id.startsWith("llm_out")) return "llm-out";
+  if (id === "llm_in" || id.startsWith("llm_in")) return "llm-in";
+
+  if (nodeType === "llm") {
+    if (handleDirection === "source") return "llm-out";
+    if (handleDirection === "target") return "llm-in";
+  }
+
+  if (nodeType === "langgraph_step") {
+    if (id === "llm_in") return "llm-in";
+    if (handleDirection === "target") return "step-in";
+    if (handleDirection === "source") return "step-out";
+  }
 
   if (nodeType === "entity") {
     if (id.startsWith("source-")) return "entity-column-source";

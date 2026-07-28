@@ -23,6 +23,10 @@ export const CONNECTION_RULES: Record<HandleKind, HandleKind[]> = {
   "task-out": ["database-target", "action-target", "resource-def-in", "endpoint-in", "index-in"],
   "index-in": [],
   "index-out": ["endpoint-in", "task-in"],
+  "llm-out": ["llm-in", "step-in"],
+  "llm-in": [],
+  "step-out": ["step-in", "endpoint-in", "database-target"],
+  "step-in": [],
   "unknown": [],
 };
 

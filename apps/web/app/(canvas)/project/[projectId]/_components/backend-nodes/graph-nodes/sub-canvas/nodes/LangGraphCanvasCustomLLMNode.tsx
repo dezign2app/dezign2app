@@ -57,8 +57,6 @@ export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<C
       className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[300px] max-w-[360px] p-3 flex flex-col gap-2.5 transition-all duration-200 shadow-xl relative group ${
         selected ? "border-sky-400 ring-4 ring-sky-400/20 shadow-sky-400/10" : "border-sky-500/40 hover:border-sky-400/80"
       }`}
-      onClick={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">

@@ -168,14 +168,25 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return graphEdges
       .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
       .flatMap(
-        (e) => (e.targets || []).map((t) => ({
-          id: `${e.id}_${t.id}`,
-          source: e.source,
-          target: t.id,
-          animated: true,
-          style: { stroke: "#a1a1aa", strokeWidth: 2 },
-          ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
-        }))
+        (e) => (e.targets || []).map((t) => {
+          const isLLMSource = e.sourceHandle === HANDLE_LLM_OUT || e.source.startsWith("llm_") || (data.customLlmNodes || []).some((c) => c.id === e.source);
+          const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : undefined);
+          const targetHandle = e.targetHandle || (t as any).targetHandle || (isLLMSource ? HANDLE_LLM_IN : undefined);
+          const isLLM = isLLMSource || sourceHandle === HANDLE_LLM_OUT || targetHandle === HANDLE_LLM_IN;
+
+          return {
+            id: `${e.id}_${t.id}`,
+            source: e.source,
+            target: t.id,
+            ...(sourceHandle ? { sourceHandle } : {}),
+            ...(targetHandle ? { targetHandle } : {}),
+            animated: true,
+            style: isLLM 
+              ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" } 
+              : { stroke: "#a1a1aa", strokeWidth: 2 },
+            ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
+          };
+        })
       );
   }, []);
 
@@ -303,7 +314,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       if (connection.source === connection.target) return false;
 
       const sourceNode = nodes.find((n) => n.id === connection.source);
-      const isLLMSource = connection.sourceHandle === HANDLE_LLM_OUT || sourceNode?.type === SUB_CANVAS_NODE_LLM;
+      const isLLMSource = connection.sourceHandle === HANDLE_LLM_OUT || sourceNode?.type === SUB_CANVAS_NODE_LLM || connection.source?.startsWith("llm_");
       const isLLMTarget = connection.targetHandle === HANDLE_LLM_IN;
 
       if (isLLMSource && !isLLMTarget) return false;
@@ -319,9 +330,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       setEdges((eds) => {
         if (!isValidConnection(params)) return eds;
 
-        const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN;
+        const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN || Boolean(params.source?.startsWith("llm_"));
         const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === SUB_CANVAS_NODE_STEP);
         const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
+
+        const sourceHandle = isLLM ? HANDLE_LLM_OUT : params.sourceHandle;
+        const targetHandle = isLLM ? HANDLE_LLM_IN : params.targetHandle;
 
         const label = routerBranch
           ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
@@ -344,6 +358,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         return rfAddEdge(
           {
             ...params,
+            sourceHandle,
+            targetHandle,
             animated: true,
             ...(label ? { label, labelStyle, labelBgStyle } : {}),
             style,
@@ -495,9 +511,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       .map((e) => ({
         id: e.id,
         source: e.source,
+        sourceHandle: e.sourceHandle || undefined,
+        targetHandle: e.targetHandle || undefined,
         targets: [{
           id: stripPortPrefix(e.target),
           kind: TARGET_KIND_STEP,
+          targetHandle: e.targetHandle || undefined,
         }],
       }));
 

@@ -173,8 +173,6 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
           ? "border-sky-500 shadow-sky-500/10"
           : "border-border hover:border-border/80"
       }`}
-      onClick={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 relative">
         <Handle
@@ -258,16 +256,14 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
       {/* LLM Configuration Option - Only for non-router nodes */}
       {stepType !== STEP_TYPE_ROUTER && (
         <div className="flex flex-col gap-1.5 border-t border-border/50 py-2.5 nodrag relative px-3">
-          {modelConfig && (
-            <Handle
-              type="target"
-              position={Position.Left}
-              id={HANDLE_LLM_IN}
-              isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT}
-              className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-              title="Connect Custom LLM Node"
-            />
-          )}
+          <Handle
+            type="target"
+            position={Position.Left}
+            id={HANDLE_LLM_IN}
+            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
+            className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+            title="Connect Custom LLM Node"
+          />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Brain className="w-3.5 h-3.5 text-sky-400" />

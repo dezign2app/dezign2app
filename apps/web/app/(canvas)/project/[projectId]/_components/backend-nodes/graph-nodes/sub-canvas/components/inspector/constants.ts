@@ -6,7 +6,7 @@ export interface ProviderPreset {
   models: string[];
 }
 
-export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
+export const LLM_PROVIDER_PRESETS: Record<string, ProviderPreset> = {
   openai: {
     label: "OpenAI (ChatGPT)",
     defaultModel: "gpt-4o-mini",
@@ -43,3 +43,6 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     models: [],
   },
 };
+
+
+

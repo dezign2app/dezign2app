@@ -5,8 +5,11 @@ import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { Switch } from "@workspace/ui/components/switch";
+import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "./shared";
+import { LLM_PROVIDER_PRESETS } from "./sub-canvas/constants";
 
 export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -19,6 +22,46 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
   }, [data.label]);
 
   const stepType = data.stepType || "llm_call";
+
+  const modelConfig = data.modelConfig as {
+    provider?: string;
+    model?: string;
+    temperature?: number;
+  } | undefined;
+
+  const isLLMEnabled = !!data.modelConfig;
+
+  const handleToggleLLMConfig = (enabled: boolean) => {
+    if (enabled) {
+      updateNode(id, {
+        data: {
+          ...data,
+          modelConfig: {
+            provider: modelConfig?.provider || "groq",
+            model: modelConfig?.model || "llama-3.3-70b",
+            temperature: modelConfig?.temperature ?? 0.7,
+          },
+        },
+      });
+    } else {
+      const { modelConfig: _, ...restData } = data;
+      updateNode(id, { data: restData });
+    }
+  };
+
+  const handleUpdateModelConfig = (updates: Partial<NonNullable<typeof modelConfig>>) => {
+    updateNode(id, {
+      data: {
+        ...data,
+        modelConfig: {
+          provider: modelConfig?.provider || "groq",
+          model: modelConfig?.model || "llama-3.3-70b",
+          temperature: modelConfig?.temperature ?? 0.7,
+          ...updates,
+        },
+      },
+    });
+  };
 
   const handleNameSave = () => {
     setIsEditingName(false);
@@ -142,10 +185,73 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         </Select>
       </div>
 
-      {/* Details Badge */}
-      {data.modelConfig && (
-        <div className="text-[9px] font-mono text-muted-foreground bg-secondary/30 px-1.5 py-0.5 rounded border border-border/40 truncate">
-          {data.modelConfig.provider || "groq"}:{data.modelConfig.model || "llama-3.3-70b"}
+      {/* LLM Config Toggle Section */}
+      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 mt-1 nodrag">
+        <div className="flex items-center gap-1.5">
+          <Brain className="w-3.5 h-3.5 text-emerald-400" />
+          <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
+            LLM Config
+          </Label>
+        </div>
+        <Switch
+          id={`llm-switch-${id}`}
+          checked={isLLMEnabled}
+          onCheckedChange={handleToggleLLMConfig}
+          className="nodrag scale-75 origin-right"
+        />
+      </div>
+
+      {/* LLM Config Controls - Visible only when turned ON */}
+      {isLLMEnabled && modelConfig && (
+        <div className="flex flex-col gap-2 p-2 rounded-lg bg-secondary/30 border border-border/40 text-xs nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Provider</Label>
+            <Select
+              value={modelConfig.provider || "groq"}
+              onValueChange={(val) => {
+                const preset = LLM_PROVIDER_PRESETS[val];
+                handleUpdateModelConfig({
+                  provider: val,
+                  model: preset?.defaultModel || modelConfig.model || "custom-model",
+                });
+              }}
+            >
+              <SelectTrigger className="h-6 text-[10px] flex-1 bg-background/50 border-emerald-500/30">
+                <SelectValue placeholder="Provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(LLM_PROVIDER_PRESETS).map(([key, preset]) => (
+                  <SelectItem key={key} value={key}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Model</Label>
+            <LocalInput
+              className="h-6 text-[10px] flex-1 font-mono bg-background/50 border-emerald-500/30"
+              placeholder="e.g. llama-3.3-70b"
+              value={modelConfig.model || ""}
+              onChange={(e) => handleUpdateModelConfig({ model: e.target.value })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] text-muted-foreground shrink-0 w-14">Temp</Label>
+            <LocalInput
+              type="number"
+              step="0.1"
+              min="0"
+              max="2"
+              className="h-6 text-[10px] flex-1 font-mono bg-background/50 border-emerald-500/30"
+              placeholder="0.7"
+              value={modelConfig.temperature ?? ""}
+              onChange={(e) => handleUpdateModelConfig({ temperature: parseFloat(e.target.value) || undefined })}
+            />
+          </div>
         </div>
       )}
 

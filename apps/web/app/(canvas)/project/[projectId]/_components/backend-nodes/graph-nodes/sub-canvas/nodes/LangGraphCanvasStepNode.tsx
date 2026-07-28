@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Edge } from "@xyflow/react";
 import { Code2, Zap, Trash2, Brain, ChevronDown, ChevronUp, X, Globe, Link2, GitBranch, Plus, Settings, Check } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { Switch } from "@workspace/ui/components/switch";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
 import {
   SUB_CANVAS_NODE_STEP,
@@ -265,46 +266,47 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
             />
           )}
           <div className="flex items-center justify-between">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 text-[10px] font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors nodrag"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!modelConfig) {
-                  handleUpdateModelConfig({ provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.7 });
-                  setIsLLMExpanded(true);
-                } else {
-                  setIsLLMExpanded(!isLLMExpanded);
-                }
-              }}
-            >
+            <div className="flex items-center gap-1.5">
               <Brain className="w-3.5 h-3.5 text-sky-400" />
-              <span>LLM Config</span>
-              {modelConfig ? (
-                isLLMExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />
-              ) : (
-                <span className="text-[9px] font-mono text-muted-foreground/70 normal-case font-normal">(Off)</span>
+              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">
+                LLM Config
+              </span>
+              {modelConfig && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLLMExpanded(!isLLMExpanded);
+                  }}
+                  className="text-sky-400 hover:text-sky-300 p-0.5 nodrag"
+                  title="Expand/collapse LLM Config"
+                >
+                  {isLLMExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
               )}
-            </button>
+            </div>
 
-            {modelConfig && (
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              {modelConfig && (
                 <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 truncate max-w-[90px]">
                   {linkedCustomLLM ? linkedCustomLLM.data.label : (modelConfig.provider || "groq")}
                 </span>
-                <button
-                  type="button"
-                  className="text-[9px] text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10 transition-colors nodrag"
-                  onClick={(e) => {
-                    e.stopPropagation();
+              )}
+
+              <Switch
+                checked={!!modelConfig}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    handleUpdateModelConfig({ provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.7 });
+                    setIsLLMExpanded(true);
+                  } else {
                     handleUpdateModelConfig(null);
-                  }}
-                  title="Remove LLM Config"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
+                    setIsLLMExpanded(false);
+                  }
+                }}
+                className="nodrag scale-75 origin-right"
+              />
+            </div>
           </div>
 
           {modelConfig && isLLMExpanded && (

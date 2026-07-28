@@ -6,13 +6,11 @@ import type {
   LangGraphMemoryConfig,
 } from "@/types/canvas";
 import type { StepNodeData, LangGraphLLMNodeData } from "../types";
-import { PROVIDER_PRESETS } from "./inspector/constants";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 import { InputsTabContent } from "./inspector/InputsTabContent";
 import { StateTabContent } from "./inspector/StateTabContent";
 import { MemoryTabContent } from "./inspector/MemoryTabContent";
 
-export { PROVIDER_PRESETS };
 
 export interface InspectorSidebarProps {
   activeSideTab: "inspector" | "inputs" | "state" | "memory";

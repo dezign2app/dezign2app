@@ -38,6 +38,8 @@ import {
   SUB_CANVAS_NODE_PORT,
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
+  HANDLE_LLM_IN,
+  HANDLE_LLM_OUT,
   NODE_ID_START,
   NODE_ID_STATE_GLOBAL,
   NODE_ID_PREFIX_PORT,
@@ -295,9 +297,29 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     []
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection): boolean => {
+      if (!connection.source || !connection.target) return false;
+      if (connection.source === connection.target) return false;
+
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const isLLMSource = connection.sourceHandle === HANDLE_LLM_OUT || sourceNode?.type === SUB_CANVAS_NODE_LLM;
+      const isLLMTarget = connection.targetHandle === HANDLE_LLM_IN;
+
+      if (isLLMSource && !isLLMTarget) return false;
+      if (isLLMTarget && !isLLMSource) return false;
+
+      return true;
+    },
+    [nodes]
+  );
+
   const onConnect = useCallback(
     (params: Connection) =>
       setEdges((eds) => {
+        if (!isValidConnection(params)) return eds;
+
+        const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN;
         const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === SUB_CANVAS_NODE_STEP);
         const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
 
@@ -305,7 +327,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
           : undefined;
 
-        const style = routerBranch
+        const style = isLLM
+          ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" }
+          : routerBranch
           ? { stroke: "#38bdf8", strokeWidth: 2 }
           : { stroke: "#a1a1aa", strokeWidth: 2 };
 
@@ -327,7 +351,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           eds
         );
       }),
-    [nodes]
+    [nodes, isValidConnection]
   );
 
   const selectedStepData = useMemo((): StepNodeData | null => {
@@ -591,6 +615,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     onNodesChange,
     onEdgesChange,
     onConnect,
+    isValidConnection,
     handleAddStep,
     updateSelectedStep,
     updateSelectedLLM,

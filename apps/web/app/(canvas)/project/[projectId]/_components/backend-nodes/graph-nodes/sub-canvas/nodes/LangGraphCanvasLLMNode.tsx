@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
+import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
 import { Globe, Trash2, Code, Key, Shield, Sparkles, Brain } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
-import { SUB_CANVAS_NODE_LLM } from "../constants";
+import { SUB_CANVAS_NODE_LLM, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "../constants";
 import { LLM_PROVIDER_PRESETS } from "../components/inspector/constants";
 import { LocalInput, LocalTextarea } from "../../shared";
 
@@ -317,7 +317,8 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
       <Handle
         type="source"
         position={Position.Right}
-        id="llm_out"
+        id={HANDLE_LLM_OUT}
+        isValidConnection={(connection: Connection) => connection.targetHandle === HANDLE_LLM_IN}
         className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
         title="Connect to Step Node LLM Config"
       />

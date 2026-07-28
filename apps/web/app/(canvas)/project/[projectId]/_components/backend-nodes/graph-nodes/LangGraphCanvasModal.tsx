@@ -89,6 +89,7 @@ function LangGraphCanvasContent({
     onNodesChange,
     onEdgesChange,
     onConnect,
+    isValidConnection,
     handleAddStep,
     updateSelectedStep,
     updateSelectedLLM,
@@ -142,6 +143,7 @@ function LangGraphCanvasContent({
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
             nodeTypes={langGraphCanvasNodeTypes}
             deleteKeyCode={["Backspace", "Delete"]}
             edgesReconnectable={true}

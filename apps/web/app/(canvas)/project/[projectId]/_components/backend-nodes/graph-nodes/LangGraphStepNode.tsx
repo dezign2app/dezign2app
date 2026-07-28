@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position } from "@xyflow/react";
+import { NodeProps, Handle, Position, Connection } from "@xyflow/react";
 import { Brain, Trash2, Settings, ShieldCheck, Wrench, Code2, Database } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
@@ -10,7 +10,7 @@ import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "./shared";
 
-import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "@workspace/canvas/constants";
+import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "@workspace/canvas/constants";
 
 export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -171,7 +171,8 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           <Handle
             type="target"
             position={Position.Left}
-            id="llm_in"
+            id={HANDLE_LLM_IN}
+            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT}
             className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
             title="Connect LLM node"
           />

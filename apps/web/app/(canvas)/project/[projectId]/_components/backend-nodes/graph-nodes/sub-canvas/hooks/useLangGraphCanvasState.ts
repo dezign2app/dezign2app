@@ -78,7 +78,6 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   // ── Build initial nodes from graphSteps & customLlmNodes ──
   const initialNodes = useMemo((): LangGraphCanvasNode[] => {
     const steps: LangGraphStepConfig[] = data.graphSteps || LANGGRAPH_STARTER_TEMPLATE.graphSteps;
-    const ports: LangGraphOutputPort[] = data.outputPorts || LANGGRAPH_STARTER_TEMPLATE.outputPorts;
 
     const result: LangGraphCanvasNode[] = [
       {
@@ -143,33 +142,24 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       result.push(stepNode);
     });
 
-    ports.forEach((p, idx) => {
-      const portNode: PortNode = {
-        id: makePortNodeId(p.id),
-        type: SUB_CANVAS_NODE_PORT,
-        position: { x: 420 + steps.length * 280 + 80, y: 100 + idx * 100 },
-        data: { label: p.label, portId: p.id },
-        deletable: false,
-      };
-      result.push(portNode);
-    });
-
     return result;
   }, []); // computed once on mount
 
   // ── Build initial edges from graphEdges ──
   const initialEdges: LangGraphCanvasEdge[] = useMemo(() => {
     const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || LANGGRAPH_STARTER_TEMPLATE.graphEdges;
-    return graphEdges.flatMap(
-      (e) => (e.targets || []).map((t) => ({
-        id: `${e.id}_${t.id}`,
-        source: e.source,
-        target: t.kind === TARGET_KIND_PORT ? makePortNodeId(t.id) : t.id,
-        animated: true,
-        style: { stroke: "#a1a1aa", strokeWidth: 2 },
-        ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
-      }))
-    );
+    return graphEdges
+      .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
+      .flatMap(
+        (e) => (e.targets || []).map((t) => ({
+          id: `${e.id}_${t.id}`,
+          source: e.source,
+          target: t.id,
+          animated: true,
+          style: { stroke: "#a1a1aa", strokeWidth: 2 },
+          ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
+        }))
+      );
   }, []);
 
   const [nodes, setNodes] = useState<LangGraphCanvasNode[]>(initialNodes);
@@ -465,7 +455,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         source: e.source,
         targets: [{
           id: stripPortPrefix(e.target),
-          kind: (e.target.startsWith(NODE_ID_PREFIX_PORT) ? TARGET_KIND_PORT : TARGET_KIND_STEP) as "port" | "step",
+          kind: TARGET_KIND_STEP,
         }],
       }));
 

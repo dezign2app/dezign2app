@@ -43,6 +43,11 @@ export const SUB_CANVAS_NODE_PORT         = "port" as const;
 export const SUB_CANVAS_NODE_STATE_GLOBAL = "state_global" as const;
 export const SUB_CANVAS_NODE_LLM          = "langgraph_llm" as const;
 export const SUB_CANVAS_NODE_TOOL         = "langgraph_tool" as const;
+export const SUB_CANVAS_NODE_MIDDLEWARE   = "langgraph_middleware" as const;
+export const SUB_CANVAS_NODE_AGENT        = "langgraph_agent" as const;
+
+export const HANDLE_MIDDLEWARE_IN  = "middleware_in" as const;
+export const HANDLE_MIDDLEWARE_OUT = "middleware_out" as const;
 
 // ─── Reserved Sub-Canvas Node IDs ─────────────────────────────────────────────
 export const NODE_ID_START        = "START" as const;

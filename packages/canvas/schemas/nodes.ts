@@ -660,6 +660,41 @@ export const toolDefinitionSchema = z.object({
 });
 export type ToolDefinition = z.infer<typeof toolDefinitionSchema>;
 
+export const middlewareDefinitionSchema = z.object({
+  id: z.string().optional(),
+  middlewareId: z.string().optional(),
+  name: z.string(),
+  type: z.enum(["human_in_the_loop", "rate_limit", "logging_tracing", "custom"]),
+  humanInTheLoopConfig: z.object({
+    interruptOn: z.record(z.boolean()).optional(),
+    approvalPrompt: z.string().optional(),
+    requiredRole: z.string().optional(),
+  }).optional(),
+  rateLimitConfig: z.object({
+    requestsPerMinute: z.number(),
+    windowMs: z.number().optional(),
+  }).optional(),
+  loggingConfig: z.object({
+    logLevel: z.enum(["debug", "info", "warn", "error"]),
+    tracingTarget: z.enum(["langsmith", "opentelemetry", "convex"]).optional(),
+  }).optional(),
+  customBody: z.string().optional(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
+});
+export type MiddlewareDefinition = z.infer<typeof middlewareDefinitionSchema>;
+
+export const agentDefinitionSchema = z.object({
+  id: z.string().optional(),
+  agentId: z.string().optional(),
+  name: z.string(),
+  systemPrompt: z.string().optional(),
+  modelConfig: z.any().optional(),
+  tools: z.array(z.string()).optional().default([]),
+  middleware: z.array(z.string()).optional().default([]),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
+});
+export type AgentDefinition = z.infer<typeof agentDefinitionSchema>;
+
 export const vectorStoreConfigSchema = z.object({
   enabled: z.boolean().default(false),
   provider: z.enum(["convex", "pinecone", "pgvector", "qdrant"]).default("convex"),
@@ -815,6 +850,8 @@ export const langgraphDataSchema = baseNodeDataSchema
       ]),
 
     toolDefinitions: z.array(toolDefinitionSchema).default([]),
+    middlewareDefinitions: z.array(middlewareDefinitionSchema).default([]),
+    agentDefinitions: z.array(agentDefinitionSchema).default([]),
     tools: z.array(z.any()).default([]), // For backwards compatibility if needed
     graphSteps: z.array(graphStepSchema).default([]),
     graphEdges: z.array(graphEdgeSchema).default([]),
@@ -852,6 +889,8 @@ export const langgraphDataSchema = baseNodeDataSchema
   .superRefine((data, ctx) => {
     const stepIds = new Set(data.graphSteps.map((s) => s.id));
     const toolIds = new Set(data.toolDefinitions.map((t) => t.toolId || t.id).filter((id): id is string => Boolean(id)));
+    const middlewareIds = new Set(data.middlewareDefinitions.map((m) => m.middlewareId || m.id).filter((id): id is string => Boolean(id)));
+    const agentIds = new Set(data.agentDefinitions.map((a) => a.agentId || a.id).filter((id): id is string => Boolean(id)));
     const portIds = new Set(data.outputPorts.map((p) => p.id));
     const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
 
@@ -896,11 +935,13 @@ export const langgraphDataSchema = baseNodeDataSchema
         edge.source !== "START" &&
         !stepIds.has(edge.source) &&
         !customLlmIds.has(edge.source) &&
-        !toolIds.has(edge.source)
+        !toolIds.has(edge.source) &&
+        !middlewareIds.has(edge.source) &&
+        !agentIds.has(edge.source)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Edge source "${edge.source}" does not exist in graphSteps, customLlmNodes, or toolDefinitions.`,
+          message: `Edge source "${edge.source}" does not exist in graphSteps, customLlmNodes, toolDefinitions, middlewareDefinitions, or agentDefinitions.`,
           path: ["graphEdges", idx, "source"],
         });
       }
@@ -943,10 +984,18 @@ export const langgraphDataSchema = baseNodeDataSchema
         }
 
         const itemTarget = edge.sendConfig.itemTarget;
-        if (itemTarget.kind === "step" && itemTarget.id !== "END" && !stepIds.has(itemTarget.id)) {
+        if (
+          itemTarget.kind === "step" &&
+          itemTarget.id !== "END" &&
+          !stepIds.has(itemTarget.id) &&
+          !customLlmIds.has(itemTarget.id) &&
+          !toolIds.has(itemTarget.id) &&
+          !middlewareIds.has(itemTarget.id) &&
+          !agentIds.has(itemTarget.id)
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `sendConfig itemTarget step "${itemTarget.id}" does not exist in graphSteps.`,
+            message: `sendConfig itemTarget step "${itemTarget.id}" does not exist in graphSteps, customLlmNodes, toolDefinitions, middlewareDefinitions, or agentDefinitions.`,
             path: ["graphEdges", idx, "sendConfig", "itemTarget", "id"],
           });
         } else if (itemTarget.kind === "port" && !portIds.has(itemTarget.id)) {
@@ -966,10 +1015,16 @@ export const langgraphDataSchema = baseNodeDataSchema
               message: `Target with id "END" must use kind: "end" instead of kind: "step".`,
               path: ["graphEdges", idx, "targets", tIdx, "kind"],
             });
-          } else if (!stepIds.has(target.id)) {
+          } else if (
+            !stepIds.has(target.id) &&
+            !customLlmIds.has(target.id) &&
+            !toolIds.has(target.id) &&
+            !middlewareIds.has(target.id) &&
+            !agentIds.has(target.id)
+          ) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Edge target step "${target.id}" does not exist in graphSteps.`,
+              message: `Edge target step "${target.id}" does not exist in graphSteps, customLlmNodes, toolDefinitions, middlewareDefinitions, or agentDefinitions.`,
               path: ["graphEdges", idx, "targets", tIdx, "id"],
             });
           }

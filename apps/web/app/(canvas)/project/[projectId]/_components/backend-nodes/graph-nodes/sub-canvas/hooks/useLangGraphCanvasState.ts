@@ -20,6 +20,8 @@ import type {
   LangGraphEdgeConfig,
   LangGraphRouterBranch,
   LangGraphToolDefinition,
+  LangGraphMiddlewareDefinition,
+  LangGraphAgentDefinition,
 } from "@/types/canvas";
 import { STEP_TYPE_ROUTER, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
@@ -33,6 +35,10 @@ import {
   LangGraphLLMNodeData,
   ToolNode,
   ToolNodeData,
+  MiddlewareNode,
+  MiddlewareNodeData,
+  AgentNode,
+  AgentNodeData,
   getStepData,
 } from "../types";
 import {
@@ -42,10 +48,14 @@ import {
   SUB_CANVAS_NODE_STATE_GLOBAL,
   SUB_CANVAS_NODE_LLM,
   SUB_CANVAS_NODE_TOOL,
+  SUB_CANVAS_NODE_MIDDLEWARE,
+  SUB_CANVAS_NODE_AGENT,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
   HANDLE_TOOL_IN,
   HANDLE_TOOL_OUT,
+  HANDLE_MIDDLEWARE_IN,
+  HANDLE_MIDDLEWARE_OUT,
   NODE_ID_START,
   NODE_ID_STATE_GLOBAL,
   NODE_ID_PREFIX_PORT,
@@ -146,34 +156,74 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
     const savedTools = data.toolDefinitions || [];
     savedTools.forEach((toolDef) => {
+      const toolId = toolDef.id || (toolDef as any).toolId || `tool_${Date.now()}`;
       const toolNode: ToolNode = {
-        id: toolDef.id,
+        id: toolId,
         type: SUB_CANVAS_NODE_TOOL,
         position: toolDef.position || { x: 340, y: 160 },
         data: {
           label: toolDef.name,
-          toolId: toolDef.id,
+          toolId: toolId,
           name: toolDef.name,
           description: toolDef.description,
           inputSchema: toolDef.inputSchema,
-          source: toolDef.source,
+          source: toolDef.source as any,
           endpointUrl: toolDef.endpointUrl,
           mcpConnectionId: toolDef.mcpConnectionId,
           remoteToolName: toolDef.remoteToolName,
           returnDirect: toolDef.returnDirect,
-          returnType: toolDef.returnType,
+          returnType: toolDef.returnType as any,
           outputSchema: toolDef.outputSchema,
-          commandConfig: toolDef.commandConfig,
+          commandConfig: toolDef.commandConfig as any,
           functionBody: toolDef.functionBody,
-          executionMode: toolDef.executionMode,
+          executionMode: toolDef.executionMode as any,
           headless: toolDef.headless,
           contextAccess: toolDef.contextAccess,
-          storeAccess: toolDef.storeAccess,
+          storeAccess: toolDef.storeAccess as any,
           streamWriter: toolDef.streamWriter,
           errorHandling: toolDef.errorHandling,
         },
       };
       result.push(toolNode);
+    });
+
+    const savedMiddlewares = data.middlewareDefinitions || [];
+    savedMiddlewares.forEach((mwDef) => {
+      const mwNode: MiddlewareNode = {
+        id: mwDef.id || mwDef.middlewareId || `mw_${Date.now()}`,
+        type: SUB_CANVAS_NODE_MIDDLEWARE,
+        position: mwDef.position || { x: 340, y: 240 },
+        data: {
+          label: mwDef.name,
+          middlewareId: mwDef.id || mwDef.middlewareId || `mw_${Date.now()}`,
+          name: mwDef.name,
+          type: mwDef.type as any,
+          humanInTheLoopConfig: mwDef.humanInTheLoopConfig as any,
+          rateLimitConfig: mwDef.rateLimitConfig,
+          loggingConfig: mwDef.loggingConfig as any,
+          customBody: mwDef.customBody,
+        },
+      };
+      result.push(mwNode);
+    });
+
+    const savedAgents = data.agentDefinitions || [];
+    savedAgents.forEach((agDef) => {
+      const agNode: AgentNode = {
+        id: agDef.id || agDef.agentId || `agent_${Date.now()}`,
+        type: SUB_CANVAS_NODE_AGENT,
+        position: agDef.position || { x: 420, y: 160 },
+        data: {
+          label: agDef.name,
+          agentId: agDef.id || agDef.agentId || `agent_${Date.now()}`,
+          name: agDef.name,
+          systemPrompt: agDef.systemPrompt,
+          modelConfig: agDef.modelConfig,
+          tools: agDef.tools || [],
+          middleware: agDef.middleware || [],
+        },
+      };
+      result.push(agNode);
     });
 
     steps.forEach((step, idx) => {
@@ -384,11 +434,17 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       const isToolSource = connection.sourceHandle === HANDLE_TOOL_OUT || sourceNode?.type === SUB_CANVAS_NODE_TOOL || connection.source?.startsWith("tool_");
       const isToolTarget = connection.targetHandle === HANDLE_TOOL_IN;
 
+      const isMiddlewareSource = connection.sourceHandle === HANDLE_MIDDLEWARE_OUT || sourceNode?.type === SUB_CANVAS_NODE_MIDDLEWARE || connection.source?.startsWith("mw_");
+      const isMiddlewareTarget = connection.targetHandle === HANDLE_MIDDLEWARE_IN;
+
       if (isLLMSource && !isLLMTarget) return false;
       if (isLLMTarget && !isLLMSource) return false;
       
       if (isToolSource && !isToolTarget) return false;
       if (isToolTarget && !isToolSource) return false;
+
+      if (isMiddlewareSource && !isMiddlewareTarget) return false;
+      if (isMiddlewareTarget && !isMiddlewareSource) return false;
 
       return true;
     },
@@ -402,12 +458,13 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
         const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN || Boolean(params.source?.startsWith("llm_"));
         const isTool = params.sourceHandle === HANDLE_TOOL_OUT || params.targetHandle === HANDLE_TOOL_IN || Boolean(params.source?.startsWith("tool_"));
+        const isMiddleware = params.sourceHandle === HANDLE_MIDDLEWARE_OUT || params.targetHandle === HANDLE_MIDDLEWARE_IN || Boolean(params.source?.startsWith("mw_"));
         
         const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === SUB_CANVAS_NODE_STEP);
         const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
 
-        const sourceHandle = isLLM ? HANDLE_LLM_OUT : isTool ? HANDLE_TOOL_OUT : params.sourceHandle;
-        const targetHandle = isLLM ? HANDLE_LLM_IN : isTool ? HANDLE_TOOL_IN : params.targetHandle;
+        const sourceHandle = isLLM ? HANDLE_LLM_OUT : isTool ? HANDLE_TOOL_OUT : isMiddleware ? HANDLE_MIDDLEWARE_OUT : params.sourceHandle;
+        const targetHandle = isLLM ? HANDLE_LLM_IN : isTool ? HANDLE_TOOL_IN : isMiddleware ? HANDLE_MIDDLEWARE_IN : params.targetHandle;
 
         const label = routerBranch
           ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
@@ -417,6 +474,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" }
           : isTool
           ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
+          : isMiddleware
+          ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
           : routerBranch
           ? { stroke: "#38bdf8", strokeWidth: 2 }
           : { stroke: "#a1a1aa", strokeWidth: 2 };
@@ -449,8 +508,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? getStepData(found) : null;
   }, [nodes, selectedNodeId]);
 
-  // ── Add step or custom_llm or tool ──
-  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM | typeof SUB_CANVAS_NODE_TOOL, label: string) => {
+  // ── Add step or custom_llm or tool or middleware or agent ──
+  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof SUB_CANVAS_NODE_LLM | typeof SUB_CANVAS_NODE_TOOL | typeof SUB_CANVAS_NODE_MIDDLEWARE | typeof SUB_CANVAS_NODE_AGENT, label: string) => {
     if (type === SUB_CANVAS_NODE_LLM) {
       const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
       const defaultPreset = LLM_PROVIDER_PRESETS[DEFAULT_LLM_PROVIDER] ?? LLM_PROVIDER_PRESETS[LLM_PROVIDERS.CUSTOM];
@@ -508,6 +567,63 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       return;
     }
 
+    if (type === SUB_CANVAS_NODE_MIDDLEWARE) {
+      const mwId = `mw_${Date.now().toString(36).slice(-4)}`;
+      const newMiddlewareNode: MiddlewareNode = {
+        id: mwId,
+        type: SUB_CANVAS_NODE_MIDDLEWARE,
+        position: { x: 360 + Math.random() * 140, y: 220 + Math.random() * 80 },
+        data: {
+          label: label || "Middleware Node",
+          middlewareId: mwId,
+          name: "human_approval_mw",
+          type: "human_in_the_loop",
+          humanInTheLoopConfig: {
+            interruptOn: { writeFile: true },
+            approvalPrompt: "Requires approval before writing files...",
+          },
+          onDeleteMiddleware: () => {
+            setNodes((nodes) => nodes.filter((node) => node.id !== mwId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== mwId && edge.target !== mwId));
+            setSelectedNodeId((curr) => (curr === mwId ? null : curr));
+          },
+        },
+      };
+
+      setNodes((nds) => [...nds, newMiddlewareNode]);
+      setSelectedNodeId(mwId);
+      setActiveSideTab("inspector");
+      return;
+    }
+
+    if (type === SUB_CANVAS_NODE_AGENT) {
+      const agentId = `agent_${Date.now().toString(36).slice(-4)}`;
+      const newAgentNode: AgentNode = {
+        id: agentId,
+        type: SUB_CANVAS_NODE_AGENT,
+        position: { x: 420 + Math.random() * 140, y: 160 + Math.random() * 80 },
+        data: {
+          label: label || "AI Agent",
+          agentId,
+          name: "research_agent",
+          systemPrompt: "You are a helpful AI assistant...",
+          modelConfig: { provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE },
+          tools: [],
+          middleware: [],
+          onDeleteAgent: () => {
+            setNodes((nodes) => nodes.filter((node) => node.id !== agentId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== agentId && edge.target !== agentId));
+            setSelectedNodeId((curr) => (curr === agentId ? null : curr));
+          },
+        },
+      };
+
+      setNodes((nds) => [...nds, newAgentNode]);
+      setSelectedNodeId(agentId);
+      setActiveSideTab("inspector");
+      return;
+    }
+
     const stepId = type === STEP_TYPE_ROUTER ? `router_${Date.now().toString(36).slice(-4)}` : `step_${Date.now().toString(36).slice(-4)}`;
     const newNode: StepNode = {
       id: stepId,
@@ -553,6 +669,34 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     const found = nodes.find((n): n is ToolNode => n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_TOOL);
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
+
+  const selectedMiddlewareData = useMemo((): MiddlewareNodeData | null => {
+    const found = nodes.find((n): n is MiddlewareNode => n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_MIDDLEWARE);
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
+
+  const selectedAgentData = useMemo((): AgentNodeData | null => {
+    const found = nodes.find((n): n is AgentNode => n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_AGENT);
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
+
+  const updateSelectedMiddleware = (changes: Partial<MiddlewareNodeData>) => {
+    if (!selectedNodeId) return;
+    setNodes((nds) => nds.map((n) =>
+      n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_MIDDLEWARE
+        ? { ...n, data: { ...n.data, ...changes } }
+        : n
+    ));
+  };
+
+  const updateSelectedAgent = (changes: Partial<AgentNodeData>) => {
+    if (!selectedNodeId) return;
+    setNodes((nds) => nds.map((n) =>
+      n.id === selectedNodeId && n.type === SUB_CANVAS_NODE_AGENT
+        ? { ...n, data: { ...n.data, ...changes } }
+        : n
+    ));
+  };
 
   const updateSelectedStep = (changes: Partial<StepNodeData>) => {
     if (!selectedNodeId) return;
@@ -636,6 +780,37 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         position: n.position,
       }));
 
+    const middlewareDefinitions: LangGraphMiddlewareDefinition[] = nodes
+      .filter((n): n is MiddlewareNode => n.type === SUB_CANVAS_NODE_MIDDLEWARE)
+      .map((n) => ({
+        id: n.data.middlewareId || n.id,
+        middlewareId: n.data.middlewareId || n.id,
+        name: n.data.name || "Middleware",
+        type: n.data.type || "human_in_the_loop",
+        humanInTheLoopConfig: n.data.humanInTheLoopConfig,
+        rateLimitConfig: n.data.rateLimitConfig,
+        loggingConfig: n.data.loggingConfig,
+        customBody: n.data.customBody,
+        position: n.position,
+      }));
+
+    const agentDefinitions: LangGraphAgentDefinition[] = nodes
+      .filter((n): n is AgentNode => n.type === SUB_CANVAS_NODE_AGENT)
+      .map((n) => ({
+        id: n.data.agentId || n.id,
+        agentId: n.data.agentId || n.id,
+        name: n.data.name || "AI Agent",
+        systemPrompt: n.data.systemPrompt,
+        modelConfig: n.data.modelConfig,
+        tools: edges
+          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
+          .map((e) => e.source),
+        middleware: edges
+          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+          .map((e) => e.source),
+        position: n.position,
+      }));
+
     const graphSteps: LangGraphStepConfig[] = nodes
       .filter((n): n is StepNode => n.type === SUB_CANVAS_NODE_STEP)
       .map((n) => ({
@@ -675,6 +850,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       memoryConfig,
       customLlmNodes,
       toolDefinitions,
+      middlewareDefinitions,
+      agentDefinitions,
     });
   }, [nodes, edges, inputChannels, stateChannels, memoryConfig, data]);
 
@@ -698,6 +875,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         },
         customLlmNodes: data.customLlmNodes || [],
         toolDefinitions: data.toolDefinitions || [],
+        middlewareDefinitions: data.middlewareDefinitions || [],
+        agentDefinitions: data.agentDefinitions || [],
       })
     )
   );
@@ -780,6 +959,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     selectedStepData,
     selectedLLMData,
     selectedToolData,
+    selectedMiddlewareData,
+    selectedAgentData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -788,6 +969,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     updateSelectedStep,
     updateSelectedLLM,
     updateSelectedTool,
+    updateSelectedMiddleware,
+    updateSelectedAgent,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,

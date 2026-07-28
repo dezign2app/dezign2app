@@ -352,23 +352,6 @@ export function ToolNodeInspector({
               <Database className="w-4 h-4 text-emerald-500" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Implementation</h3>
             </div>
-
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-semibold text-foreground uppercase tracking-wider">Execution Sandbox</Label>
-              <Select
-                value={selectedToolData.executionMode || "sandboxed_vm"}
-                onValueChange={(val: any) => onUpdateTool({ executionMode: val })}
-              >
-                <SelectTrigger className="h-6 w-32 text-[10px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sandboxed_vm" className="text-[10px] text-amber-500 font-semibold">Sandboxed VM</SelectItem>
-                  <SelectItem value="disabled" className="text-[10px] text-destructive font-semibold">Disabled (Unsafe)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {selectedToolData.executionMode !== "disabled" && (
               <div className="flex gap-2 items-start p-2 rounded bg-amber-500/10 border border-amber-500/20">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -381,7 +364,6 @@ export function ToolNodeInspector({
             <div className="flex flex-col gap-2 mt-2">
               <Label className="text-xs font-semibold text-foreground flex justify-between">
                 <span>Function Body (JS/TS)</span>
-                <span className="text-[9px] text-emerald-500">Destructure input parameters here</span>
               </Label>
               <LocalTextarea
                 value={bodyText}

@@ -2,19 +2,27 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData } from "../../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData } from "../../types";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
 import { ToolNodeInspector } from "./ToolNodeInspector";
+import { MiddlewareNodeInspector } from "./MiddlewareNodeInspector";
+import { AgentNodeInspector } from "./AgentNodeInspector";
 
 interface InspectorTabContentProps {
   selectedStepData: StepNodeData | null;
   selectedLLMData?: LangGraphLLMNodeData | null;
   selectedToolData?: ToolNodeData | null;
+  selectedMiddlewareData?: MiddlewareNodeData | null;
+  selectedAgentData?: AgentNodeData | null;
+  connectedToolsCount?: number;
+  connectedMiddlewareCount?: number;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
+  onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
+  onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
   stateChannels: LangGraphStateChannel[];
 }
 
@@ -22,10 +30,16 @@ export function InspectorTabContent({
   selectedStepData,
   selectedLLMData,
   selectedToolData,
+  selectedMiddlewareData,
+  selectedAgentData,
+  connectedToolsCount = 0,
+  connectedMiddlewareCount = 0,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
   onUpdateTool,
+  onUpdateMiddleware,
+  onUpdateAgent,
   stateChannels,
 }: InspectorTabContentProps) {
   return (
@@ -45,6 +59,20 @@ export function InspectorTabContent({
           onDeleteTool={onDeleteStep}
           onUpdateTool={onUpdateTool!}
           stateChannels={stateChannels}
+        />
+      ) : selectedMiddlewareData ? (
+        <MiddlewareNodeInspector
+          selectedMiddlewareData={selectedMiddlewareData}
+          onDeleteMiddleware={onDeleteStep}
+          onUpdateMiddleware={onUpdateMiddleware!}
+        />
+      ) : selectedAgentData ? (
+        <AgentNodeInspector
+          selectedAgentData={selectedAgentData}
+          onDeleteAgent={onDeleteStep}
+          onUpdateAgent={onUpdateAgent!}
+          connectedToolsCount={connectedToolsCount}
+          connectedMiddlewareCount={connectedMiddlewareCount}
         />
       ) : selectedStepData ? (
         <StepNodeInspector

@@ -166,6 +166,51 @@ export const langgraphConvexDataValidator = v.object({
       })
     )
   ),
+  middlewareDefinitions: v.optional(
+    v.array(
+      v.object({
+        id: v.optional(v.string()),
+        middlewareId: v.optional(v.string()),
+        name: v.string(),
+        type: v.string(),
+        humanInTheLoopConfig: v.optional(
+          v.object({
+            interruptOn: v.optional(v.record(v.string(), v.boolean())),
+            approvalPrompt: v.optional(v.string()),
+            requiredRole: v.optional(v.string()),
+          })
+        ),
+        rateLimitConfig: v.optional(
+          v.object({
+            requestsPerMinute: v.number(),
+            windowMs: v.optional(v.number()),
+          })
+        ),
+        loggingConfig: v.optional(
+          v.object({
+            logLevel: v.string(),
+            tracingTarget: v.optional(v.string()),
+          })
+        ),
+        customBody: v.optional(v.string()),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
+      })
+    )
+  ),
+  agentDefinitions: v.optional(
+    v.array(
+      v.object({
+        id: v.optional(v.string()),
+        agentId: v.optional(v.string()),
+        name: v.string(),
+        systemPrompt: v.optional(v.string()),
+        modelConfig: v.optional(v.any()),
+        tools: v.optional(v.array(v.string())),
+        middleware: v.optional(v.array(v.string())),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
+      })
+    )
+  ),
   graphSteps: v.optional(
     v.array(
       v.object({

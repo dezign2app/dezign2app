@@ -5,7 +5,7 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 import { InputsTabContent } from "./inspector/InputsTabContent";
 import { StateTabContent } from "./inspector/StateTabContent";
@@ -18,10 +18,16 @@ export interface InspectorSidebarProps {
   selectedStepData: StepNodeData | null;
   selectedLLMData?: LangGraphLLMNodeData | null;
   selectedToolData?: ToolNodeData | null;
+  selectedMiddlewareData?: MiddlewareNodeData | null;
+  selectedAgentData?: AgentNodeData | null;
+  connectedToolsCount?: number;
+  connectedMiddlewareCount?: number;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
+  onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
+  onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
   inputChannels: LangGraphInputChannel[];
   setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
@@ -36,10 +42,16 @@ export function InspectorSidebar({
   selectedStepData,
   selectedLLMData,
   selectedToolData,
+  selectedMiddlewareData,
+  selectedAgentData,
+  connectedToolsCount = 0,
+  connectedMiddlewareCount = 0,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
   onUpdateTool,
+  onUpdateMiddleware,
+  onUpdateAgent,
   inputChannels,
   setInputChannels,
   stateChannels,
@@ -77,10 +89,16 @@ export function InspectorSidebar({
           selectedStepData={selectedStepData}
           selectedLLMData={selectedLLMData}
           selectedToolData={selectedToolData}
+          selectedMiddlewareData={selectedMiddlewareData}
+          selectedAgentData={selectedAgentData}
+          connectedToolsCount={connectedToolsCount}
+          connectedMiddlewareCount={connectedMiddlewareCount}
           onDeleteStep={onDeleteStep}
           onUpdateStep={onUpdateStep}
           onUpdateLLM={onUpdateLLM}
           onUpdateTool={onUpdateTool}
+          onUpdateMiddleware={onUpdateMiddleware}
+          onUpdateAgent={onUpdateAgent}
           stateChannels={stateChannels}
         />
 

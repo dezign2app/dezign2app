@@ -569,7 +569,42 @@ export interface CanvasLangGraphNodeData {
     position?: { x: number; y: number };
   }[];
   toolDefinitions?: LangGraphToolDefinition[];
+  middlewareDefinitions?: LangGraphMiddlewareDefinition[];
+  agentDefinitions?: LangGraphAgentDefinition[];
   mcpServerConnections?: McpServerConnection[];
+}
+
+export interface LangGraphMiddlewareDefinition {
+  id?: string;
+  middlewareId?: string;
+  name: string;
+  type: "human_in_the_loop" | "rate_limit" | "logging_tracing" | "custom";
+  humanInTheLoopConfig?: {
+    interruptOn?: Record<string, boolean>;
+    approvalPrompt?: string;
+    requiredRole?: string;
+  };
+  rateLimitConfig?: {
+    requestsPerMinute: number;
+    windowMs?: number;
+  };
+  loggingConfig?: {
+    logLevel: "debug" | "info" | "warn" | "error";
+    tracingTarget?: "langsmith" | "opentelemetry" | "convex";
+  };
+  customBody?: string;
+  position?: { x: number; y: number };
+}
+
+export interface LangGraphAgentDefinition {
+  id?: string;
+  agentId?: string;
+  name: string;
+  systemPrompt?: string;
+  modelConfig?: LangGraphStepConfig["modelConfig"];
+  tools?: string[];        // Bound tool IDs
+  middleware?: string[];   // Bound middleware IDs
+  position?: { x: number; y: number };
 }
 
 /** LangGraph Step node fields — child step nodes inside a graph (canvas type). */

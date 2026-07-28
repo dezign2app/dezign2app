@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, Connection } from "@xyflow/react";
-import { Brain, Trash2, Settings, ShieldCheck, Wrench, Code2, Database } from "lucide-react";
+import { Brain, Trash2, Wrench, Code2, Database } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
@@ -8,23 +8,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { LocalInput } from "./shared";
+import { LocalInput, LocalTextarea } from "./shared";
 
-import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "@workspace/canvas/constants";
+import { 
+  DEFAULT_LLM_PROVIDER, 
+  DEFAULT_LLM_MODEL, 
+  DEFAULT_LLM_TEMPERATURE, 
+  HANDLE_LLM_IN, 
+  HANDLE_LLM_OUT,
+  STEP_TYPE_LLM_CALL,
+  STEP_TYPE_TOOL_NODE,
+  STEP_TYPE_EVALUATOR,
+  STEP_TYPE_SUMMARIZER,
+  STEP_TYPE_HUMAN_GATE,
+  STEP_TYPE_CUSTOM_CODE,
+  STEP_TYPE_VECTOR_SEARCH,
+} from "@workspace/canvas/constants";
+
+const DEFAULT_STEP_LABEL = "Graph Step";
 
 export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(data.label || "Graph Step");
+  const [nameValue, setNameValue] = useState(data.label || DEFAULT_STEP_LABEL);
 
   useEffect(() => {
-    setNameValue(data.label || "Graph Step");
+    setNameValue(data.label || DEFAULT_STEP_LABEL);
   }, [data.label]);
 
-  const stepType = data.stepType || "llm_call";
+  const stepType = data.stepType || STEP_TYPE_LLM_CALL;
 
-  const isLLMEnabled = !!data.modelConfig;
+  const isLLMEnabled = !!data.modelConfig || stepType === STEP_TYPE_LLM_CALL;
 
   const handleToggleLLMConfig = (enabled: boolean) => {
     if (enabled) {
@@ -44,9 +59,24 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
     }
   };
 
+  const handleUpdateSystemPrompt = (systemPrompt: string) => {
+    updateNode(id, {
+      data: {
+        ...data,
+        modelConfig: {
+          provider: DEFAULT_LLM_PROVIDER,
+          model: DEFAULT_LLM_MODEL,
+          temperature: DEFAULT_LLM_TEMPERATURE,
+          ...data.modelConfig,
+          systemPrompt,
+        },
+      },
+    });
+  };
+
   const handleNameSave = () => {
     setIsEditingName(false);
-    const trimmed = nameValue.trim() || "Graph Step";
+    const trimmed = nameValue.trim() || DEFAULT_STEP_LABEL;
     setNameValue(trimmed);
     if (trimmed !== data.label) {
       updateNode(id, { data: { ...data, label: trimmed } });
@@ -82,11 +112,11 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         />
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
-            {stepType === "llm_call" && <Brain className="w-3.5 h-3.5" />}
-            {stepType === "tool_node" && <Wrench className="w-3.5 h-3.5" />}
-            {stepType === "custom_code" && <Code2 className="w-3.5 h-3.5" />}
-            {stepType === "vector_search" && <Database className="w-3.5 h-3.5" />}
-            {stepType !== "llm_call" && stepType !== "tool_node" && stepType !== "custom_code" && stepType !== "vector_search" && (
+            {stepType === STEP_TYPE_LLM_CALL && <Brain className="w-3.5 h-3.5" />}
+            {stepType === STEP_TYPE_TOOL_NODE && <Wrench className="w-3.5 h-3.5" />}
+            {stepType === STEP_TYPE_CUSTOM_CODE && <Code2 className="w-3.5 h-3.5" />}
+            {stepType === STEP_TYPE_VECTOR_SEARCH && <Database className="w-3.5 h-3.5" />}
+            {stepType !== STEP_TYPE_LLM_CALL && stepType !== STEP_TYPE_TOOL_NODE && stepType !== STEP_TYPE_CUSTOM_CODE && stepType !== STEP_TYPE_VECTOR_SEARCH && (
               <Brain className="w-3.5 h-3.5" />
             )}
           </div>
@@ -109,7 +139,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
                   e.stopPropagation();
                   if (e.key === "Enter") handleNameSave();
                   if (e.key === "Escape") {
-                    setNameValue(data.label || "Graph Step");
+                    setNameValue(data.label || DEFAULT_STEP_LABEL);
                     setIsEditingName(false);
                   }
                 }}
@@ -128,7 +158,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
               }}
               title="Click or double click to rename step"
             >
-              {data.label || "Graph Step"}
+              {data.label || DEFAULT_STEP_LABEL}
             </span>
           )}
         </div>
@@ -152,47 +182,81 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="llm_call">LLM Reasoner</SelectItem>
-            <SelectItem value="tool_node">Tool Node</SelectItem>
-            <SelectItem value="evaluator">Evaluator</SelectItem>
-            <SelectItem value="summarizer">Summarizer</SelectItem>
-            <SelectItem value="human_gate">Human Gate</SelectItem>
-            <SelectItem value="custom_code">Custom Code</SelectItem>
-            <SelectItem value="vector_search">Vector Search</SelectItem>
+            <SelectItem value={STEP_TYPE_LLM_CALL}>LLM Reasoner</SelectItem>
+            <SelectItem value={STEP_TYPE_TOOL_NODE}>Tool Node</SelectItem>
+            <SelectItem value={STEP_TYPE_EVALUATOR}>Evaluator</SelectItem>
+            <SelectItem value={STEP_TYPE_SUMMARIZER}>Summarizer</SelectItem>
+            <SelectItem value={STEP_TYPE_HUMAN_GATE}>Human Gate</SelectItem>
+            <SelectItem value={STEP_TYPE_CUSTOM_CODE}>Custom Code</SelectItem>
+            <SelectItem value={STEP_TYPE_VECTOR_SEARCH}>Vector Search</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* LLM Config Toggle Section */}
-      <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
-        <Handle
-          type="target"
-          position={Position.Left}
-          id={HANDLE_LLM_IN}
-          isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
-          className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-          title="Connect LLM node"
-        />
-        <div className="flex items-center gap-1.5">
-          <Brain className="w-3.5 h-3.5 text-emerald-400" />
-          <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
-            LLM Config
-          </Label>
+      <div className="flex flex-col gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
+        <div className="flex items-center justify-between gap-2">
+          <Handle
+            type="target"
+            position={Position.Left}
+            id={HANDLE_LLM_IN}
+            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
+            className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+            title="Connect LLM node"
+          />
+          <div className="flex items-center gap-1.5">
+            <Brain className="w-3.5 h-3.5 text-emerald-400" />
+            <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
+              LLM Config
+            </Label>
+          </div>
+          <Switch
+            id={`llm-switch-${id}`}
+            checked={isLLMEnabled}
+            onCheckedChange={handleToggleLLMConfig}
+            className="nodrag scale-75 origin-right"
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
+            title="Outgoing connection"
+          />
         </div>
-        <Switch
-          id={`llm-switch-${id}`}
-          checked={isLLMEnabled}
-          onCheckedChange={handleToggleLLMConfig}
-          className="nodrag scale-75 origin-right"
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="output"
-          className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
-          title="Outgoing connection"
-        />
+
+        {isLLMEnabled && (
+          <div className="flex flex-col gap-1 mt-1 nodrag">
+            <Label className="text-[10px] text-muted-foreground font-medium uppercase">
+              AI Instructions
+            </Label>
+            <LocalTextarea
+              className="min-h-[60px] text-xs bg-background/50 border-emerald-500/30 p-2 resize-y nodrag placeholder:text-muted-foreground/50 focus-visible:ring-emerald-400/50"
+              placeholder="Enter AI instructions..."
+              value={data.modelConfig?.systemPrompt || ""}
+              onChange={(e) => handleUpdateSystemPrompt(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Tools Badge */}
+      {(data.tools?.length ?? 0) > 0 && (
+        <div className="flex items-center justify-between gap-2 border-t border-border/40 py-2 px-1 nodrag">
+          <div className="flex items-center gap-1.5">
+            <Wrench className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-[10px] font-semibold text-emerald-500 uppercase">
+              Tools
+            </span>
+          </div>
+          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            {data.tools?.length} connected
+          </span>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 import { InputsTabContent } from "./inspector/InputsTabContent";
 import { StateTabContent } from "./inspector/StateTabContent";
@@ -17,9 +17,11 @@ export interface InspectorSidebarProps {
   setActiveSideTab: (tab: "inspector" | "inputs" | "state" | "memory") => void;
   selectedStepData: StepNodeData | null;
   selectedLLMData?: LangGraphLLMNodeData | null;
+  selectedToolData?: ToolNodeData | null;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
+  onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
   inputChannels: LangGraphInputChannel[];
   setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
@@ -33,9 +35,11 @@ export function InspectorSidebar({
   setActiveSideTab,
   selectedStepData,
   selectedLLMData,
+  selectedToolData,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
+  onUpdateTool,
   inputChannels,
   setInputChannels,
   stateChannels,
@@ -72,9 +76,11 @@ export function InspectorSidebar({
         <InspectorTabContent
           selectedStepData={selectedStepData}
           selectedLLMData={selectedLLMData}
+          selectedToolData={selectedToolData}
           onDeleteStep={onDeleteStep}
           onUpdateStep={onUpdateStep}
           onUpdateLLM={onUpdateLLM}
+          onUpdateTool={onUpdateTool}
           stateChannels={stateChannels}
         />
 

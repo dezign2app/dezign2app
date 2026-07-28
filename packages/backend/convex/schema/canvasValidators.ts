@@ -111,6 +111,61 @@ export const langgraphConvexDataValidator = v.object({
       })
     )
   ),
+  toolDefinitions: v.optional(
+    v.array(
+      v.object({
+        id: v.optional(v.string()),
+        toolId: v.optional(v.string()),
+        label: v.optional(v.string()),
+        name: v.string(),
+        description: v.string(),
+        inputSchema: v.optional(v.string()),
+        source: v.string(),
+        endpointUrl: v.optional(v.string()),
+        mcpConnectionId: v.optional(v.string()),
+        remoteToolName: v.optional(v.string()),
+        returnDirect: v.optional(v.boolean()),
+        returnType: v.optional(v.string()),
+        outputSchema: v.optional(v.string()),
+        commandConfig: v.optional(
+          v.object({
+            stateUpdates: v.array(
+              v.object({
+                channelKey: v.string(),
+                mode: v.optional(v.string()),
+                value: v.optional(v.string()),
+              })
+            ),
+          })
+        ),
+        functionBody: v.optional(v.string()),
+        executionMode: v.optional(v.string()),
+        headless: v.optional(v.boolean()),
+        contextAccess: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            fields: v.optional(v.array(v.string())),
+          })
+        ),
+        storeAccess: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            namespace: v.optional(v.string()),
+            operations: v.optional(v.array(v.string())),
+          })
+        ),
+        streamWriter: v.optional(v.boolean()),
+        errorHandling: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            retryCount: v.optional(v.number()),
+            customErrorMessage: v.optional(v.string()),
+          })
+        ),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
+      })
+    )
+  ),
   graphSteps: v.optional(
     v.array(
       v.object({

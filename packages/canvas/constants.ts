@@ -59,6 +59,13 @@ export const TARGET_KIND_END  = "end" as const;
 // ─── Sub-Canvas Handle IDs ─────────────────────────────────────────────────────
 export const HANDLE_LLM_IN  = "llm_in" as const;
 export const HANDLE_LLM_OUT = "llm_out" as const;
+export const HANDLE_TOOL_IN = "tool_in" as const;
+export const HANDLE_TOOL_OUT = "tool_out" as const;
+
+// ─── Tool Sources ─────────────────────────────────────────────────────────────
+export const TOOL_SOURCE_INLINE = "inline" as const;
+export const TOOL_SOURCE_MCP_SERVER = "mcp_server" as const;
+export const TOOL_SOURCE_API_ENDPOINT = "api_endpoint" as const;
 
 // ─── LLM Providers ─────────────────────────────────────────────────────────────
 export const LLM_PROVIDERS = {

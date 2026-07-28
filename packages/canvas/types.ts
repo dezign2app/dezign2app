@@ -168,13 +168,55 @@ export type LangGraphOutputPort = {
   description?: string;
 };
 
+export type McpServerConnection = {
+  id: string;
+  name: string;
+  url: string;
+  transport?: "sse" | "http";
+  authRef?: string;
+};
+
 export type LangGraphToolDefinition = {
   id: string;
   name: string;
   description: string;
-  source: "inline" | "mcp_server" | "canvas_edge" | "api_endpoint";
+  inputSchema?: string;
+
+  source: "inline" | "mcp_server" | "api_endpoint";
   endpointUrl?: string;
-  parametersJsonSchema?: Record<string, unknown>;
+  mcpConnectionId?: string;
+  remoteToolName?: string;
+
+  returnDirect?: boolean;
+  returnType?: "string" | "object" | "content_blocks" | "command";
+  outputSchema?: string;
+  commandConfig?: {
+    stateUpdates: {
+      channelKey: string;
+      mode?: "set" | "append" | "expression";
+      value?: string;
+    }[];
+  };
+
+  functionBody?: string;
+  executionMode?: "sandboxed_vm" | "disabled";
+  headless?: boolean;
+
+  contextAccess?: { enabled?: boolean; fields?: string[] };
+  storeAccess?: {
+    enabled?: boolean;
+    namespace?: string;
+    operations?: ("get" | "put" | "delete" | "list")[];
+  };
+  streamWriter?: boolean;
+
+  errorHandling?: {
+    enabled?: boolean;
+    retryCount?: number;
+    customErrorMessage?: string;
+  };
+  
+  position?: { x: number; y: number };
 };
 
 export type LangGraphRouterBranch = {
@@ -526,6 +568,8 @@ export interface CanvasLangGraphNodeData {
     maxTokens?: number;
     position?: { x: number; y: number };
   }[];
+  toolDefinitions?: LangGraphToolDefinition[];
+  mcpServerConnections?: McpServerConnection[];
 }
 
 /** LangGraph Step node fields — child step nodes inside a graph (canvas type). */

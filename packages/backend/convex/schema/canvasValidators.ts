@@ -260,7 +260,6 @@ export const backendNodeDataValidator = v.union(
   zodToConvex(redisStreamsDataSchema),
   zodToConvex(redisCacheDataSchema),
   zodToConvex(storageDataSchema),
-  // New nodes
   zodToConvex(workerDataSchema),
   zodToConvex(serverlessDataSchema),
   zodToConvex(searchIndexDataSchema),

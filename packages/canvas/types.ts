@@ -63,8 +63,8 @@ export type ValidationResult =
 export type BackendCanvasView = "graph" | "sequence" | "schema";
 
 // --- Backend Canvas Types ---
-import type { KafkaTopic, KafkaBrokerConfig, Endpoint, ServiceNodeData, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider } from "./schemas";
-export type { KafkaTopic, KafkaBrokerConfig, Endpoint, ServiceNodeData, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider };
+import type { KafkaTopic, KafkaBrokerConfig, Endpoint, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider } from "./schemas";
+export type { KafkaTopic, KafkaBrokerConfig, Endpoint, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider };
 
 export type RedisStream = {
   id: string;
@@ -264,238 +264,309 @@ export type LangGraphMemoryConfig = {
   };
 };
 
+// ---------------------------------------------------------------------------
+// BackendNode Data — modular sub-types grouped by domain
+// ---------------------------------------------------------------------------
+
+/** Core fields present on every canvas node. */
+export interface BaseNodeData {
+  label: string;
+  description?: string;
+  isWebClient?: boolean;
+  parentId?: string;
+  /** Nested position inside a group node. */
+  position?: { x: number; y: number };
+  /** Position override used in the graph-view layout. */
+  graphPosition?: { x: number; y: number };
+  // Tech stack & DB engine selection (shared by Service and Database nodes)
+  techStack?: ServiceTechStack | WebClientTechStack;
+  techVersion?: ServiceTechVersion | WebClientTechVersion;
+  dbEngine?: DatabaseEngine;
+  dbEngineVersion?: DatabaseEngineVersion;
+  orm?: DatabaseORM;
+  ormVersion?: DatabaseOrmVersion;
+  // Shared visual / misc
+  authentication?: string;
+  tags?: string[];
+}
+
+/** Database entity / table schema fields (canvas type). */
+export interface CanvasEntityNodeData {
+  dbType?: "relational" | "document" | "vector";
+  /** Column definitions stored as part of the node. */
+  columns?: {
+    name: string;
+    type: string;
+    isPrimaryKey?: boolean;
+    isForeignKey?: boolean;
+    isNotNull?: boolean;
+    isUnique?: boolean;
+    references?: { table: string; column: string };
+  }[];
+  indexes?: {
+    name: string;
+    columns: string;
+    isUnique?: boolean;
+  }[];
+  /** For vector DB entities. */
+  embeddingModel?: string;
+  dimensions?: number;
+  metric?: "Cosine" | "Dot Product" | "Euclidean";
+  /** Reference to entity node ID (used by DB Ref nodes). */
+  tableRef?: string;
+  /** Reference to vector collection (used by Vector DB Ref nodes). */
+  collectionRef?: string;
+  /** Reference to DB node (used by Vector DB Ref nodes). */
+  dbRef?: string;
+  /** Seed data rows for the entity. */
+  seedRows?: Record<string, string | number | boolean | null>[];
+}
+
+/** Service / web-client node fields — endpoints, routing, CORS, etc. (canvas type). */
+export interface CanvasServiceNodeData {
+  baseUrl?: string;
+  cors?: boolean;
+  corsOrigins?: string;
+  rateLimit?: string;
+  timeout?: string;
+  port?: string;
+  endpoints?: Endpoint[];
+  routeGroups?: {
+    id: string;
+    name: string;
+    basePath: string;
+    endpoints: Endpoint[];
+  }[];
+  // Graph-view event/logic lists (for web clients and services)
+  events?: UIEventItem[] | { id: string; name: string }[];
+  inputs?: { id: string; name: string }[];
+  logic?: { id: string; name: string }[];
+  outputs?: { id: string; name: string }[];
+  actions?: { id: string; name: string }[];
+  publishedEvents?: {
+    id: string;
+    name: string;
+    description?: string;
+    schema?: string;
+    version?: string;
+    targetNodeId?: string;
+  }[];
+  consumedEvents?: {
+    id: string;
+    name: string;
+    description?: string;
+    schema?: string;
+    retryPolicy?: string;
+    version?: string;
+    handlerLogic?: string;
+    targetNodeId?: string;
+  }[];
+}
+
+/** Messaging broker node fields — Kafka, SQS, Redis Streams, PubSub, etc. */
+export interface MessagingNodeData {
+  // Common broker config
+  implementation?: string;
+  delivery?: string;
+  ordering?: string;
+  failureHandling?: string;
+  retention?: string;
+  durable?: boolean;
+  // Resources per broker type
+  topics?: KafkaTopic[];
+  streams?: RedisStream[];
+  queues?: SQSQueue[];
+  channels?: RedisPubSubChannel[];
+  caches?: AnyMessagingResource[];
+  buckets?: AnyMessagingResource[];
+  messages?: {
+    id: string;
+    name: string;
+    description?: string;
+    schema?: string;
+    retryPolicy?: string;
+    version?: string;
+  }[];
+  eventChannels?: {
+    id: string;
+    name: string;
+    description?: string;
+    schema?: string;
+    version?: string;
+  }[];
+  // Broker-level configs
+  kafkaBroker?: KafkaBrokerConfig;
+  redisBroker?: RedisStreamsBrokerConfig;
+  sqsBroker?: SQSBrokerConfig;
+  redisPubSubBroker?: RedisPubSubBrokerConfig;
+  // Kafka topic-level
+  kafkaPartitions?: string;
+  kafkaReplication?: string;
+  kafkaCompression?: string;
+  kafkaTTL?: string;
+  kafkaBatchSize?: string;
+  // RabbitMQ
+  rabbitExchange?: string;
+  rabbitRoutingKey?: string;
+  rabbitBindings?: string;
+  // SQS
+  sqsVisibilityTimeout?: string;
+  sqsDelay?: string;
+  sqsFifo?: boolean;
+  // Redis Streams
+  redisConsumerGroup?: string;
+  // GCP Pub/Sub
+  gcpTopic?: string;
+  gcpSubscription?: string;
+  // Azure Service Bus
+  azureTopic?: string;
+  azureSubscription?: string;
+}
+
+/** Background worker node fields (canvas type). */
+export interface CanvasWorkerNodeData {
+  tasks?: WorkerTask[];
+  queueSources?: string[];
+  concurrency?: number;
+  retryPolicy?: string;
+  maxRetries?: number;
+}
+
+/** Serverless function node fields (canvas type). */
+export interface CanvasServerlessNodeData {
+  triggerType?: "HTTP" | "Event" | "CRON" | "Queue";
+  runtime?: string;
+  memoryMb?: number;
+  timeoutSec?: number;
+}
+
+/** Infrastructure node fields — API Gateway, Load Balancer, Search Index (canvas type). */
+export interface CanvasInfrastructureNodeData {
+  // API Gateway
+  routes?: GatewayRoute[];
+  authRules?: AuthRule[];
+  authType?: string;
+  // Load Balancer
+  targetGroups?: { id: string; name: string }[];
+  algorithm?: string;
+  healthCheckPath?: string;
+  // Search Index
+  searchSources?: SearchSource[];
+  analyzer?: string;
+  shards?: number;
+  replicas?: number;
+  refreshInterval?: string;
+  reindexStrategy?: string;
+}
+
+/** AI / LLM / MCP Server node fields (canvas type). */
+export interface CanvasAINodeData {
+  // LLM Node
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  structuredOutput?: boolean;
+  toolCalling?: boolean;
+  prompts?: { id: string; name: string }[];
+  tools?: { id: string; name: string }[];
+  // MCP Server Node
+  resources?: { id: string; name: string }[];
+  connectionType?: "stdio" | "SSE" | "HTTP";
+}
+
+/** Identity Provider node fields (canvas type). */
+export interface CanvasIdentityProviderNodeData {
+  provider?: string;
+  issuerUrl?: string;
+  discoveryUrl?: string;
+  jwksUrl?: string;
+  audiences?: string[];
+  supportedAlgorithms?: string[];
+  customCapabilities?: {
+    authentication?: boolean;
+    userManagement?: boolean;
+    identity?: boolean;
+    authorization?: boolean;
+  };
+  customOutputs?: {
+    user?: boolean;
+    tokens?: boolean;
+    claims?: boolean;
+  };
+}
+
+/** LangGraph Agent node fields — the parent graph node (canvas type). */
+export interface CanvasLangGraphNodeData {
+  inputChannels?: LangGraphInputChannel[];
+  stateChannels?: LangGraphStateChannel[];
+  graphSteps?: LangGraphStepConfig[];
+  graphEdges?: LangGraphEdgeConfig[];
+  outputPorts?: LangGraphOutputPort[];
+  memoryConfig?: LangGraphMemoryConfig;
+  customLlmNodes?: {
+    id: string;
+    label: string;
+    provider?: string;
+    url?: string;
+    baseUrl?: string;
+    method?: string;
+    headersJson?: string;
+    bodyJson?: string;
+    model?: string;
+    apiKeyHeader?: string;
+    temperature?: number;
+    maxTokens?: number;
+    position?: { x: number; y: number };
+  }[];
+}
+
+/** LangGraph Step node fields — child step nodes inside a graph (canvas type). */
+export interface CanvasLangGraphStepNodeData {
+  stepId?: string;
+  stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
+  modelConfig?: LangGraphStepConfig["modelConfig"];
+  humanGateConfig?: {
+    approvalPrompt: string;
+    timeoutMs?: number;
+    requiredRole?: string;
+  };
+  interruptConfig?: {
+    callbackKey: string;
+    timeoutMs?: number;
+  };
+  customCode?: {
+    body: string;
+    timeoutMs?: number;
+    memoryLimitMb?: number;
+  };
+}
+
+/**
+ * Composite data payload for every BackendNode.
+ * All domain-specific fields are optional; only `BaseNodeData.label` is required.
+ * Sub-type interfaces are prefixed with `Canvas` to avoid naming conflicts
+ * with the Zod-inferred schema types in `@workspace/canvas/schemas`.
+ */
+export type BackendNodeData =
+  BaseNodeData &
+  Partial<
+    CanvasEntityNodeData &
+    CanvasServiceNodeData &
+    MessagingNodeData &
+    CanvasWorkerNodeData &
+    CanvasServerlessNodeData &
+    CanvasInfrastructureNodeData &
+    CanvasAINodeData &
+    CanvasIdentityProviderNodeData &
+    CanvasLangGraphNodeData &
+    CanvasLangGraphStepNodeData
+  >;
+
 export type BackendNode = {
   id: string;
   type: BackendNodeType;
   position: { x: number; y: number };
-  data: {
-    label: string;
-    description?: string;
-    columns?: {
-      name: string;
-      type: string;
-      isPrimaryKey?: boolean;
-      isForeignKey?: boolean;
-      isNotNull?: boolean;
-      isUnique?: boolean;
-      references?: {
-        table: string;
-        column: string;
-      };
-    }[];
-    indexes?: {
-      name: string;
-      columns: string;
-      isUnique?: boolean;
-    }[];
-    isWebClient?: boolean;
-    parentId?: string;
-    position?: { x: number; y: number };
-    // New fields for Graph tab detailed nodes
-    events?: UIEventItem[] | { id: string; name: string }[];
-    inputs?: { id: string; name: string }[];
-    logic?: { id: string; name: string }[];
-    outputs?: { id: string; name: string }[];
-    actions?: { id: string; name: string }[];
-    messages?: { 
-      id: string; 
-      name: string;
-      description?: string;
-      schema?: string;
-      retryPolicy?: string;
-      version?: string;
-    }[];
-    eventChannels?: {
-      id: string;
-      name: string;
-      description?: string;
-      schema?: string;
-      version?: string;
-    }[];
-    topics?: KafkaTopic[];
-    streams?: RedisStream[];
-    queues?: SQSQueue[];
-    channels?: RedisPubSubChannel[];
-    caches?: AnyMessagingResource[];
-    buckets?: AnyMessagingResource[];
-    kafkaBroker?: KafkaBrokerConfig;
-    redisBroker?: RedisStreamsBrokerConfig;
-    sqsBroker?: SQSBrokerConfig;
-    redisPubSubBroker?: RedisPubSubBrokerConfig;
-    publishedEvents?: { 
-      id: string; 
-      name: string;
-      description?: string;
-      schema?: string;
-      version?: string;
-      targetNodeId?: string;
-    }[];
-    consumedEvents?: { 
-      id: string; 
-      name: string;
-      description?: string;
-      schema?: string;
-      retryPolicy?: string;
-      version?: string;
-      handlerLogic?: string;
-      targetNodeId?: string;
-    }[];
-    tableRef?: string; // Reference to an entity node ID
-    seedRows?: Record<string, string | number | boolean | null>[];
-    graphPosition?: { x: number; y: number };
-    techStack?: ServiceTechStack | WebClientTechStack;
-    techVersion?: ServiceTechVersion | WebClientTechVersion;
-    dbEngine?: DatabaseEngine;
-    dbEngineVersion?: DatabaseEngineVersion;
-    orm?: DatabaseORM;
-    ormVersion?: DatabaseOrmVersion;
-    baseUrl?: string;
-    cors?: boolean;
-    corsOrigins?: string;
-    rateLimit?: string;
-    timeout?: string;
-    port?: string;
-    // Messaging/Queue/PubSub/EventStream node fields
-    // (implementation is the broker choice; type of node IS the pattern)
-    implementation?: string;
-    delivery?: string;
-    ordering?: string;
-    failureHandling?: string;
-    retention?: string;
-    durable?: boolean;
-    // Queue implementation specific fields
-    kafkaPartitions?: string;
-    kafkaReplication?: string;
-    kafkaCompression?: string;
-    kafkaTTL?: string;
-    kafkaBatchSize?: string;
-    rabbitExchange?: string;
-    rabbitRoutingKey?: string;
-    rabbitBindings?: string;
-    sqsVisibilityTimeout?: string;
-    sqsDelay?: string;
-    sqsFifo?: boolean;
-    redisConsumerGroup?: string;
-    gcpTopic?: string;
-    gcpSubscription?: string;
-    azureTopic?: string;
-    azureSubscription?: string;
-    endpoints?: Endpoint[];
-    routeGroups?: {
-      id: string;
-      name: string;
-      basePath: string;
-      endpoints: Endpoint[];
-    }[];
-    // --- Worker Node ---
-    tasks?: WorkerTask[];
-    queueSources?: string[];
-    concurrency?: number;
-    retryPolicy?: string;
-    maxRetries?: number;
-    // --- Entity Node ---
-    dbType?: "relational" | "document" | "vector";
-    embeddingModel?: string;
-    dimensions?: number;
-    metric?: "Cosine" | "Dot Product" | "Euclidean";
-    // --- Serverless Node ---
-    triggerType?: "HTTP" | "Event" | "CRON" | "Queue";
-    runtime?: string;
-    memoryMb?: number;
-    timeoutSec?: number;
-    // --- Vector DB Ref Node ---
-    collectionRef?: string;
-    dbRef?: string;
-    // --- Search Index Node ---
-    searchSources?: SearchSource[];
-    analyzer?: string;
-    shards?: number;
-    replicas?: number;
-    refreshInterval?: string;
-    reindexStrategy?: string;
-    // --- API Gateway Node ---
-    routes?: GatewayRoute[];
-    authRules?: AuthRule[];
-    authType?: string;
-    // --- Load Balancer Node ---
-    targetGroups?: { id: string; name: string }[];
-    algorithm?: string;
-    healthCheckPath?: string;
-    // --- Webhook Node ---
-    // (events field already declared; authentication below)
-    // --- LLM Node ---
-    prompts?: { id: string; name: string }[];
-    model?: string;
-    temperature?: number;
-    maxTokens?: number;
-    structuredOutput?: boolean;
-    toolCalling?: boolean;
-    tools?: { id: string; name: string }[];
-    // --- MCP Server Node ---
-    // (tools/prompts declared above)
-    resources?: { id: string; name: string }[];
-    connectionType?: "stdio" | "SSE" | "HTTP";
-    // --- Shared fields for new nodes ---
-    authentication?: string;
-    tags?: string[];
-    // --- Identity Provider Node ---
-    provider?: string;
-    issuerUrl?: string;
-    discoveryUrl?: string;
-    // --- LangGraph Agent Node & Step ---
-    inputChannels?: LangGraphInputChannel[];
-    stateChannels?: LangGraphStateChannel[];
-    graphSteps?: LangGraphStepConfig[];
-    graphEdges?: LangGraphEdgeConfig[];
-    outputPorts?: LangGraphOutputPort[];
-    memoryConfig?: LangGraphMemoryConfig;
-    customLlmNodes?: {
-      id: string;
-      label: string;
-      provider?: string;
-      url?: string;
-      baseUrl?: string;
-      method?: string;
-      headersJson?: string;
-      bodyJson?: string;
-      model?: string;
-      apiKeyHeader?: string;
-      temperature?: number;
-      maxTokens?: number;
-      position?: { x: number; y: number };
-    }[];
-    stepId?: string;
-    stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
-    modelConfig?: LangGraphStepConfig["modelConfig"];
-    humanGateConfig?: {
-      approvalPrompt: string;
-      timeoutMs?: number;
-      requiredRole?: string;
-    };
-    interruptConfig?: {
-      callbackKey: string;
-      timeoutMs?: number;
-    };
-    customCode?: {
-      body: string;
-      timeoutMs?: number;
-      memoryLimitMb?: number;
-    };
-    jwksUrl?: string;
-    audiences?: string[];
-    supportedAlgorithms?: string[];
-    customCapabilities?: {
-      authentication?: boolean;
-      userManagement?: boolean;
-      identity?: boolean;
-      authorization?: boolean;
-    };
-    customOutputs?: {
-      user?: boolean;
-      tokens?: boolean;
-      claims?: boolean;
-    };
-  };
+  data: BackendNodeData;
   fractionalIndex: string; // For Z-order
   parentId?: string;
   style?: Record<string, string | number | boolean | null | undefined>;
@@ -936,17 +1007,8 @@ export interface TestCaseItem {
   expectedBody?: unknown;
 }
 
-export interface BackendNodeData {
-  label?: string;
-  description?: string;
-  columns?: Array<{ name: string }>;
-  endpoints?: Array<{ type: string; name: string }>;
-  events?: UIEventItem[];
-  topics?: Array<{ name: string }>;
-  testCases?: TestCaseItem[];
-  [key: string]: unknown;
-}
-
+// BackendNodeData is defined above (composite of all node domain sub-types).
+// BackendNodeItem is kept for AI tool / store compatibility.
 export interface BackendNodeItem {
   nodeId: string;
   type?: string;

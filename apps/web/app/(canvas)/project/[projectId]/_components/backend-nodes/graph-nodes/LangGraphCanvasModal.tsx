@@ -23,7 +23,7 @@ import { LangGraphCanvasHeader } from "./sub-canvas/components/LangGraphCanvasHe
 import { ToolsSidebar } from "./sub-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./sub-canvas/components/InspectorSidebar";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./sub-canvas/types";
-import { HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./sub-canvas/constants";
+import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./sub-canvas/constants";
 
 export interface LangGraphCanvasModalProps {
   open: boolean;
@@ -104,17 +104,36 @@ function LangGraphCanvasContent({
     handleDeleteSelected,
     handleSave,
     saveStatus,
+    availableLLMNodes,
+    availableToolNodes,
+    availableMiddlewareNodes,
+    handleSelectLLMForAgent,
+    handleToggleToolForAgent,
+    handleToggleMiddlewareForAgent,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
-  const connectedToolsCount = useMemo(() => {
-    if (!selectedNodeId) return 0;
-    return edges.filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_TOOL_IN).length;
+  const connectedLLMId = useMemo(() => {
+    if (!selectedNodeId) return null;
+    const edge = edges.find((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_LLM_IN);
+    return edge ? edge.source : null;
   }, [edges, selectedNodeId]);
 
-  const connectedMiddlewareCount = useMemo(() => {
-    if (!selectedNodeId) return 0;
-    return edges.filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MIDDLEWARE_IN).length;
+  const connectedToolIds = useMemo(() => {
+    if (!selectedNodeId) return [];
+    return edges
+      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_TOOL_IN)
+      .map((e) => e.source);
   }, [edges, selectedNodeId]);
+
+  const connectedMiddlewareIds = useMemo(() => {
+    if (!selectedNodeId) return [];
+    return edges
+      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+      .map((e) => e.source);
+  }, [edges, selectedNodeId]);
+
+  const connectedToolsCount = connectedToolIds.length;
+  const connectedMiddlewareCount = connectedMiddlewareIds.length;
 
   return (
     <div
@@ -204,6 +223,15 @@ function LangGraphCanvasContent({
           selectedAgentData={selectedAgentData}
           connectedToolsCount={connectedToolsCount}
           connectedMiddlewareCount={connectedMiddlewareCount}
+          availableLLMNodes={availableLLMNodes}
+          availableToolNodes={availableToolNodes}
+          availableMiddlewareNodes={availableMiddlewareNodes}
+          connectedLLMId={connectedLLMId}
+          connectedToolIds={connectedToolIds}
+          connectedMiddlewareIds={connectedMiddlewareIds}
+          onSelectLLM={(llmId) => selectedNodeId && handleSelectLLMForAgent(selectedNodeId, llmId)}
+          onToggleTool={(toolId, connect) => selectedNodeId && handleToggleToolForAgent(selectedNodeId, toolId, connect)}
+          onToggleMiddleware={(mwId, connect) => selectedNodeId && handleToggleMiddlewareForAgent(selectedNodeId, mwId, connect)}
           onDeleteStep={handleDeleteStep}
           onUpdateStep={updateSelectedStep}
           onUpdateLLM={updateSelectedLLM}

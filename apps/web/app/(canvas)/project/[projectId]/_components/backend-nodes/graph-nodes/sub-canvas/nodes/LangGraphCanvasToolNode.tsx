@@ -57,13 +57,13 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
     <div
       className={`rounded-xl bg-card border-2 min-w-[260px] max-w-[340px] flex flex-col transition-all duration-200 shadow-md relative group ${
         selected
-          ? "border-emerald-500 ring-4 ring-emerald-500/20 shadow-emerald-500/10"
-          : "border-border hover:border-emerald-500/50 hover:shadow-emerald-500/5"
+          ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-emerald-500/10"
+          : "border-border hover:border-emerald-500/40 hover:shadow-emerald-500/5"
       }`}
     >
-      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-emerald-500/5 rounded-t-xl">
+      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="p-1.5 rounded-lg shrink-0 bg-emerald-500 text-white shadow-sm">
+          <div className="p-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 shrink-0">
             <Wrench className="w-4 h-4" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">

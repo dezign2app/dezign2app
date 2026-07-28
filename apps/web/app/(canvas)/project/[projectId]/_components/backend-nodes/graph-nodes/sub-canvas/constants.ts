@@ -18,7 +18,10 @@ import {
   LLM_PROVIDER_OLLAMA,
   LLM_PROVIDER_CUSTOM,
   LLM_PROVIDER_OTHER,
+  LLM_PROVIDER_OPTIONS,
 } from "@workspace/canvas/constants";
+
+import { LLM_PROVIDER_PRESETS } from "./components/inspector/constants";
 
 // ─── Sub-Canvas React Flow Node Types ──────────────────────────────────────────
 export const SUB_CANVAS_NODE_STEP         = "step" as const;
@@ -72,4 +75,8 @@ export {
   LLM_PROVIDER_OLLAMA,
   LLM_PROVIDER_CUSTOM,
   LLM_PROVIDER_OTHER,
+  LLM_PROVIDER_OPTIONS,
+  LLM_PROVIDER_PRESETS,
 };
+
+

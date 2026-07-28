@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
 import { SUB_CANVAS_NODE_LLM } from "../constants";
-import { PROVIDER_PRESETS } from "../components/inspector/constants";
+import { LLM_PROVIDER_PRESETS } from "../components/inspector/constants";
 import { LocalInput, LocalTextarea } from "../../shared";
 
 export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGraphLLMNode>) => {
@@ -33,7 +33,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
   };
 
   const activeProviderKey = data.provider || "openai";
-  const activePreset = PROVIDER_PRESETS[activeProviderKey] || PROVIDER_PRESETS.custom;
+  const activePreset = LLM_PROVIDER_PRESETS[activeProviderKey] || LLM_PROVIDER_PRESETS.custom;
   const currentModels = activePreset?.models || [];
 
   const defaultBody = JSON.stringify(
@@ -141,7 +141,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
         <Select
           value={activeProviderKey}
           onValueChange={(val: string) => {
-            const preset = PROVIDER_PRESETS[val];
+            const preset = LLM_PROVIDER_PRESETS[val];
             if (preset) {
               updateLLMData({
                 provider: val,
@@ -158,7 +158,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="nodrag">
-            {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+            {Object.entries(LLM_PROVIDER_PRESETS).map(([key, preset]) => (
               <SelectItem key={key} value={key}>
                 {preset.label}
               </SelectItem>

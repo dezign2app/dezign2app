@@ -65,6 +65,15 @@ export const LLM_PROVIDER_OLLAMA    = "ollama" as const;
 export const LLM_PROVIDER_CUSTOM    = "custom" as const;
 export const LLM_PROVIDER_OTHER     = "other" as const;
 
+export const LLM_PROVIDER_OPTIONS = [
+  { value: LLM_PROVIDER_GROQ, label: "Groq" },
+  { value: LLM_PROVIDER_OPENAI, label: "OpenAI" },
+  { value: LLM_PROVIDER_ANTHROPIC, label: "Anthropic" },
+  { value: LLM_PROVIDER_GOOGLE, label: "Google" },
+  { value: LLM_PROVIDER_OTHER, label: "Other" },
+] as const;
+
+
 
 export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   kafka: "kafka",

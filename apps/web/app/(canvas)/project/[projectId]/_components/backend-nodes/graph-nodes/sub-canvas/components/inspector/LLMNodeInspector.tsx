@@ -6,7 +6,7 @@ import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { LangGraphLLMNodeData } from "../../types";
 import { LocalTextarea } from "../../../shared";
-import { PROVIDER_PRESETS } from "./constants";
+import { LLM_PROVIDER_PRESETS } from "./constants";
 
 interface LLMNodeInspectorProps {
   selectedLLMData: LangGraphLLMNodeData;
@@ -20,7 +20,7 @@ export function LLMNodeInspector({
   onUpdateLLM,
 }: LLMNodeInspectorProps) {
   const activeProviderKey = selectedLLMData.provider || "openai";
-  const activePreset = PROVIDER_PRESETS[activeProviderKey] || PROVIDER_PRESETS.custom;
+  const activePreset = LLM_PROVIDER_PRESETS[activeProviderKey] || LLM_PROVIDER_PRESETS.custom;
   const currentModels = activePreset?.models || [];
 
   const defaultBody = JSON.stringify(
@@ -78,7 +78,7 @@ export function LLMNodeInspector({
         <Select
           value={activeProviderKey}
           onValueChange={(val: string) => {
-            const preset = PROVIDER_PRESETS[val];
+            const preset = LLM_PROVIDER_PRESETS[val];
             if (preset) {
               onUpdateLLM?.({
                 provider: val,
@@ -95,7 +95,7 @@ export function LLMNodeInspector({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+            {Object.entries(LLM_PROVIDER_PRESETS).map(([key, preset]) => (
               <SelectItem key={key} value={key}>
                 {preset.label}
               </SelectItem>

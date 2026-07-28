@@ -4,6 +4,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { Switch } from "@workspace/ui/components/switch";
 import type { LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
 import {
@@ -59,46 +60,68 @@ export function StepNodeInspector({
       {/* Model Config Section - Only show for non-router nodes */}
       {!isRouter && (
         <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Brain className="w-3.5 h-3.5 text-muted-foreground" /> Model Config
-          </span>
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs">Provider</Label>
-            <Select
-              value={selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ}
-              onValueChange={(v: string) =>
-                onUpdateStep({
-                  modelConfig: {
-                    ...selectedStepData.modelConfig,
-                    provider: v as NonNullable<LangGraphStepConfig["modelConfig"]>["provider"],
-                  },
-                })
-              }
-            >
-              <SelectTrigger className="h-8 text-xs bg-background/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={LLM_PROVIDER_GROQ}>Groq</SelectItem>
-                <SelectItem value={LLM_PROVIDER_OPENAI}>OpenAI</SelectItem>
-                <SelectItem value={LLM_PROVIDER_ANTHROPIC}>Anthropic</SelectItem>
-                <SelectItem value={LLM_PROVIDER_GOOGLE}>Google</SelectItem>
-                <SelectItem value={LLM_PROVIDER_OTHER}>Other (Custom LLM)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs">Model</Label>
-            <Input
-              className="h-8 text-xs bg-background/50 font-mono"
-              value={selectedStepData.modelConfig?.model || ""}
-              onChange={(e) =>
-                onUpdateStep({
-                  modelConfig: { ...selectedStepData.modelConfig, model: e.target.value },
-                })
-              }
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 text-muted-foreground" /> Model Config
+            </span>
+            <Switch
+              checked={!!selectedStepData.modelConfig}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  onUpdateStep({
+                    modelConfig: {
+                      provider: selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ,
+                      model: selectedStepData.modelConfig?.model || "llama-3.3-70b-versatile",
+                    },
+                  });
+                } else {
+                  onUpdateStep({ modelConfig: undefined });
+                }
+              }}
             />
           </div>
+
+          {selectedStepData.modelConfig && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Provider</Label>
+                <Select
+                  value={selectedStepData.modelConfig?.provider || LLM_PROVIDER_GROQ}
+                  onValueChange={(v: string) =>
+                    onUpdateStep({
+                      modelConfig: {
+                        ...selectedStepData.modelConfig,
+                        provider: v as NonNullable<LangGraphStepConfig["modelConfig"]>["provider"],
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs bg-background/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={LLM_PROVIDER_GROQ}>Groq</SelectItem>
+                    <SelectItem value={LLM_PROVIDER_OPENAI}>OpenAI</SelectItem>
+                    <SelectItem value={LLM_PROVIDER_ANTHROPIC}>Anthropic</SelectItem>
+                    <SelectItem value={LLM_PROVIDER_GOOGLE}>Google</SelectItem>
+                    <SelectItem value={LLM_PROVIDER_OTHER}>Other (Custom LLM)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Model</Label>
+                <Input
+                  className="h-8 text-xs bg-background/50 font-mono"
+                  value={selectedStepData.modelConfig?.model || ""}
+                  onChange={(e) =>
+                    onUpdateStep({
+                      modelConfig: { ...selectedStepData.modelConfig, model: e.target.value },
+                    })
+                  }
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 

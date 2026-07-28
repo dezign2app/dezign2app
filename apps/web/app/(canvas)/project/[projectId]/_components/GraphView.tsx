@@ -31,7 +31,6 @@ import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
 import { HTTPConnectionEdge, MessagingEdge, IdentityConnectionEdge } from "./backend-nodes/CustomEdges";
 import { isValidConnection } from "@workspace/canvas";
-import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import { getOffsetPosition, useCanvasHandlers } from "./hooks/useCanvasHandlers";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 import { Badge } from "@workspace/ui/components/badge";
@@ -139,7 +138,7 @@ export function GraphView({ projectId }: GraphViewProps) {
         prompts: (type === 'llm' || type === 'mcp_server') ? [] : undefined,
         tools: (type === 'llm' || type === 'mcp_server') ? [] : undefined,
         resources: type === 'mcp_server' ? [] : undefined,
-        ...(type === 'langgraph' ? LANGGRAPH_STARTER_TEMPLATE : {}),
+        ...(type === 'langgraph' ? { inputChannels: [], stateChannels: [{ key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] }], graphSteps: [], graphEdges: [] } : {}),
       },
     });
   };

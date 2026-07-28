@@ -7,6 +7,8 @@ import type { CustomLLMNode, LangGraphCanvasNode } from "../types";
 import { SUB_CANVAS_NODE_LLM } from "../constants";
 import { LocalInput, LocalTextarea } from "../../shared";
 
+import { DEFAULT_LLM_MODEL } from "@workspace/canvas/constants";
+
 export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<CustomLLMNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -33,7 +35,7 @@ export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<C
 
   const defaultBody = JSON.stringify(
     {
-      model: data.model || "llama3:8b",
+      model: data.model || DEFAULT_LLM_MODEL,
       messages: [{ role: "user", content: "{{input}}" }],
       temperature: 0.7,
     },

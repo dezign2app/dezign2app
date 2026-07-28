@@ -1,11 +1,10 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { Zap } from "lucide-react";
-import { LANGGRAPH_STARTER_TEMPLATE } from "@workspace/canvas/constants";
 import type { StartNode } from "../types";
 
 export const LangGraphCanvasStartNode = ({ data, selected }: NodeProps<StartNode>) => {
-  const channels = data.inputChannels || LANGGRAPH_STARTER_TEMPLATE.inputChannels;
+  const channels = data.inputChannels || [];
 
   return (
     <div

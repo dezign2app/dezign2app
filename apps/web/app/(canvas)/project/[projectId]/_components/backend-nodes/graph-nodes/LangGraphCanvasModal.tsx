@@ -98,29 +98,28 @@ function LangGraphCanvasContent({
     saveStatus,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement as HTMLElement | null;
-      if (
-        activeEl &&
-        (activeEl.tagName === "INPUT" ||
-          activeEl.tagName === "TEXTAREA" ||
-          activeEl.isContentEditable)
-      ) {
-        return;
-      }
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        handleDeleteSelected();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleDeleteSelected]);
-
   return (
-    <div className="flex flex-col h-full w-full bg-background text-foreground">
+    <div
+      className="flex flex-col h-full w-full bg-background text-foreground outline-none"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        const activeEl = document.activeElement as HTMLElement | null;
+        if (
+          activeEl &&
+          (activeEl.tagName === "INPUT" ||
+            activeEl.tagName === "TEXTAREA" ||
+            activeEl.isContentEditable)
+        ) {
+          return;
+        }
+
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          handleDeleteSelected();
+        }
+      }}
+    >
       {/* Header */}
       <LangGraphCanvasHeader
         label={node.data.label}
@@ -150,6 +149,9 @@ function LangGraphCanvasContent({
             elementsSelectable={true}
             onEdgeClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
               setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
+            }}
+            onEdgeDoubleClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
+              setEdges((eds) => eds.filter((e) => e.id !== edge.id));
             }}
             onNodeClick={(_: React.MouseEvent, n: LangGraphCanvasNode) => {
               setSelectedNodeId(n.id);

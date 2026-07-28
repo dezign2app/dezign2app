@@ -50,6 +50,8 @@ import {
   SUB_CANVAS_NODE_TOOL,
   SUB_CANVAS_NODE_MIDDLEWARE,
   SUB_CANVAS_NODE_AGENT,
+  DEFAULT_MIDDLEWARE_TYPE,
+  MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
   HANDLE_TOOL_IN,
@@ -576,8 +578,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         data: {
           label: label || "Middleware Node",
           middlewareId: mwId,
-          name: "human_approval_mw",
-          type: "human_in_the_loop",
+          name: "middleware",
+          type: DEFAULT_MIDDLEWARE_TYPE,
           humanInTheLoopConfig: {
             interruptOn: { writeFile: true },
             approvalPrompt: "Requires approval before writing files...",
@@ -725,6 +727,76 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     ));
   };
 
+  // ── Agent Attached Resource Helpers ──
+  const availableLLMNodes = useMemo(() => {
+    return nodes.filter((n): n is LangGraphLLMNode => n.type === SUB_CANVAS_NODE_LLM);
+  }, [nodes]);
+
+  const availableToolNodes = useMemo(() => {
+    return nodes.filter((n): n is ToolNode => n.type === SUB_CANVAS_NODE_TOOL);
+  }, [nodes]);
+
+  const availableMiddlewareNodes = useMemo(() => {
+    return nodes.filter((n): n is MiddlewareNode => n.type === SUB_CANVAS_NODE_MIDDLEWARE);
+  }, [nodes]);
+
+  const handleSelectLLMForAgent = useCallback((agentId: string, llmId: string | null) => {
+    setEdges((eds) => {
+      const filtered = eds.filter((e) => !(e.target === agentId && e.targetHandle === HANDLE_LLM_IN));
+      if (!llmId) return filtered;
+      const newEdge: LangGraphCanvasEdge = {
+        id: `xy-edge__${llmId}${HANDLE_LLM_OUT}-${agentId}${HANDLE_LLM_IN}`,
+        source: llmId,
+        sourceHandle: HANDLE_LLM_OUT,
+        target: agentId,
+        targetHandle: HANDLE_LLM_IN,
+        animated: true,
+        style: { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "5 5" },
+      };
+      return [...filtered, newEdge];
+    });
+  }, []);
+
+  const handleToggleToolForAgent = useCallback((agentId: string, toolId: string, connect: boolean) => {
+    setEdges((eds) => {
+      if (!connect) {
+        return eds.filter((e) => !(e.source === toolId && e.target === agentId && e.targetHandle === HANDLE_TOOL_IN));
+      }
+      const existing = eds.find((e) => e.source === toolId && e.target === agentId && e.targetHandle === HANDLE_TOOL_IN);
+      if (existing) return eds;
+      const newEdge: LangGraphCanvasEdge = {
+        id: `xy-edge__${toolId}${HANDLE_TOOL_OUT}-${agentId}${HANDLE_TOOL_IN}`,
+        source: toolId,
+        sourceHandle: HANDLE_TOOL_OUT,
+        target: agentId,
+        targetHandle: HANDLE_TOOL_IN,
+        animated: true,
+        style: { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "5 5" },
+      };
+      return [...eds, newEdge];
+    });
+  }, []);
+
+  const handleToggleMiddlewareForAgent = useCallback((agentId: string, mwId: string, connect: boolean) => {
+    setEdges((eds) => {
+      if (!connect) {
+        return eds.filter((e) => !(e.source === mwId && e.target === agentId && e.targetHandle === HANDLE_MIDDLEWARE_IN));
+      }
+      const existing = eds.find((e) => e.source === mwId && e.target === agentId && e.targetHandle === HANDLE_MIDDLEWARE_IN);
+      if (existing) return eds;
+      const newEdge: LangGraphCanvasEdge = {
+        id: `xy-edge__${mwId}${HANDLE_MIDDLEWARE_OUT}-${agentId}${HANDLE_MIDDLEWARE_IN}`,
+        source: mwId,
+        sourceHandle: HANDLE_MIDDLEWARE_OUT,
+        target: agentId,
+        targetHandle: HANDLE_MIDDLEWARE_IN,
+        animated: true,
+        style: { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "5 5" },
+      };
+      return [...eds, newEdge];
+    });
+  }, []);
+
   // ── Delete selected step ──
   const handleDeleteStep = () => {
     if (!selectedNodeId || isReservedNodeId(selectedNodeId)) return;
@@ -786,7 +858,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         id: n.data.middlewareId || n.id,
         middlewareId: n.data.middlewareId || n.id,
         name: n.data.name || "Middleware",
-        type: n.data.type || "human_in_the_loop",
+        type: n.data.type || DEFAULT_MIDDLEWARE_TYPE,
         humanInTheLoopConfig: n.data.humanInTheLoopConfig,
         rateLimitConfig: n.data.rateLimitConfig,
         loggingConfig: n.data.loggingConfig,
@@ -975,6 +1047,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     handleDeleteSelected,
     handleSave,
     saveStatus,
+    availableLLMNodes,
+    availableToolNodes,
+    availableMiddlewareNodes,
+    handleSelectLLMForAgent,
+    handleToggleToolForAgent,
+    handleToggleMiddlewareForAgent,
   };
 }
 

@@ -189,13 +189,13 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     <div
       className={`rounded-xl bg-card border-2 min-w-[260px] max-w-[340px] flex flex-col transition-all duration-200 shadow-md relative group ${
         selected
-          ? "border-primary ring-4 ring-primary/20 shadow-primary/10"
+          ? "border-primary ring-2 ring-primary/20 shadow-primary/10"
           : stepType === STEP_TYPE_ROUTER
-          ? "border-sky-500 shadow-sky-500/10"
+          ? "border-sky-500/40 shadow-sky-500/10"
           : "border-border hover:border-border/80"
       }`}
     >
-      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 relative">
+      <div className={`flex items-center justify-between gap-2 p-3 border-b border-border/50 rounded-t-xl ${stepType === STEP_TYPE_ROUTER ? "bg-sky-500/10 text-sky-700 dark:text-sky-400" : "bg-secondary/20"}`}>
         <Handle
           type="target"
           position={Position.Left}
@@ -205,7 +205,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
         />
 
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className={`p-1.5 rounded-lg shrink-0 ${stepType === STEP_TYPE_ROUTER ? "bg-sky-500 text-white" : "bg-secondary text-foreground"}`}>
+          <div className={`p-1 rounded-md border shrink-0 ${stepType === STEP_TYPE_ROUTER ? "border-sky-500/30 bg-sky-500/10 text-sky-500" : "border-border/60 bg-background text-foreground"}`}>
             <Icon className="w-4 h-4" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">

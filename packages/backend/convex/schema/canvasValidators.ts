@@ -192,6 +192,121 @@ export const langgraphConvexDataValidator = v.object({
             tracingTarget: v.optional(v.string()),
           })
         ),
+        summarizationConfig: v.optional(
+          v.object({
+            model: v.optional(v.string()),
+            triggerTokens: v.optional(v.number()),
+            triggerMessages: v.optional(v.number()),
+            triggerFraction: v.optional(v.number()),
+            keepMessages: v.optional(v.number()),
+            keepTokens: v.optional(v.number()),
+            keepFraction: v.optional(v.number()),
+            summaryPrompt: v.optional(v.string()),
+            trimTokensToSummarize: v.optional(v.number()),
+            summaryPrefix: v.optional(v.string()),
+          })
+        ),
+        modelCallLimitConfig: v.optional(
+          v.object({
+            threadLimit: v.optional(v.number()),
+            runLimit: v.optional(v.number()),
+            exitBehavior: v.optional(v.string()),
+          })
+        ),
+        toolCallLimitConfig: v.optional(
+          v.object({
+            toolName: v.optional(v.string()),
+            threadLimit: v.optional(v.number()),
+            runLimit: v.optional(v.number()),
+            exitBehavior: v.optional(v.string()),
+          })
+        ),
+        modelFallbackConfig: v.optional(
+          v.object({
+            fallbackModels: v.optional(v.array(v.string())),
+          })
+        ),
+        piiConfig: v.optional(
+          v.object({
+            piiType: v.optional(v.string()),
+            strategy: v.optional(v.string()),
+            detectorPattern: v.optional(v.string()),
+            applyToInput: v.optional(v.boolean()),
+            applyToOutput: v.optional(v.boolean()),
+            applyToToolResults: v.optional(v.boolean()),
+          })
+        ),
+        todoListConfig: v.optional(
+          v.object({
+            enableWriteTodos: v.optional(v.boolean()),
+            autoInjectPrompt: v.optional(v.boolean()),
+            initialTasks: v.optional(v.string()),
+          })
+        ),
+        llmToolSelectorConfig: v.optional(
+          v.object({
+            model: v.optional(v.string()),
+            maxTools: v.optional(v.number()),
+            alwaysInclude: v.optional(v.array(v.string())),
+            systemPrompt: v.optional(v.string()),
+          })
+        ),
+        toolRetryConfig: v.optional(
+          v.object({
+            maxRetries: v.optional(v.number()),
+            backoffFactor: v.optional(v.number()),
+            initialDelayMs: v.optional(v.number()),
+            maxDelayMs: v.optional(v.number()),
+            jitter: v.optional(v.boolean()),
+            onFailure: v.optional(v.string()),
+            tools: v.optional(v.array(v.string())),
+          })
+        ),
+        modelRetryConfig: v.optional(
+          v.object({
+            maxRetries: v.optional(v.number()),
+            backoffFactor: v.optional(v.number()),
+            initialDelayMs: v.optional(v.number()),
+            maxDelayMs: v.optional(v.number()),
+            jitter: v.optional(v.boolean()),
+            onFailure: v.optional(v.string()),
+          })
+        ),
+        toolEmulatorConfig: v.optional(
+          v.object({
+            model: v.optional(v.string()),
+            emulatedTools: v.optional(v.array(v.string())),
+          })
+        ),
+        contextEditingConfig: v.optional(
+          v.object({
+            triggerTokens: v.optional(v.number()),
+            keep: v.optional(v.number()),
+            clearToolInputs: v.optional(v.boolean()),
+            excludeTools: v.optional(v.array(v.string())),
+            placeholder: v.optional(v.string()),
+          })
+        ),
+        providerToolSearchConfig: v.optional(
+          v.object({
+            searchableTools: v.optional(v.array(v.string())),
+          })
+        ),
+        filesystemConfig: v.optional(
+          v.object({
+            backend: v.optional(v.string()),
+            memoriesPath: v.optional(v.string()),
+            systemPrompt: v.optional(v.string()),
+            customToolDescriptions: v.optional(v.string()),
+          })
+        ),
+        subagentConfig: v.optional(
+          v.object({
+            defaultModel: v.optional(v.string()),
+            defaultTools: v.optional(v.array(v.string())),
+            subagentsJson: v.optional(v.string()),
+          })
+        ),
         customBody: v.optional(v.string()),
         position: v.optional(v.object({ x: v.number(), y: v.number() })),
       })

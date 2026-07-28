@@ -1,20 +1,15 @@
-import React from "react";
-import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import React, { useState, useCallback } from "react";
 import type {
   LangGraphStateChannel,
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
-import { InputsTabContent } from "./inspector/InputsTabContent";
-import { StateTabContent } from "./inspector/StateTabContent";
-import { MemoryTabContent } from "./inspector/MemoryTabContent";
-
 
 export interface InspectorSidebarProps {
-  activeSideTab: "inspector" | "inputs" | "state" | "memory";
-  setActiveSideTab: (tab: "inspector" | "inputs" | "state" | "memory") => void;
+  activeSideTab?: "inspector" | "inputs" | "state" | "memory";
+  setActiveSideTab?: (tab: "inspector" | "inputs" | "state" | "memory") => void;
   selectedStepData: StepNodeData | null;
   selectedLLMData?: LangGraphLLMNodeData | null;
   selectedToolData?: ToolNodeData | null;
@@ -22,23 +17,30 @@ export interface InspectorSidebarProps {
   selectedAgentData?: AgentNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
+  availableLLMNodes?: LangGraphLLMNode[];
+  availableToolNodes?: ToolNode[];
+  availableMiddlewareNodes?: MiddlewareNode[];
+  connectedLLMId?: string | null;
+  connectedToolIds?: string[];
+  connectedMiddlewareIds?: string[];
+  onSelectLLM?: (llmId: string | null) => void;
+  onToggleTool?: (toolId: string, connect: boolean) => void;
+  onToggleMiddleware?: (mwId: string, connect: boolean) => void;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
   onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
   onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
-  inputChannels: LangGraphInputChannel[];
-  setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
+  inputChannels?: LangGraphInputChannel[];
+  setInputChannels?: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
-  setStateChannels: React.Dispatch<React.SetStateAction<LangGraphStateChannel[]>>;
-  memoryConfig: LangGraphMemoryConfig;
-  setMemoryConfig: React.Dispatch<React.SetStateAction<LangGraphMemoryConfig>>;
+  setStateChannels?: React.Dispatch<React.SetStateAction<LangGraphStateChannel[]>>;
+  memoryConfig?: LangGraphMemoryConfig;
+  setMemoryConfig?: React.Dispatch<React.SetStateAction<LangGraphMemoryConfig>>;
 }
 
 export function InspectorSidebar({
-  activeSideTab,
-  setActiveSideTab,
   selectedStepData,
   selectedLLMData,
   selectedToolData,
@@ -46,80 +48,101 @@ export function InspectorSidebar({
   selectedAgentData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
+  availableLLMNodes,
+  availableToolNodes,
+  availableMiddlewareNodes,
+  connectedLLMId,
+  connectedToolIds,
+  connectedMiddlewareIds,
+  onSelectLLM,
+  onToggleTool,
+  onToggleMiddleware,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
   onUpdateTool,
   onUpdateMiddleware,
   onUpdateAgent,
-  inputChannels,
-  setInputChannels,
   stateChannels,
-  setStateChannels,
-  memoryConfig,
-  setMemoryConfig,
 }: InspectorSidebarProps) {
+  const [width, setWidth] = useState(340);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback(
+    (mouseDownEvent: React.MouseEvent) => {
+      mouseDownEvent.preventDefault();
+      mouseDownEvent.stopPropagation();
+      setIsResizing(true);
+
+      const startX = mouseDownEvent.clientX;
+      const startWidth = width;
+
+      const onMouseMove = (mouseMoveEvent: MouseEvent) => {
+        const deltaX = startX - mouseMoveEvent.clientX;
+        const newWidth = Math.min(Math.max(startWidth + deltaX, 260), 640);
+        setWidth(newWidth);
+      };
+
+      const onMouseUp = () => {
+        setIsResizing(false);
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+    },
+    [width]
+  );
+
+  const hasSelectedNode = Boolean(
+    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData
+  );
+
+  if (!hasSelectedNode) return null;
+
   return (
     <div
-      className="w-[340px] border-l border-border bg-card flex flex-col h-full min-h-0 overflow-hidden shrink-0"
+      style={{ width: `${width}px` }}
+      className={`border-l border-border bg-card flex flex-col h-full min-h-0 overflow-hidden shrink-0 relative ${
+        isResizing ? "select-none" : ""
+      }`}
       onWheel={(e) => e.stopPropagation()}
     >
-      <Tabs
-        value={activeSideTab}
-        onValueChange={(v) => setActiveSideTab(v as typeof activeSideTab)}
-        className="flex-1 flex flex-col h-full min-h-0 overflow-hidden"
-      >
-        <TabsList className="grid grid-cols-4 bg-muted/40 p-1 rounded-none border-b border-border/50 shrink-0">
-          <TabsTrigger value="inspector" className="text-[11px] px-1 font-medium">
-            Inspector
-          </TabsTrigger>
-          <TabsTrigger value="inputs" className="text-[11px] px-1 font-medium">
-            Inputs ({inputChannels.length})
-          </TabsTrigger>
-          <TabsTrigger value="state" className="text-[11px] px-1 font-medium">
-            State ({stateChannels.length})
-          </TabsTrigger>
-          <TabsTrigger value="memory" className="text-[11px] px-1 font-medium">
-            Memory
-          </TabsTrigger>
-        </TabsList>
+      {/* Resizing Handle */}
+      <div
+        className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/50 transition-colors z-20 ${
+          isResizing ? "bg-primary" : "bg-transparent"
+        }`}
+        onMouseDown={startResizing}
+        title="Drag left/right to resize inspector"
+      />
 
-        {/* ── Inspector Tab ── */}
-        <InspectorTabContent
-          selectedStepData={selectedStepData}
-          selectedLLMData={selectedLLMData}
-          selectedToolData={selectedToolData}
-          selectedMiddlewareData={selectedMiddlewareData}
-          selectedAgentData={selectedAgentData}
-          connectedToolsCount={connectedToolsCount}
-          connectedMiddlewareCount={connectedMiddlewareCount}
-          onDeleteStep={onDeleteStep}
-          onUpdateStep={onUpdateStep}
-          onUpdateLLM={onUpdateLLM}
-          onUpdateTool={onUpdateTool}
-          onUpdateMiddleware={onUpdateMiddleware}
-          onUpdateAgent={onUpdateAgent}
-          stateChannels={stateChannels}
-        />
-
-        {/* ── Inputs Tab ── */}
-        <InputsTabContent
-          inputChannels={inputChannels}
-          setInputChannels={setInputChannels}
-        />
-
-        {/* ── State Tab ── */}
-        <StateTabContent
-          stateChannels={stateChannels}
-          setStateChannels={setStateChannels}
-        />
-
-        {/* ── Memory Tab ── */}
-        <MemoryTabContent
-          memoryConfig={memoryConfig}
-          setMemoryConfig={setMemoryConfig}
-        />
-      </Tabs>
+      <InspectorTabContent
+        selectedStepData={selectedStepData}
+        selectedLLMData={selectedLLMData}
+        selectedToolData={selectedToolData}
+        selectedMiddlewareData={selectedMiddlewareData}
+        selectedAgentData={selectedAgentData}
+        connectedToolsCount={connectedToolsCount}
+        connectedMiddlewareCount={connectedMiddlewareCount}
+        availableLLMNodes={availableLLMNodes}
+        availableToolNodes={availableToolNodes}
+        availableMiddlewareNodes={availableMiddlewareNodes}
+        connectedLLMId={connectedLLMId}
+        connectedToolIds={connectedToolIds}
+        connectedMiddlewareIds={connectedMiddlewareIds}
+        onSelectLLM={onSelectLLM}
+        onToggleTool={onToggleTool}
+        onToggleMiddleware={onToggleMiddleware}
+        onDeleteStep={onDeleteStep}
+        onUpdateStep={onUpdateStep}
+        onUpdateLLM={onUpdateLLM}
+        onUpdateTool={onUpdateTool}
+        onUpdateMiddleware={onUpdateMiddleware}
+        onUpdateAgent={onUpdateAgent}
+        stateChannels={stateChannels}
+      />
     </div>
   );
 }

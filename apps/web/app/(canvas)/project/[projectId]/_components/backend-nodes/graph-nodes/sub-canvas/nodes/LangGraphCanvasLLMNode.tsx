@@ -57,14 +57,14 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
 
   return (
     <div
-      className={`rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[300px] max-w-[360px] p-3 flex flex-col gap-2.5 transition-all duration-200 shadow-xl relative group ${
-        selected ? "border-sky-400 ring-4 ring-sky-400/20 shadow-sky-400/10" : "border-sky-500/40 hover:border-sky-400/80"
+      className={`rounded-xl bg-card border-2 min-w-[300px] max-w-[360px] p-3 flex flex-col gap-2.5 transition-all duration-200 shadow-md relative group ${
+        selected ? "border-blue-500 ring-2 ring-blue-500/20 shadow-blue-500/10" : "border-border hover:border-blue-500/40 hover:shadow-blue-500/5"
       }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+      <div className="flex items-center justify-between gap-2 p-3 -mx-3 -mt-3 border-b border-border/50 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400 shrink-0 border border-sky-500/20">
+          <div className="p-1 rounded-md border border-blue-500/30 bg-blue-500/10 text-blue-500 shrink-0">
             <Brain className="w-4 h-4" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">

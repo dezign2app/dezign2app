@@ -2,7 +2,7 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData } from "../../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode } from "../../types";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
 import { ToolNodeInspector } from "./ToolNodeInspector";
@@ -17,6 +17,15 @@ interface InspectorTabContentProps {
   selectedAgentData?: AgentNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
+  availableLLMNodes?: LangGraphLLMNode[];
+  availableToolNodes?: ToolNode[];
+  availableMiddlewareNodes?: MiddlewareNode[];
+  connectedLLMId?: string | null;
+  connectedToolIds?: string[];
+  connectedMiddlewareIds?: string[];
+  onSelectLLM?: (llmId: string | null) => void;
+  onToggleTool?: (toolId: string, connect: boolean) => void;
+  onToggleMiddleware?: (mwId: string, connect: boolean) => void;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
@@ -34,6 +43,15 @@ export function InspectorTabContent({
   selectedAgentData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
+  availableLLMNodes,
+  availableToolNodes,
+  availableMiddlewareNodes,
+  connectedLLMId,
+  connectedToolIds,
+  connectedMiddlewareIds,
+  onSelectLLM,
+  onToggleTool,
+  onToggleMiddleware,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
@@ -43,9 +61,8 @@ export function InspectorTabContent({
   stateChannels,
 }: InspectorTabContentProps) {
   return (
-    <TabsContent
-      value="inspector"
-      className="flex-1 min-h-0 overflow-y-auto p-4 m-0 data-[state=active]:flex data-[state=active]:flex-col gap-4"
+    <div
+      className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4"
     >
       {selectedLLMData ? (
         <LLMNodeInspector
@@ -71,8 +88,15 @@ export function InspectorTabContent({
           selectedAgentData={selectedAgentData}
           onDeleteAgent={onDeleteStep}
           onUpdateAgent={onUpdateAgent!}
-          connectedToolsCount={connectedToolsCount}
-          connectedMiddlewareCount={connectedMiddlewareCount}
+          availableLLMNodes={availableLLMNodes}
+          availableToolNodes={availableToolNodes}
+          availableMiddlewareNodes={availableMiddlewareNodes}
+          connectedLLMId={connectedLLMId}
+          connectedToolIds={connectedToolIds}
+          connectedMiddlewareIds={connectedMiddlewareIds}
+          onSelectLLM={onSelectLLM}
+          onToggleTool={onToggleTool}
+          onToggleMiddleware={onToggleMiddleware}
         />
       ) : selectedStepData ? (
         <StepNodeInspector
@@ -88,6 +112,6 @@ export function InspectorTabContent({
           <span className="text-xs text-muted-foreground">Click any step on the canvas to configure it</span>
         </div>
       )}
-    </TabsContent>
+    </div>
   );
 }

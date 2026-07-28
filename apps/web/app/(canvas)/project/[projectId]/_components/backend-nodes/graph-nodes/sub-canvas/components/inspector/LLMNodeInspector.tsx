@@ -95,12 +95,11 @@ export function LLMNodeInspector({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
-            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-            <SelectItem value="google">Google (Gemini)</SelectItem>
-            <SelectItem value="groq">Groq</SelectItem>
-            <SelectItem value="ollama">Ollama / Local</SelectItem>
-            <SelectItem value="custom">Custom RAW API</SelectItem>
+            {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+              <SelectItem key={key} value={key}>
+                {preset.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

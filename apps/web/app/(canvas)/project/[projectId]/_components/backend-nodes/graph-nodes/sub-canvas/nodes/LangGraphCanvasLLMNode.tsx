@@ -5,52 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
 import { SUB_CANVAS_NODE_LLM } from "../constants";
+import { PROVIDER_PRESETS } from "../components/inspector/constants";
 import { LocalInput, LocalTextarea } from "../../shared";
-
-const PROVIDER_PRESETS: Record<string, { label: string; defaultModel: string; defaultUrl: string; defaultApiKeyEnv: string; models: string[] }> = {
-  openai: {
-    label: "OpenAI (ChatGPT)",
-    defaultModel: "gpt-4o-mini",
-    defaultUrl: "https://api.openai.com/v1/chat/completions",
-    defaultApiKeyEnv: "OPENAI_API_KEY",
-    models: ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1"],
-  },
-  anthropic: {
-    label: "Anthropic (Claude)",
-    defaultModel: "claude-3-5-sonnet-20241022",
-    defaultUrl: "https://api.anthropic.com/v1/messages",
-    defaultApiKeyEnv: "ANTHROPIC_API_KEY",
-    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
-  },
-  google: {
-    label: "Google (Gemini)",
-    defaultModel: "gemini-1.5-flash",
-    defaultUrl: "https://generativelanguage.googleapis.com/v1beta/models",
-    defaultApiKeyEnv: "GEMINI_API_KEY",
-    models: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash"],
-  },
-  groq: {
-    label: "Groq",
-    defaultModel: "llama-3.3-70b-versatile",
-    defaultUrl: "https://api.groq.com/openai/v1/chat/completions",
-    defaultApiKeyEnv: "GROQ_API_KEY",
-    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "deepseek-r1-distill-llama-70b"],
-  },
-  ollama: {
-    label: "Ollama / Local",
-    defaultModel: "llama3:8b",
-    defaultUrl: "http://localhost:11434/v1",
-    defaultApiKeyEnv: "",
-    models: ["llama3:8b", "mistral", "deepseek-r1"],
-  },
-  custom: {
-    label: "Custom RAW API",
-    defaultModel: "custom-model",
-    defaultUrl: "http://localhost:8080/v1",
-    defaultApiKeyEnv: "CUSTOM_API_KEY",
-    models: [],
-  },
-};
 
 export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGraphLLMNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
@@ -202,12 +158,11 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="nodrag">
-            <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
-            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-            <SelectItem value="google">Google (Gemini)</SelectItem>
-            <SelectItem value="groq">Groq</SelectItem>
-            <SelectItem value="ollama">Ollama / Local</SelectItem>
-            <SelectItem value="custom">Custom RAW API</SelectItem>
+            {Object.entries(PROVIDER_PRESETS).map(([key, preset]) => (
+              <SelectItem key={key} value={key}>
+                {preset.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

@@ -1,14 +1,17 @@
 import React from "react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, AlertCircle, Radio, Code, FileJson, Check } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, AlertCircle, Radio, Code, FileJson, Check, Layers, Settings2, MessageSquare, AlertTriangle } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import type { AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode } from "../../types";
+import type { AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, LangGraphAgentResponseFormatConfig } from "../../types";
 import {
   STREAM_EVENT_TYPES,
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
   DEFAULT_SELECTED_STREAM_EVENTS,
+  DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+  DEFAULT_RESPONSE_FORMAT_ZOD_SCHEMA,
+  RESPONSE_FORMAT_PRESETS,
 } from "../../constants";
 import { LocalInput, LocalTextarea } from "../../../../common/shared";
 
@@ -41,6 +44,23 @@ export function AgentNodeInspector({
   onToggleTool,
   onToggleMiddleware,
 }: AgentNodeInspectorProps) {
+  const rfConfig: LangGraphAgentResponseFormatConfig = selectedAgentData.responseFormat || {
+    enabled: false,
+    strategy: "auto",
+    schemaType: "json_schema",
+    schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+    handleErrorMode: "default",
+  };
+
+  const updateResponseFormat = (changes: Partial<LangGraphAgentResponseFormatConfig>) => {
+    onUpdateAgent({
+      responseFormat: {
+        ...rfConfig,
+        ...changes,
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* ─── Header ──────────────────────────────────────────────────────────── */}
@@ -235,7 +255,211 @@ export function AgentNodeInspector({
         </div>
       </div>
 
-      {/* ─── 3. Event Streaming Configuration ──────────────────────────────────── */}
+      {/* ─── 3. Structured Output / Response Format (Output Node) ──────────────── */}
+      <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-md border ${rfConfig.enabled ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/30 border-border text-muted-foreground"}`}>
+              <FileJson className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                Structured Output
+                {rfConfig.enabled && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono font-semibold">
+                    responseFormat Active
+                  </span>
+                )}
+              </h3>
+              <p className="text-[10px] font-mono text-muted-foreground">
+                createAgent({`{ responseFormat: ... }`})
+              </p>
+            </div>
+          </div>
+
+          <Switch
+            checked={Boolean(rfConfig.enabled)}
+            onCheckedChange={(enabled) => updateResponseFormat({ enabled })}
+          />
+        </div>
+
+        {rfConfig.enabled && (
+          <div className="flex flex-col gap-4 pt-2 border-t border-border/50">
+            {/* Strategy Choice: Provider vs Tool vs Auto */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+                Response Strategy
+              </Label>
+              <Select
+                value={rfConfig.strategy || "auto"}
+                onValueChange={(val: "auto" | "provider" | "tool") => updateResponseFormat({ strategy: val })}
+              >
+                <SelectTrigger className="h-7 text-xs bg-background font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="provider">Provider Strategy</SelectItem>
+                  <SelectItem value="tool">Tool Strategy</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {rfConfig.strategy === "provider"
+                  ? "Uses native model provider API (OpenAI, Gemini, Claude, Grok). High reliability."
+                  : rfConfig.strategy === "tool"
+                  ? "Emulates structured response via tool calling and state validation."
+                  : "Automatically selects providerStrategy if model supports native output, fallback to toolStrategy."}
+              </p>
+            </div>
+
+            {/* Schema Standard Selector */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                Schema Type
+              </Label>
+              <Select
+                value={rfConfig.schemaType || "json_schema"}
+                onValueChange={(val: "json_schema" | "zod" | "standard_schema") => {
+                  const defaultContent =
+                    val === "zod" ? DEFAULT_RESPONSE_FORMAT_ZOD_SCHEMA : DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA;
+                  updateResponseFormat({
+                    schemaType: val,
+                    schemaJson: rfConfig.schemaJson || defaultContent,
+                  });
+                }}
+              >
+                <SelectTrigger className="h-7 text-xs bg-background font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="json_schema">JSON Schema Object (Record&lt;string, unknown&gt;)</SelectItem>
+                  <SelectItem value="zod">Zod Schema (z.object(&#123;...&#125;))</SelectItem>
+                  <SelectItem value="standard_schema">Standard Schema (Valibot / ArkType / TypeBox)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Preset Schema Templates */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-foreground">Preset Templates</Label>
+              <div className="flex flex-wrap gap-1">
+                {RESPONSE_FORMAT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      const content =
+                        rfConfig.schemaType === "zod" ? preset.zodSchema : preset.jsonSchema;
+                      updateResponseFormat({
+                        schemaName: preset.label,
+                        schemaJson: content,
+                      });
+                    }}
+                    title={preset.description}
+                    className="text-[10px] font-mono px-2 py-1 rounded bg-secondary/20 hover:bg-secondary/40 text-foreground border border-border/50 transition-colors"
+                  >
+                    + {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Schema Definition Textarea */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground">Schema Definition</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const defaultContent =
+                      rfConfig.schemaType === "zod" ? DEFAULT_RESPONSE_FORMAT_ZOD_SCHEMA : DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA;
+                    updateResponseFormat({ schemaJson: defaultContent });
+                  }}
+                  className="text-[10px] font-mono text-muted-foreground hover:text-foreground underline"
+                >
+                  Reset Default
+                </button>
+              </div>
+              <LocalTextarea
+                value={rfConfig.schemaJson ?? DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA}
+                onChange={(e) => updateResponseFormat({ schemaJson: e.target.value })}
+                className="text-xs min-h-[120px] resize-y bg-background font-mono leading-relaxed text-foreground"
+                placeholder={
+                  rfConfig.schemaType === "zod"
+                    ? "z.object({ name: z.string(), email: z.string() })"
+                    : '{"type": "object", "properties": { ... }}'
+                }
+              />
+            </div>
+
+            {/* Tool Strategy Specific Options */}
+            {(rfConfig.strategy === "tool" || rfConfig.strategy === "auto" || !rfConfig.strategy) && (
+              <div className="flex flex-col gap-3 pt-2 border-t border-border/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
+                  Tool Calling Strategy Options
+                </span>
+
+                {/* Custom Tool Message Content */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                    Custom Tool Message Content
+                  </Label>
+                  <LocalInput
+                    value={rfConfig.toolMessageContent || ""}
+                    onChange={(e) => updateResponseFormat({ toolMessageContent: e.target.value })}
+                    className="h-7 text-xs font-mono bg-background"
+                    placeholder="Action item captured and added to state!"
+                  />
+                  <p className="text-[9px] text-muted-foreground">
+                    Custom message in conversation history when structured output is generated.
+                  </p>
+                </div>
+
+                {/* Error Handling Strategy */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground" />
+                    Schema Error Handling
+                  </Label>
+                  <Select
+                    value={rfConfig.handleErrorMode || "default"}
+                    onValueChange={(val: "default" | "custom_message" | "disabled") =>
+                      updateResponseFormat({ handleErrorMode: val })
+                    }
+                  >
+                    <SelectTrigger className="h-7 text-xs bg-background font-mono">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default Auto-Retry (Catch validation errors and re-prompt model)</SelectItem>
+                      <SelectItem value="custom_message">Custom Error Prompt (Retry with custom message)</SelectItem>
+                      <SelectItem value="disabled">Disable Retry (Throw exception immediately on schema mismatch)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {rfConfig.handleErrorMode === "custom_message" && (
+                    <LocalInput
+                      value={rfConfig.customErrorMessage || ""}
+                      onChange={(e) => updateResponseFormat({ customErrorMessage: e.target.value })}
+                      className="h-7 text-xs font-mono bg-background mt-1"
+                      placeholder="Please provide valid rating between 1-5..."
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="p-2 rounded bg-secondary/20 border border-border/50 text-[10px] font-mono text-muted-foreground">
+              Output will be captured in <code className="text-foreground">result.structuredResponse</code> channel of agent state.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ─── 4. Event Streaming Configuration ──────────────────────────────────── */}
       <div className="flex flex-col gap-4 p-3 bg-cyan-950/10 dark:bg-cyan-950/20 rounded-xl border border-cyan-500/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

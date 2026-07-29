@@ -7,6 +7,7 @@ import type {
   LangGraphMiddlewareDefinition,
   LangGraphAgentDefinition,
   LangGraphAgentStreamConfig,
+  LangGraphAgentResponseFormatConfig,
   LangGraphEventStreamType,
   ToolSource,
   ToolReturnType,
@@ -20,6 +21,7 @@ export type {
   StateUpdateMode,
   StoreOperation,
   LangGraphAgentStreamConfig,
+  LangGraphAgentResponseFormatConfig,
   LangGraphEventStreamType,
 };
 

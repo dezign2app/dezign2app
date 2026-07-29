@@ -456,7 +456,7 @@ export const WebClientNode = ({ id, data, selected }: NodeProps<AppNode>) => {
 };
 
 // --- Service Node ---
-export { ServiceNode } from "./graph-nodes/ServiceNode";
+export { ServiceNode } from "./graph-nodes/nodes/compute/ServiceNode";
 
 // --- External Node ---
 export const ExternalNode = ({ id, data, selected }: NodeProps<AppNode>) => {

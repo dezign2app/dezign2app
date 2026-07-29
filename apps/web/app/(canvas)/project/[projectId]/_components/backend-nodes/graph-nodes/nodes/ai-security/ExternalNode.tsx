@@ -1,0 +1,41 @@
+import React from "react";
+import { NodeProps, Position } from "@xyflow/react";
+import { Globe } from "lucide-react";
+import { BackendNode } from "@/types/canvas";
+import { cn } from "@workspace/ui/lib/utils";
+import { Input } from "@workspace/ui/components/input";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { NodeHeader, EditableNodeList, useSimulationNodeState, getSimulationNodeBorderClass } from "../../common/shared";
+import { Textarea } from "@workspace/ui/components/textarea";
+
+export const ExternalNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+  const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const simulation = useSimulationNodeState(id);
+  const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected), "border-border border-dashed");
+
+  return (
+    <div className={cn("shadow-md rounded-xl bg-card border-2 min-w-[250px] max-w-[350px] flex flex-col transition-all duration-300", borderClass)}>
+      <NodeHeader id={id} data={data} icon={Globe} title="External API" colorClass="bg-gray-500/10 text-gray-700 dark:text-gray-400" selected={selected} />
+      
+      {/* Description */}
+      <div className="px-3 py-2 bg-secondary/5 border-b nodrag">
+        <Textarea
+          className="min-h-[20px] text-xs bg-transparent border-none shadow-none p-1 resize-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+          placeholder="description"
+          value={data.description || ""}
+          onChange={(e) => updateNode(id, { data: { ...data, description: e.target.value } })}
+        />
+      </div>
+
+      <div className="p-2 border-b">
+         <Input 
+           placeholder="Base URL (e.g. api.stripe.com)" 
+           className="h-7 text-xs" 
+           value={data.baseUrl || ""} 
+           onChange={(e) => updateNode(id, { data: { ...data, baseUrl: e.target.value } })}
+         />
+      </div>
+      <EditableNodeList nodeId={id} title="Actions / Endpoints" items={data.actions} field="actions" handleType="target" handlePosition={Position.Left} updateNode={updateNode} data={data} />
+    </div>
+  );
+};

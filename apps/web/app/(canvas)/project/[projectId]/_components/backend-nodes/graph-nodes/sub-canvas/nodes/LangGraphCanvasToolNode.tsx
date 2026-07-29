@@ -4,6 +4,7 @@ import { Wrench, Trash2, Box, Server, Globe, Database } from "lucide-react";
 import type { ToolNode, LangGraphCanvasNode } from "../types";
 import { SUB_CANVAS_NODE_TOOL, HANDLE_TOOL_OUT, TOOL_SOURCE_INLINE, TOOL_SOURCE_MCP_SERVER, TOOL_SOURCE_API_ENDPOINT } from "../constants";
 import { LocalInput, LocalTextarea } from "../../shared";
+import { BusinessLogicBlock } from "@/app/(canvas)/project/[projectId]/_components/shared/BusinessLogicBlock";
 
 export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
@@ -136,15 +137,29 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
         </div>
       </div>
 
-      <div className="px-3 py-2 bg-secondary/5 border-b border-border/50 nodrag">
-        <LocalTextarea
-          className="min-h-[20px] text-xs bg-transparent border-none shadow-none p-1 resize-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-          placeholder="Tool description..."
-          value={data.description || ""}
-          onChange={(e) => updateToolData({ description: e.target.value })}
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
+      <div
+        className="p-2.5 border-b border-border/50 nodrag"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <BusinessLogicBlock
+          mode={data.implementationMode || "natural_language"}
+          onModeChange={(implementationMode) => updateToolData({ implementationMode })}
+          prompt={data.description || ""}
+          onPromptChange={(val) => updateToolData({ description: val })}
+          code={data.functionBody || ""}
+          onCodeChange={(val) => updateToolData({ functionBody: val })}
+          title="Tool Logic"
+          onGenerateCode={() => {
+            if (data.description && !data.functionBody) {
+              const generatedCode = `// Tool: ${data.name}\n// Spec: ${data.description.split('\n').join('\n// ')}\nreturn { success: true, result: "Tool executed" };`;
+              updateToolData({
+                functionBody: generatedCode,
+                implementationMode: "code",
+              });
+            }
+          }}
         />
       </div>
 

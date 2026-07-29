@@ -362,7 +362,7 @@ export function ToolNodeInspector({
             description="Define tool behavior in natural language or write a custom function"
             onGenerateCode={() => {
               if (selectedToolData.description && !selectedToolData.functionBody) {
-                const generatedCode = `async ({ input }) => {\n  // Tool: ${selectedToolData.name}\n  // Spec: ${selectedToolData.description.split('\n').join('\n  // ')}\n  return { success: true, result: "Tool executed successfully" };\n}`;
+                const generatedCode = `// Tool: ${selectedToolData.name}\n// Spec: ${selectedToolData.description.split('\n').join('\n// ')}\nreturn { success: true, result: "Tool executed successfully" };`;
                 setBodyText(generatedCode);
                 onUpdateTool({
                   functionBody: generatedCode,

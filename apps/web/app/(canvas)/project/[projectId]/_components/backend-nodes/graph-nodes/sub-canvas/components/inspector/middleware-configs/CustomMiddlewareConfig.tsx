@@ -17,7 +17,7 @@ export function CustomMiddlewareConfig({ data, onUpdate }: MiddlewareConfigProps
       onGenerateCode={() => {
         const spec = data.prompt;
         if (spec && !data.customBody) {
-          const generatedCode = `async ({ request, state }, next) => {\n  // Middleware Spec: ${spec.split('\n').join('\n  // ')}\n  const response = await next();\n  return response;\n}`;
+          const generatedCode = `// Middleware Spec: ${spec.split('\n').join('\n// ')}\nconst response = await next();\nreturn response;`;
           onUpdate({
             customBody: generatedCode,
             implementationMode: "code",

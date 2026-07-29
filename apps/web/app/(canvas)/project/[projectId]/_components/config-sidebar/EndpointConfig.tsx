@@ -143,7 +143,7 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
           if (item.businessLogic && !item.body) {
             updateEndpoint(item.id, {
               logicMode: "code",
-              body: `// Generated handler for: ${item.name}\nasync function handle${item.name.replace(/[^a-zA-Z0-9]/g, "_")}(req, res) {\n  // Logic: ${item.businessLogic.split('\n').join('\n  // ')}\n  return res.json({ success: true });\n}`
+              body: `// Logic: ${item.businessLogic.split('\n').join('\n// ')}\nconst result = await db.query();\nreturn res.json({ success: true, result });`
             });
           }
         }}

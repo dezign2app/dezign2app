@@ -93,7 +93,7 @@ export function StepNodeInspector({
           onGenerateCode={() => {
             const prompt = selectedStepData.modelConfig?.systemPrompt;
             if (prompt && !selectedStepData.customCode?.body) {
-              const generatedCode = `async (state) => {\n  // System Prompt: ${prompt.split('\n').join('\n  // ')}\n  return { ...state, updated: true };\n}`;
+              const generatedCode = `// System Prompt: ${prompt.split('\n').join('\n// ')}\nreturn { ...state, updated: true };`;
               onUpdateStep({
                 customCode: {
                   body: generatedCode,

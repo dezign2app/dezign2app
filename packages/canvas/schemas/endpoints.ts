@@ -30,6 +30,8 @@ export const endpointSchema = z.object({
   params: z.array(parameterSchema).optional(),
   body: z.string().optional(),
   businessLogic: z.string().optional(),
+  logicMode: z.enum(["natural_language", "code"]).optional(),
+  prompt: z.string().optional(),
   summary: z.string().optional(),
   requiredRoles: z.array(z.string()).optional(),
   requiredScopes: z.array(z.string()).optional(),

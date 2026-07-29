@@ -1,6 +1,26 @@
 import React from "react";
 import type { MiddlewareNodeData } from "../../types";
-import { DEFAULT_MIDDLEWARE_TYPE } from "../../constants";
+import {
+  DEFAULT_MIDDLEWARE_TYPE,
+  MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
+  MIDDLEWARE_TYPE_SUMMARIZATION,
+  MIDDLEWARE_TYPE_MODEL_CALL_LIMIT,
+  MIDDLEWARE_TYPE_TOOL_CALL_LIMIT,
+  MIDDLEWARE_TYPE_MODEL_FALLBACK,
+  MIDDLEWARE_TYPE_PII_DETECTION,
+  MIDDLEWARE_TYPE_TODO_LIST,
+  MIDDLEWARE_TYPE_LLM_TOOL_SELECTOR,
+  MIDDLEWARE_TYPE_TOOL_RETRY,
+  MIDDLEWARE_TYPE_MODEL_RETRY,
+  MIDDLEWARE_TYPE_LLM_TOOL_EMULATOR,
+  MIDDLEWARE_TYPE_CONTEXT_EDITING,
+  MIDDLEWARE_TYPE_PROVIDER_TOOL_SEARCH,
+  MIDDLEWARE_TYPE_FILESYSTEM,
+  MIDDLEWARE_TYPE_SUBAGENT,
+  MIDDLEWARE_TYPE_RATE_LIMIT,
+  MIDDLEWARE_TYPE_LOGGING_TRACING,
+  MIDDLEWARE_TYPE_CUSTOM,
+} from "../../constants";
 import {
   GeneralMiddlewareConfig,
   HumanInTheLoopConfig,
@@ -46,58 +66,58 @@ export function MiddlewareNodeInspector({
       />
 
       {/* Type-Specific Configurations */}
-      {currentType === "human_in_the_loop" && (
+      {currentType === MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP && (
         <HumanInTheLoopConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "summarization" && (
+      {currentType === MIDDLEWARE_TYPE_SUMMARIZATION && (
         <SummarizationConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "model_call_limit" && (
+      {currentType === MIDDLEWARE_TYPE_MODEL_CALL_LIMIT && (
         <ModelCallLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "tool_call_limit" && (
+      {currentType === MIDDLEWARE_TYPE_TOOL_CALL_LIMIT && (
         <ToolCallLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "model_fallback" && (
+      {currentType === MIDDLEWARE_TYPE_MODEL_FALLBACK && (
         <ModelFallbackConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "pii_detection" && (
+      {currentType === MIDDLEWARE_TYPE_PII_DETECTION && (
         <PiiDetectionConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "todo_list" && (
+      {currentType === MIDDLEWARE_TYPE_TODO_LIST && (
         <TodoListConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "llm_tool_selector" && (
+      {currentType === MIDDLEWARE_TYPE_LLM_TOOL_SELECTOR && (
         <LlmToolSelectorConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "tool_retry" && (
+      {currentType === MIDDLEWARE_TYPE_TOOL_RETRY && (
         <ToolRetryConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "model_retry" && (
+      {currentType === MIDDLEWARE_TYPE_MODEL_RETRY && (
         <ModelRetryConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "llm_tool_emulator" && (
+      {currentType === MIDDLEWARE_TYPE_LLM_TOOL_EMULATOR && (
         <LlmToolEmulatorConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "context_editing" && (
+      {currentType === MIDDLEWARE_TYPE_CONTEXT_EDITING && (
         <ContextEditingConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "provider_tool_search" && (
+      {currentType === MIDDLEWARE_TYPE_PROVIDER_TOOL_SEARCH && (
         <ProviderToolSearchConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "filesystem" && (
+      {currentType === MIDDLEWARE_TYPE_FILESYSTEM && (
         <FilesystemConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "subagent" && (
+      {currentType === MIDDLEWARE_TYPE_SUBAGENT && (
         <SubagentConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "rate_limit" && (
+      {currentType === MIDDLEWARE_TYPE_RATE_LIMIT && (
         <RateLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "logging_tracing" && (
+      {currentType === MIDDLEWARE_TYPE_LOGGING_TRACING && (
         <LoggingTracingConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
-      {currentType === "custom" && (
+      {currentType === MIDDLEWARE_TYPE_CUSTOM && (
         <CustomMiddlewareConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
       )}
     </div>

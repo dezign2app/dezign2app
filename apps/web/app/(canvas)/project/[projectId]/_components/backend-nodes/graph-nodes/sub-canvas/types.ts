@@ -6,7 +6,13 @@ import type {
   LangGraphInputChannel,
   LangGraphMiddlewareDefinition,
   LangGraphAgentDefinition,
+  ToolSource,
+  ToolReturnType,
+  StateUpdateMode,
+  StoreOperation,
 } from "@/types/canvas";
+
+export type { ToolSource, ToolReturnType, StateUpdateMode, StoreOperation };
 
 export type MiddlewareNodeData = LangGraphMiddlewareDefinition & {
   label: string;
@@ -63,6 +69,8 @@ export type ToolNodeData = {
   };
 
   functionBody?: string;
+  implementationMode?: "natural_language" | "code";
+  prompt?: string;
   executionMode?: "sandboxed_vm" | "disabled";
   headless?: boolean;
 

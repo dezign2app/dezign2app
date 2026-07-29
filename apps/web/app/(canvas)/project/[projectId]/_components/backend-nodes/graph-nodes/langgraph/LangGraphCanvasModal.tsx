@@ -17,13 +17,13 @@ import {
 } from "@workspace/ui/components/dialog";
 import type { BackendNode } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { langGraphCanvasNodeTypes } from "./sub-canvas/nodes";
-import { useLangGraphCanvasState } from "./sub-canvas/hooks/useLangGraphCanvasState";
-import { LangGraphCanvasHeader } from "./sub-canvas/components/LangGraphCanvasHeader";
-import { ToolsSidebar } from "./sub-canvas/components/ToolsSidebar";
-import { InspectorSidebar } from "./sub-canvas/components/InspectorSidebar";
-import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./sub-canvas/types";
-import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./sub-canvas/constants";
+import { langGraphCanvasNodeTypes } from "./langgraph-canvas/nodes";
+import { useLangGraphCanvasState } from "./langgraph-canvas/hooks/useLangGraphCanvasState";
+import { LangGraphCanvasHeader } from "./langgraph-canvas/components/LangGraphCanvasHeader";
+import { ToolsSidebar } from "./langgraph-canvas/components/ToolsSidebar";
+import { InspectorSidebar } from "./langgraph-canvas/components/InspectorSidebar";
+import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
+import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./langgraph-canvas/constants";
 
 export interface LangGraphCanvasModalProps {
   open: boolean;

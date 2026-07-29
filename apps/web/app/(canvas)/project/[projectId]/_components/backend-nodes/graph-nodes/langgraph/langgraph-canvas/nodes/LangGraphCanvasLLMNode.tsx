@@ -4,7 +4,7 @@ import { Globe, Trash2, Code, Key, Shield, Sparkles, Brain } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
-import { SUB_CANVAS_NODE_LLM, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "../constants";
+import { LANGGRAPH_CANVAS_NODE_LLM, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "../constants";
 import { LLM_PROVIDER_PRESETS } from "../components/inspector/constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 
@@ -19,7 +19,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
 
   const updateLLMData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === SUB_CANVAS_NODE_LLM ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_LLM ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

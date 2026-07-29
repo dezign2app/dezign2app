@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import { Wrench, Trash2, Box, Server, Globe, Database } from "lucide-react";
 import type { ToolNode, LangGraphCanvasNode } from "../types";
-import { SUB_CANVAS_NODE_TOOL, HANDLE_TOOL_OUT, TOOL_SOURCE_INLINE, TOOL_SOURCE_MCP_SERVER, TOOL_SOURCE_API_ENDPOINT } from "../constants";
+import { LANGGRAPH_CANVAS_NODE_TOOL, HANDLE_TOOL_OUT, TOOL_SOURCE_INLINE, TOOL_SOURCE_MCP_SERVER, TOOL_SOURCE_API_ENDPOINT } from "../constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 import { BusinessLogicBlock } from "@/app/(canvas)/project/[projectId]/_components/shared/BusinessLogicBlock";
 
@@ -17,7 +17,7 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
 
   const updateToolData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === SUB_CANVAS_NODE_TOOL ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_TOOL ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

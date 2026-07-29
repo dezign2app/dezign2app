@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { MiddlewareNode, LangGraphCanvasNode } from "../types";
 import {
-  SUB_CANVAS_NODE_MIDDLEWARE,
+  LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
   HANDLE_MIDDLEWARE_OUT,
   MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
   MIDDLEWARE_TYPE_RATE_LIMIT,
@@ -58,7 +58,7 @@ export const LangGraphCanvasMiddlewareNode = ({ id, data, selected }: NodeProps<
 
   const updateMiddlewareData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === SUB_CANVAS_NODE_MIDDLEWARE ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

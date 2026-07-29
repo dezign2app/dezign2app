@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
+import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
 import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
 import {
   LANGGRAPH_CANVAS_NODE_AGENT,
   HANDLE_LLM_IN,
+  HANDLE_LLM_OUT,
   HANDLE_TOOL_IN,
+  HANDLE_TOOL_OUT,
   HANDLE_MIDDLEWARE_IN,
+  HANDLE_MIDDLEWARE_OUT,
   STREAM_EVENT_TYPES,
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
@@ -117,26 +120,29 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
       {/* Target Handles for LLM, Tools, Middleware */}
       <Handle
         type="target"
-        position={Position.Bottom}
+        position={Position.Top}
         id={HANDLE_LLM_IN}
         style={{ left: "16.66%" }}
-        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
+        isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || Boolean(connection.source?.startsWith("llm_"))}
+        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect LLM Node (llm_out)"
       />
       <Handle
         type="target"
-        position={Position.Bottom}
+        position={Position.Top}
         id={HANDLE_TOOL_IN}
         style={{ left: "50%" }}
-        className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
+        isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_TOOL_OUT || Boolean(connection.source?.startsWith("tool_"))}
+        className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect Tool Node (tool_out)"
       />
       <Handle
         type="target"
-        position={Position.Bottom}
+        position={Position.Top}
         id={HANDLE_MIDDLEWARE_IN}
         style={{ left: "83.33%" }}
-        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
+        isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_MIDDLEWARE_OUT || Boolean(connection.source?.startsWith("mw_"))}
+        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect Middleware Node (middleware_out)"
       />
 
@@ -223,6 +229,33 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
 
       {/* Body */}
       <div className="p-3 flex flex-col gap-3">
+        {/* Connected Component Badges at Top (aligns directly below top handle connectors) */}
+        <div className="grid grid-cols-3 gap-1.5 pb-1">
+          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Cpu className="w-3.5 h-3.5 text-sky-400 mb-1" />
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Model</span>
+            <span className="text-xs font-bold text-foreground font-mono">
+              {boundLLMs.length > 0 ? "Bound" : "Default"}
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Wrench className="w-3.5 h-3.5 text-emerald-400 mb-1" />
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Tools</span>
+            <span className="text-xs font-bold text-foreground font-mono">
+              {boundTools.length} attached
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Shield className="w-3.5 h-3.5 text-purple-400 mb-1" />
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Middleware</span>
+            <span className="text-xs font-bold text-foreground font-mono">
+              {boundMiddlewares.length} active
+            </span>
+          </div>
+        </div>
+
         {/* 1. System Prompt */}
         <div className="flex flex-col gap-1 nodrag">
           <span className="text-[9px] font-semibold text-muted-foreground uppercase">System Prompt</span>
@@ -373,33 +406,6 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
               </div>
             </div>
           )}
-        </div>
-
-        {/* 3. Connected Component Badges at Bottom (aligns directly above bottom handle connectors) */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1">
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Cpu className="w-3.5 h-3.5 text-sky-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Model</span>
-            <span className="text-xs font-bold text-foreground font-mono">
-              {boundLLMs.length > 0 ? "Bound" : "Default"}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Wrench className="w-3.5 h-3.5 text-emerald-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Tools</span>
-            <span className="text-xs font-bold text-foreground font-mono">
-              {boundTools.length} attached
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Shield className="w-3.5 h-3.5 text-purple-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Middleware</span>
-            <span className="text-xs font-bold text-foreground font-mono">
-              {boundMiddlewares.length} active
-            </span>
-          </div>
         </div>
       </div>
     </div>

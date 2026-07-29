@@ -183,6 +183,7 @@ export type StoreOperation = "get" | "put" | "delete" | "list";
 
 export type LangGraphToolDefinition = {
   id: string;
+  toolId?: string;
   name: string;
   description: string;
   inputSchema?: string;

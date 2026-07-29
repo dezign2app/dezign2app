@@ -194,55 +194,6 @@ export interface LangGraphDataInput {
 }
 
 export function ensureLangGraphDataReachability<T extends LangGraphDataInput>(data: T): T {
-  if (!data || !Array.isArray(data.graphSteps) || data.graphSteps.length === 0) {
-    return data;
-  }
-
-  const steps = data.graphSteps;
-  const edges: LangGraphEdgeConfig[] = Array.isArray(data.graphEdges) ? data.graphEdges : [];
-  const stepIds = new Set(steps.map((s) => s.id));
-
-  const visited = new Set<string>();
-  const queue: string[] = ["START"];
-
-  while (queue.length > 0) {
-    const curr = queue.shift()!;
-    if (visited.has(curr)) continue;
-    visited.add(curr);
-
-    const outgoing = edges.filter((e) => e.source === curr);
-    outgoing.forEach((e) => {
-      if (e.targets && Array.isArray(e.targets)) {
-        e.targets.forEach((t) => {
-          if (t.kind === "step" && stepIds.has(t.id)) {
-            queue.push(t.id);
-          }
-        });
-      }
-    });
-  }
-
-  const nextEdges: LangGraphEdgeConfig[] = [...edges];
-  let lastReachable = "START";
-
-  steps.forEach((step) => {
-    if (!visited.has(step.id)) {
-      nextEdges.push({
-        id: `auto_edge_${step.id}`,
-        source: lastReachable,
-        targets: [{ id: step.id, kind: "step" }],
-      });
-      visited.add(step.id);
-      lastReachable = step.id;
-    } else {
-      lastReachable = step.id;
-    }
-  });
-
-  return {
-    ...data,
-    graphSteps: steps,
-    graphEdges: nextEdges,
-  };
+  return data;
 }
 

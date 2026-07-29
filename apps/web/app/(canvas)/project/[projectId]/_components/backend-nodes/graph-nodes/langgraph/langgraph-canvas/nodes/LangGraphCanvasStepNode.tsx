@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Edge, Connection } from "@xyflow/react";
 import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check, Wrench, AlertCircle } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
-import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
+import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode, ToolNode } from "../types";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_LLM,
@@ -103,7 +103,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
 
   // Detect tool nodes on canvas
-  const langGraphToolNodes = allNodes.filter((n): n is any => n.type === LANGGRAPH_CANVAS_NODE_TOOL);
+  const langGraphToolNodes = allNodes.filter((n): n is ToolNode => n.type === LANGGRAPH_CANVAS_NODE_TOOL);
   
   // Detect edges connected from tool nodes to this step node's tool_in handle
   const connectedToolEdges = allEdges.filter(

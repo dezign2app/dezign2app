@@ -1164,42 +1164,7 @@ export const langgraphDataSchema = baseNodeDataSchema
       }
     });
 
-    // 3. Reachability Check (BFS from START)
-    if (data.graphSteps.length > 0) {
-      const visited = new Set<string>();
-      const queue: string[] = ["START"];
-
-      while (queue.length > 0) {
-        const curr = queue.shift()!;
-        if (visited.has(curr)) continue;
-        visited.add(curr);
-
-        const outgoing = data.graphEdges.filter((e) => e.source === curr);
-        outgoing.forEach((e) => {
-          if (e.sendConfig?.enabled) {
-            if (e.sendConfig.itemTarget.kind === "step") {
-              queue.push(e.sendConfig.itemTarget.id);
-            }
-            if (e.sendConfig.joinStepId) {
-              queue.push(e.sendConfig.joinStepId);
-            }
-          }
-          e.targets.forEach((t) => {
-            if (t.kind === "step") queue.push(t.id);
-          });
-        });
-      }
-
-      data.graphSteps.forEach((step, idx) => {
-        if (!visited.has(step.id)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Orphaned step "${step.id}" is unreachable from START.`,
-            path: ["graphSteps", idx],
-          });
-        }
-      });
-    }
+    // 3. Reachability Check (relaxed for interactive canvas editing)
   });
 
 export type LangGraphNodeData = z.infer<typeof langgraphDataSchema>;

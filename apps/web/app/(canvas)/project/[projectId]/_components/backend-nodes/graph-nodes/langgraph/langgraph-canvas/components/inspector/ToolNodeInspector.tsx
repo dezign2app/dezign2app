@@ -36,7 +36,7 @@ export function ToolNodeInspector({
     onUpdateTool({ name: snake });
   };
 
-  const handleUpdateCommandConfig = (updates: any) => {
+  const handleUpdateCommandConfig = (updates: Partial<NonNullable<ToolNodeData["commandConfig"]>>) => {
     onUpdateTool({
       commandConfig: {
         stateUpdates: selectedToolData.commandConfig?.stateUpdates || [],

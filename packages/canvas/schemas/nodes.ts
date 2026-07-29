@@ -929,6 +929,7 @@ export const graphStepSchema = z.object({
       })
     )
     .optional(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
 });
 export type GraphStep = z.infer<typeof graphStepSchema>;
 

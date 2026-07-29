@@ -407,6 +407,7 @@ export const langgraphConvexDataValidator = v.object({
             })
           )
         ),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
       })
     )
   ),

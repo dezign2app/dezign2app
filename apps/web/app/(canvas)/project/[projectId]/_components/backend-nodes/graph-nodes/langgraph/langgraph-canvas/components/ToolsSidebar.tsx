@@ -16,7 +16,6 @@ export function ToolsSidebar({ onAddStep }: ToolsSidebarProps) {
           <Wrench className="w-3.5 h-3.5" /> Tools Sidebar
         </span>
       </div>
-
       <div className="flex flex-col gap-2">
         {TOOL_PALETTE_ITEMS.map((item) => (
           <button

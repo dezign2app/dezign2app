@@ -5,10 +5,14 @@ import {
   Controls,
   MiniMap,
   BackgroundVariant,
+  Panel,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { LayoutTemplate, ArrowRight, ArrowDown, Layout } from "lucide-react";
+import { Button } from "@workspace/ui/components/button";
 import type { BackendNode } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useAutoLayout } from "../../../hooks/useAutoLayout";
 import { langGraphCanvasNodeTypes } from "./langgraph-canvas/nodes";
 import { useLangGraphCanvasState } from "./langgraph-canvas/hooks/useLangGraphCanvasState";
 import { LangGraphCanvasHeader } from "./langgraph-canvas/components/LangGraphCanvasHeader";
@@ -66,6 +70,8 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     handleToggleMiddlewareForAgent,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
+  const { handleLayout } = useAutoLayout({ nodes, edges, onNodesChange });
+
   const connectedLLMId = useMemo(() => {
     if (!selectedNodeId) return null;
     const edge = edges.find((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_LLM_IN);
@@ -117,6 +123,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
         onUpdateLabel={(newLabel) => updateNode(node.id, { data: { ...node.data, label: newLabel } })}
         onSave={handleSave}
         onClose={onClose}
+        onAutoLayout={(dir) => handleLayout(dir || "LR")}
         saveStatus={saveStatus}
       />
 
@@ -163,6 +170,18 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             <Background variant={BackgroundVariant.Dots} gap={20} color="#3f3f46" size={1.5} />
             <Controls className="!bg-background !border-border !text-foreground" />
             <MiniMap className="!bg-background/90 !border-border" nodeColor="#71717a" />
+            <Panel position="top-left" className="flex items-center gap-1.5 bg-background/95 backdrop-blur border border-border p-1 rounded-xl shadow-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 font-semibold hover:bg-accent text-foreground"
+                onClick={() => handleLayout("LR")}
+                title="Auto Layout Left to Right"
+              >
+                <Layout className="w-3.5 h-3.5 text-primary" />
+                Auto Layout
+              </Button>
+            </Panel>
           </ReactFlow>
         </div>
 

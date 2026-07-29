@@ -46,21 +46,27 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
   const crudConfig: TableCrudConfig[] = databaseNodeIds.map((tableNodeId) => {
     const rawOps = item.crudOperations?.[tableNodeId];
     const operations: CrudOperation[] = Array.isArray(rawOps) ? rawOps : ["read"];
-    return { tableNodeId, operations };
+    const explanations = item.crudExplanations?.[tableNodeId] as Record<CrudOperation, string> | undefined;
+    return { tableNodeId, operations, explanations };
   });
 
   const handleCrudConfigChange = (newCrudConfig: TableCrudConfig[]) => {
     const newDbNodeIds = newCrudConfig.map((c) => c.tableNodeId).filter(Boolean);
     const newCrudOps: Record<string, CrudOperation[]> = {};
+    const newCrudExplanations: Record<string, Record<string, string>> = {};
     newCrudConfig.forEach((c) => {
       if (c.tableNodeId) {
         newCrudOps[c.tableNodeId] = c.operations;
+        if (c.explanations) {
+          newCrudExplanations[c.tableNodeId] = c.explanations;
+        }
       }
     });
     updateEndpoint(item.id, {
       databaseNodeIds: newDbNodeIds,
       databaseNodeId: newDbNodeIds[0] || "none",
       crudOperations: newCrudOps,
+      crudExplanations: newCrudExplanations,
     });
   };
 

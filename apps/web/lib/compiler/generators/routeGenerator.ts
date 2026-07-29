@@ -161,6 +161,26 @@ export async function ${handlerName}(
       } else {
         routeHandlerCode += `    // - Returns HTTP ${ep.type === "POST" ? 201 : 200} JSON response\n`;
       }
+
+      if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
+        routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
+        for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
+          if (ops && ops.length > 0) {
+            const tableNode = allNodes.find(n => n.id === tableId);
+            const tableName = tableNode?.data?.label || tableNode?.data?.tableRef || "Unknown Table";
+            routeHandlerCode += `    // - Table [${tableName}]: ${ops.map(o => o.toUpperCase()).join(", ")}\n`;
+            if (ep.crudExplanations && ep.crudExplanations[tableId]) {
+              for (const op of ops) {
+                const explanation = ep.crudExplanations[tableId][op];
+                if (explanation) {
+                  routeHandlerCode += `    //   * ${op.toUpperCase()} Context: ${explanation.replace(/\n/g, "\n    //     ")}\n`;
+                }
+              }
+            }
+          }
+        }
+      }
+
       routeHandlerCode += `    // =========================================================================\n`;
 
       if (ep.businessLogic && ep.businessLogic.trim()) {

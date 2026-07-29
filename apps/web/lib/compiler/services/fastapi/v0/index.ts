@@ -256,6 +256,26 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       } else {
         routeCode += `    - Returns HTTP response\n`;
       }
+      
+      if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
+        routeCode += `    \n    🗄️ DATABASE OPERATIONS REQUIRED:\n`;
+        for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
+          if (ops && ops.length > 0) {
+            const tableNode = allNodes.find(n => n.id === tableId);
+            const tableName = tableNode?.data?.label || tableNode?.data?.tableRef || "Unknown Table";
+            routeCode += `    - Table [${tableName}]: ${ops.map(o => o.toUpperCase()).join(", ")}\n`;
+            if (ep.crudExplanations && ep.crudExplanations[tableId]) {
+              for (const op of ops) {
+                const explanation = ep.crudExplanations[tableId][op];
+                if (explanation) {
+                  routeCode += `      * ${op.toUpperCase()} Context: ${explanation.replace(/\n/g, "\n        ")}\n`;
+                }
+              }
+            }
+          }
+        }
+      }
+      
       routeCode += `    """\n`;
       routeCode += `    try:\n`;
       routeCode += `        logger.info(f"Handling ${ep.type || "GET"} ${path}")\n`;

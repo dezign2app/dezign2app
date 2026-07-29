@@ -37,6 +37,7 @@ export const endpointSchema = z.object({
   requiredScopes: z.array(z.string()).optional(),
   audience: z.string().optional(),
   crudOperations: z.record(z.string(), z.array(z.enum(["create", "read", "update", "delete"]))).optional(),
+  crudExplanations: z.record(z.string(), z.record(z.string(), z.string())).optional(),
   output: z.string().optional(),
 });
 export type Endpoint = z.infer<typeof endpointSchema>;

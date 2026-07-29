@@ -15,7 +15,7 @@ export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) 
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const storeEndpoints = useBackendCanvasStore((s) => s.endpoints);
   
-  const vectorCollections = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity" && n.data.dbType === "vector")));
+  const vectorCollections = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n?.type === "entity" && n.data?.dbType === "vector")));
 
   // Derive which service endpoints connect to this database node
   const incomingEdges = edges.filter(e => e.target === id);
@@ -23,7 +23,7 @@ export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) 
     const srcNode = nodes.find(n => n.id === edge.source);
     if (!srcNode) return null;
 
-    const serviceName = srcNode.data.label || "Untitled Service";
+    const serviceName = srcNode.data?.label || "Untitled Service";
     let routeName = "";
     let method = "";
 
@@ -44,10 +44,10 @@ export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) 
 
     if (epId) {
       ep = storeEndpoints.find((e) => e.id === epId);
-      if (!ep && srcNode.data.endpoints) {
+      if (!ep && srcNode.data?.endpoints) {
         ep = srcNode.data.endpoints.find((e) => e.id === epId);
       }
-      if (!ep && srcNode.data.routeGroups) {
+      if (!ep && srcNode.data?.routeGroups) {
         for (const group of srcNode.data.routeGroups) {
           ep = group.endpoints?.find((e) => e.id === epId);
           if (ep) break;
@@ -60,7 +60,7 @@ export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) 
       const srcEndpoints = storeEndpoints.filter((e) => e.nodeId === srcNode.id);
       if (srcEndpoints.length > 0) {
         ep = srcEndpoints[0];
-      } else if (srcNode.data.endpoints && srcNode.data.endpoints.length > 0) {
+      } else if (srcNode.data?.endpoints && srcNode.data.endpoints.length > 0) {
         ep = srcNode.data.endpoints[0];
       }
     }
@@ -131,7 +131,7 @@ export const VectorDBRefNode = ({ id, data, selected }: NodeProps<BackendNode>) 
               ) : (
                 vectorCollections.map(c => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.data.label || "Untitled Collection"}
+                    {c.data?.label || "Untitled Collection"}
                   </SelectItem>
                 ))
               )}

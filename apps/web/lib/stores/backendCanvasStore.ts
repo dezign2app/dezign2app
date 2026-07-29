@@ -20,6 +20,7 @@ function getLastIndex(items: { fractionalIndex?: string }[]): string | null {
 }
 
 function getMessagingResourceType(node: BackendNode): MessagingResourceType | null {
+  if (!node || !node.type) return null;
   switch (node.type) {
     case "kafka":
       return "topics";
@@ -51,12 +52,12 @@ function syncConfiguredEventEdge(
   const handlePrefix = variant === "publish" ? "publishedEvents-out-" : "consumedEvents-in-";
   const eventHandle = `${handlePrefix}${event.id}`;
   const existing = edges.filter((edge) =>
-    variant === "publish"
+    edge && (variant === "publish"
       ? edge.source === ownerNodeId && edge.sourceHandle === eventHandle
-      : edge.target === ownerNodeId && edge.targetHandle === eventHandle,
+      : edge.target === ownerNodeId && edge.targetHandle === eventHandle),
   );
 
-  const broker = nodes.find((node) => node.id === event.brokerNodeId);
+  const broker = nodes.find((node) => node && node.id === event.brokerNodeId);
   const resourceType = broker ? getMessagingResourceType(broker) : null;
   const hasSelection = Boolean(
     broker && resourceType && event.messagingResourceId && event.messagingResourceId !== "none",
@@ -257,7 +258,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   setNodesPendingDeletion: (nodes) => set({ nodesPendingDeletion: nodes }),
 
   onNodesChange: (changes) => {
-    const next = applyNodeChanges<BackendNode>(changes, get().nodes);
+    const rawNext = applyNodeChanges<BackendNode>(changes, get().nodes);
+    // Defensive: filter out any undefined/null entries that React Flow may produce
+    const next = rawNext.filter((n): n is BackendNode => Boolean(n?.id));
 
     const removedIds: string[] = changes
       .filter((c) => c.type === "remove")
@@ -289,7 +292,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   onEdgesChange: (changes) => {
-    const next = applyEdgeChanges<BackendEdge>(changes, get().edges);
+    const rawEdgesNext = applyEdgeChanges<BackendEdge>(changes, get().edges);
+    // Defensive: filter out any undefined/null entries that React Flow may produce
+    const next = rawEdgesNext.filter((e): e is BackendEdge => Boolean(e?.id));
     const removedIds: string[] = changes
       .filter((c) => c.type === "remove")
       .map((c) => c.id);
@@ -642,7 +647,7 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const next = get().endpoints.map(e => e.id === id ? { ...e, ...changes } : e);
     const updated = next.find(e => e.id === id);
     if (updated) {
-      let nextEdges = get().edges;
+      let nextEdges = [...get().edges];
       const addedEdges: BackendEdge[] = [];
       const removedEdgeIds: string[] = [];
 
@@ -654,6 +659,48 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
           removedEdgeIds.push(...synced.removed);
         }
       }
+
+      // Sync database table reference edges for this endpoint
+      const targetDbNodeIds = new Set<string>();
+      if (updated.databaseNodeIds) {
+        updated.databaseNodeIds.forEach((dbId) => dbId && targetDbNodeIds.add(dbId));
+      } else if (updated.databaseNodeId && updated.databaseNodeId !== "none") {
+        targetDbNodeIds.add(updated.databaseNodeId);
+      }
+
+      const epSourceHandle = `endpoint-out-${updated.id}`;
+      const existingDbEdges = nextEdges.filter(
+        (e) => e && e.source === updated.nodeId && e.sourceHandle === epSourceHandle
+      );
+
+      // 1. Remove edges to DB nodes no longer in targetDbNodeIds
+      existingDbEdges.forEach((edge) => {
+        if (edge && !targetDbNodeIds.has(edge.target)) {
+          nextEdges = nextEdges.filter((e) => e && e.id !== edge.id);
+          removedEdgeIds.push(edge.id);
+        }
+      });
+
+      // 2. Add missing edges for DB nodes in targetDbNodeIds
+      targetDbNodeIds.forEach((targetDbId) => {
+        const hasEdge = existingDbEdges.some((e) => e.target === targetDbId);
+        const targetNode = get().nodes.find((n) => n?.id === targetDbId);
+        if (!hasEdge && targetNode && (targetNode.type === "db_ref" || targetNode.type === "database")) {
+          const lastEdgeIndex = getLastIndex(nextEdges);
+          const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
+          const newEdge: BackendEdge = {
+            id: `edge-${Date.now()}-${updated.id}-${targetDbId}`,
+            source: updated.nodeId,
+            target: targetDbId,
+            type: "connection",
+            sourceHandle: epSourceHandle,
+            targetHandle: "database-target",
+            fractionalIndex,
+          };
+          nextEdges.push(newEdge);
+          addedEdges.push(newEdge);
+        }
+      });
 
       set({
         endpoints: next,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
-import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig } from "../types";
+import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
 import {
   LANGGRAPH_CANVAS_NODE_AGENT,
   HANDLE_LLM_IN,
@@ -12,6 +12,7 @@ import {
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
   DEFAULT_SELECTED_STREAM_EVENTS,
+  DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
 } from "../constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 
@@ -39,6 +40,14 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     customTransformers: DEFAULT_STREAM_TRANSFORMERS,
   };
 
+  const responseFormat: LangGraphAgentResponseFormatConfig = data.responseFormat || {
+    enabled: false,
+    strategy: "auto",
+    schemaType: "json_schema",
+    schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+    handleErrorMode: "default",
+  };
+
   const updateAgentData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
       nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_AGENT ? { ...n, data: { ...n.data, ...changes } } : n))
@@ -57,8 +66,25 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     updateAgentData({ streamConfig: updated });
   };
 
+  const updateResponseFormat = (changes: Partial<LangGraphAgentResponseFormatConfig>) => {
+    const updated: LangGraphAgentResponseFormatConfig = {
+      enabled: false,
+      strategy: "auto",
+      schemaType: "json_schema",
+      schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+      handleErrorMode: "default",
+      ...responseFormat,
+      ...changes,
+    };
+    updateAgentData({ responseFormat: updated });
+  };
+
   const handleToggleStreaming = (enabled: boolean) => {
     updateStreamConfig({ enabled });
+  };
+
+  const handleToggleResponseFormat = (enabled: boolean) => {
+    updateResponseFormat({ enabled });
   };
 
   const handleToggleEvent = (eventId: string) => {
@@ -82,7 +108,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
 
   return (
     <div
-      className={`rounded-xl bg-card border-2 min-w-[320px] max-w-[420px] flex flex-col transition-all duration-200 shadow-md relative group ${
+      className={`rounded-xl bg-card border-2 min-w-[340px] max-w-[440px] flex flex-col transition-all duration-200 shadow-md relative group ${
         selected
           ? "border-sky-500 ring-2 ring-sky-500/20 shadow-sky-500/10"
           : "border-border hover:border-sky-500/40 hover:shadow-sky-500/5"
@@ -93,7 +119,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         type="target"
         position={Position.Bottom}
         id={HANDLE_LLM_IN}
-        style={{ left: "25%" }}
+        style={{ left: "16.66%" }}
         className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect LLM Node (llm_out)"
       />
@@ -109,7 +135,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         type="target"
         position={Position.Bottom}
         id={HANDLE_MIDDLEWARE_IN}
-        style={{ left: "75%" }}
+        style={{ left: "83.33%" }}
         className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect Middleware Node (middleware_out)"
       />
@@ -210,7 +236,68 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
           />
         </div>
 
-        {/* 2. Event Stream Configuration Panel */}
+        {/* 2. Structured Output / Response Format (Output Node) Panel */}
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-secondary/20 border border-border/50 nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className={`p-1 rounded shrink-0 ${responseFormat.enabled ? "bg-sky-500/20 text-sky-500" : "bg-muted/30 text-muted-foreground"}`}>
+                <FileJson className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                  Structured Output
+                  {responseFormat.enabled && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-semibold shrink-0">
+                      {responseFormat.strategy === "provider" ? "providerStrategy" : responseFormat.strategy === "tool" ? "toolStrategy" : "responseFormat"}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono truncate">
+                  responseFormat → state.structuredResponse
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="nodrag shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Switch
+                checked={Boolean(responseFormat.enabled)}
+                onCheckedChange={handleToggleResponseFormat}
+                className="scale-90"
+              />
+            </div>
+          </div>
+
+          {responseFormat.enabled && (
+            <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-border/40">
+              <div className="flex items-center justify-between text-[10px] font-mono">
+                <span className="text-foreground font-semibold flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-sky-500" />
+                  Format: {responseFormat.schemaType === "zod" ? "Zod Schema" : responseFormat.schemaType === "standard_schema" ? "Standard Schema" : "JSON Schema"}
+                </span>
+                <span className="text-muted-foreground text-[9px]">
+                  Mode: {responseFormat.strategy || "auto"}
+                </span>
+              </div>
+
+              {responseFormat.toolMessageContent && (
+                <p className="text-[9px] font-mono text-muted-foreground bg-background/60 p-1.5 rounded border border-border/40 truncate">
+                  <span className="text-sky-500 font-semibold">toolMsg:</span> "{responseFormat.toolMessageContent}"
+                </p>
+              )}
+
+              <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground pt-0.5 opacity-80">
+                <span>Edit schema & retry options in Inspector sidebar →</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Event Stream Configuration Panel */}
         <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-cyan-950/10 dark:bg-cyan-950/20 border border-cyan-500/30 nodrag">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">

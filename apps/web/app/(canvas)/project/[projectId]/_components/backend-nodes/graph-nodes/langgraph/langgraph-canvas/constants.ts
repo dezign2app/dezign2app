@@ -68,6 +68,9 @@ export const LANGGRAPH_CANVAS_NODE_AGENT        = "langgraph_agent" as const;
 export const HANDLE_MIDDLEWARE_IN  = "middleware_in" as const;
 export const HANDLE_MIDDLEWARE_OUT = "middleware_out" as const;
 
+export const HANDLE_OUTPUT_IN  = "output_in" as const;
+export const HANDLE_OUTPUT_OUT = "output_out" as const;
+
 // ─── Reserved LangGraph Canvas Node IDs ─────────────────────────────────────────────
 export const NODE_ID_START        = "START" as const;
 export const NODE_ID_STATE_GLOBAL = "STATE_GLOBAL" as const;
@@ -246,6 +249,122 @@ export const DEFAULT_SELECTED_STREAM_EVENTS = [
   "stream.toolCalls",
   "stream.values",
   "stream.output"
+];
+
+// ─── Response Format / Structured Output Presets & Defaults ─────────────────────
+export const DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA = JSON.stringify(
+  {
+    type: "object",
+    description: "Structured agent response output",
+    properties: {
+      summary: {
+        type: "string",
+        description: "Concise summary of findings or result"
+      },
+      sentiment: {
+        type: "string",
+        enum: ["positive", "neutral", "negative"],
+        description: "Overall sentiment classification"
+      },
+      keyPoints: {
+        type: "array",
+        items: { type: "string" },
+        description: "Key bullet points extracted from analysis"
+      }
+    },
+    required: ["summary", "sentiment", "keyPoints"]
+  },
+  null,
+  2
+);
+
+export const DEFAULT_RESPONSE_FORMAT_ZOD_SCHEMA = `import { z } from "zod";
+
+export const AgentResponseFormat = z.object({
+  summary: z.string().describe("Concise summary of findings or result"),
+  sentiment: z.enum(["positive", "neutral", "negative"]).describe("Overall sentiment classification"),
+  keyPoints: z.array(z.string()).describe("Key bullet points extracted from analysis")
+});`;
+
+export const RESPONSE_FORMAT_PRESETS = [
+  {
+    id: "contact_info",
+    label: "Contact Info Extraction",
+    description: "Extract name, email, phone from user text",
+    jsonSchema: JSON.stringify(
+      {
+        type: "object",
+        description: "Contact information for a person",
+        properties: {
+          name: { type: "string", description: "Full name of person" },
+          email: { type: "string", description: "Email address" },
+          phone: { type: "string", description: "Phone number" }
+        },
+        required: ["name", "email", "phone"]
+      },
+      null,
+      2
+    ),
+    zodSchema: `import { z } from "zod";
+
+export const ContactInfo = z.object({
+  name: z.string().describe("Full name of person"),
+  email: z.string().describe("Email address"),
+  phone: z.string().describe("Phone number")
+});`
+  },
+  {
+    id: "product_review",
+    label: "Product Review Analysis",
+    description: "Extract rating, sentiment, and key points",
+    jsonSchema: JSON.stringify(
+      {
+        type: "object",
+        description: "Analysis of product review",
+        properties: {
+          rating: { type: "number", minimum: 1, maximum: 5, description: "Rating from 1-5" },
+          sentiment: { type: "string", enum: ["positive", "negative"], description: "Overall sentiment" },
+          keyPoints: { type: "array", items: { type: "string" }, description: "Key points extracted" }
+        },
+        required: ["sentiment", "keyPoints"]
+      },
+      null,
+      2
+    ),
+    zodSchema: `import { z } from "zod";
+
+export const ProductReview = z.object({
+  rating: z.number().min(1).max(5).optional(),
+  sentiment: z.enum(["positive", "negative"]),
+  keyPoints: z.array(z.string()).describe("Key points extracted")
+});`
+  },
+  {
+    id: "meeting_action",
+    label: "Meeting Action Item",
+    description: "Extract task, assignee, and priority",
+    jsonSchema: JSON.stringify(
+      {
+        type: "object",
+        description: "Captured action item from meeting",
+        properties: {
+          task: { type: "string", description: "Specific task description" },
+          assignee: { type: "string", description: "Person assigned to task" },
+          priority: { type: "string", enum: ["low", "medium", "high"], description: "Task priority level" }
+        },
+        required: ["task", "assignee", "priority"]
+      },
+      null,
+      2
+    ),
+    zodSchema: `import { z } from "zod";
+
+export const MeetingAction = z.object({
+  task: z.string().describe("Specific task description"),
+  assignee: z.string().describe("Person assigned to task"),
+  priority: z.enum(["low", "medium", "high"]).describe("Task priority level")
+});`
+  }
 ];
 
 

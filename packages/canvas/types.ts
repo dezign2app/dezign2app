@@ -732,6 +732,17 @@ export interface LangGraphAgentStreamConfig {
   customTransformers?: string;
 }
 
+export interface LangGraphAgentResponseFormatConfig {
+  enabled?: boolean;
+  strategy?: "auto" | "provider" | "tool";
+  schemaType?: "json_schema" | "zod" | "standard_schema";
+  schemaName?: string;
+  schemaJson?: string;
+  toolMessageContent?: string;
+  handleErrorMode?: "default" | "custom_message" | "disabled";
+  customErrorMessage?: string;
+}
+
 export interface LangGraphAgentDefinition {
   id?: string;
   agentId?: string;
@@ -739,6 +750,7 @@ export interface LangGraphAgentDefinition {
   systemPrompt?: string;
   modelConfig?: LangGraphStepConfig["modelConfig"];
   streamConfig?: LangGraphAgentStreamConfig;
+  responseFormat?: LangGraphAgentResponseFormatConfig;
   tools?: string[];        // Bound tool IDs
   middleware?: string[];   // Bound middleware IDs
   position?: { x: number; y: number };

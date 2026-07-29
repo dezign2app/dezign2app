@@ -1,10 +1,18 @@
 import React, { useState } from "react";
-import { Sparkles, Code2, FileText, Loader2, Info } from "lucide-react";
+import { Sparkles, Code2, FileText, Loader2, Info, Database, Plus, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Label } from "@workspace/ui/components/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { LocalTextarea } from "../backend-nodes/graph-nodes/shared";
 
 export type LogicMode = "natural_language" | "code";
+
+export type CrudOperation = "create" | "read" | "update" | "delete";
+
+export interface TableCrudConfig {
+  tableNodeId: string;
+  operations: CrudOperation[];
+}
 
 export interface BusinessLogicBlockProps {
   mode?: LogicMode;
@@ -21,7 +29,14 @@ export interface BusinessLogicBlockProps {
   codePlaceholder?: string;
   codeLanguageLabel?: string;
   className?: string;
+
+  // CRUD Operations Props
+  crudConfig?: TableCrudConfig[];
+  onCrudConfigChange?: (config: TableCrudConfig[]) => void;
+  availableTableNodes?: { id: string; label: string }[];
 }
+
+const ALL_CRUD_OPS: CrudOperation[] = ["create", "read", "update", "delete"];
 
 export function BusinessLogicBlock({
   mode = "natural_language",
@@ -38,6 +53,9 @@ export function BusinessLogicBlock({
   codePlaceholder = "// Write ONLY the function body statements (do not include outer function signature)\n// e.g.:\nconst result = await db.users.findMany();\nreturn res.json(result);",
   codeLanguageLabel = "TypeScript / JavaScript",
   className = "",
+  crudConfig = [],
+  onCrudConfigChange,
+  availableTableNodes = [],
 }: BusinessLogicBlockProps) {
   const [internalMode, setInternalMode] = useState<LogicMode>(mode);
   const activeMode = onModeChange ? mode : internalMode;
@@ -172,6 +190,121 @@ export function BusinessLogicBlock({
             <span>
               Write ONLY inner function body statements. Do not include outer function signatures or declarations (e.g. <code>async function...</code>).
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Database CRUD Operations Section */}
+      {onCrudConfigChange && (
+        <div className="flex flex-col gap-2.5 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                Database Table Operations
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-6 text-[10px] gap-1 px-2 border-border"
+              onClick={() => {
+                const firstTableId = availableTableNodes[0]?.id || "";
+                onCrudConfigChange([
+                  ...crudConfig,
+                  { tableNodeId: firstTableId, operations: ["read"] },
+                ]);
+              }}
+            >
+              <Plus className="w-3 h-3" />
+              <span>Add Table Ref</span>
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {crudConfig.map((configItem, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 p-2 bg-background/60 rounded-lg border border-border/50 text-xs"
+              >
+                {/* Table Node Selector */}
+                <Select
+                  value={configItem.tableNodeId || "__none__"}
+                  onValueChange={(tableId) => {
+                    const next = [...crudConfig];
+                    if (next[idx]) {
+                      next[idx] = { ...next[idx], tableNodeId: tableId === "__none__" ? "" : tableId };
+                      onCrudConfigChange(next);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs flex-1 font-mono bg-background">
+                    <SelectValue placeholder="Select a Table Ref Node..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-xs font-mono text-muted-foreground">
+                      Select a Table...
+                    </SelectItem>
+                    {availableTableNodes.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs font-mono">
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* CRUD Operation Toggle Pills */}
+                <div className="flex items-center gap-1">
+                  {ALL_CRUD_OPS.map((op) => {
+                    const label = op === "create" ? "C" : op === "read" ? "R" : op === "update" ? "U" : "D";
+                    const isSelected = configItem.operations.includes(op);
+                    return (
+                      <button
+                        key={op}
+                        type="button"
+                        title={op.toUpperCase()}
+                        onClick={() => {
+                          const curr = configItem.operations || [];
+                          const nextOps = isSelected ? curr.filter((o) => o !== op) : [...curr, op];
+                          const next = [...crudConfig];
+                          if (next[idx]) {
+                            next[idx] = { ...next[idx], operations: nextOps };
+                            onCrudConfigChange(next);
+                          }
+                        }}
+                        className={`w-6 h-6 rounded text-[10px] font-bold font-mono transition-all flex items-center justify-center border ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+
+                  {/* Remove Table Config */}
+                  <button
+                    type="button"
+                    title="Remove Table Reference"
+                    onClick={() => {
+                      const next = crudConfig.filter((_, i) => i !== idx);
+                      onCrudConfigChange(next);
+                    }}
+                    className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ml-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {crudConfig.length === 0 && (
+              <span className="text-[10px] text-muted-foreground italic px-1">
+                No database table operations configured. Click "+ Add Table Ref" to link database access.
+              </span>
+            )}
           </div>
         </div>
       )}

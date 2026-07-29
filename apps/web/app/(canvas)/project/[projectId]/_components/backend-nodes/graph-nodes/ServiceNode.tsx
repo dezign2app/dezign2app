@@ -26,7 +26,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     if (!data.port || !data.port.trim()) {
       const existingPorts = new Set(
         nodes
-          .filter((n) => n.id !== id && n.type === "service")
+          .filter((n) => n?.id !== id && n?.type === "service")
           .map((n) => parseInt(n.data?.port?.trim() || "8080", 10))
           .filter((p) => !isNaN(p))
       );
@@ -46,7 +46,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const currentPort = data.port?.trim() || "8080";
   
   const conflictNode = nodes.find(
-    (n) => n.id !== id && n.type === "service" && (n.data?.port?.trim() || "8080") === currentPort
+    (n) => n?.id !== id && n?.type === "service" && (n.data?.port?.trim() || "8080") === currentPort
   );
   const isPortOccupied = Boolean(conflictNode);
 
@@ -62,7 +62,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     const trimmedVal = val.trim();
     if (trimmedVal) {
       const occupiedByNode = nodes.find(
-        (n) => n.id !== id && n.type === "service" && (n.data?.port?.trim() || "8080") === trimmedVal
+        (n) => n?.id !== id && n?.type === "service" && (n.data?.port?.trim() || "8080") === trimmedVal
       );
       if (occupiedByNode) {
         toast.error(`Port ${trimmedVal} is already occupied by ${occupiedByNode.data?.label || "another service"}!`);

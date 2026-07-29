@@ -20,7 +20,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
   const simulation = useSimulationNodeState(id);
   const borderClass = getSimulationNodeBorderClass(simulation, Boolean(selected));
   
-  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n.type === "entity" && n.data.dbType !== "vector")));
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter(n => n?.type === "entity" && n.data?.dbType !== "vector")));
 
   // Derive which service endpoints connect to this database node
   const incomingEdges = edges.filter(e => e.target === id);
@@ -28,7 +28,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
     const srcNode = nodes.find(n => n.id === edge.source);
     if (!srcNode) return null;
 
-    const serviceName = srcNode.data.label || "Untitled Service";
+    const serviceName = srcNode.data?.label || "Untitled Service";
     let routeName = "";
     let method = "";
 
@@ -49,10 +49,10 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
 
     if (epId) {
       ep = storeEndpoints.find((e) => e.id === epId);
-      if (!ep && srcNode.data.endpoints) {
+      if (!ep && srcNode.data?.endpoints) {
         ep = srcNode.data.endpoints.find((e) => e.id === epId);
       }
-      if (!ep && srcNode.data.routeGroups) {
+      if (!ep && srcNode.data?.routeGroups) {
         for (const group of srcNode.data.routeGroups) {
           ep = group.endpoints?.find((e) => e.id === epId);
           if (ep) break;
@@ -65,7 +65,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
       const srcEndpoints = storeEndpoints.filter((e) => e.nodeId === srcNode.id);
       if (srcEndpoints.length > 0) {
         ep = srcEndpoints[0];
-      } else if (srcNode.data.endpoints && srcNode.data.endpoints.length > 0) {
+      } else if (srcNode.data?.endpoints && srcNode.data.endpoints.length > 0) {
         ep = srcNode.data.endpoints[0];
       }
     }
@@ -108,7 +108,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
                data: { 
                  ...data, 
                  tableRef: val, 
-                 label: entity?.data.label || "Table Ref",
+                 label: entity?.data?.label || "Table Ref",
                  graphPosition: entity?.position
                } 
              });
@@ -119,7 +119,7 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
            </SelectTrigger>
            <SelectContent>
              {entities.map(e => (
-               <SelectItem key={e.id} value={e.id}>{e.data.label || "Untitled"}</SelectItem>
+               <SelectItem key={e.id} value={e.id}>{e.data?.label || "Untitled"}</SelectItem>
              ))}
            </SelectContent>
          </Select>

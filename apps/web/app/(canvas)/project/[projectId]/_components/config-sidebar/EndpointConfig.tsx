@@ -1,10 +1,9 @@
 import React from "react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { ParameterEditor, SchemaEditor, JsonPayloadEditor } from "../backend-nodes/graph-nodes/Editors";
-import { MessagingResourceList, LocalTextarea, LocalInput } from "../backend-nodes/graph-nodes/shared";
-import { BusinessLogicBlock } from "../shared/BusinessLogicBlock";
+import { ParameterEditor, SchemaEditor } from "../backend-nodes/graph-nodes/Editors";
+import { MessagingResourceList, LocalInput } from "../backend-nodes/graph-nodes/shared";
+import { BusinessLogicBlock, TableCrudConfig, CrudOperation } from "../shared/BusinessLogicBlock";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
@@ -12,8 +11,6 @@ import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { useParams } from "next/navigation";
-import { JSONValue, JSONObject } from "@/types/canvas";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 interface EndpointConfigProps {
   id: string;
@@ -36,24 +33,35 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
   const selectedCaseId = useSimulationStore(s => s.selectedCaseId) || "none";
   const selectTestCase = useSimulationStore(s => s.selectTestCase);
 
-  const handleSelectCase = (caseId: string) => {
-    selectTestCase(caseId === "none" ? undefined : caseId);
-  };
+  const allNodes = useBackendCanvasStore(s => s.nodes);
 
   const item = endpoints.find(e => e.id === id);
   if (!item) return null;
 
-  const selectedCase = testCases.find(tc => tc.id === selectedCaseId);
-  const currentResponseMock = selectedCase?.mocks?.[id]?.returnData;
+  const availableTableNodes = allNodes
+    .filter(n => n?.type === "db_ref" || n?.type === "database")
+    .map(n => ({ id: n.id, label: n.data?.label || n.data?.tableRef || "Table Reference" }));
 
-  const updateEventMock = (eventId: string, value: any) => {
-    if (!selectedCase) return;
-    const newMocks = { ...selectedCase.mocks, [eventId]: { returnData: value, status: 200 } };
-    const updatedCase = { ...selectedCase, mocks: newMocks };
-    updateTestCase(updatedCase.id, { mocks: newMocks });
-    if (projectId) {
-      upsertBackendTestCase({ projectId, testCaseId: updatedCase.id, data: updatedCase });
-    }
+  const databaseNodeIds = item.databaseNodeIds || (item.databaseNodeId && item.databaseNodeId !== "none" ? [item.databaseNodeId] : []);
+  const crudConfig: TableCrudConfig[] = databaseNodeIds.map((tableNodeId) => {
+    const rawOps = item.crudOperations?.[tableNodeId];
+    const operations: CrudOperation[] = Array.isArray(rawOps) ? rawOps : ["read"];
+    return { tableNodeId, operations };
+  });
+
+  const handleCrudConfigChange = (newCrudConfig: TableCrudConfig[]) => {
+    const newDbNodeIds = newCrudConfig.map((c) => c.tableNodeId).filter(Boolean);
+    const newCrudOps: Record<string, CrudOperation[]> = {};
+    newCrudConfig.forEach((c) => {
+      if (c.tableNodeId) {
+        newCrudOps[c.tableNodeId] = c.operations;
+      }
+    });
+    updateEndpoint(item.id, {
+      databaseNodeIds: newDbNodeIds,
+      databaseNodeId: newDbNodeIds[0] || "none",
+      crudOperations: newCrudOps,
+    });
   };
 
   return (
@@ -139,6 +147,9 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         onCodeChange={(val) => updateEndpoint(item.id, { body: val })}
         title="Endpoint Business Logic"
         description="Define endpoint processing steps or custom code handler"
+        crudConfig={crudConfig}
+        onCrudConfigChange={handleCrudConfigChange}
+        availableTableNodes={availableTableNodes}
         onGenerateCode={() => {
           if (item.businessLogic && !item.body) {
             updateEndpoint(item.id, {

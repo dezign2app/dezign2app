@@ -713,12 +713,32 @@ export interface LangGraphMiddlewareDefinition {
   position?: { x: number; y: number };
 }
 
+export type LangGraphEventStreamType =
+  | "stream.messages"
+  | "message.text"
+  | "message.reasoning"
+  | "message.toolCalls"
+  | "stream.toolCalls"
+  | "stream.values"
+  | "stream.output"
+  | "stream.subagents"
+  | "stream.extensions";
+
+export interface LangGraphAgentStreamConfig {
+  enabled?: boolean;
+  version?: "v3" | "v2" | string;
+  selectedEvents?: string[];
+  eventSignature?: string;
+  customTransformers?: string;
+}
+
 export interface LangGraphAgentDefinition {
   id?: string;
   agentId?: string;
   name: string;
   systemPrompt?: string;
   modelConfig?: LangGraphStepConfig["modelConfig"];
+  streamConfig?: LangGraphAgentStreamConfig;
   tools?: string[];        // Bound tool IDs
   middleware?: string[];   // Bound middleware IDs
   position?: { x: number; y: number };

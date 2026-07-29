@@ -128,6 +128,15 @@ export const LangGraphCanvasMiddlewareNode = ({ id, data, selected }: NodeProps<
           : "border-border hover:border-purple-500/40 hover:shadow-purple-500/5"
       }`}
     >
+      {/* Outbound Middleware handle connecting to Agent */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id={HANDLE_MIDDLEWARE_OUT}
+        style={{ left: "50%" }}
+        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        title="Connect to Agent Node (middleware_in)"
+      />
       <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="p-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-500 shrink-0">
@@ -326,15 +335,6 @@ export const LangGraphCanvasMiddlewareNode = ({ id, data, selected }: NodeProps<
           </div>
         )}
       </div>
-
-      {/* Outbound Middleware handle connecting to Agent */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={HANDLE_MIDDLEWARE_OUT}
-        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
-        title="Connect to Agent Node (middleware_in)"
-      />
     </div>
   );
 };

@@ -221,6 +221,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           name: agDef.name,
           systemPrompt: agDef.systemPrompt,
           modelConfig: agDef.modelConfig,
+          streamConfig: agDef.streamConfig,
           tools: agDef.tools || [],
           middleware: agDef.middleware || [],
         },
@@ -874,6 +875,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         name: n.data.name || "AI Agent",
         systemPrompt: n.data.systemPrompt,
         modelConfig: n.data.modelConfig,
+        streamConfig: n.data.streamConfig,
         tools: edges
           .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
           .map((e) => e.source),

@@ -61,6 +61,16 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
         selected ? "border-blue-500 ring-2 ring-blue-500/20 shadow-blue-500/10" : "border-border hover:border-blue-500/40 hover:shadow-blue-500/5"
       }`}
     >
+      {/* Output Handle to connect edge to step nodes */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id={HANDLE_LLM_OUT}
+        style={{ left: "50%" }}
+        isValidConnection={(connection: Connection) => connection.targetHandle === HANDLE_LLM_IN}
+        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        title="Connect to Step Node LLM Config"
+      />
       {/* Header */}
       <div className="flex items-center justify-between gap-2 p-3 -mx-3 -mt-3 border-b border-border/50 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -312,16 +322,6 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
           </div>
         </div>
       )}
-
-      {/* Output Handle to connect edge to step nodes */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={HANDLE_LLM_OUT}
-        isValidConnection={(connection: Connection) => connection.targetHandle === HANDLE_LLM_IN}
-        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
-        title="Connect to Step Node LLM Config"
-      />
     </div>
   );
 };

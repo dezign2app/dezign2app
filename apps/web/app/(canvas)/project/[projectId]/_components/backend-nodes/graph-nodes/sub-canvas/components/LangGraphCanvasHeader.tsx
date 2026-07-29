@@ -30,7 +30,7 @@ export function LangGraphCanvasHeader({
         </div>
         {onUpdateLabel ? (
           <LocalInput
-            className="h-8 text-base font-bold bg-transparent border-none shadow-none focus-visible:ring-1 focus-visible:ring-ring text-foreground w-[240px] px-1 hover:bg-secondary/40 rounded transition-colors"
+            className="h-8 px-3 rounded-md text-base font-bold bg-transparent border-none shadow-none focus-visible:ring-1 focus-visible:ring-ring text-foreground w-[240px] hover:bg-secondary/40 transition-colors"
             value={label || "LangGraph Agent"}
             onChange={(e) => onUpdateLabel(e.target.value)}
           />

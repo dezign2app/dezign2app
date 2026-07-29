@@ -169,9 +169,21 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
         </div>
 
         {data.executionMode === "sandboxed_vm" && data.source === TOOL_SOURCE_INLINE && !data.headless && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-[9px] font-medium text-amber-500 mt-1">
-            <Database className="w-3 h-3" />
-            Sandboxed Context
+          <div className="flex items-center justify-between text-[9px] font-medium mt-1">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500">
+              <Database className="w-3 h-3" />
+              Sandboxed Context
+            </div>
+
+            {data.implementationMode === "code" || data.functionBody ? (
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                {"</> Code"}
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
+                {"✨ AI Spec"}
+              </span>
+            )}
           </div>
         )}
       </div>

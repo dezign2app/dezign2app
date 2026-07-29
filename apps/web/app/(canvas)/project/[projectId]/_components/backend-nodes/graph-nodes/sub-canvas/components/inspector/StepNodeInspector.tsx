@@ -10,6 +10,7 @@ import type { LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
 import { STEP_TYPE_ROUTER, STEP_TYPE_LLM_CALL } from "../../constants";
 import { RouterNodeInspector } from "./RouterNodeInspector";
+import { BusinessLogicBlock } from "../../../../../shared/BusinessLogicBlock";
 
 interface StepNodeInspectorProps {
   selectedStepData: StepNodeData;
@@ -55,49 +56,52 @@ export function StepNodeInspector({
         />
       </div>
 
-      {/* Model Config Section - Only show for non-router nodes */}
+      {/* Model & Custom Code Configuration - Only show for non-router nodes */}
       {!isRouter && (
-        <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5 text-primary" /> Model Configuration
-            </span>
-            <Switch
-              checked={!!selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  onUpdateStep({
-                    modelConfig: {
-                      ...selectedStepData.modelConfig,
-                      systemPrompt: selectedStepData.modelConfig?.systemPrompt || "",
-                    },
-                  });
-                } else {
-                  onUpdateStep({ modelConfig: undefined });
-                }
-              }}
-            />
-          </div>
-
-          {(selectedStepData.modelConfig || selectedStepData.stepType === STEP_TYPE_LLM_CALL) && (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-medium">AI Instructions (System Prompt)</Label>
-              <LocalTextarea
-                className="min-h-[90px] text-xs bg-background/50 p-2 font-mono leading-relaxed resize-y placeholder:text-muted-foreground/50"
-                placeholder="Enter system prompt / AI instructions..."
-                value={selectedStepData.modelConfig?.systemPrompt || ""}
-                onChange={(e) =>
-                  onUpdateStep({
-                    modelConfig: {
-                      ...selectedStepData.modelConfig,
-                      systemPrompt: e.target.value,
-                    },
-                  })
-                }
-              />
-            </div>
-          )}
-        </div>
+        <BusinessLogicBlock
+          mode={selectedStepData.customCode?.body ? "code" : "natural_language"}
+          onModeChange={(m) => {
+            if (m === "natural_language") {
+              onUpdateStep({
+                modelConfig: {
+                  ...selectedStepData.modelConfig,
+                  systemPrompt: selectedStepData.modelConfig?.systemPrompt || "",
+                },
+              });
+            }
+          }}
+          prompt={selectedStepData.modelConfig?.systemPrompt || ""}
+          onPromptChange={(val) =>
+            onUpdateStep({
+              modelConfig: {
+                ...selectedStepData.modelConfig,
+                systemPrompt: val,
+              },
+            })
+          }
+          code={selectedStepData.customCode?.body || ""}
+          onCodeChange={(val) =>
+            onUpdateStep({
+              customCode: {
+                ...selectedStepData.customCode,
+                body: val,
+              },
+            })
+          }
+          title="Step Logic"
+          description="AI System Prompt or custom TypeScript step handler"
+          onGenerateCode={() => {
+            const prompt = selectedStepData.modelConfig?.systemPrompt;
+            if (prompt && !selectedStepData.customCode?.body) {
+              const generatedCode = `async (state) => {\n  // System Prompt: ${prompt.split('\n').join('\n  // ')}\n  return { ...state, updated: true };\n}`;
+              onUpdateStep({
+                customCode: {
+                  body: generatedCode,
+                },
+              });
+            }
+          }}
+        />
       )}
 
       {/* Router Node Specific Configuration */}

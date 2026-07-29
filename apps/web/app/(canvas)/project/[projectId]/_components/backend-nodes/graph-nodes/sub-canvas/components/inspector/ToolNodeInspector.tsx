@@ -3,10 +3,11 @@ import { Wrench, Trash2, Box, Server, Globe, BoxSelect, AlertCircle, Database, C
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { ToolNodeData } from "../../types";
+import { ToolNodeData, ToolSource, ToolReturnType, StateUpdateMode, StoreOperation } from "../../types";
 import { LocalInput, LocalTextarea } from "../../../shared";
 import { TOOL_SOURCE_INLINE, TOOL_SOURCE_MCP_SERVER, TOOL_SOURCE_API_ENDPOINT } from "../../constants";
 import type { LangGraphStateChannel } from "@/types/canvas";
+import { BusinessLogicBlock } from "../../../../../shared/BusinessLogicBlock";
 
 interface ToolNodeInspectorProps {
   selectedToolData: ToolNodeData;
@@ -104,7 +105,7 @@ export function ToolNodeInspector({
           <Label className="text-xs font-semibold text-foreground">Source</Label>
           <Select
             value={selectedToolData.source || TOOL_SOURCE_INLINE}
-            onValueChange={(val: any) => onUpdateTool({ source: val })}
+            onValueChange={(val: ToolSource) => onUpdateTool({ source: val })}
           >
             <SelectTrigger className="h-7 text-xs bg-background">
               <SelectValue />
@@ -193,7 +194,7 @@ export function ToolNodeInspector({
           <Label className="text-xs font-semibold text-foreground">Return Type</Label>
           <Select
             value={selectedToolData.returnType || "string"}
-            onValueChange={(val: any) => onUpdateTool({ returnType: val })}
+            onValueChange={(val: ToolReturnType) => onUpdateTool({ returnType: val })}
           >
             <SelectTrigger className="h-7 text-xs bg-background font-mono">
               <SelectValue />
@@ -256,7 +257,7 @@ export function ToolNodeInspector({
                   </Select>
                   <Select
                     value={update.mode || "set"}
-                    onValueChange={(val: any) => {
+                    onValueChange={(val: StateUpdateMode) => {
                       const newUpdates = [...(selectedToolData.commandConfig?.stateUpdates || [])];
                       if (newUpdates[idx]) {
                         newUpdates[idx].mode = val;
@@ -347,35 +348,29 @@ export function ToolNodeInspector({
       {/* ─── 4. Implementation & Advanced (Server Only) ────────────────────── */}
       {!isHeadless && (
         <>
-          <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
-            <div className="flex items-center gap-2 mb-1">
-              <Database className="w-4 h-4 text-emerald-500" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Implementation</h3>
-            </div>
-            {selectedToolData.executionMode !== "disabled" && (
-              <div className="flex gap-2 items-start p-2 rounded bg-amber-500/10 border border-amber-500/20">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-[9px] text-amber-600 leading-tight font-medium">
-                  Runs in a sandboxed context with no network or filesystem access unless explicitly enabled via Context/Store grants.
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2 mt-2">
-              <Label className="text-xs font-semibold text-foreground flex justify-between">
-                <span>Function Body (JS/TS)</span>
-              </Label>
-              <LocalTextarea
-                value={bodyText}
-                onChange={(e) => {
-                  setBodyText(e.target.value);
-                  onUpdateTool({ functionBody: e.target.value });
-                }}
-                className="text-[11px] min-h-[160px] resize-y bg-background font-mono leading-relaxed border-emerald-500/30 focus-visible:ring-emerald-500/50"
-                placeholder={'async ({ query }) => {\n  // tool logic here\n  return `Result for ${query}`;\n}'}
-              />
-            </div>
-          </div>
+          <BusinessLogicBlock
+            mode={selectedToolData.implementationMode || "natural_language"}
+            onModeChange={(implementationMode) => onUpdateTool({ implementationMode })}
+            prompt={selectedToolData.description || ""}
+            onPromptChange={(description) => onUpdateTool({ description })}
+            code={bodyText}
+            onCodeChange={(val) => {
+              setBodyText(val);
+              onUpdateTool({ functionBody: val });
+            }}
+            title="Tool Business Logic"
+            description="Define tool behavior in natural language or write a custom function"
+            onGenerateCode={() => {
+              if (selectedToolData.description && !selectedToolData.functionBody) {
+                const generatedCode = `async ({ input }) => {\n  // Tool: ${selectedToolData.name}\n  // Spec: ${selectedToolData.description.split('\n').join('\n  // ')}\n  return { success: true, result: "Tool executed successfully" };\n}`;
+                setBodyText(generatedCode);
+                onUpdateTool({
+                  functionBody: generatedCode,
+                  implementationMode: "code",
+                });
+              }
+            }}
+          />
 
           <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
             <div className="flex items-center gap-2 mb-1">
@@ -432,8 +427,8 @@ export function ToolNodeInspector({
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-[10px] text-muted-foreground mb-1">Allowed Operations</Label>
                     <div className="flex flex-wrap gap-2">
-                      {["get", "put", "delete", "list"].map((op) => {
-                        const checked = selectedToolData.storeAccess?.operations?.includes(op as any);
+                      {(["get", "put", "delete", "list"] as const).map((op) => {
+                        const checked = selectedToolData.storeAccess?.operations?.includes(op);
                         return (
                           <div key={op} className="flex items-center gap-1.5">
                             <input
@@ -443,7 +438,7 @@ export function ToolNodeInspector({
                               onChange={(e) => {
                                 const curr = selectedToolData.storeAccess?.operations || [];
                                 const next = e.target.checked ? [...curr, op] : curr.filter(o => o !== op);
-                                onUpdateTool({ storeAccess: { ...selectedToolData.storeAccess, operations: next as any, enabled: true } });
+                                onUpdateTool({ storeAccess: { ...selectedToolData.storeAccess, operations: next, enabled: true } });
                               }}
                               className="w-3 h-3 rounded border-border"
                             />

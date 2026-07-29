@@ -2,6 +2,7 @@ import React from "react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { ParameterEditor, SchemaEditor, JsonPayloadEditor } from "../backend-nodes/graph-nodes/Editors";
 import { MessagingResourceList, LocalTextarea, LocalInput } from "../backend-nodes/graph-nodes/shared";
+import { BusinessLogicBlock } from "../shared/BusinessLogicBlock";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
 import { Input } from "@workspace/ui/components/input";
@@ -129,18 +130,24 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         schema={item.requestBody} 
         onChange={requestBody => updateEndpoint(item.id, { requestBody })} 
       />
-      <div className="flex flex-col gap-2.5 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Business Logic (Pseudo-code)
-        </span>
-        <LocalTextarea 
-          key={`businessLogic-${item.id}`}
-          className="min-h-[120px] text-sm resize-none bg-background/50 focus-visible:ring-1 font-mono"
-          placeholder="e.g. 1. Validate user input&#10;2. Check if user exists&#10;3. Save to database"
-          value={item.businessLogic || ""}
-          onBlur={e => updateEndpoint(item.id, { businessLogic: e.target.value })}
-        />
-      </div>
+      <BusinessLogicBlock
+        mode={item.logicMode || "natural_language"}
+        onModeChange={(logicMode) => updateEndpoint(item.id, { logicMode })}
+        prompt={item.businessLogic || item.prompt || ""}
+        onPromptChange={(val) => updateEndpoint(item.id, { businessLogic: val, prompt: val })}
+        code={item.body || ""}
+        onCodeChange={(val) => updateEndpoint(item.id, { body: val })}
+        title="Endpoint Business Logic"
+        description="Define endpoint processing steps or custom code handler"
+        onGenerateCode={() => {
+          if (item.businessLogic && !item.body) {
+            updateEndpoint(item.id, {
+              logicMode: "code",
+              body: `// Generated handler for: ${item.name}\nasync function handle${item.name.replace(/[^a-zA-Z0-9]/g, "_")}(req, res) {\n  // Logic: ${item.businessLogic.split('\n').join('\n  // ')}\n  return res.json({ success: true });\n}`
+            });
+          }
+        }}
+      />
       
       <div className="flex flex-col gap-3 mt-2">
         <MessagingResourceList

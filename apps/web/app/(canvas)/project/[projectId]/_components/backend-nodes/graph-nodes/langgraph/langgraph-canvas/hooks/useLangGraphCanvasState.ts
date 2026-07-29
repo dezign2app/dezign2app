@@ -158,7 +158,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
     const savedTools = data.toolDefinitions || [];
     savedTools.forEach((toolDef) => {
-      const toolId = toolDef.id || (toolDef as any).toolId || `tool_${Date.now()}`;
+      const toolId = toolDef.id || toolDef.toolId || `tool_${Date.now()}`;
       const toolNode: ToolNode = {
         id: toolId,
         type: LANGGRAPH_CANVAS_NODE_TOOL,
@@ -169,19 +169,19 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           name: toolDef.name,
           description: toolDef.description,
           inputSchema: toolDef.inputSchema,
-          source: toolDef.source as any,
+          source: toolDef.source,
           endpointUrl: toolDef.endpointUrl,
           mcpConnectionId: toolDef.mcpConnectionId,
           remoteToolName: toolDef.remoteToolName,
           returnDirect: toolDef.returnDirect,
-          returnType: toolDef.returnType as any,
+          returnType: toolDef.returnType,
           outputSchema: toolDef.outputSchema,
-          commandConfig: toolDef.commandConfig as any,
+          commandConfig: toolDef.commandConfig,
           functionBody: toolDef.functionBody,
-          executionMode: toolDef.executionMode as any,
+          executionMode: toolDef.executionMode,
           headless: toolDef.headless,
           contextAccess: toolDef.contextAccess,
-          storeAccess: toolDef.storeAccess as any,
+          storeAccess: toolDef.storeAccess,
           streamWriter: toolDef.streamWriter,
           errorHandling: toolDef.errorHandling,
         },
@@ -199,10 +199,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           label: mwDef.name,
           middlewareId: mwDef.id || mwDef.middlewareId || `mw_${Date.now()}`,
           name: mwDef.name,
-          type: mwDef.type as any,
-          humanInTheLoopConfig: mwDef.humanInTheLoopConfig as any,
+          type: mwDef.type,
+          humanInTheLoopConfig: mwDef.humanInTheLoopConfig,
           rateLimitConfig: mwDef.rateLimitConfig,
-          loggingConfig: mwDef.loggingConfig as any,
+          loggingConfig: mwDef.loggingConfig,
           customBody: mwDef.customBody,
         },
       };
@@ -257,29 +257,34 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const initialEdges: LangGraphCanvasEdge[] = useMemo(() => {
     const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || [];
     return graphEdges
+      .filter((e) => !e.id.startsWith("auto_edge_"))
       .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
       .flatMap(
         (e) => (e.targets || []).map((t) => {
           const isLLMSource = e.sourceHandle === HANDLE_LLM_OUT || e.source.startsWith("llm_") || (data.customLlmNodes || []).some((c) => c.id === e.source);
           const isToolSource = e.sourceHandle === HANDLE_TOOL_OUT || e.source.startsWith("tool_") || (data.toolDefinitions || []).some((t) => t.id === e.source);
-          
-          const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : isToolSource ? HANDLE_TOOL_OUT : undefined);
-          const targetHandle = e.targetHandle || (t as any).targetHandle || (isLLMSource ? HANDLE_LLM_IN : isToolSource ? HANDLE_TOOL_IN : undefined);
-          
+          const isMiddlewareSource = e.sourceHandle === HANDLE_MIDDLEWARE_OUT || e.source.startsWith("mw_") || (data.middlewareDefinitions || []).some((m) => m.id === e.source);
+
+          const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : isToolSource ? HANDLE_TOOL_OUT : isMiddlewareSource ? HANDLE_MIDDLEWARE_OUT : undefined);
+          const targetHandle = e.targetHandle || t.targetHandle || (isLLMSource ? HANDLE_LLM_IN : isToolSource ? HANDLE_TOOL_IN : isMiddlewareSource ? HANDLE_MIDDLEWARE_IN : "in");
+
           const isLLM = isLLMSource || sourceHandle === HANDLE_LLM_OUT || targetHandle === HANDLE_LLM_IN;
           const isTool = isToolSource || sourceHandle === HANDLE_TOOL_OUT || targetHandle === HANDLE_TOOL_IN;
+          const isMiddleware = isMiddlewareSource || sourceHandle === HANDLE_MIDDLEWARE_OUT || targetHandle === HANDLE_MIDDLEWARE_IN;
 
           return {
             id: `${e.id}_${t.id}`,
             source: e.source,
             target: t.id,
             ...(sourceHandle ? { sourceHandle } : {}),
-            ...(targetHandle ? { targetHandle } : {}),
+            targetHandle: targetHandle || "in",
             animated: true,
             style: isLLM 
               ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" } 
               : isTool
               ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
+              : isMiddleware
+              ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
               : { stroke: "#a1a1aa", strokeWidth: 2 },
             ...(e.condition ? { label: `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`, labelStyle: { fill: "#a1a1aa", fontSize: 10 } } : {}),
           };

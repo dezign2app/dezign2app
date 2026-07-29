@@ -4,7 +4,7 @@ import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check } from "lucide
 import { Switch } from "@workspace/ui/components/switch";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig } from "../types";
 import {
-  SUB_CANVAS_NODE_AGENT,
+  LANGGRAPH_CANVAS_NODE_AGENT,
   HANDLE_LLM_IN,
   HANDLE_TOOL_IN,
   HANDLE_MIDDLEWARE_IN,
@@ -41,7 +41,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
 
   const updateAgentData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === SUB_CANVAS_NODE_AGENT ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_AGENT ? { ...n, data: { ...n.data, ...changes } } : n))
     );
   };
 

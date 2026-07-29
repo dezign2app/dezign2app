@@ -8,25 +8,25 @@ import { LangGraphCanvasMiddlewareNode } from "./LangGraphCanvasMiddlewareNode";
 import { LangGraphCanvasAgentNode } from "./LangGraphCanvasAgentNode";
 
 import {
-  SUB_CANVAS_NODE_STEP,
-  SUB_CANVAS_NODE_START,
-  SUB_CANVAS_NODE_PORT,
-  SUB_CANVAS_NODE_STATE_GLOBAL,
-  SUB_CANVAS_NODE_LLM,
-  SUB_CANVAS_NODE_TOOL,
-  SUB_CANVAS_NODE_MIDDLEWARE,
-  SUB_CANVAS_NODE_AGENT,
+  LANGGRAPH_CANVAS_NODE_STEP,
+  LANGGRAPH_CANVAS_NODE_START,
+  LANGGRAPH_CANVAS_NODE_PORT,
+  LANGGRAPH_CANVAS_NODE_STATE_GLOBAL,
+  LANGGRAPH_CANVAS_NODE_LLM,
+  LANGGRAPH_CANVAS_NODE_TOOL,
+  LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+  LANGGRAPH_CANVAS_NODE_AGENT,
 } from "../constants";
 
 export const langGraphCanvasNodeTypes = {
-  [SUB_CANVAS_NODE_STEP]: LangGraphCanvasStepNode,
-  [SUB_CANVAS_NODE_START]: LangGraphCanvasStartNode,
-  [SUB_CANVAS_NODE_PORT]: LangGraphCanvasPortNode,
-  [SUB_CANVAS_NODE_STATE_GLOBAL]: LangGraphCanvasStateNode,
-  [SUB_CANVAS_NODE_LLM]: LangGraphCanvasLLMNode,
-  [SUB_CANVAS_NODE_TOOL]: LangGraphCanvasToolNode,
-  [SUB_CANVAS_NODE_MIDDLEWARE]: LangGraphCanvasMiddlewareNode,
-  [SUB_CANVAS_NODE_AGENT]: LangGraphCanvasAgentNode,
+  [LANGGRAPH_CANVAS_NODE_STEP]: LangGraphCanvasStepNode,
+  [LANGGRAPH_CANVAS_NODE_START]: LangGraphCanvasStartNode,
+  [LANGGRAPH_CANVAS_NODE_PORT]: LangGraphCanvasPortNode,
+  [LANGGRAPH_CANVAS_NODE_STATE_GLOBAL]: LangGraphCanvasStateNode,
+  [LANGGRAPH_CANVAS_NODE_LLM]: LangGraphCanvasLLMNode,
+  [LANGGRAPH_CANVAS_NODE_TOOL]: LangGraphCanvasToolNode,
+  [LANGGRAPH_CANVAS_NODE_MIDDLEWARE]: LangGraphCanvasMiddlewareNode,
+  [LANGGRAPH_CANVAS_NODE_AGENT]: LangGraphCanvasAgentNode,
 };
 
 export {

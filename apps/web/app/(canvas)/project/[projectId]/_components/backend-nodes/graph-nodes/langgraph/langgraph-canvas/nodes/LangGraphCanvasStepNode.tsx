@@ -4,13 +4,13 @@ import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check, Wrench,
 import { Switch } from "@workspace/ui/components/switch";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode } from "../types";
 import {
-  SUB_CANVAS_NODE_STEP,
-  SUB_CANVAS_NODE_LLM,
+  LANGGRAPH_CANVAS_NODE_STEP,
+  LANGGRAPH_CANVAS_NODE_LLM,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
   HANDLE_TOOL_IN,
   HANDLE_TOOL_OUT,
-  SUB_CANVAS_NODE_TOOL,
+  LANGGRAPH_CANVAS_NODE_TOOL,
   STEP_TYPE_CUSTOM_CODE,
   STEP_TYPE_ROUTER,
   LLM_PROVIDER_OTHER,
@@ -46,7 +46,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     const currentBranches = data.routerConfig?.branches || [];
     setNodes((nds: LangGraphCanvasNode[]) =>
       nds.map((n: LangGraphCanvasNode) =>
-        n.id === id && n.type === SUB_CANVAS_NODE_STEP
+        n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP
           ? { ...n, data: { ...n.data, routerConfig: { branches: [...currentBranches, newBranch] } } }
           : n
       )
@@ -62,7 +62,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     } else {
       setNodes((nds: LangGraphCanvasNode[]) =>
         nds.map((n: LangGraphCanvasNode) => {
-          if (n.id === id && n.type === SUB_CANVAS_NODE_STEP) {
+          if (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP) {
             const branches = (n.data.routerConfig?.branches || []).map((b) =>
               b.id === branchId ? { ...b, label: trimmed } : b
             );
@@ -78,7 +78,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const handleDeleteRoute = (branchId: string) => {
     setNodes((nds: LangGraphCanvasNode[]) =>
       nds.map((n: LangGraphCanvasNode) => {
-        if (n.id === id && n.type === SUB_CANVAS_NODE_STEP) {
+        if (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP) {
           const branches = (n.data.routerConfig?.branches || []).filter((b) => b.id !== branchId);
           return { ...n, data: { ...n.data, routerConfig: { branches } } };
         }
@@ -91,26 +91,26 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   };
 
   // Detect LLM nodes on canvas
-  const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === SUB_CANVAS_NODE_LLM);
+  const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === LANGGRAPH_CANVAS_NODE_LLM);
 
   // Detect edge connected directly from an LLM node to this step node's llm_in handle
   const connectedEdge = allEdges.find(
     (e: Edge) =>
       e.target === id &&
       e.targetHandle === HANDLE_LLM_IN &&
-      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === SUB_CANVAS_NODE_LLM)
+      allNodes.some((n: LangGraphCanvasNode) => n.id === e.source && n.type === LANGGRAPH_CANVAS_NODE_LLM)
   );
   const connectedLLMNode = connectedEdge ? langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === connectedEdge.source) : null;
 
   // Detect tool nodes on canvas
-  const langGraphToolNodes = allNodes.filter((n): n is any => n.type === SUB_CANVAS_NODE_TOOL);
+  const langGraphToolNodes = allNodes.filter((n): n is any => n.type === LANGGRAPH_CANVAS_NODE_TOOL);
   
   // Detect edges connected from tool nodes to this step node's tool_in handle
   const connectedToolEdges = allEdges.filter(
     (e: Edge) =>
       e.target === id &&
       e.targetHandle === HANDLE_TOOL_IN &&
-      allNodes.some((n) => n.id === e.source && n.type === SUB_CANVAS_NODE_TOOL)
+      allNodes.some((n) => n.id === e.source && n.type === LANGGRAPH_CANVAS_NODE_TOOL)
   );
   
   const connectedToolNodes = connectedToolEdges
@@ -146,7 +146,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     const trimmed = nameValue.trim() || "Node";
     setNameValue(trimmed);
     if (trimmed !== data.label) {
-      setNodes((nds: LangGraphCanvasNode[]) => nds.map((n: LangGraphCanvasNode) => (n.id === id && n.type === SUB_CANVAS_NODE_STEP ? { ...n, data: { ...n.data, label: trimmed } } : n)));
+      setNodes((nds: LangGraphCanvasNode[]) => nds.map((n: LangGraphCanvasNode) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP ? { ...n, data: { ...n.data, label: trimmed } } : n)));
     }
   };
 
@@ -155,7 +155,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const handleUpdateModelConfig = (updates: Partial<NonNullable<StepNodeData["modelConfig"]>> | null) => {
     setNodes((nds: LangGraphCanvasNode[]) =>
       nds.map((n: LangGraphCanvasNode) => {
-        if (n.id === id && n.type === SUB_CANVAS_NODE_STEP) {
+        if (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP) {
           if (updates === null) {
             const { modelConfig, ...restData } = n.data;
             return { ...n, data: restData };

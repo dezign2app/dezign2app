@@ -320,6 +320,15 @@ export const langgraphConvexDataValidator = v.object({
         name: v.string(),
         systemPrompt: v.optional(v.string()),
         modelConfig: v.optional(v.any()),
+        streamConfig: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            version: v.optional(v.string()),
+            selectedEvents: v.optional(v.array(v.string())),
+            eventSignature: v.optional(v.string()),
+            customTransformers: v.optional(v.string()),
+          })
+        ),
         tools: v.optional(v.array(v.string())),
         middleware: v.optional(v.array(v.string())),
         position: v.optional(v.object({ x: v.number(), y: v.number() })),

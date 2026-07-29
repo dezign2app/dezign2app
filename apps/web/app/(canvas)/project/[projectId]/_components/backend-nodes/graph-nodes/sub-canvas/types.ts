@@ -6,13 +6,22 @@ import type {
   LangGraphInputChannel,
   LangGraphMiddlewareDefinition,
   LangGraphAgentDefinition,
+  LangGraphAgentStreamConfig,
+  LangGraphEventStreamType,
   ToolSource,
   ToolReturnType,
   StateUpdateMode,
   StoreOperation,
 } from "@/types/canvas";
 
-export type { ToolSource, ToolReturnType, StateUpdateMode, StoreOperation };
+export type {
+  ToolSource,
+  ToolReturnType,
+  StateUpdateMode,
+  StoreOperation,
+  LangGraphAgentStreamConfig,
+  LangGraphEventStreamType,
+};
 
 export type MiddlewareNodeData = LangGraphMiddlewareDefinition & {
   label: string;

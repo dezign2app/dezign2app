@@ -789,12 +789,21 @@ export const middlewareDefinitionSchema = z.object({
 });
 export type MiddlewareDefinition = z.infer<typeof middlewareDefinitionSchema>;
 
+export const streamConfigSchema = z.object({
+  enabled: z.boolean().optional().default(false),
+  version: z.string().optional().default("v3"),
+  selectedEvents: z.array(z.string()).optional(),
+  eventSignature: z.string().optional(),
+  customTransformers: z.string().optional(),
+}).optional();
+
 export const agentDefinitionSchema = z.object({
   id: z.string().optional(),
   agentId: z.string().optional(),
   name: z.string(),
   systemPrompt: z.string().optional(),
   modelConfig: z.any().optional(),
+  streamConfig: streamConfigSchema,
   tools: z.array(z.string()).optional().default([]),
   middleware: z.array(z.string()).optional().default([]),
   position: z.object({ x: z.number(), y: z.number() }).optional(),

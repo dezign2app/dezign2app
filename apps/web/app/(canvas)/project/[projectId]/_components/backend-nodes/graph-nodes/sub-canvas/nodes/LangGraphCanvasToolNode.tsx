@@ -62,6 +62,14 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
           : "border-border hover:border-emerald-500/40 hover:shadow-emerald-500/5"
       }`}
     >
+      <Handle
+        type="source"
+        position={Position.Top}
+        id={HANDLE_TOOL_OUT}
+        style={{ left: "50%" }}
+        className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        title="Connect to Step or Agent node tools"
+      />
       <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="p-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 shrink-0">
@@ -164,14 +172,6 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
       </div>
 
       <div className="px-3 py-2 flex flex-col gap-2 relative">
-        <Handle
-          type="source"
-          position={Position.Right}
-          id={HANDLE_TOOL_OUT}
-          className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
-          title="Connect to Step node tools"
-        />
-
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary/30 border border-border/50 text-[10px] font-medium text-foreground">
             {getSourceIcon()}

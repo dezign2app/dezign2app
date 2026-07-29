@@ -149,4 +149,104 @@ export {
   DEFAULT_LLM_TEMPERATURE,
 };
 
+// ─── Event Stream Defaults & Constants ─────────────────────────────────────────
+export const DEFAULT_EVENT_STREAM_SIGNATURE = JSON.stringify(
+  {
+    event: "{{event}}",
+    agent: "{{agent_name}}",
+    run_id: "{{run_id}}",
+    timestamp: "{{timestamp}}",
+    data: {
+      delta: "{{delta}}",
+      content: "{{content}}",
+      tool: "{{tool_name}}",
+      inputs: "{{inputs}}",
+      output: "{{output}}",
+      usage: "{{usage}}"
+    }
+  },
+  null,
+  2
+);
+
+export const DEFAULT_STREAM_TRANSFORMERS = `// LangChain streamEvents (version: "v3") transformer configuration
+// Enables frontend-friendly SSE projections
+export async function* customEventStreamTransformer(eventStream) {
+  for await (const event of eventStream) {
+    yield {
+      event: event.event,
+      timestamp: new Date().toISOString(),
+      payload: event.data
+    };
+  }
+}`;
+
+export const STREAM_EVENT_TYPES = [
+  {
+    id: "stream.messages",
+    label: "stream.messages",
+    description: "LLM Model message streams (one stream per LLM call)",
+    badge: "LLM Streams"
+  },
+  {
+    id: "message.text",
+    label: "message.text",
+    description: "Text token deltas & final message text chunks",
+    badge: "Text Deltas"
+  },
+  {
+    id: "message.reasoning",
+    label: "message.reasoning",
+    description: "Reasoning / thinking deltas for CoT models",
+    badge: "Reasoning"
+  },
+  {
+    id: "message.toolCalls",
+    label: "message.toolCalls",
+    description: "Live tool-call argument deltas while model streams",
+    badge: "Tool Call Chunks"
+  },
+  {
+    id: "stream.toolCalls",
+    label: "stream.toolCalls",
+    description: "Tool execution lifecycle (start, inputs, outputs, errors)",
+    badge: "Tool Execution"
+  },
+  {
+    id: "stream.values",
+    label: "stream.values",
+    description: "Agent state snapshots emitted after graph node steps",
+    badge: "State Snapshots"
+  },
+  {
+    id: "stream.output",
+    label: "stream.output",
+    description: "Final agent state output once graph run completes",
+    badge: "Final Output"
+  },
+  {
+    id: "stream.subagents",
+    label: "stream.subagents",
+    description: "Nested sub-agent event streams & execution",
+    badge: "Sub-Agents"
+  },
+  {
+    id: "stream.extensions",
+    label: "stream.extensions",
+    description: "Custom stream transformer projections & custom updates",
+    badge: "Custom Extensions"
+  }
+];
+
+export const DEFAULT_SELECTED_STREAM_EVENTS = [
+  "stream.messages",
+  "message.text",
+  "message.reasoning",
+  "message.toolCalls",
+  "stream.toolCalls",
+  "stream.values",
+  "stream.output"
+];
+
+
 

@@ -282,6 +282,7 @@ export type LangGraphStepConfig = {
     value?: string;
     mode?: "set" | "append" | "expression";
   }[];
+  position?: { x: number; y: number };
 };
 
 export type LangGraphEdgeConfig = {

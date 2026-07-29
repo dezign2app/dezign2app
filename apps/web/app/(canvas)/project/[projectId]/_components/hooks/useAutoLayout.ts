@@ -6,22 +6,41 @@ import { useBackendCanvasStore } from '@/lib/stores/backendCanvasStore';
 const nodeWidth = 250;
 const nodeHeight = 150;
 
-export function useAutoLayout() {
+interface UseAutoLayoutOptions {
+  nodes?: Node[];
+  edges?: Edge[];
+  onNodesChange?: (changes: any[]) => void;
+}
+
+export function useAutoLayout(options?: UseAutoLayoutOptions) {
   const { fitView } = useReactFlow();
-  const { nodes, edges, onNodesChange } = useBackendCanvasStore();
+  const store = useBackendCanvasStore();
+
+  const nodes = options?.nodes ?? store.nodes;
+  const edges = options?.edges ?? store.edges;
+  const onNodesChange = options?.onNodesChange ?? store.onNodesChange;
 
   const handleLayout = useCallback(
     (direction = 'LR') => {
       const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
       
       const isHorizontal = direction === 'LR';
-      dagreGraph.setGraph({ rankdir: direction, marginx: 50, marginy: 50 });
+      dagreGraph.setGraph({
+        rankdir: direction,
+        marginx: 60,
+        marginy: 60,
+        ranksep: isHorizontal ? 120 : 80,
+        nodesep: isHorizontal ? 60 : 80,
+      });
 
       nodes.forEach((node) => {
-        // We use node.measured width and height if they are available
+        // We use node.measured width and height if available, or type-specific estimates
         const measuredNode = node as typeof node & { measured?: { width?: number; height?: number } };
-        const width = measuredNode.measured?.width ?? nodeWidth;
-        const height = measuredNode.measured?.height ?? nodeHeight;
+        const fallbackWidth = node.type === 'start' || node.id === 'START' ? 180 : node.type === 'state_global' || node.id === 'STATE_GLOBAL' ? 240 : 320;
+        const fallbackHeight = node.type === 'start' || node.id === 'START' ? 70 : node.type === 'state_global' || node.id === 'STATE_GLOBAL' ? 140 : 220;
+
+        const width = measuredNode.measured?.width ?? fallbackWidth;
+        const height = measuredNode.measured?.height ?? fallbackHeight;
         dagreGraph.setNode(node.id, { width, height });
       });
 
@@ -34,8 +53,11 @@ export function useAutoLayout() {
       const nodeChanges = nodes.map((node) => {
         const nodeWithPosition = dagreGraph.node(node.id);
         const measuredNode = node as typeof node & { measured?: { width?: number; height?: number } };
-        const width = measuredNode.measured?.width ?? nodeWidth;
-        const height = measuredNode.measured?.height ?? nodeHeight;
+        const fallbackWidth = node.type === 'start' || node.id === 'START' ? 180 : node.type === 'state_global' || node.id === 'STATE_GLOBAL' ? 240 : 320;
+        const fallbackHeight = node.type === 'start' || node.id === 'START' ? 70 : node.type === 'state_global' || node.id === 'STATE_GLOBAL' ? 140 : 220;
+
+        const width = measuredNode.measured?.width ?? fallbackWidth;
+        const height = measuredNode.measured?.height ?? fallbackHeight;
 
         // In groups/parent nodes, positions should be relative. 
         // For simplicity, dagre layout applies to top-level elements cleanly.

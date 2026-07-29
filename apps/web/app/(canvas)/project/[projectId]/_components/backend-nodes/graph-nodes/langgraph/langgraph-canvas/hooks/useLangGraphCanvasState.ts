@@ -233,7 +233,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       const stepNode: StepNode = {
         id: step.id,
         type: LANGGRAPH_CANVAS_NODE_STEP,
-        position: { x: 420 + idx * 280, y: 190 + (idx % 2 === 0 ? 0 : 60) },
+        position: step.position || { x: 420 + idx * 280, y: 190 + (idx % 2 === 0 ? 0 : 60) },
         data: {
           label: step.name,
           stepId: step.id,
@@ -897,6 +897,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         tools: edges
           .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
           .map((e) => e.source),
+        position: n.position,
       }));
 
     const graphEdges: LangGraphEdgeConfig[] = edges

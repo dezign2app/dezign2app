@@ -469,8 +469,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         const sourceHandle = isLLM ? HANDLE_LLM_OUT : isTool ? HANDLE_TOOL_OUT : isMiddleware ? HANDLE_MIDDLEWARE_OUT : params.sourceHandle;
         const targetHandle = isLLM ? HANDLE_LLM_IN : isTool ? HANDLE_TOOL_IN : isMiddleware ? HANDLE_MIDDLEWARE_IN : params.targetHandle;
 
+        const fieldStr = routerBranch?.field ? (routerBranch.field.startsWith("state.") ? routerBranch.field : `state.${routerBranch.field}`) : "state";
         const label = routerBranch
-          ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${routerBranch.field || "state"} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
+          ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${fieldStr} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
           : undefined;
 
         const style = isLLM
@@ -639,10 +640,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         ...(type === STEP_TYPE_ROUTER
           ? {
               routerConfig: {
-                branches: [
-                  { id: `b_${Date.now()}_1`, label: "Value == true", field: "messages", operator: "eq", value: "true" },
-                  { id: `b_${Date.now()}_def`, label: "Default Branch", field: "", operator: "eq", value: "", isDefault: true },
-                ],
+                branches: [],
               },
             }
           : {

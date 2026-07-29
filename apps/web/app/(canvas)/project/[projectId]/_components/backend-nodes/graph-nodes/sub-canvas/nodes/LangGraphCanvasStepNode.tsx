@@ -195,12 +195,13 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
           : "border-border hover:border-border/80"
       }`}
     >
-      <div className={`flex items-center justify-between gap-2 p-3 border-b border-border/50 rounded-t-xl ${stepType === STEP_TYPE_ROUTER ? "bg-sky-500/10 text-sky-700 dark:text-sky-400" : "bg-secondary/20"}`}>
+      <div className={`flex items-center justify-between gap-2 p-3 border-b border-border/50 rounded-t-xl relative ${stepType === STEP_TYPE_ROUTER ? "bg-sky-500/10 text-sky-700 dark:text-sky-400" : "bg-secondary/20"}`}>
         <Handle
           type="target"
           position={Position.Left}
           id="in"
           className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+          style={{ top: "22px" }}
           title="Incoming connection"
         />
 
@@ -440,7 +441,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
 
       {/* Conditional Routes List (Styled like ServiceNode Endpoints list) */}
       {stepType === STEP_TYPE_ROUTER && (
-        <div className="flex flex-col rounded-b-xl overflow-hidden border-t border-border/50">
+        <div className="flex flex-col rounded-b-xl border-t border-border/50">
           <div className="px-3 py-1 bg-secondary/40 border-b border-border/50 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex justify-between items-center group nodrag">
             <span className="flex items-center gap-1 text-sky-400">
               <GitBranch className="w-3.5 h-3.5" /> Conditional Routes
@@ -460,10 +461,11 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
           <div className="flex flex-col">
             {(data.routerConfig?.branches || []).map((branch, bIdx) => {
               const isEditingThisRoute = editingRouteId === branch.id;
+              const routeId = branch.id || `b_${bIdx}`;
 
               return (
                 <div
-                  key={branch.id || bIdx}
+                  key={routeId}
                   className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 border-border/40 text-xs relative group/row hover:bg-secondary/20 nodrag"
                 >
                   {isEditingThisRoute ? (
@@ -515,7 +517,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                           {branch.label || `Route ${bIdx + 1}`}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground truncate">
-                          {`${branch.field || "output"} ${branch.operator} '${branch.value ?? ""}'`}
+                          {`${branch.field ? (branch.field.startsWith("state.") ? branch.field : `state.${branch.field}`) : "state.variable"} ${branch.operator} '${branch.value ?? ""}'`}
                         </span>
                       </div>
 
@@ -549,10 +551,10 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                   <Handle
                     type="source"
                     position={Position.Right}
-                    id={branch.id}
-                    className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-background !-right-[5px] hover:!scale-125 transition-transform"
+                    id={routeId}
+                    className="!w-3 !h-3 !bg-white !border-2 !border-background !-right-[6px] hover:!scale-125 transition-transform z-10"
                     style={{ top: "50%" }}
-                    title={`Connect route: ${branch.label || "Route"}`}
+                    title={`Connect route: ${branch.label || `Route ${bIdx + 1}`}`}
                   />
                 </div>
               );

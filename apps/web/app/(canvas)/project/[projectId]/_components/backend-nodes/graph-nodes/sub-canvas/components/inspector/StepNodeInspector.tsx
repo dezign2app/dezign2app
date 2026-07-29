@@ -109,6 +109,7 @@ export function StepNodeInspector({
         <RouterNodeInspector
           selectedStepData={selectedStepData}
           onUpdateStep={onUpdateStep}
+          stateChannels={stateChannels}
         />
       )}
 

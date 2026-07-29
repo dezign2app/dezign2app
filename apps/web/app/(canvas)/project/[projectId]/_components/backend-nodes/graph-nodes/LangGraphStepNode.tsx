@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, Connection } from "@xyflow/react";
-import { Brain, Trash2, Wrench, Code2, Database } from "lucide-react";
+import { Brain, Trash2, Wrench, Code2, Database, GitBranch, Plus, X } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
@@ -23,6 +23,7 @@ import {
   STEP_TYPE_HUMAN_GATE,
   STEP_TYPE_CUSTOM_CODE,
   STEP_TYPE_VECTOR_SEARCH,
+  STEP_TYPE_ROUTER,
 } from "@workspace/canvas/constants";
 
 const DEFAULT_STEP_LABEL = "Graph Step";
@@ -98,6 +99,8 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         "rounded-xl bg-card/95 backdrop-blur-md border-2 min-w-[200px] max-w-[260px] p-3 flex flex-col gap-2 transition-all duration-200 shadow-lg relative group",
         selected
           ? "border-emerald-400 ring-2 ring-emerald-400/20 shadow-emerald-500/10"
+          : stepType === STEP_TYPE_ROUTER
+          ? "border-sky-500/40 shadow-sky-500/10"
           : "border-emerald-500/30 hover:border-emerald-400/70"
       )}
     >
@@ -108,15 +111,22 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           position={Position.Left}
           id="input"
           className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+          style={{ top: "16px" }}
           title="Incoming connection"
         />
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <div className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+          <div className={cn(
+            "p-1 rounded border shrink-0",
+            stepType === STEP_TYPE_ROUTER
+              ? "bg-sky-500/20 text-sky-400 border-sky-500/30"
+              : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+          )}>
             {stepType === STEP_TYPE_LLM_CALL && <Brain className="w-3.5 h-3.5" />}
             {stepType === STEP_TYPE_TOOL_NODE && <Wrench className="w-3.5 h-3.5" />}
             {stepType === STEP_TYPE_CUSTOM_CODE && <Code2 className="w-3.5 h-3.5" />}
             {stepType === STEP_TYPE_VECTOR_SEARCH && <Database className="w-3.5 h-3.5" />}
-            {stepType !== STEP_TYPE_LLM_CALL && stepType !== STEP_TYPE_TOOL_NODE && stepType !== STEP_TYPE_CUSTOM_CODE && stepType !== STEP_TYPE_VECTOR_SEARCH && (
+            {stepType === STEP_TYPE_ROUTER && <GitBranch className="w-3.5 h-3.5" />}
+            {stepType !== STEP_TYPE_LLM_CALL && stepType !== STEP_TYPE_TOOL_NODE && stepType !== STEP_TYPE_CUSTOM_CODE && stepType !== STEP_TYPE_VECTOR_SEARCH && stepType !== STEP_TYPE_ROUTER && (
               <Brain className="w-3.5 h-3.5" />
             )}
           </div>
@@ -184,6 +194,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
           <SelectContent>
             <SelectItem value={STEP_TYPE_LLM_CALL}>LLM Reasoner</SelectItem>
             <SelectItem value={STEP_TYPE_TOOL_NODE}>Tool Node</SelectItem>
+            <SelectItem value={STEP_TYPE_ROUTER}>Conditional Router</SelectItem>
             <SelectItem value={STEP_TYPE_EVALUATOR}>Evaluator</SelectItem>
             <SelectItem value={STEP_TYPE_SUMMARIZER}>Summarizer</SelectItem>
             <SelectItem value={STEP_TYPE_HUMAN_GATE}>Human Gate</SelectItem>
@@ -193,58 +204,141 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         </Select>
       </div>
 
-      {/* LLM Config Toggle Section */}
-      <div className="flex flex-col gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
-        <div className="flex items-center justify-between gap-2">
-          <Handle
-            type="target"
-            position={Position.Left}
-            id={HANDLE_LLM_IN}
-            isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
-            className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-            title="Connect LLM node"
-          />
-          <div className="flex items-center gap-1.5">
-            <Brain className="w-3.5 h-3.5 text-emerald-400" />
-            <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
-              LLM Config
-            </Label>
-          </div>
-          <Switch
-            id={`llm-switch-${id}`}
-            checked={isLLMEnabled}
-            onCheckedChange={handleToggleLLMConfig}
-            className="nodrag scale-75 origin-right"
-          />
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="output"
-            className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
-            title="Outgoing connection"
-          />
-        </div>
-
-        {isLLMEnabled && (
-          <div className="flex flex-col gap-1 mt-1 nodrag">
-            <Label className="text-[10px] text-muted-foreground font-medium uppercase">
-              AI Instructions
-            </Label>
-            <LocalTextarea
-              className="min-h-[60px] text-xs bg-background/50 border-emerald-500/30 p-2 resize-y nodrag placeholder:text-muted-foreground/50 focus-visible:ring-emerald-400/50"
-              placeholder="Enter AI instructions..."
-              value={data.modelConfig?.systemPrompt || ""}
-              onChange={(e) => handleUpdateSystemPrompt(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
+      {/* LLM Config Toggle Section - Only for non-router nodes */}
+      {stepType !== STEP_TYPE_ROUTER && (
+        <div className="flex flex-col gap-2 border-t border-border/40 pt-2 mt-1 nodrag relative">
+          <div className="flex items-center justify-between gap-2">
+            <Handle
+              type="target"
+              position={Position.Left}
+              id={HANDLE_LLM_IN}
+              isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
+              className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+              title="Connect LLM node"
+            />
+            <div className="flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 text-emerald-400" />
+              <Label htmlFor={`llm-switch-${id}`} className="text-[10px] font-semibold text-muted-foreground uppercase cursor-pointer">
+                LLM Config
+              </Label>
+            </div>
+            <Switch
+              id={`llm-switch-${id}`}
+              checked={isLLMEnabled}
+              onCheckedChange={handleToggleLLMConfig}
+              className="nodrag scale-75 origin-right"
+            />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="output"
+              className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
+              title="Outgoing connection"
             />
           </div>
-        )}
-      </div>
 
-      {/* Tools Badge */}
-      {(data.tools?.length ?? 0) > 0 && (
+          {isLLMEnabled && (
+            <div className="flex flex-col gap-1 mt-1 nodrag">
+              <Label className="text-[10px] text-muted-foreground font-medium uppercase">
+                AI Instructions
+              </Label>
+              <LocalTextarea
+                className="min-h-[60px] text-xs bg-background/50 border-emerald-500/30 p-2 resize-y nodrag placeholder:text-muted-foreground/50 focus-visible:ring-emerald-400/50"
+                placeholder="Enter AI instructions..."
+                value={data.modelConfig?.systemPrompt || ""}
+                onChange={(e) => handleUpdateSystemPrompt(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Conditional Routes List - For router nodes */}
+      {stepType === STEP_TYPE_ROUTER && (
+        <div className="flex flex-col border-t border-border/40 pt-2 mt-1">
+          <div className="flex items-center justify-between text-[10px] font-bold text-sky-400 uppercase tracking-wider px-1 mb-1">
+            <span className="flex items-center gap-1">
+              <GitBranch className="w-3.5 h-3.5 text-sky-400" /> Routes
+            </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-4 w-4 text-muted-foreground hover:text-foreground nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                const newBranchId = `b_${Date.now()}`;
+                const newBranch = {
+                  id: newBranchId,
+                  label: `Route ${(data.routerConfig?.branches?.length || 0) + 1}`,
+                  field: "messages",
+                  operator: "eq" as const,
+                  value: "",
+                  isDefault: false,
+                };
+                const currentBranches = data.routerConfig?.branches || [];
+                updateNode(id, {
+                  data: {
+                    ...data,
+                    routerConfig: { branches: [...currentBranches, newBranch] },
+                  },
+                });
+              }}
+              title="Add Route"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            {(data.routerConfig?.branches || []).map((branch, bIdx) => {
+              const routeId = branch.id || `b_${bIdx}`;
+              return (
+                <div
+                  key={routeId}
+                  className="flex items-center justify-between px-2 py-1 bg-background/50 border border-sky-500/30 rounded text-xs relative group/route nodrag"
+                >
+                  <span className="font-medium text-foreground text-[11px] truncate max-w-[140px]">
+                    {branch.label || `Route ${bIdx + 1}`}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-4 w-4 text-muted-foreground hover:text-destructive opacity-0 group-hover/route:opacity-100 transition-opacity nodrag"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = (data.routerConfig?.branches || []).filter((b) => (b.id || `b_${bIdx}`) !== routeId);
+                      updateNode(id, { data: { ...data, routerConfig: { branches: updated } } });
+                    }}
+                    title="Delete Route"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={routeId}
+                    className="!w-3 !h-3 !bg-sky-400 !border-2 !border-background !-right-[6px] hover:!scale-125 transition-transform z-10"
+                    style={{ top: "50%" }}
+                    title={`Connect route: ${branch.label || `Route ${bIdx + 1}`}`}
+                  />
+                </div>
+              );
+            })}
+
+            {(!data.routerConfig?.branches || data.routerConfig.branches.length === 0) && (
+              <span className="text-[10px] text-muted-foreground italic text-center py-1">
+                No routes defined. Click + to add.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tools Badge - Only for non-router nodes */}
+      {stepType !== STEP_TYPE_ROUTER && (data.tools?.length ?? 0) > 0 && (
         <div className="flex items-center justify-between gap-2 border-t border-border/40 py-2 px-1 nodrag">
           <div className="flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-emerald-500" />

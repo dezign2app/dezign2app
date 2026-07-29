@@ -747,7 +747,7 @@ export interface LangGraphAgentDefinition {
 /** LangGraph Step node fields — child step nodes inside a graph (canvas type). */
 export interface CanvasLangGraphStepNodeData {
   stepId?: string;
-  stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search";
+  stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search" | "router";
   modelConfig?: LangGraphStepConfig["modelConfig"];
   humanGateConfig?: {
     approvalPrompt: string;
@@ -763,6 +763,7 @@ export interface CanvasLangGraphStepNodeData {
     timeoutMs?: number;
     memoryLimitMb?: number;
   };
+  routerConfig?: LangGraphStepConfig["routerConfig"];
 }
 
 /**

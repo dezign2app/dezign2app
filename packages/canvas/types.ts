@@ -777,6 +777,15 @@ export interface LangGraphAgentDefinition {
   name: string;
   systemPrompt?: string;
   modelConfig?: LangGraphStepConfig["modelConfig"];
+  llmConfig?: {
+    enabled?: boolean;
+    provider?: string;
+    model?: string;
+    temperature?: number;
+  };
+  stateUpdatesConfig?: {
+    enabled?: boolean;
+  };
   streamConfig?: LangGraphAgentStreamConfig;
   responseFormat?: LangGraphAgentResponseFormatConfig;
   memoryConfig?: LangGraphAgentMemoryConfig;

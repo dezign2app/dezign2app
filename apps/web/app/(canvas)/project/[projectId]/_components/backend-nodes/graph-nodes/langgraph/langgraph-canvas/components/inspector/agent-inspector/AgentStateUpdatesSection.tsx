@@ -2,6 +2,7 @@ import React from "react";
 import { Zap, Plus, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { Switch } from "@workspace/ui/components/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { AgentNodeData } from "../../../types";
@@ -20,29 +21,51 @@ export function AgentStateUpdatesSection({
   stateChannels = [],
 }: AgentStateUpdatesSectionProps) {
   const stateUpdates: StateUpdateItem[] = selectedAgentData.stateUpdates || [];
+  const stateUpdatesConfig = {
+    enabled: selectedAgentData.stateUpdatesConfig?.enabled !== false,
+  };
+  const isEnabled = stateUpdatesConfig.enabled;
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5 text-amber-500" /> Graph State Updates
         </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs border-border gap-1"
-          onClick={() => {
-            const defaultKey = stateChannels[0]?.key || "messages";
-            onUpdateAgent({
-              stateUpdates: [...stateUpdates, { channelKey: defaultKey, mode: "set", value: "" }],
-            });
-          }}
-        >
-          <Plus className="w-3.5 h-3.5" /> Add Update
-        </Button>
+        <div className="flex items-center gap-2">
+          {isEnabled && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-border gap-1"
+              onClick={() => {
+                const defaultKey = stateChannels[0]?.key || "messages";
+                onUpdateAgent({
+                  stateUpdates: [...stateUpdates, { channelKey: defaultKey, mode: "set", value: "" }],
+                });
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Update
+            </Button>
+          )}
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={(checked: boolean) => {
+              onUpdateAgent({
+                stateUpdatesConfig: {
+                  ...stateUpdatesConfig,
+                  enabled: checked,
+                },
+              });
+            }}
+            className="scale-90"
+          />
+        </div>
       </div>
 
-      {stateUpdates.map((su: StateUpdateItem, sIdx: number) => (
+      {isEnabled && (
+        <>
+          {stateUpdates.map((su: StateUpdateItem, sIdx: number) => (
         <div key={sIdx} className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs">
           <div className="flex items-center justify-between gap-1.5">
             <Select
@@ -125,6 +148,8 @@ export function AgentStateUpdatesSection({
         <span className="text-xs text-muted-foreground italic text-center py-1">
           No graph state updates configured for this Agent.
         </span>
+      )}
+        </>
       )}
     </div>
   );

@@ -43,6 +43,15 @@ export type MemoryNodeData = LangGraphMemoryDefinition & {
 
 export type AgentNodeData = LangGraphAgentDefinition & {
   label: string;
+  llmConfig?: {
+    enabled?: boolean;
+    provider?: string;
+    model?: string;
+    temperature?: number;
+  };
+  stateUpdatesConfig?: {
+    enabled?: boolean;
+  };
   stateUpdates?: {
     channelKey: string;
     mode?: StateUpdateMode;

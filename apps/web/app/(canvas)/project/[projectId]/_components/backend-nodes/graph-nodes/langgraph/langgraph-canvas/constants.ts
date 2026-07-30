@@ -64,9 +64,13 @@ export const LANGGRAPH_CANVAS_NODE_LLM          = "langgraph_llm" as const;
 export const LANGGRAPH_CANVAS_NODE_TOOL         = "langgraph_tool" as const;
 export const LANGGRAPH_CANVAS_NODE_MIDDLEWARE   = "langgraph_middleware" as const;
 export const LANGGRAPH_CANVAS_NODE_AGENT        = "langgraph_agent" as const;
+export const LANGGRAPH_CANVAS_NODE_MEMORY       = "langgraph_memory" as const;
 
 export const HANDLE_MIDDLEWARE_IN  = "middleware_in" as const;
 export const HANDLE_MIDDLEWARE_OUT = "middleware_out" as const;
+
+export const HANDLE_MEMORY_IN      = "memory_in" as const;
+export const HANDLE_MEMORY_OUT     = "memory_out" as const;
 
 export const HANDLE_OUTPUT_IN  = "output_in" as const;
 export const HANDLE_OUTPUT_OUT = "output_out" as const;

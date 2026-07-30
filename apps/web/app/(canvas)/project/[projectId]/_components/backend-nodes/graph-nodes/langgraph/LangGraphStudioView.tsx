@@ -19,7 +19,7 @@ import { LangGraphCanvasHeader } from "./langgraph-canvas/components/LangGraphCa
 import { ToolsSidebar } from "./langgraph-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./langgraph-canvas/components/InspectorSidebar";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
-import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN } from "./langgraph-canvas/constants";
+import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN, HANDLE_MEMORY_IN } from "./langgraph-canvas/constants";
 
 interface LangGraphStudioViewProps {
   node: BackendNode;
@@ -48,6 +48,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     selectedToolData,
     selectedMiddlewareData,
     selectedAgentData,
+    selectedMemoryData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -58,6 +59,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     updateSelectedTool,
     updateSelectedMiddleware,
     updateSelectedAgent,
+    updateSelectedMemory,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
@@ -65,9 +67,11 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     availableLLMNodes,
     availableToolNodes,
     availableMiddlewareNodes,
+    availableMemoryNodes,
     handleSelectLLMForAgent,
     handleToggleToolForAgent,
     handleToggleMiddlewareForAgent,
+    handleToggleMemoryForAgent,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
   const { handleLayout } = useAutoLayout({ nodes, edges, onNodesChange });
@@ -89,6 +93,13 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     if (!selectedNodeId) return [];
     return edges
       .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+      .map((e) => e.source);
+  }, [edges, selectedNodeId]);
+
+  const connectedMemoryIds = useMemo(() => {
+    if (!selectedNodeId) return [];
+    return edges
+      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MEMORY_IN)
       .map((e) => e.source);
   }, [edges, selectedNodeId]);
 
@@ -194,23 +205,28 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           selectedToolData={selectedToolData}
           selectedMiddlewareData={selectedMiddlewareData}
           selectedAgentData={selectedAgentData}
+          selectedMemoryData={selectedMemoryData}
           connectedToolsCount={connectedToolsCount}
           connectedMiddlewareCount={connectedMiddlewareCount}
           availableLLMNodes={availableLLMNodes}
           availableToolNodes={availableToolNodes}
           availableMiddlewareNodes={availableMiddlewareNodes}
+          availableMemoryNodes={availableMemoryNodes}
           connectedLLMId={connectedLLMId}
           connectedToolIds={connectedToolIds}
           connectedMiddlewareIds={connectedMiddlewareIds}
+          connectedMemoryIds={connectedMemoryIds}
           onSelectLLM={(llmId) => selectedNodeId && handleSelectLLMForAgent(selectedNodeId, llmId)}
           onToggleTool={(toolId, connect) => selectedNodeId && handleToggleToolForAgent(selectedNodeId, toolId, connect)}
           onToggleMiddleware={(mwId, connect) => selectedNodeId && handleToggleMiddlewareForAgent(selectedNodeId, mwId, connect)}
+          onToggleMemory={(memId, connect) => selectedNodeId && handleToggleMemoryForAgent(selectedNodeId, memId, connect)}
           onDeleteStep={handleDeleteStep}
           onUpdateStep={updateSelectedStep}
           onUpdateLLM={updateSelectedLLM}
           onUpdateTool={updateSelectedTool}
           onUpdateMiddleware={updateSelectedMiddleware}
           onUpdateAgent={updateSelectedAgent}
+          onUpdateMemory={updateSelectedMemory}
           inputChannels={inputChannels}
           setInputChannels={setInputChannels}
           stateChannels={stateChannels}

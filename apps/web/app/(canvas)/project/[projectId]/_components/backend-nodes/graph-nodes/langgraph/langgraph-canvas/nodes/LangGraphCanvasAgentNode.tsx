@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
+import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_AGENT,
   HANDLE_LLM_IN,
@@ -11,6 +13,8 @@ import {
   HANDLE_TOOL_OUT,
   HANDLE_MIDDLEWARE_IN,
   HANDLE_MIDDLEWARE_OUT,
+  HANDLE_MEMORY_IN,
+  HANDLE_MEMORY_OUT,
   STREAM_EVENT_TYPES,
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
@@ -34,6 +38,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
   const boundLLMs = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_LLM_IN);
   const boundTools = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_TOOL_IN);
   const boundMiddlewares = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_MIDDLEWARE_IN);
+  const boundMemories = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_MEMORY_IN);
 
   const streamConfig: LangGraphAgentStreamConfig = data.streamConfig || {
     enabled: false,
@@ -49,6 +54,15 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     schemaType: "json_schema",
     schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
     handleErrorMode: "default",
+  };
+
+  const memoryConfig: LangGraphAgentMemoryConfig = data.memoryConfig || {
+    enabled: true,
+    checkpointer: "convex",
+    threadIdKey: "thread_id",
+    threadScope: "session",
+    autoSummarize: true,
+    saveMessages: true,
   };
 
   const updateAgentData = (changes: Partial<typeof data>) => {
@@ -82,12 +96,30 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     updateAgentData({ responseFormat: updated });
   };
 
+  const updateMemoryConfig = (changes: Partial<LangGraphAgentMemoryConfig>) => {
+    const updated: LangGraphAgentMemoryConfig = {
+      enabled: true,
+      checkpointer: "convex",
+      threadIdKey: "thread_id",
+      threadScope: "session",
+      autoSummarize: true,
+      saveMessages: true,
+      ...memoryConfig,
+      ...changes,
+    };
+    updateAgentData({ memoryConfig: updated });
+  };
+
   const handleToggleStreaming = (enabled: boolean) => {
     updateStreamConfig({ enabled });
   };
 
   const handleToggleResponseFormat = (enabled: boolean) => {
     updateResponseFormat({ enabled });
+  };
+
+  const handleToggleMemory = (enabled: boolean) => {
+    updateMemoryConfig({ enabled });
   };
 
   const handleToggleEvent = (eventId: string) => {
@@ -117,12 +149,12 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
           : "border-border hover:border-sky-500/40 hover:shadow-sky-500/5"
       }`}
     >
-      {/* Target Handles for LLM, Tools, Middleware */}
+      {/* Target Handles for LLM, Tools, Middleware, Memory */}
       <Handle
         type="target"
         position={Position.Top}
         id={HANDLE_LLM_IN}
-        style={{ left: "16.66%" }}
+        style={{ left: "12.5%" }}
         isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || Boolean(connection.source?.startsWith("llm_"))}
         className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect LLM Node (llm_out)"
@@ -131,7 +163,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         type="target"
         position={Position.Top}
         id={HANDLE_TOOL_IN}
-        style={{ left: "50%" }}
+        style={{ left: "37.5%" }}
         isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_TOOL_OUT || Boolean(connection.source?.startsWith("tool_"))}
         className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect Tool Node (tool_out)"
@@ -140,10 +172,19 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         type="target"
         position={Position.Top}
         id={HANDLE_MIDDLEWARE_IN}
-        style={{ left: "83.33%" }}
+        style={{ left: "62.5%" }}
         isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_MIDDLEWARE_OUT || Boolean(connection.source?.startsWith("mw_"))}
         className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
         title="Connect Middleware Node (middleware_out)"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id={HANDLE_MEMORY_IN}
+        style={{ left: "87.5%" }}
+        isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_MEMORY_OUT || Boolean(connection.source?.startsWith("mem_") || connection.source?.startsWith("db_"))}
+        className="!bg-amber-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        title="Connect Memory / DB Ref Node (memory_out)"
       />
 
       {/* Execution Flow Handles */}
@@ -229,29 +270,41 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
 
       {/* Body */}
       <div className="p-3 flex flex-col gap-3">
-        {/* Connected Component Badges at Top (aligns directly below top handle connectors) */}
-        <div className="grid grid-cols-3 gap-1.5 pb-1">
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Cpu className="w-3.5 h-3.5 text-sky-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Model</span>
-            <span className="text-xs font-bold text-foreground font-mono">
+        {/* Connected Component Badges at Top */}
+        <div className="grid grid-cols-4 gap-1 pb-1">
+          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Cpu className="w-3.5 h-3.5 text-sky-400 mb-0.5" />
+            <span className="text-[8px] font-semibold text-muted-foreground uppercase">Model</span>
+            <span className="text-[10px] font-bold text-foreground font-mono truncate max-w-full">
               {boundLLMs.length > 0 ? "Bound" : "Default"}
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Wrench className="w-3.5 h-3.5 text-emerald-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Tools</span>
-            <span className="text-xs font-bold text-foreground font-mono">
+          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Wrench className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
+            <span className="text-[8px] font-semibold text-muted-foreground uppercase">Tools</span>
+            <span className="text-[10px] font-bold text-foreground font-mono truncate max-w-full">
               {boundTools.length} attached
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-secondary/20 border border-border/50 text-center">
-            <Shield className="w-3.5 h-3.5 text-purple-400 mb-1" />
-            <span className="text-[9px] font-semibold text-muted-foreground uppercase">Middleware</span>
-            <span className="text-xs font-bold text-foreground font-mono">
+          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Shield className="w-3.5 h-3.5 text-purple-400 mb-0.5" />
+            <span className="text-[8px] font-semibold text-muted-foreground uppercase">Middleware</span>
+            <span className="text-[10px] font-bold text-foreground font-mono truncate max-w-full">
               {boundMiddlewares.length} active
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-secondary/20 border border-border/50 text-center">
+            <Database className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
+            <span className="text-[8px] font-semibold text-muted-foreground uppercase">Memory</span>
+            <span className="text-[10px] font-bold text-foreground font-mono truncate max-w-full">
+              {boundMemories.length > 0
+                ? "Bound"
+                : memoryConfig.enabled !== false
+                ? memoryConfig.checkpointer || "Convex"
+                : "Off"}
             </span>
           </div>
         </div>
@@ -267,6 +320,99 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           />
+        </div>
+
+        {/* 2. Memory / Checkpointer (Message Saver & Session ID) Panel */}
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-amber-950/10 dark:bg-amber-950/20 border border-amber-500/30 nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className={`p-1 rounded shrink-0 ${memoryConfig.enabled !== false ? "bg-amber-500/20 text-amber-500" : "bg-muted/30 text-muted-foreground"}`}>
+                <Database className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                  Memory & Checkpointer
+                  {boundMemories.length > 0 ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
+                      DB Ref Connected
+                    </span>
+                  ) : memoryConfig.enabled !== false ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
+                      {memoryConfig.checkpointer || "convex"}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono truncate">
+                  {`configurable: { ${memoryConfig.threadIdKey || "thread_id"}: "..." }`}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="nodrag shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Switch
+                checked={memoryConfig.enabled !== false}
+                onCheckedChange={handleToggleMemory}
+                className="scale-90"
+              />
+            </div>
+          </div>
+
+          {memoryConfig.enabled !== false && (
+            <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-amber-500/20">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase flex items-center gap-1">
+                    <Layers className="w-2.5 h-2.5 text-amber-500" /> Checkpointer
+                  </span>
+                  <div
+                    className="nodrag"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <Select
+                      value={memoryConfig.checkpointer || "convex"}
+                      onValueChange={(val: "convex" | "redis" | "postgres" | "sqlite" | "memory") =>
+                        updateMemoryConfig({ checkpointer: val })
+                      }
+                    >
+                      <SelectTrigger className="h-6 text-[10px] bg-background font-mono p-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="convex">Convex DB</SelectItem>
+                        <SelectItem value="postgres">PostgreSQL</SelectItem>
+                        <SelectItem value="redis">Redis</SelectItem>
+                        <SelectItem value="sqlite">SQLite</SelectItem>
+                        <SelectItem value="memory">In-Memory</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase flex items-center gap-1">
+                    <Key className="w-2.5 h-2.5 text-amber-500" /> Session/Thread ID Key
+                  </span>
+                  <LocalInput
+                    className="h-6 text-[10px] bg-background border border-border/40 p-1 font-mono nodrag"
+                    value={memoryConfig.threadIdKey || "thread_id"}
+                    onChange={(e) => updateMemoryConfig({ threadIdKey: e.target.value })}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground pt-0.5 opacity-80">
+                <span>Connect Memory / DB Ref Node to top handle or configure in sidebar →</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 2. Structured Output / Response Format (Output Node) Panel */}

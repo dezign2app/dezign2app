@@ -329,8 +329,36 @@ export const langgraphConvexDataValidator = v.object({
             customTransformers: v.optional(v.string()),
           })
         ),
+        memoryConfig: v.optional(
+          v.object({
+            enabled: v.optional(v.boolean()),
+            checkpointer: v.optional(v.string()),
+            threadIdKey: v.optional(v.string()),
+            threadScope: v.optional(v.string()),
+            autoSummarize: v.optional(v.boolean()),
+            maxWindowMessages: v.optional(v.number()),
+            saveMessages: v.optional(v.boolean()),
+          })
+        ),
         tools: v.optional(v.array(v.string())),
         middleware: v.optional(v.array(v.string())),
+        memory: v.optional(v.array(v.string())),
+        position: v.optional(v.object({ x: v.number(), y: v.number() })),
+      })
+    )
+  ),
+  memoryDefinitions: v.optional(
+    v.array(
+      v.object({
+        id: v.optional(v.string()),
+        memoryId: v.optional(v.string()),
+        name: v.string(),
+        checkpointer: v.string(),
+        threadIdKey: v.optional(v.string()),
+        threadScope: v.optional(v.string()),
+        autoSummarize: v.optional(v.boolean()),
+        maxWindowMessages: v.optional(v.number()),
+        saveMessages: v.optional(v.boolean()),
         position: v.optional(v.object({ x: v.number(), y: v.number() })),
       })
     )

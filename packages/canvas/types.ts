@@ -580,6 +580,7 @@ export interface CanvasLangGraphNodeData {
   toolDefinitions?: LangGraphToolDefinition[];
   middlewareDefinitions?: LangGraphMiddlewareDefinition[];
   agentDefinitions?: LangGraphAgentDefinition[];
+  memoryDefinitions?: LangGraphMemoryDefinition[];
   mcpServerConnections?: McpServerConnection[];
 }
 
@@ -745,6 +746,29 @@ export interface LangGraphAgentResponseFormatConfig {
   customErrorMessage?: string;
 }
 
+export interface LangGraphAgentMemoryConfig {
+  enabled?: boolean;
+  checkpointer?: "convex" | "redis" | "postgres" | "sqlite" | "memory";
+  threadIdKey?: string;
+  threadScope?: "session" | "user" | "global";
+  autoSummarize?: boolean;
+  maxWindowMessages?: number;
+  saveMessages?: boolean;
+}
+
+export interface LangGraphMemoryDefinition {
+  id?: string;
+  memoryId?: string;
+  name: string;
+  checkpointer: "convex" | "redis" | "postgres" | "sqlite" | "memory";
+  threadIdKey?: string;
+  threadScope?: "session" | "user" | "global";
+  autoSummarize?: boolean;
+  maxWindowMessages?: number;
+  saveMessages?: boolean;
+  position?: { x: number; y: number };
+}
+
 export interface LangGraphAgentDefinition {
   id?: string;
   agentId?: string;
@@ -753,8 +777,10 @@ export interface LangGraphAgentDefinition {
   modelConfig?: LangGraphStepConfig["modelConfig"];
   streamConfig?: LangGraphAgentStreamConfig;
   responseFormat?: LangGraphAgentResponseFormatConfig;
+  memoryConfig?: LangGraphAgentMemoryConfig;
   tools?: string[];        // Bound tool IDs
   middleware?: string[];   // Bound middleware IDs
+  memory?: string[];       // Bound memory / checkpointer / db_ref IDs
   position?: { x: number; y: number };
 }
 

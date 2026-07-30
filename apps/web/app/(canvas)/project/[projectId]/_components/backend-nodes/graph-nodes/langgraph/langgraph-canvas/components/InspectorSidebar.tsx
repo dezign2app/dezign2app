@@ -4,7 +4,7 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 
 export interface InspectorSidebarProps {
@@ -15,23 +15,28 @@ export interface InspectorSidebarProps {
   selectedToolData?: ToolNodeData | null;
   selectedMiddlewareData?: MiddlewareNodeData | null;
   selectedAgentData?: AgentNodeData | null;
+  selectedMemoryData?: MemoryNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
   availableLLMNodes?: LangGraphLLMNode[];
   availableToolNodes?: ToolNode[];
   availableMiddlewareNodes?: MiddlewareNode[];
+  availableMemoryNodes?: MemoryNode[];
   connectedLLMId?: string | null;
   connectedToolIds?: string[];
   connectedMiddlewareIds?: string[];
+  connectedMemoryIds?: string[];
   onSelectLLM?: (llmId: string | null) => void;
   onToggleTool?: (toolId: string, connect: boolean) => void;
   onToggleMiddleware?: (mwId: string, connect: boolean) => void;
+  onToggleMemory?: (memId: string, connect: boolean) => void;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
   onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
   onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
+  onUpdateMemory?: (changes: Partial<MemoryNodeData>) => void;
   inputChannels?: LangGraphInputChannel[];
   setInputChannels?: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
@@ -46,23 +51,28 @@ export function InspectorSidebar({
   selectedToolData,
   selectedMiddlewareData,
   selectedAgentData,
+  selectedMemoryData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
   availableLLMNodes,
   availableToolNodes,
   availableMiddlewareNodes,
+  availableMemoryNodes,
   connectedLLMId,
   connectedToolIds,
   connectedMiddlewareIds,
+  connectedMemoryIds,
   onSelectLLM,
   onToggleTool,
   onToggleMiddleware,
+  onToggleMemory,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
   onUpdateTool,
   onUpdateMiddleware,
   onUpdateAgent,
+  onUpdateMemory,
   stateChannels,
 }: InspectorSidebarProps) {
   const [width, setWidth] = useState(340);
@@ -96,7 +106,7 @@ export function InspectorSidebar({
   );
 
   const hasSelectedNode = Boolean(
-    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData
+    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData
   );
 
   if (!hasSelectedNode) return null;
@@ -124,23 +134,28 @@ export function InspectorSidebar({
         selectedToolData={selectedToolData}
         selectedMiddlewareData={selectedMiddlewareData}
         selectedAgentData={selectedAgentData}
+        selectedMemoryData={selectedMemoryData}
         connectedToolsCount={connectedToolsCount}
         connectedMiddlewareCount={connectedMiddlewareCount}
         availableLLMNodes={availableLLMNodes}
         availableToolNodes={availableToolNodes}
         availableMiddlewareNodes={availableMiddlewareNodes}
+        availableMemoryNodes={availableMemoryNodes}
         connectedLLMId={connectedLLMId}
         connectedToolIds={connectedToolIds}
         connectedMiddlewareIds={connectedMiddlewareIds}
+        connectedMemoryIds={connectedMemoryIds}
         onSelectLLM={onSelectLLM}
         onToggleTool={onToggleTool}
         onToggleMiddleware={onToggleMiddleware}
+        onToggleMemory={onToggleMemory}
         onDeleteStep={onDeleteStep}
         onUpdateStep={onUpdateStep}
         onUpdateLLM={onUpdateLLM}
         onUpdateTool={onUpdateTool}
         onUpdateMiddleware={onUpdateMiddleware}
         onUpdateAgent={onUpdateAgent}
+        onUpdateMemory={onUpdateMemory}
         stateChannels={stateChannels}
       />
     </div>

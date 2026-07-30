@@ -6,6 +6,7 @@ import { LangGraphCanvasLLMNode } from "./LangGraphCanvasLLMNode";
 import { LangGraphCanvasToolNode } from "./LangGraphCanvasToolNode";
 import { LangGraphCanvasMiddlewareNode } from "./LangGraphCanvasMiddlewareNode";
 import { LangGraphCanvasAgentNode } from "./LangGraphCanvasAgentNode";
+import { LangGraphCanvasMemoryNode } from "./LangGraphCanvasMemoryNode";
 
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
@@ -16,6 +17,7 @@ import {
   LANGGRAPH_CANVAS_NODE_TOOL,
   LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
   LANGGRAPH_CANVAS_NODE_AGENT,
+  LANGGRAPH_CANVAS_NODE_MEMORY,
 } from "../constants";
 
 export const langGraphCanvasNodeTypes = {
@@ -27,6 +29,7 @@ export const langGraphCanvasNodeTypes = {
   [LANGGRAPH_CANVAS_NODE_TOOL]: LangGraphCanvasToolNode,
   [LANGGRAPH_CANVAS_NODE_MIDDLEWARE]: LangGraphCanvasMiddlewareNode,
   [LANGGRAPH_CANVAS_NODE_AGENT]: LangGraphCanvasAgentNode,
+  [LANGGRAPH_CANVAS_NODE_MEMORY]: LangGraphCanvasMemoryNode,
 };
 
 export {
@@ -38,5 +41,6 @@ export {
   LangGraphCanvasToolNode,
   LangGraphCanvasMiddlewareNode,
   LangGraphCanvasAgentNode,
+  LangGraphCanvasMemoryNode,
 };
 

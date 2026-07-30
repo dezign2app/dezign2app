@@ -2,12 +2,13 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode } from "../../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode } from "../../types";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
 import { ToolNodeInspector } from "./ToolNodeInspector";
 import { MiddlewareNodeInspector } from "./MiddlewareNodeInspector";
 import { AgentNodeInspector } from "./AgentNodeInspector";
+import { MemoryNodeInspector } from "./MemoryNodeInspector";
 
 interface InspectorTabContentProps {
   selectedStepData: StepNodeData | null;
@@ -15,23 +16,28 @@ interface InspectorTabContentProps {
   selectedToolData?: ToolNodeData | null;
   selectedMiddlewareData?: MiddlewareNodeData | null;
   selectedAgentData?: AgentNodeData | null;
+  selectedMemoryData?: MemoryNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
   availableLLMNodes?: LangGraphLLMNode[];
   availableToolNodes?: ToolNode[];
   availableMiddlewareNodes?: MiddlewareNode[];
+  availableMemoryNodes?: MemoryNode[];
   connectedLLMId?: string | null;
   connectedToolIds?: string[];
   connectedMiddlewareIds?: string[];
+  connectedMemoryIds?: string[];
   onSelectLLM?: (llmId: string | null) => void;
   onToggleTool?: (toolId: string, connect: boolean) => void;
   onToggleMiddleware?: (mwId: string, connect: boolean) => void;
+  onToggleMemory?: (memId: string, connect: boolean) => void;
   onDeleteStep: () => void;
   onUpdateStep: (changes: Partial<StepNodeData>) => void;
   onUpdateLLM?: (changes: Partial<LangGraphLLMNodeData>) => void;
   onUpdateTool?: (changes: Partial<ToolNodeData>) => void;
   onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
   onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
+  onUpdateMemory?: (changes: Partial<MemoryNodeData>) => void;
   stateChannels: LangGraphStateChannel[];
 }
 
@@ -41,23 +47,28 @@ export function InspectorTabContent({
   selectedToolData,
   selectedMiddlewareData,
   selectedAgentData,
+  selectedMemoryData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
   availableLLMNodes,
   availableToolNodes,
   availableMiddlewareNodes,
+  availableMemoryNodes,
   connectedLLMId,
   connectedToolIds,
   connectedMiddlewareIds,
+  connectedMemoryIds,
   onSelectLLM,
   onToggleTool,
   onToggleMiddleware,
+  onToggleMemory,
   onDeleteStep,
   onUpdateStep,
   onUpdateLLM,
   onUpdateTool,
   onUpdateMiddleware,
   onUpdateAgent,
+  onUpdateMemory,
   stateChannels,
 }: InspectorTabContentProps) {
   return (
@@ -74,29 +85,38 @@ export function InspectorTabContent({
         <ToolNodeInspector
           selectedToolData={selectedToolData}
           onDeleteTool={onDeleteStep}
-          onUpdateTool={onUpdateTool!}
+          onUpdateTool={onUpdateTool || (() => {})}
           stateChannels={stateChannels}
         />
       ) : selectedMiddlewareData ? (
         <MiddlewareNodeInspector
           selectedMiddlewareData={selectedMiddlewareData}
           onDeleteMiddleware={onDeleteStep}
-          onUpdateMiddleware={onUpdateMiddleware!}
+          onUpdateMiddleware={onUpdateMiddleware || (() => {})}
+        />
+      ) : selectedMemoryData ? (
+        <MemoryNodeInspector
+          selectedMemoryData={selectedMemoryData}
+          onDeleteMemory={onDeleteStep}
+          onUpdateMemory={onUpdateMemory || (() => {})}
         />
       ) : selectedAgentData ? (
         <AgentNodeInspector
           selectedAgentData={selectedAgentData}
           onDeleteAgent={onDeleteStep}
-          onUpdateAgent={onUpdateAgent!}
+          onUpdateAgent={onUpdateAgent || (() => {})}
           availableLLMNodes={availableLLMNodes}
           availableToolNodes={availableToolNodes}
           availableMiddlewareNodes={availableMiddlewareNodes}
+          availableMemoryNodes={availableMemoryNodes}
           connectedLLMId={connectedLLMId}
           connectedToolIds={connectedToolIds}
           connectedMiddlewareIds={connectedMiddlewareIds}
+          connectedMemoryIds={connectedMemoryIds}
           onSelectLLM={onSelectLLM}
           onToggleTool={onToggleTool}
           onToggleMiddleware={onToggleMiddleware}
+          onToggleMemory={onToggleMemory}
         />
       ) : selectedStepData ? (
         <StepNodeInspector

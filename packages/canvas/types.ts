@@ -351,6 +351,8 @@ export interface BaseNodeData {
 
 /** Database entity / table schema fields (canvas type). */
 export interface CanvasEntityNodeData {
+  isSchemaGroup?: boolean;
+  variant?: string;
   dbType?: "relational" | "document" | "vector";
   /** Column definitions stored as part of the node. */
   columns?: {
@@ -580,6 +582,7 @@ export interface CanvasLangGraphNodeData {
   toolDefinitions?: LangGraphToolDefinition[];
   middlewareDefinitions?: LangGraphMiddlewareDefinition[];
   agentDefinitions?: LangGraphAgentDefinition[];
+  memoryDefinitions?: LangGraphMemoryDefinition[];
   mcpServerConnections?: McpServerConnection[];
 }
 
@@ -745,6 +748,29 @@ export interface LangGraphAgentResponseFormatConfig {
   customErrorMessage?: string;
 }
 
+export interface LangGraphAgentMemoryConfig {
+  enabled?: boolean;
+  checkpointer?: string;
+  threadIdKey?: string;
+  threadScope?: "session" | "user" | "global";
+  autoSummarize?: boolean;
+  maxWindowMessages?: number;
+  saveMessages?: boolean;
+}
+
+export interface LangGraphMemoryDefinition {
+  id?: string;
+  memoryId?: string;
+  name: string;
+  checkpointer: string;
+  threadIdKey?: string;
+  threadScope?: "session" | "user" | "global";
+  autoSummarize?: boolean;
+  maxWindowMessages?: number;
+  saveMessages?: boolean;
+  position?: { x: number; y: number };
+}
+
 export interface LangGraphAgentDefinition {
   id?: string;
   agentId?: string;
@@ -753,8 +779,10 @@ export interface LangGraphAgentDefinition {
   modelConfig?: LangGraphStepConfig["modelConfig"];
   streamConfig?: LangGraphAgentStreamConfig;
   responseFormat?: LangGraphAgentResponseFormatConfig;
+  memoryConfig?: LangGraphAgentMemoryConfig;
   tools?: string[];        // Bound tool IDs
   middleware?: string[];   // Bound middleware IDs
+  memory?: string[];       // Bound memory / checkpointer / db_ref IDs
   position?: { x: number; y: number };
 }
 

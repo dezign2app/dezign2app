@@ -1,9 +1,10 @@
 import React from "react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, AlertCircle, Radio, Code, FileJson, Check, Layers, Settings2, MessageSquare, AlertTriangle } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, AlertCircle, Radio, Code, FileJson, Check, Layers, Settings2, MessageSquare, AlertTriangle, Database, Key, HardDrive } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import type { AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, LangGraphAgentResponseFormatConfig } from "../../types";
+import type { AgentNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, LangGraphAgentResponseFormatConfig } from "../../types";
+import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
 import {
   STREAM_EVENT_TYPES,
   DEFAULT_EVENT_STREAM_SIGNATURE,
@@ -14,6 +15,8 @@ import {
   RESPONSE_FORMAT_PRESETS,
 } from "../../constants";
 import { LocalInput, LocalTextarea } from "../../../../common/shared";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface AgentNodeInspectorProps {
   selectedAgentData: AgentNodeData;
@@ -22,12 +25,15 @@ interface AgentNodeInspectorProps {
   availableLLMNodes?: LangGraphLLMNode[];
   availableToolNodes?: ToolNode[];
   availableMiddlewareNodes?: MiddlewareNode[];
+  availableMemoryNodes?: MemoryNode[];
   connectedLLMId?: string | null;
   connectedToolIds?: string[];
   connectedMiddlewareIds?: string[];
+  connectedMemoryIds?: string[];
   onSelectLLM?: (llmId: string | null) => void;
   onToggleTool?: (toolId: string, connect: boolean) => void;
   onToggleMiddleware?: (mwId: string, connect: boolean) => void;
+  onToggleMemory?: (memId: string, connect: boolean) => void;
 }
 
 export function AgentNodeInspector({
@@ -37,13 +43,35 @@ export function AgentNodeInspector({
   availableLLMNodes = [],
   availableToolNodes = [],
   availableMiddlewareNodes = [],
+  availableMemoryNodes = [],
   connectedLLMId = null,
   connectedToolIds = [],
   connectedMiddlewareIds = [],
+  connectedMemoryIds = [],
   onSelectLLM,
   onToggleTool,
   onToggleMiddleware,
+  onToggleMemory,
 }: AgentNodeInspectorProps) {
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+
+  const memConfig: LangGraphAgentMemoryConfig = selectedAgentData.memoryConfig || {
+    enabled: true,
+    checkpointer: "memory",
+    threadIdKey: "thread_id",
+    threadScope: "session",
+    autoSummarize: true,
+    saveMessages: true,
+  };
+
+  const updateMemoryConfig = (changes: Partial<LangGraphAgentMemoryConfig>) => {
+    onUpdateAgent({
+      memoryConfig: {
+        ...memConfig,
+        ...changes,
+      },
+    });
+  };
   const rfConfig: LangGraphAgentResponseFormatConfig = selectedAgentData.responseFormat || {
     enabled: false,
     strategy: "auto",
@@ -247,12 +275,162 @@ export function AgentNodeInspector({
           )}
         </div>
 
+        {/* Memory / DB Nodes Multi-Selection */}
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-secondary/20 border border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Database className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-semibold text-foreground">Attached Memory / DB Nodes</span>
+            </div>
+            <span className="text-[10px] font-mono text-muted-foreground font-bold">
+              {connectedMemoryIds.length} connected
+            </span>
+          </div>
+          {availableMemoryNodes.length > 0 ? (
+            <div className="flex flex-col gap-1.5 mt-1 max-h-[160px] overflow-y-auto pr-1">
+              {availableMemoryNodes.map((mem) => {
+                const isConnected = connectedMemoryIds.includes(mem.id);
+                return (
+                  <div
+                    key={mem.id}
+                    className="flex items-center justify-between p-1.5 rounded bg-background/60 border border-border/40 text-xs"
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-mono font-medium text-foreground truncate">
+                        {mem.data.name || mem.data.label}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground font-mono">
+                        checkpointer: {mem.data.checkpointer || "convex"} ({mem.data.threadIdKey || "thread_id"})
+                      </span>
+                    </div>
+                    <Switch
+                      checked={isConnected}
+                      onCheckedChange={(c) => onToggleMemory?.(mem.id, c)}
+                      className="scale-75 origin-right"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[10px] text-muted-foreground italic">
+              No Memory Nodes on canvas. Add a Memory node from toolbar to connect.
+            </p>
+          )}
+        </div>
+
         <div className="flex gap-2 p-2 rounded bg-secondary/20 border border-border/50 items-start text-[10px] text-muted-foreground leading-tight">
           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <p>
-            Selecting nodes or toggling switches automatically draws and updates canvas edges to <code>llm_in</code>, <code>tool_in</code>, and <code>middleware_in</code>.
+            Selecting nodes or toggling switches automatically draws and updates canvas edges to <code>llm_in</code>, <code>tool_in</code>, <code>middleware_in</code>, and <code>memory_in</code>.
           </p>
         </div>
+      </div>
+
+      {/* ─── 3. Memory & Checkpointer Configuration ────────────────────────────── */}
+      <div className="flex flex-col gap-4 p-3 bg-amber-950/10 dark:bg-amber-950/20 rounded-xl border border-amber-500/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-md border ${memConfig.enabled !== false ? "bg-amber-500/20 border-amber-500/40 text-amber-500" : "bg-secondary/30 border-border text-muted-foreground"}`}>
+              <Database className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                Memory & Checkpointer
+                {memConfig.enabled !== false && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold">
+                    {memConfig.checkpointer || "convex"}
+                  </span>
+                )}
+              </h3>
+              <p className="text-[10px] font-mono text-muted-foreground">
+                Saves chat history & state checkpoints per session
+              </p>
+            </div>
+          </div>
+
+          <Switch
+            checked={memConfig.enabled !== false}
+            onCheckedChange={(enabled) => updateMemoryConfig({ enabled })}
+          />
+        </div>
+
+        {memConfig.enabled !== false && (
+          <div className="flex flex-col gap-4 pt-2 border-t border-amber-500/20">
+            {/* Checkpointer Saver Choice */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-amber-500" />
+                Checkpointer Saver Engine
+              </Label>
+              <Select
+                value={memConfig.checkpointer || "memory"}
+                onValueChange={(val: string) => updateMemoryConfig({ checkpointer: val })}
+              >
+                <SelectTrigger className="h-7 text-xs bg-background font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="memory">In-Memory (MemorySaver)</SelectItem>
+                  {entities.map((e) => (
+                    <SelectItem key={e.id} value={e.data?.label || e.id}>
+                      {e.data?.label || "Untitled Table"} (Schema Entity)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Specifies backend persistence engine used to checkpoint and restore conversation state across turns.
+              </p>
+            </div>
+
+            {/* Session ID / Thread Key */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-amber-500" />
+                Session / Thread ID Key
+              </Label>
+              <LocalInput
+                value={memConfig.threadIdKey || "thread_id"}
+                onChange={(e) => updateMemoryConfig({ threadIdKey: e.target.value })}
+                className="h-7 text-xs font-mono bg-background"
+                placeholder="thread_id"
+              />
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {["thread_id", "session_id", "user_id"].map((keyName) => (
+                  <button
+                    key={keyName}
+                    type="button"
+                    onClick={() => updateMemoryConfig({ threadIdKey: keyName })}
+                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                      (memConfig.threadIdKey || "thread_id") === keyName
+                        ? "bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 font-bold"
+                        : "bg-background/60 border-border/40 text-muted-foreground hover:bg-secondary/50"
+                    }`}
+                  >
+                    {keyName}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[9px] font-mono text-muted-foreground">
+                Runtime config key: <code>{`configurable: { ${memConfig.threadIdKey || "thread_id"}: "..." }`}</code>
+              </p>
+            </div>
+
+            {/* Auto Summarization & Limits */}
+            <div className="flex items-center justify-between p-2 rounded bg-background/60 border border-border/40">
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-foreground">Auto-Summarize</span>
+                <span className="text-[9px] text-muted-foreground">Compress past messages when token window exceeds limit</span>
+              </div>
+              <Switch
+                checked={memConfig.autoSummarize ?? true}
+                onCheckedChange={(autoSummarize) => updateMemoryConfig({ autoSummarize })}
+                className="scale-85 origin-right"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─── 3. Structured Output / Response Format (Output Node) ──────────────── */}

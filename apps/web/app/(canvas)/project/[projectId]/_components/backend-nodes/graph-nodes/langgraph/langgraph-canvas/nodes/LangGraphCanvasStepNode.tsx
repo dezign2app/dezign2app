@@ -115,10 +115,10 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   
   const connectedToolNodes = connectedToolEdges
     .map(e => langGraphToolNodes.find(n => n.id === e.source))
-    .filter(Boolean);
+    .filter((n): n is ToolNode => Boolean(n));
 
-  const allToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.every(n => n.data.returnDirect);
-  const someToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.some(n => n.data.returnDirect) && !allToolsDirect;
+  const allToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.every(n => n?.data.returnDirect);
+  const someToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.some(n => n?.data.returnDirect) && !allToolsDirect;
 
   // Selected linked LLM node (via edge connection or explicit dropdown selection)
   const linkedCustomLLM = connectedLLMNode || langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === data.modelConfig?.customLlmNodeId);

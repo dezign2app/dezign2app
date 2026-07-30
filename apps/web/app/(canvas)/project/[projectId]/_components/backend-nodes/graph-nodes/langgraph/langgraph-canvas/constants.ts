@@ -58,6 +58,7 @@ import { LLM_PROVIDER_PRESETS } from "./components/inspector/constants";
 // ─── LangGraph Canvas React Flow Node Types ──────────────────────────────────────────
 export const LANGGRAPH_CANVAS_NODE_STEP         = "step" as const;
 export const LANGGRAPH_CANVAS_NODE_START        = "start" as const;
+export const LANGGRAPH_CANVAS_NODE_END          = "end" as const;
 export const LANGGRAPH_CANVAS_NODE_PORT         = "port" as const;
 export const LANGGRAPH_CANVAS_NODE_STATE_GLOBAL = "state_global" as const;
 export const LANGGRAPH_CANVAS_NODE_LLM          = "langgraph_llm" as const;
@@ -77,6 +78,7 @@ export const HANDLE_OUTPUT_OUT = "output_out" as const;
 
 // ─── Reserved LangGraph Canvas Node IDs ─────────────────────────────────────────────
 export const NODE_ID_START        = "START" as const;
+export const NODE_ID_END          = "END" as const;
 export const NODE_ID_STATE_GLOBAL = "STATE_GLOBAL" as const;
 
 // ─── ID Prefixes ──────────────────────────────────────────────────────────────

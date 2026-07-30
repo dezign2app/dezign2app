@@ -131,10 +131,10 @@ export const LangGraphCanvasMiddlewareNode = ({ id, data, selected }: NodeProps<
       {/* Outbound Middleware handle connecting to Agent */}
       <Handle
         type="source"
-        position={Position.Top}
+        position={Position.Bottom}
         id={HANDLE_MIDDLEWARE_OUT}
         style={{ left: "50%" }}
-        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect to Agent Node (middleware_in)"
       />
       <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-t-xl">

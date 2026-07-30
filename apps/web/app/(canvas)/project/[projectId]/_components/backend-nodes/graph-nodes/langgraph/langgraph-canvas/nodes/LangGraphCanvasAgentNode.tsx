@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
@@ -63,6 +63,9 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     autoSummarize: true,
     saveMessages: true,
   };
+
+  const stateUpdates = data.stateUpdates || [];
+  const availableFields = (data.availableStateChannels || []).map((c) => c.key);
 
   const updateAgentData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
@@ -156,7 +159,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         style={{ left: "12.5%" }}
         isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || Boolean(connection.source?.startsWith("llm_"))}
         className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
-        title="Connect LLM Node (llm_out)"
+        title="Connect LLM (llm_out)"
       />
       <Handle
         type="target"
@@ -174,7 +177,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
         style={{ left: "62.5%" }}
         isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_MIDDLEWARE_OUT || Boolean(connection.source?.startsWith("mw_"))}
         className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
-        title="Connect Middleware Node (middleware_out)"
+        title="Connect Middleware (middleware_out)"
       />
       <Handle
         type="target"
@@ -319,6 +322,48 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           />
+        </div>
+
+        {/* 2. State Channel Updates Panel */}
+        <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 nodrag">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> State Updates
+            </span>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+              {stateUpdates.length}
+            </span>
+          </div>
+
+          {stateUpdates.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {stateUpdates.map((su, idx) => {
+                const matchedChannel = (data.availableStateChannels || []).find((c) => c.key === su.channelKey);
+                return (
+                  <div key={idx} className="flex flex-col gap-0.5 bg-amber-500/10 px-2 py-1 rounded text-[10px] font-mono border border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-amber-400 font-bold truncate max-w-[140px]">{su.channelKey}</span>
+                      <span className="text-[9px] text-muted-foreground uppercase px-1 rounded bg-secondary/50 font-semibold">{su.mode || "set"}</span>
+                    </div>
+                    {su.value ? (
+                      <span className="text-[9px] text-muted-foreground/90 truncate font-mono">{su.value}</span>
+                    ) : (
+                      matchedChannel && <span className="text-[9px] text-muted-foreground/70 font-mono">type: {matchedChannel.type}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 bg-secondary/20 p-1.5 rounded border border-border/30">
+              <span className="text-[9px] text-muted-foreground font-mono flex items-center gap-1">
+                <span className="font-bold text-foreground">Graph Fields:</span>
+                <span className="truncate max-w-[180px]">
+                  {availableFields.length > 0 ? availableFields.join(", ") : "none"}
+                </span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 2. Memory / Checkpointer Panel */}

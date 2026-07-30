@@ -305,7 +305,7 @@ export const validateDraftGraph = (
 
     if (node.type === "end" && outgoingEdges.length > 0) errors.push(`End node "${node.nodeKey}" cannot have outgoing edges.`);
     if (node.type === "api" && !node.config?.url?.trim()) errors.push(`API node "${node.nodeKey}" requires a URL.`);
-    if (node.type === "llm" && !node.config?.model?.trim()) errors.push(`LLM node "${node.nodeKey}" requires a model.`);
+    if (node.type === "llm" && !node.config?.model?.trim()) errors.push(`LLM "${node.nodeKey}" requires a model.`);
     if (node.type === "end" && !node.config?.resultExpression?.trim()) errors.push(`End node "${node.nodeKey}" requires a result expression.`);
   }
 

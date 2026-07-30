@@ -194,7 +194,7 @@ export const LangGraphCanvasMiddlewareNode = ({ id, data, selected }: NodeProps<
               e.stopPropagation();
               data.onDeleteMiddleware?.();
             }}
-            title="Delete Middleware Node"
+            title="Delete Middleware"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

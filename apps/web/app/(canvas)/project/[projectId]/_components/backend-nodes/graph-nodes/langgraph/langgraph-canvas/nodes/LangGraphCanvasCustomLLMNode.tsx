@@ -121,7 +121,7 @@ export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<C
                 e.stopPropagation();
                 data.onDeleteLLM?.();
               }}
-              title="Delete Custom LLM Node"
+              title="Delete Custom LLM"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

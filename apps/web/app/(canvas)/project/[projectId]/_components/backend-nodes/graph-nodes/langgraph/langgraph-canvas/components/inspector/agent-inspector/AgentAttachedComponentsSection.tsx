@@ -44,7 +44,7 @@ export function AgentAttachedComponentsSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">Model / LLM Node</span>
+            <span className="text-xs font-semibold text-foreground">LLM Model</span>
           </div>
         </div>
         {availableLLMNodes.length > 0 ? (
@@ -53,7 +53,7 @@ export function AgentAttachedComponentsSection({
             onValueChange={(val) => onSelectLLM?.(val === "none" ? null : val)}
           >
             <SelectTrigger className="h-7 text-xs bg-background font-mono">
-              <SelectValue placeholder="Select LLM Node..." />
+              <SelectValue placeholder="Select LLM..." />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None (Unbound)</SelectItem>
@@ -73,7 +73,7 @@ export function AgentAttachedComponentsSection({
           </Select>
         ) : (
           <p className="text-[10px] text-muted-foreground italic">
-            No LLM Nodes on canvas. Add an LLM node from toolbar to connect.
+            No LLMs on canvas. Add an LLM from toolbar to connect.
           </p>
         )}
       </div>
@@ -161,7 +161,7 @@ export function AgentAttachedComponentsSection({
           </div>
         ) : (
           <p className="text-[10px] text-muted-foreground italic">
-            No Middleware Nodes on canvas. Add a Middleware node from toolbar to attach.
+            No Middlewares on canvas. Add a Middleware from toolbar to attach.
           </p>
         )}
       </div>

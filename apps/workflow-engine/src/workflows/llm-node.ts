@@ -27,7 +27,7 @@ export const invokeLlmProvider = async (
 
   if (!config.apiKeySecretId) {
     throw new WorkflowExecutionError(
-      "LLM node requires an API key secret. Configure one in the node settings.",
+      "LLM requires an API key secret. Configure one in the node settings.",
     );
   }
 
@@ -46,7 +46,7 @@ export const invokeLlmProvider = async (
 
     if (!apiKey) {
       throw new WorkflowExecutionError(
-        `LLM node requires an API key secret to be configured for provider "${provider}".`,
+        `LLM requires an API key secret to be configured for provider "${provider}".`,
       );
     }
 

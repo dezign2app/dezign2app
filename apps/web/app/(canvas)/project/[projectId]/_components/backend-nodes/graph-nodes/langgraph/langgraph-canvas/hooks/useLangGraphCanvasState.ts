@@ -249,6 +249,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           modelConfig: agDef.modelConfig,
           streamConfig: agDef.streamConfig,
           memoryConfig: agDef.memoryConfig,
+          stateUpdates: agDef.stateUpdates || [],
+          availableStateChannels: data.stateChannels || [
+            { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          ],
           tools: agDef.tools || [],
           middleware: agDef.middleware || [],
           memory: agDef.memory || [],
@@ -387,6 +391,22 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
                 setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
                 setSelectedNodeId((curr) => (curr === n.id ? null : curr));
               },
+              onOpenInspector: () => {
+                setSelectedNodeId(n.id);
+                setActiveSideTab("inspector");
+              },
+              onSelectNode: () => {
+                setSelectedNodeId(n.id);
+              },
+            },
+          };
+        }
+        if (n.type === LANGGRAPH_CANVAS_NODE_AGENT) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              availableStateChannels: stateChannels,
               onOpenInspector: () => {
                 setSelectedNodeId(n.id);
                 setActiveSideTab("inspector");
@@ -568,7 +588,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         type: LANGGRAPH_CANVAS_NODE_LLM,
         position: { x: 360 + Math.random() * 140, y: 100 + Math.random() * 80 },
         data: {
-          label: label || "LLM Node",
+          label: label || "LLM",
           llmId,
           provider: DEFAULT_LLM_PROVIDER,
           baseUrl: defaultPreset?.defaultUrl ?? DEFAULT_LLM_BASE_URL,
@@ -623,7 +643,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
         position: { x: 360 + Math.random() * 140, y: 220 + Math.random() * 80 },
         data: {
-          label: label || "Middleware Node",
+          label: label || "Middleware",
           middlewareId: mwId,
           name: "middleware",
           type: DEFAULT_MIDDLEWARE_TYPE,

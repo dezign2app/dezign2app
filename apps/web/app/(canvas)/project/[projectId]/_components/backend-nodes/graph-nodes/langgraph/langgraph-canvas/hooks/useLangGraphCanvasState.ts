@@ -75,6 +75,7 @@ import {
   STEP_TYPE_LLM_CALL,
   TARGET_KIND_STEP,
   TARGET_KIND_PORT,
+  TARGET_KIND_END,
   LLM_PROVIDERS,
   LLM_PROVIDER_PRESETS,
   DEFAULT_LLM_PROVIDER,
@@ -285,6 +286,18 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       result.push(stepNode);
     });
 
+    const hasEndTarget = (data.graphEdges || []).some((e) =>
+      e.targets?.some((t) => t.kind === TARGET_KIND_END || t.id === "END")
+    );
+    if (hasEndTarget && !result.some((n) => n.type === LANGGRAPH_CANVAS_NODE_END)) {
+      result.push({
+        id: NODE_ID_END,
+        type: LANGGRAPH_CANVAS_NODE_END,
+        position: { x: 750, y: 320 },
+        data: { label: "END State" },
+      });
+    }
+
     return result;
   }, []); // computed once on mount
 
@@ -309,10 +322,18 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           const isMiddleware = isMiddlewareSource || sourceHandle === HANDLE_MIDDLEWARE_OUT || targetHandle === HANDLE_MIDDLEWARE_IN;
           const isMemory = isMemorySource || sourceHandle === HANDLE_MEMORY_OUT || targetHandle === HANDLE_MEMORY_IN;
 
+          let resolvedTargetId = t.id;
+          if (t.kind === TARGET_KIND_END || t.id === "END") {
+            const endNode = initialNodes.find((n) => n.type === LANGGRAPH_CANVAS_NODE_END);
+            resolvedTargetId = endNode ? endNode.id : NODE_ID_END;
+          } else if (t.kind === TARGET_KIND_PORT) {
+            resolvedTargetId = makePortNodeId(t.id);
+          }
+
           return {
             id: `${e.id}_${t.id}`,
             source: e.source,
-            target: t.id,
+            target: resolvedTargetId,
             ...(sourceHandle ? { sourceHandle } : {}),
             targetHandle: targetHandle || "in",
             animated: true,
@@ -1070,17 +1091,39 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
     const graphEdges: LangGraphEdgeConfig[] = edges
       .filter((e) => e.source !== NODE_ID_STATE_GLOBAL && e.target !== NODE_ID_STATE_GLOBAL)
-      .map((e) => ({
-        id: e.id,
-        source: e.source,
-        sourceHandle: e.sourceHandle || undefined,
-        targetHandle: e.targetHandle || undefined,
-        targets: [{
-          id: stripPortPrefix(e.target),
-          kind: TARGET_KIND_STEP,
+      .map((e) => {
+        const isEndTarget =
+          e.target === NODE_ID_END ||
+          e.target === "END" ||
+          e.target.startsWith("end_") ||
+          nodes.some((n) => n.id === e.target && n.type === LANGGRAPH_CANVAS_NODE_END);
+
+        const isPortTarget = e.target.startsWith(NODE_ID_PREFIX_PORT);
+
+        const targetKind = isEndTarget
+          ? TARGET_KIND_END
+          : isPortTarget
+          ? TARGET_KIND_PORT
+          : TARGET_KIND_STEP;
+
+        const targetId = isEndTarget
+          ? "END"
+          : isPortTarget
+          ? stripPortPrefix(e.target)
+          : e.target;
+
+        return {
+          id: e.id,
+          source: e.source,
+          sourceHandle: e.sourceHandle || undefined,
           targetHandle: e.targetHandle || undefined,
-        }],
-      }));
+          targets: [{
+            id: targetId,
+            kind: targetKind,
+            targetHandle: e.targetHandle || undefined,
+          }],
+        };
+      });
 
     return ensureLangGraphDataReachability({
       ...data,

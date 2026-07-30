@@ -47,6 +47,7 @@ import {
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_START,
+  LANGGRAPH_CANVAS_NODE_END,
   LANGGRAPH_CANVAS_NODE_PORT,
   LANGGRAPH_CANVAS_NODE_STATE_GLOBAL,
   LANGGRAPH_CANVAS_NODE_LLM,
@@ -65,6 +66,7 @@ import {
   HANDLE_MEMORY_IN,
   HANDLE_MEMORY_OUT,
   NODE_ID_START,
+  NODE_ID_END,
   NODE_ID_STATE_GLOBAL,
   NODE_ID_PREFIX_PORT,
   isReservedNodeId,
@@ -81,6 +83,7 @@ import {
   DEFAULT_LLM_API_KEY_ENV,
   DEFAULT_LLM_TEMPERATURE,
 } from "../constants";
+import type { EndNode } from "../types";
 
 interface UseLangGraphCanvasStateProps {
   node: BackendNode;
@@ -352,6 +355,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   useEffect(() => {
     setNodes((nds) => {
       const hasStateGlobal = nds.some((n) => n.id === NODE_ID_STATE_GLOBAL);
+      const hasEnd = nds.some((n) => n.id === NODE_ID_END);
 
       let updated = nds.map((n): LangGraphCanvasNode => {
         if (n.id === NODE_ID_START && n.type === LANGGRAPH_CANVAS_NODE_START) {
@@ -578,7 +582,21 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? getStepData(found) : null;
   }, [nodes, selectedNodeId]);
 
-  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY, label: string) => {
+  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END, label: string) => {
+    if (type === LANGGRAPH_CANVAS_NODE_END) {
+      const endId = `end_${Date.now().toString(36).slice(-4)}`;
+      const newEndNode: EndNode = {
+        id: endId,
+        type: LANGGRAPH_CANVAS_NODE_END,
+        position: { x: 500 + Math.random() * 140, y: 200 + Math.random() * 80 },
+        data: { label: label || "END State" },
+      };
+
+      setNodes((nds) => [...nds, newEndNode]);
+      setSelectedNodeId(endId);
+      return;
+    }
+
     if (type === LANGGRAPH_CANVAS_NODE_LLM) {
       const llmId = `llm_${Date.now().toString(36).slice(-4)}`;
       const defaultPreset = LLM_PROVIDER_PRESETS[DEFAULT_LLM_PROVIDER] ?? LLM_PROVIDER_PRESETS[LLM_PROVIDERS.CUSTOM];

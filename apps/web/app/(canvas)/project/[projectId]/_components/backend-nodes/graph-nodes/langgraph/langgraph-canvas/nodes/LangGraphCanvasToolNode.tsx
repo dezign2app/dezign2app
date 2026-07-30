@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
-import { Wrench, Trash2, Box, Server, Globe, Database } from "lucide-react";
+import { Wrench, Trash2, Box, Server, Globe, Zap, Code2, Sparkles, FileText } from "lucide-react";
 import type { ToolNode, LangGraphCanvasNode } from "../types";
-import { LANGGRAPH_CANVAS_NODE_TOOL, HANDLE_TOOL_OUT, TOOL_SOURCE_INLINE, TOOL_SOURCE_MCP_SERVER, TOOL_SOURCE_API_ENDPOINT } from "../constants";
-import { LocalInput, LocalTextarea } from "../../../common/shared";
-import { BusinessLogicBlock } from "@/app/(canvas)/project/[projectId]/_components/shared/BusinessLogicBlock";
+import {
+  LANGGRAPH_CANVAS_NODE_TOOL,
+  HANDLE_TOOL_OUT,
+  TOOL_SOURCE_INLINE,
+  TOOL_SOURCE_MCP_SERVER,
+  TOOL_SOURCE_API_ENDPOINT,
+} from "../constants";
+import { LocalInput } from "../../../common/shared";
 
 export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
@@ -56,7 +61,7 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
 
   return (
     <div
-      className={`rounded-xl bg-card border-2 min-w-[260px] max-w-[340px] flex flex-col transition-all duration-200 shadow-md relative group ${
+      className={`rounded-xl bg-card border-2 min-w-[240px] max-w-[320px] flex flex-col transition-all duration-200 shadow-md relative group ${
         selected
           ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-emerald-500/10"
           : "border-border hover:border-emerald-500/40 hover:shadow-emerald-500/5"
@@ -64,12 +69,14 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
     >
       <Handle
         type="source"
-        position={Position.Top}
+        position={Position.Bottom}
         id={HANDLE_TOOL_OUT}
         style={{ left: "50%" }}
-        className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect to Step or Agent node tools"
       />
+
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-t-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="p-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 shrink-0">
@@ -123,7 +130,13 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
             </span>
           </div>
         </div>
+
         <div className="flex items-center gap-1.5 shrink-0">
+          {data.returnDirect && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5" title="Return Direct enabled">
+              <Zap className="w-2.5 h-2.5" /> Direct
+            </span>
+          )}
           {data.headless && (
             <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded font-mono bg-purple-500/10 text-purple-500 border border-purple-500/20">
               Headless
@@ -145,62 +158,50 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
         </div>
       </div>
 
-      <div
-        className="p-2.5 border-b border-border/50 nodrag"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <BusinessLogicBlock
-          mode={data.implementationMode || "natural_language"}
-          onModeChange={(implementationMode) => updateToolData({ implementationMode })}
-          prompt={data.description || ""}
-          onPromptChange={(val) => updateToolData({ description: val })}
-          code={data.functionBody || ""}
-          onCodeChange={(val) => updateToolData({ functionBody: val })}
-          title="Tool Logic"
-          onGenerateCode={() => {
-            if (data.description && !data.functionBody) {
-              const generatedCode = `// Tool: ${data.name}\n// Spec: ${data.description.split('\n').join('\n// ')}\nreturn { success: true, result: "Tool executed" };`;
-              updateToolData({
-                functionBody: generatedCode,
-                implementationMode: "code",
-              });
-            }
-          }}
-        />
-      </div>
+      {/* Body: Configuration Summary */}
+      <div className="p-3 flex flex-col gap-2 text-xs">
+        {/* Description Summary */}
+        <div className="flex flex-col gap-1 bg-secondary/20 p-2 rounded border border-border/50 font-mono">
+          <span className="text-[9px] text-muted-foreground uppercase font-sans font-bold flex items-center gap-1">
+            <FileText className="w-3 h-3 text-emerald-500" /> Description / Spec
+          </span>
+          <span className="text-[10.5px] text-foreground leading-snug line-clamp-2 italic">
+            {data.description ? `"${data.description}"` : <span className="text-muted-foreground/60 not-italic">No description provided</span>}
+          </span>
+        </div>
 
-      <div className="px-3 py-2 flex flex-col gap-2 relative">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary/30 border border-border/50 text-[10px] font-medium text-foreground">
+        {/* Configuration Specs Row */}
+        <div className="flex items-center justify-between gap-1 text-[10px]">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary/30 border border-border/50 font-medium text-foreground">
             {getSourceIcon()}
             <span>{getSourceLabel()}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary/30 border border-border/50 text-[10px] font-medium font-mono text-muted-foreground uppercase">
-            Returns: {returnType}
+          <div className="flex items-center gap-1 px-2 py-1 rounded bg-secondary/30 border border-border/50 font-medium font-mono text-muted-foreground uppercase">
+            <span>Returns:</span>
+            <span className="text-emerald-400 font-bold">{returnType}</span>
           </div>
         </div>
 
-        {data.executionMode === "sandboxed_vm" && data.source === TOOL_SOURCE_INLINE && !data.headless && (
-          <div className="flex items-center justify-between text-[9px] font-medium mt-1">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500">
-              <Database className="w-3 h-3" />
-              Sandboxed Context
-            </div>
-
+        {/* Implementation Mode badge */}
+        <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground bg-secondary/10 px-2 py-1 rounded border border-border/40">
+          <span className="flex items-center gap-1">
             {data.implementationMode === "code" || data.functionBody ? (
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                {"</> Code"}
-              </span>
+              <>
+                <Code2 className="w-3 h-3 text-emerald-400" />
+                <span className="text-foreground">Custom Code</span>
+              </>
             ) : (
-              <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
-                {"✨ AI Spec"}
-              </span>
+              <>
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-foreground">AI Natural Spec</span>
+              </>
             )}
-          </div>
-        )}
+          </span>
+          {data.functionBody && (
+            <span className="text-emerald-500 font-semibold">{data.functionBody.split('\n').length} lines</span>
+          )}
+        </div>
       </div>
     </div>
   );

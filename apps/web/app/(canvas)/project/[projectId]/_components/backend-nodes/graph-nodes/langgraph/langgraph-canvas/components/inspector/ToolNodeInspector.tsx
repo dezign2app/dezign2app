@@ -351,8 +351,8 @@ export function ToolNodeInspector({
           <BusinessLogicBlock
             mode={selectedToolData.implementationMode || "natural_language"}
             onModeChange={(implementationMode) => onUpdateTool({ implementationMode })}
-            prompt={selectedToolData.description || ""}
-            onPromptChange={(description) => onUpdateTool({ description })}
+            prompt={selectedToolData.prompt || ""}
+            onPromptChange={(prompt) => onUpdateTool({ prompt })}
             code={bodyText}
             onCodeChange={(val) => {
               setBodyText(val);
@@ -361,8 +361,9 @@ export function ToolNodeInspector({
             title="Tool Business Logic"
             description="Define tool behavior in natural language or write a custom function"
             onGenerateCode={() => {
-              if (selectedToolData.description && !selectedToolData.functionBody) {
-                const generatedCode = `// Tool: ${selectedToolData.name}\n// Spec: ${selectedToolData.description.split('\n').join('\n// ')}\nreturn { success: true, result: "Tool executed successfully" };`;
+              const specText = selectedToolData.prompt || selectedToolData.description;
+              if (specText && !selectedToolData.functionBody) {
+                const generatedCode = `// Tool: ${selectedToolData.name}\n// Spec: ${specText.split('\n').join('\n// ')}\nreturn { success: true, result: "Tool executed successfully" };`;
                 setBodyText(generatedCode);
                 onUpdateTool({
                   functionBody: generatedCode,

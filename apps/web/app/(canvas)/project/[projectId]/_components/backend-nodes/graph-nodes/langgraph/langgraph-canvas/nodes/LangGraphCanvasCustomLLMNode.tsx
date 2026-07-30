@@ -233,9 +233,10 @@ export const LangGraphCanvasCustomLLMNode = ({ id, data, selected }: NodeProps<C
       {/* Output Handle to connect edge to step nodes */}
       <Handle
         type="source"
-        position={Position.Top}
+        position={Position.Bottom}
         id="llm_out"
-        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-top-[7px]"
+        style={{ left: "50%" }}
+        className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect to Step Node LLM Config"
       />
     </div>

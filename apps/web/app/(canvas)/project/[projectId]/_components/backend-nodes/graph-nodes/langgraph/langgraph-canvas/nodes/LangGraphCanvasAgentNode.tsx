@@ -19,7 +19,6 @@ import {
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
   DEFAULT_SELECTED_STREAM_EVENTS,
-  DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
 } from "../constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 
@@ -52,7 +51,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     enabled: false,
     strategy: "auto",
     schemaType: "json_schema",
-    schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+    schemaJson: "",
     handleErrorMode: "default",
   };
 
@@ -88,7 +87,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
       enabled: false,
       strategy: "auto",
       schemaType: "json_schema",
-      schemaJson: DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA,
+      schemaJson: "",
       handleErrorMode: "default",
       ...responseFormat,
       ...changes,
@@ -402,7 +401,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
               <div className="flex items-center justify-between text-[10px] font-mono">
                 <span className="text-foreground font-semibold flex items-center gap-1">
                   <Layers className="w-3 h-3 text-sky-500" />
-                  Format: {responseFormat.schemaType === "zod" ? "Zod Schema" : responseFormat.schemaType === "standard_schema" ? "Standard Schema" : "JSON Schema"}
+                  Format: JSON Schema
                 </span>
                 <span className="text-muted-foreground text-[9px]">
                   Mode: {responseFormat.strategy || "auto"}

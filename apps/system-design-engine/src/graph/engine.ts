@@ -1,4 +1,4 @@
-import type { BackendNodeType, BackendEdgeType } from "@workspace/canvas";
+import type { BackendNodeType, BackendEdgeType, BackendNodeData } from "@workspace/canvas";
 import type {
   CanvasGraph,
   CanvasElements,
@@ -203,7 +203,7 @@ export function resolveHandleLabel(
 ): string | null {
   if (!node || !handleId) return null;
 
-  const data = node.data as Record<string, unknown> | undefined;
+  const data = node.data;
 
   // 1. Endpoint handles: endpoint-in-ID, endpoint-out-ID, etc.
   if (
@@ -215,8 +215,8 @@ export function resolveHandleLabel(
     handleId.startsWith("routeEndpoints-out-")
   ) {
     const epId = handleId.replace(/^(endpoint|endpoints|routeEndpoints)-(in|out)-/, "");
-    const nodeDataEndpoints = (data?.endpoints as Array<{ id: string; type?: string; name?: string }>) ?? [];
-    let ep = nodeDataEndpoints.find((e) => e.id === epId);
+    const nodeDataEndpoints = data?.endpoints ?? [];
+    let ep: { id?: string; type?: string; name?: string } | undefined = nodeDataEndpoints.find((e) => e.id === epId);
 
     if (!ep && elements?.endpoints) {
       const rawEp = elements.endpoints.find((e) => e.id === epId || (e.nodeId === node.nodeId && e.id === epId));
@@ -239,7 +239,7 @@ export function resolveHandleLabel(
       if (rawEv) evName = rawEv.name;
     }
     if (!evName && data) {
-      const publishedEvents = (data.publishedEvents as Array<{ id: string; name?: string }>) ?? [];
+      const publishedEvents = data.publishedEvents ?? [];
       const ev = publishedEvents.find((e) => e.id === evId);
       if (ev) evName = ev.name;
     }
@@ -247,7 +247,7 @@ export function resolveHandleLabel(
     // Find associated endpoint on this node
     let allEndpoints: Array<{ id?: string; type?: string; name?: string; publishedEvents?: Array<{ id?: string; name?: string }> }> = [];
     if (data?.endpoints) {
-      allEndpoints = data.endpoints as typeof allEndpoints;
+      allEndpoints = data.endpoints;
     }
     if (elements?.endpoints) {
       const rawEps = elements.endpoints.filter((e) => e.nodeId === node.nodeId);
@@ -281,7 +281,7 @@ export function resolveHandleLabel(
       if (rawEv) evName = rawEv.name;
     }
     if (!evName && data) {
-      const consumedEvents = (data.consumedEvents as Array<{ id: string; name?: string }>) ?? [];
+      const consumedEvents = data.consumedEvents ?? [];
       const ev = consumedEvents.find((e) => e.id === evId);
       if (ev) evName = ev.name;
     }
@@ -293,37 +293,37 @@ export function resolveHandleLabel(
   // 4. Messaging Resource handles: topic:in:ID, topics:in:ID, stream:out:ID, etc.
   const resourceMatch = handleId.match(/^(topic|topics|stream|streams|queue|queues|channel|channels|cache|caches|bucket|buckets):(in|out):(.+)$/);
   if (resourceMatch) {
-    const resType = resourceMatch[1];
-    const resId = resourceMatch[3];
-
-    if (resType.startsWith("topic") && data) {
-      const topics = (data.topics as Array<{ id: string; name?: string }>) ?? [];
-      const topic = topics.find((t) => t.id === resId);
-      if (topic && topic.name) return `topic: ${topic.name}`;
-      if (elements?.events) {
-        const rawEv = elements.events.find((e) => e.id === resId || e.messagingResourceId === resId);
-        if (rawEv) return `topic: ${rawEv.name}`;
+    const [, resType, , resId] = resourceMatch;
+    if (resType && resId && data) {
+      if (resType.startsWith("topic")) {
+        const topics = data.topics ?? [];
+        const topic = topics.find((t) => t.id === resId);
+        if (topic && topic.name) return `topic: ${topic.name}`;
+        if (elements?.events) {
+          const rawEv = elements.events.find((e) => e.id === resId || e.messagingResourceId === resId);
+          if (rawEv) return `topic: ${rawEv.name}`;
+        }
+      } else if (resType.startsWith("stream")) {
+        const streams = data.streams ?? [];
+        const stream = streams.find((s) => s.id === resId);
+        if (stream && stream.name) return `stream: ${stream.name}`;
+      } else if (resType.startsWith("queue")) {
+        const queues = data.queues ?? [];
+        const queue = queues.find((q) => q.id === resId);
+        if (queue && queue.name) return `queue: ${queue.name}`;
+      } else if (resType.startsWith("channel")) {
+        const channels = data.channels ?? [];
+        const channel = channels.find((c) => c.id === resId);
+        if (channel && channel.name) return `channel: ${channel.name}`;
+      } else if (resType.startsWith("cache")) {
+        const caches = data.caches ?? [];
+        const cache = caches.find((c) => c.id === resId);
+        if (cache && cache.name) return `cache: ${cache.name}`;
+      } else if (resType.startsWith("bucket")) {
+        const buckets = data.buckets ?? [];
+        const bucket = buckets.find((b) => b.id === resId);
+        if (bucket && bucket.name) return `bucket: ${bucket.name}`;
       }
-    } else if (resType.startsWith("stream") && data) {
-      const streams = (data.streams as Array<{ id: string; name?: string }>) ?? [];
-      const stream = streams.find((s) => s.id === resId);
-      if (stream && stream.name) return `stream: ${stream.name}`;
-    } else if (resType.startsWith("queue") && data) {
-      const queues = (data.queues as Array<{ id: string; name?: string }>) ?? [];
-      const queue = queues.find((q) => q.id === resId);
-      if (queue && queue.name) return `queue: ${queue.name}`;
-    } else if (resType.startsWith("channel") && data) {
-      const channels = (data.channels as Array<{ id: string; name?: string }>) ?? [];
-      const channel = channels.find((c) => c.id === resId);
-      if (channel && channel.name) return `channel: ${channel.name}`;
-    } else if (resType.startsWith("cache") && data) {
-      const caches = (data.caches as Array<{ id: string; name?: string }>) ?? [];
-      const cache = caches.find((c) => c.id === resId);
-      if (cache && cache.name) return `cache: ${cache.name}`;
-    } else if (resType.startsWith("bucket") && data) {
-      const buckets = (data.buckets as Array<{ id: string; name?: string }>) ?? [];
-      const bucket = buckets.find((b) => b.id === resId);
-      if (bucket && bucket.name) return `bucket: ${bucket.name}`;
     }
   }
 
@@ -335,32 +335,36 @@ export function resolveHandleLabel(
       if (rawEv) return `event: ${rawEv.name}`;
     }
     if (data) {
-      const events = (data.events as Array<{ id: string; name?: string }>) ?? [];
+      const events = data.events ?? [];
       const ev = events.find((e) => e.id === evId);
       if (ev && ev.name) return `event: ${ev.name}`;
     }
   }
 
   // 6. Worker Tasks: task-in-ID, task-out-ID
-  if (handleId.startsWith("task-in-") || handleId.startsWith("task-out-") && data) {
+  if (handleId.startsWith("task-in-") || handleId.startsWith("task-out-")) {
     const taskId = handleId.replace(/^task-(in|out)-/, "");
-    const tasks = (data.tasks as Array<{ id: string; name?: string }>) ?? [];
+    const tasks = data?.tasks ?? [];
     const task = tasks.find((t) => t.id === taskId);
     if (task && task.name) return `task: ${task.name}`;
   }
 
   // 7. Search Indexes: index-in-ID, index-out-ID
-  if ((handleId.startsWith("index-in-") || handleId.startsWith("index-out-")) && data) {
+  if (handleId.startsWith("index-in-") || handleId.startsWith("index-out-")) {
     const idxId = handleId.replace(/^index-(in|out)-/, "");
-    const sources = (data.searchSources as Array<{ id: string; name?: string }>) ?? [];
-    const idx = sources.find((s) => s.id === idxId);
+    const sources = data?.searchSources ?? [];
+    const allIndexes = sources.flatMap((s) => s.indexes ?? []);
+    const idx = allIndexes.find((i) => i.id === idxId);
     if (idx && idx.name) return `index: ${idx.name}`;
+
+    const src = sources.find((s) => s.id === idxId);
+    if (src && src.dbTable) return `index: ${src.dbTable}`;
   }
 
   // 8. External Actions: actions-ID
-  if (handleId.startsWith("actions-") && data) {
+  if (handleId.startsWith("actions-")) {
     const actId = handleId.replace("actions-", "");
-    const actions = (data.actions as Array<{ id: string; name?: string }>) ?? [];
+    const actions = data?.actions ?? [];
     const act = actions.find((a) => a.id === actId);
     if (act && act.name) return `action: ${act.name}`;
   }
@@ -368,7 +372,7 @@ export function resolveHandleLabel(
   // 9. Columns on entity node: source-colName, target-colName
   if (handleId.startsWith("source-") || handleId.startsWith("target-")) {
     const colName = handleId.replace(/^(source|target)-/, "");
-    const columns = (data.columns as Array<{ name: string }>) ?? [];
+    const columns = data?.columns ?? [];
     const col = columns.find((c) => c.name === colName);
     if (col) return `col: ${col.name}`;
   }
@@ -414,7 +418,7 @@ const STRIPPED_KEYS = new Set<string>([
   "fractionalIndex",
 ]);
 
-export function cleanNodeData(data: Record<string, unknown> | undefined): Record<string, unknown> | null {
+export function cleanNodeData(data: BackendNodeData | Record<string, unknown> | undefined): Record<string, unknown> | null {
   if (!data) return null;
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
@@ -433,7 +437,7 @@ export function formatNodeDataLines(node: GraphNode): string[] {
   const lines: string[] = [`## [${node.type}] ${node.label}`];
   if (node.description) lines.push(`Description: ${node.description}`);
 
-  const dataClean = cleanNodeData(node.data as Record<string, unknown> | undefined);
+  const dataClean = cleanNodeData(node.data);
   if (dataClean) {
     lines.push("Data:");
     lines.push("```json");

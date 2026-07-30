@@ -25,7 +25,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
 
   const handleNameSave = () => {
     setIsEditingName(false);
-    const trimmed = nameValue.trim() || "LLM Node";
+    const trimmed = nameValue.trim() || "LLM";
     setNameValue(trimmed);
     if (trimmed !== data.label) {
       updateLLMData({ label: trimmed });
@@ -96,7 +96,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
                     e.stopPropagation();
                     if (e.key === "Enter") handleNameSave();
                     if (e.key === "Escape") {
-                      setNameValue(data.label || "LLM Node");
+                      setNameValue(data.label || "LLM");
                       setIsEditingName(false);
                     }
                   }}
@@ -113,9 +113,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
                   e.stopPropagation();
                   setIsEditingName(true);
                 }}
-                title="Click to rename LLM Node"
+                title="Click to rename LLM"
               >
-                {data.label || "LLM Node"}
+                {data.label || "LLM"}
               </span>
             )}
             <span className="text-[9px] font-mono text-muted-foreground">{data.llmId}</span>
@@ -134,7 +134,7 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
                 e.stopPropagation();
                 data.onDeleteLLM?.();
               }}
-              title="Delete LLM Node"
+              title="Delete LLM"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

@@ -780,6 +780,11 @@ export interface LangGraphAgentDefinition {
   streamConfig?: LangGraphAgentStreamConfig;
   responseFormat?: LangGraphAgentResponseFormatConfig;
   memoryConfig?: LangGraphAgentMemoryConfig;
+  stateUpdates?: {
+    channelKey: string;
+    mode?: StateUpdateMode;
+    value?: string;
+  }[];
   tools?: string[];        // Bound tool IDs
   middleware?: string[];   // Bound middleware IDs
   memory?: string[];       // Bound memory / checkpointer / db_ref IDs

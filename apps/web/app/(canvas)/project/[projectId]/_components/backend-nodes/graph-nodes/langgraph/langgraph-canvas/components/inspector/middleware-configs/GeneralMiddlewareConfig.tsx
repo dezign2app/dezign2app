@@ -66,7 +66,7 @@ export function GeneralMiddlewareConfig({
             type="button"
             className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
             onClick={onDeleteMiddleware}
-            title="Delete Middleware Node"
+            title="Delete Middleware"
           >
             <Trash2 className="w-4 h-4" />
           </button>

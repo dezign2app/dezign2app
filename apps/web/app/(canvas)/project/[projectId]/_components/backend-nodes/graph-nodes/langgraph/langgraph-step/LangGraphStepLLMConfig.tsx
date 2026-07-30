@@ -35,7 +35,7 @@ export const LangGraphStepLLMConfig: React.FC<LangGraphStepLLMConfigProps> = ({
             connection.sourceHandle === undefined
           }
           className="!bg-sky-400 !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-          title="Connect LLM node"
+          title="Connect LLM"
         />
         <div className="flex items-center gap-1.5">
           <Brain className="w-3.5 h-3.5 text-emerald-400" />

@@ -117,6 +117,7 @@ export function InspectorTabContent({
           onToggleTool={onToggleTool}
           onToggleMiddleware={onToggleMiddleware}
           onToggleMemory={onToggleMemory}
+          stateChannels={stateChannels}
         />
       ) : selectedStepData ? (
         <StepNodeInspector

@@ -7,7 +7,7 @@ import type {
   MemoryNode,
   LangGraphAgentResponseFormatConfig,
 } from "../../types";
-import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
+import type { LangGraphAgentMemoryConfig, LangGraphStateChannel } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -16,6 +16,7 @@ import { AgentAttachedComponentsSection } from "./agent-inspector/AgentAttachedC
 import { AgentMemoryConfigSection } from "./agent-inspector/AgentMemoryConfigSection";
 import { AgentStructuredOutputSection } from "./agent-inspector/AgentStructuredOutputSection";
 import { AgentEventStreamingSection } from "./agent-inspector/AgentEventStreamingSection";
+import { AgentStateUpdatesSection } from "./agent-inspector/AgentStateUpdatesSection";
 
 interface AgentNodeInspectorProps {
   selectedAgentData: AgentNodeData;
@@ -33,6 +34,7 @@ interface AgentNodeInspectorProps {
   onToggleTool?: (toolId: string, connect: boolean) => void;
   onToggleMiddleware?: (mwId: string, connect: boolean) => void;
   onToggleMemory?: (memId: string, connect: boolean) => void;
+  stateChannels?: LangGraphStateChannel[];
 }
 
 export function AgentNodeInspector({
@@ -51,6 +53,7 @@ export function AgentNodeInspector({
   onToggleTool,
   onToggleMiddleware,
   onToggleMemory,
+  stateChannels = [],
 }: AgentNodeInspectorProps) {
   const entities = useBackendCanvasStore(
     useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector"))
@@ -116,20 +119,27 @@ export function AgentNodeInspector({
         onToggleMemory={onToggleMemory}
       />
 
-      {/* ─── 3. Memory & Checkpointer Configuration ────────────────────────────── */}
+      {/* ─── 3. State Channel Updates ─────────────────────────────────────────── */}
+      <AgentStateUpdatesSection
+        selectedAgentData={selectedAgentData}
+        onUpdateAgent={onUpdateAgent}
+        stateChannels={stateChannels}
+      />
+
+      {/* ─── 4. Memory & Checkpointer Configuration ────────────────────────────── */}
       <AgentMemoryConfigSection
         memConfig={memConfig}
         updateMemoryConfig={updateMemoryConfig}
         entities={entities}
       />
 
-      {/* ─── 4. Structured Output / Response Format ────────────────────────────── */}
+      {/* ─── 5. Structured Output / Response Format ────────────────────────────── */}
       <AgentStructuredOutputSection
         rfConfig={rfConfig}
         updateResponseFormat={updateResponseFormat}
       />
 
-      {/* ─── 5. Event Streaming Configuration ──────────────────────────────────── */}
+      {/* ─── 6. Event Streaming Configuration ──────────────────────────────────── */}
       <AgentEventStreamingSection
         selectedAgentData={selectedAgentData}
         onUpdateAgent={onUpdateAgent}

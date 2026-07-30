@@ -90,10 +90,10 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
     }
   };
 
-  // Detect LLM nodes on canvas
+  // Detect LLMs on canvas
   const langGraphLLMNodes = allNodes.filter((n: LangGraphCanvasNode): n is LangGraphLLMNode => n.type === LANGGRAPH_CANVAS_NODE_LLM);
 
-  // Detect edge connected directly from an LLM node to this step node's llm_in handle
+  // Detect edge connected directly from an LLM to this step node's llm_in handle
   const connectedEdge = allEdges.find(
     (e: Edge) =>
       e.target === id &&
@@ -120,14 +120,14 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
   const allToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.every(n => n?.data.returnDirect);
   const someToolsDirect = connectedToolNodes.length > 0 && connectedToolNodes.some(n => n?.data.returnDirect) && !allToolsDirect;
 
-  // Selected linked LLM node (via edge connection or explicit dropdown selection)
+  // Selected linked LLM (via edge connection or explicit dropdown selection)
   const linkedCustomLLM = connectedLLMNode || langGraphLLMNodes.find((n: LangGraphLLMNode) => n.id === data.modelConfig?.customLlmNodeId);
 
   useEffect(() => {
     setNameValue(data.label || "Node");
   }, [data.label]);
 
-  // Sync connected LLM node data if linked via edge
+  // Sync connected LLM data if linked via edge
   useEffect(() => {
     if (connectedLLMNode) {
       handleUpdateModelConfig({
@@ -284,7 +284,7 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
             id={HANDLE_LLM_IN}
             isValidConnection={(connection: Connection) => connection.sourceHandle === HANDLE_LLM_OUT || connection.sourceHandle === null || connection.sourceHandle === undefined}
             className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
-            title="Connect Custom LLM Node"
+            title="Connect Custom LLM"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">

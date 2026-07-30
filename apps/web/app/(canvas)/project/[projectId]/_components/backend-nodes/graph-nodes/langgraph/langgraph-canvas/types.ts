@@ -43,6 +43,12 @@ export type MemoryNodeData = LangGraphMemoryDefinition & {
 
 export type AgentNodeData = LangGraphAgentDefinition & {
   label: string;
+  stateUpdates?: {
+    channelKey: string;
+    mode?: StateUpdateMode;
+    value?: string;
+  }[];
+  availableStateChannels?: LangGraphStateChannel[];
   onDeleteAgent?: () => void;
   onOpenInspector?: () => void;
   onSelectNode?: () => void;
@@ -193,13 +199,13 @@ export type ToolPaletteItem = {
 };
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
-  { type: LANGGRAPH_CANVAS_NODE_AGENT, label: "Agent Node", desc: "Create an AI agent with LLM, tools, middleware & memory", icon: Bot },
+  { type: LANGGRAPH_CANVAS_NODE_AGENT, label: "Agent", desc: "Create an AI agent with LLM, tools, middleware & memory", icon: Bot },
   { type: STEP_TYPE_CUSTOM_CODE, label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
   { type: STEP_TYPE_ROUTER, label: "Conditional Router", desc: "Routes execution dynamically based on comparison rules", icon: GitBranch },
-  { type: LANGGRAPH_CANVAS_NODE_LLM, label: "LLM Node", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
-  { type: LANGGRAPH_CANVAS_NODE_TOOL, label: "Tool Node", desc: "Configure an executable tool for LLMs", icon: Wrench },
-  { type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE, label: "Middleware Node", desc: "Interceptors for Human-in-the-loop, rate limit & tracing", icon: Shield },
-  { type: LANGGRAPH_CANVAS_NODE_MEMORY, label: "Memory / DB Ref Node", desc: "Save chat history & state checkpoints per session", icon: Database },
+  { type: LANGGRAPH_CANVAS_NODE_LLM, label: "LLM config", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
+  { type: LANGGRAPH_CANVAS_NODE_TOOL, label: "Tool", desc: "Configure an executable tool for LLMs", icon: Wrench },
+  { type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE, label: "Middleware", desc: "Interceptors for Human-in-the-loop, rate limit & tracing", icon: Shield },
+  { type: LANGGRAPH_CANVAS_NODE_MEMORY, label: "Memory / DB Ref", desc: "Save chat history & state checkpoints per session", icon: Database },
 ];
 
 

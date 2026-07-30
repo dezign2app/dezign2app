@@ -6,9 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { MemoryNode, LangGraphCanvasNode } from "../types";
 import { LANGGRAPH_CANVAS_NODE_MEMORY, HANDLE_MEMORY_OUT } from "../constants";
 import { LocalInput } from "../../../common/shared";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<MemoryNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.name || data.label || "Memory Saver");
 
@@ -32,7 +35,7 @@ export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<Memo
     }
   };
 
-  const checkpointerType = data.checkpointer || "convex";
+  const checkpointerType = data.checkpointer || "memory";
   const threadIdKey = data.threadIdKey || "thread_id";
 
   return (
@@ -149,19 +152,18 @@ export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<Memo
           >
             <Select
               value={checkpointerType}
-              onValueChange={(val: "convex" | "redis" | "postgres" | "sqlite" | "memory") =>
-                updateMemoryData({ checkpointer: val })
-              }
+              onValueChange={(val: string) => updateMemoryData({ checkpointer: val })}
             >
               <SelectTrigger className="h-7 text-xs bg-secondary/30 font-mono">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="convex">Convex DB (ConvexSaver)</SelectItem>
-                <SelectItem value="postgres">PostgreSQL (PostgresSaver)</SelectItem>
-                <SelectItem value="redis">Redis (RedisSaver)</SelectItem>
-                <SelectItem value="sqlite">SQLite (SqliteSaver)</SelectItem>
                 <SelectItem value="memory">In-Memory (MemorySaver)</SelectItem>
+                {entities.map((e) => (
+                  <SelectItem key={e.id} value={e.data?.label || e.id}>
+                    {e.data?.label || "Untitled Table"} (Schema Entity)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -251,7 +251,7 @@ export const memoryDefinitionSchema = z.object({
   id: z.string().optional(),
   memoryId: z.string().optional(),
   name: z.string().default("Memory Saver"),
-  checkpointer: z.enum(["convex", "redis", "postgres", "sqlite", "memory"]).default("convex"),
+  checkpointer: z.string().default("memory"),
   threadIdKey: z.string().optional().default("thread_id"),
   threadScope: z.enum(["session", "user", "global"]).optional().default("session"),
   autoSummarize: z.boolean().optional().default(true),
@@ -263,7 +263,7 @@ export type MemoryDefinition = z.infer<typeof memoryDefinitionSchema>;
 
 export const agentMemoryConfigSchema = z.object({
   enabled: z.boolean().optional().default(true),
-  checkpointer: z.enum(["convex", "redis", "postgres", "sqlite", "memory"]).optional().default("convex"),
+  checkpointer: z.string().optional().default("memory"),
   threadIdKey: z.string().optional().default("thread_id"),
   threadScope: z.enum(["session", "user", "global"]).optional().default("session"),
   autoSummarize: z.boolean().optional().default(true),
@@ -451,7 +451,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     graphEdges: z.array(graphEdgeSchema).default([]),
     memoryConfig: z
       .object({
-        checkpointer: z.enum(["memory", "redis", "convex", "postgres"]).default("convex"),
+        checkpointer: z.string().default("memory"),
         checkpointerConnectionId: z.string().optional(),
         threadScope: z.enum(["session", "user", "global"]).default("session"),
         autoSummarize: z.boolean().default(true),
@@ -485,6 +485,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     const toolIds = new Set(data.toolDefinitions.map((t) => t.toolId || t.id).filter((id): id is string => Boolean(id)));
     const middlewareIds = new Set(data.middlewareDefinitions.map((m) => m.middlewareId || m.id).filter((id): id is string => Boolean(id)));
     const agentIds = new Set(data.agentDefinitions.map((a) => a.agentId || a.id).filter((id): id is string => Boolean(id)));
+    const memoryIds = new Set(data.memoryDefinitions.map((m) => m.memoryId || m.id).filter((id): id is string => Boolean(id)));
     const portIds = new Set(data.outputPorts.map((p) => p.id));
     const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
 
@@ -531,11 +532,12 @@ export const langgraphDataSchema = baseNodeDataSchema
         !customLlmIds.has(edge.source) &&
         !toolIds.has(edge.source) &&
         !middlewareIds.has(edge.source) &&
-        !agentIds.has(edge.source)
+        !agentIds.has(edge.source) &&
+        !memoryIds.has(edge.source)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Edge source "${edge.source}" does not exist in graphSteps, customLlmNodes, toolDefinitions, middlewareDefinitions, or agentDefinitions.`,
+          message: `Edge source "${edge.source}" does not exist in graphSteps, customLlmNodes, toolDefinitions, middlewareDefinitions, agentDefinitions, or memoryDefinitions.`,
           path: ["graphEdges", idx, "source"],
         });
       }

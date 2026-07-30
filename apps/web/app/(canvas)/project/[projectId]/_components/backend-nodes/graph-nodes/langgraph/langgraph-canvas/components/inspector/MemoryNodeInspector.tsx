@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@workspace/ui/components/switch";
 import type { MemoryNodeData } from "../../types";
 import { LocalInput } from "../../../../common/shared";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface MemoryNodeInspectorProps {
   selectedMemoryData: MemoryNodeData;
@@ -17,7 +19,8 @@ export function MemoryNodeInspector({
   onDeleteMemory,
   onUpdateMemory,
 }: MemoryNodeInspectorProps) {
-  const checkpointer = selectedMemoryData.checkpointer || "convex";
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+  const checkpointer = selectedMemoryData.checkpointer || "memory";
   const threadIdKey = selectedMemoryData.threadIdKey || "thread_id";
   const threadScope = selectedMemoryData.threadScope || "session";
 
@@ -76,19 +79,18 @@ export function MemoryNodeInspector({
           </Label>
           <Select
             value={checkpointer}
-            onValueChange={(val: "convex" | "redis" | "postgres" | "sqlite" | "memory") =>
-              onUpdateMemory({ checkpointer: val })
-            }
+            onValueChange={(val: string) => onUpdateMemory({ checkpointer: val })}
           >
             <SelectTrigger className="h-7 text-xs bg-background font-mono">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="convex">Convex DB (ConvexSaver - Realtime Serverless DB)</SelectItem>
-              <SelectItem value="postgres">PostgreSQL (PostgresSaver - Relational DB)</SelectItem>
-              <SelectItem value="redis">Redis (RedisSaver - Key-Value Cache DB)</SelectItem>
-              <SelectItem value="sqlite">SQLite (SqliteSaver - Embedded File DB)</SelectItem>
-              <SelectItem value="memory">In-Memory (MemorySaver - Ephemeral Ram)</SelectItem>
+              <SelectItem value="memory">In-Memory (MemorySaver)</SelectItem>
+              {entities.map((e) => (
+                <SelectItem key={e.id} value={e.data?.label || e.id}>
+                  {e.data?.label || "Untitled Table"} (Schema Entity)
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <p className="text-[10px] text-muted-foreground leading-tight">

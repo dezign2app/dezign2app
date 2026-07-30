@@ -58,7 +58,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
 
   const memoryConfig: LangGraphAgentMemoryConfig = data.memoryConfig || {
     enabled: true,
-    checkpointer: "convex",
+    checkpointer: "memory",
     threadIdKey: "thread_id",
     threadScope: "session",
     autoSummarize: true,
@@ -303,7 +303,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
               {boundMemories.length > 0
                 ? "Bound"
                 : memoryConfig.enabled !== false
-                ? memoryConfig.checkpointer || "Convex"
+                ? memoryConfig.checkpointer || "memory"
                 : "Off"}
             </span>
           </div>
@@ -322,97 +322,43 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
           />
         </div>
 
-        {/* 2. Memory / Checkpointer (Message Saver & Session ID) Panel */}
-        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-amber-950/10 dark:bg-amber-950/20 border border-amber-500/30 nodrag">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div className={`p-1 rounded shrink-0 ${memoryConfig.enabled !== false ? "bg-amber-500/20 text-amber-500" : "bg-muted/30 text-muted-foreground"}`}>
-                <Database className="w-3.5 h-3.5" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
-                  Memory & Checkpointer
-                  {boundMemories.length > 0 ? (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
-                      DB Ref Connected
-                    </span>
-                  ) : memoryConfig.enabled !== false ? (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
-                      {memoryConfig.checkpointer || "convex"}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="text-[9px] text-muted-foreground font-mono truncate">
-                  {`configurable: { ${memoryConfig.threadIdKey || "thread_id"}: "..." }`}
-                </span>
-              </div>
+        {/* 2. Memory / Checkpointer Panel */}
+        <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-amber-950/10 dark:bg-amber-950/20 border border-amber-500/30 nodrag">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className={`p-1 rounded shrink-0 ${memoryConfig.enabled !== false ? "bg-amber-500/20 text-amber-500" : "bg-muted/30 text-muted-foreground"}`}>
+              <Database className="w-3.5 h-3.5" />
             </div>
-
-            <div
-              className="nodrag shrink-0"
-              onClick={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <Switch
-                checked={memoryConfig.enabled !== false}
-                onCheckedChange={handleToggleMemory}
-                className="scale-90"
-              />
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                Memory & Checkpointer
+                {boundMemories.length > 0 ? (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
+                    Node Connected
+                  </span>
+                ) : memoryConfig.enabled !== false ? (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono font-semibold shrink-0">
+                    Active
+                  </span>
+                ) : null}
+              </span>
+              <span className="text-[9px] text-muted-foreground font-mono truncate">
+                {memoryConfig.enabled !== false ? "Checkpointing enabled" : "Checkpointing disabled"}
+              </span>
             </div>
           </div>
 
-          {memoryConfig.enabled !== false && (
-            <div className="flex flex-col gap-2 mt-1 pt-2 border-t border-amber-500/20">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[9px] font-mono text-muted-foreground uppercase flex items-center gap-1">
-                    <Layers className="w-2.5 h-2.5 text-amber-500" /> Checkpointer
-                  </span>
-                  <div
-                    className="nodrag"
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <Select
-                      value={memoryConfig.checkpointer || "convex"}
-                      onValueChange={(val: "convex" | "redis" | "postgres" | "sqlite" | "memory") =>
-                        updateMemoryConfig({ checkpointer: val })
-                      }
-                    >
-                      <SelectTrigger className="h-6 text-[10px] bg-background font-mono p-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="convex">Convex DB</SelectItem>
-                        <SelectItem value="postgres">PostgreSQL</SelectItem>
-                        <SelectItem value="redis">Redis</SelectItem>
-                        <SelectItem value="sqlite">SQLite</SelectItem>
-                        <SelectItem value="memory">In-Memory</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col gap-1">
-                  <span className="text-[9px] font-mono text-muted-foreground uppercase flex items-center gap-1">
-                    <Key className="w-2.5 h-2.5 text-amber-500" /> Session/Thread ID Key
-                  </span>
-                  <LocalInput
-                    className="h-6 text-[10px] bg-background border border-border/40 p-1 font-mono nodrag"
-                    value={memoryConfig.threadIdKey || "thread_id"}
-                    onChange={(e) => updateMemoryConfig({ threadIdKey: e.target.value })}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground pt-0.5 opacity-80">
-                <span>Connect Memory / DB Ref Node to top handle or configure in sidebar →</span>
-              </div>
-            </div>
-          )}
+          <div
+            className="nodrag shrink-0"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <Switch
+              checked={memoryConfig.enabled !== false}
+              onCheckedChange={handleToggleMemory}
+              className="scale-90"
+            />
+          </div>
         </div>
 
         {/* 2. Structured Output / Response Format (Output Node) Panel */}

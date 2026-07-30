@@ -15,6 +15,8 @@ import {
   RESPONSE_FORMAT_PRESETS,
 } from "../../constants";
 import { LocalInput, LocalTextarea } from "../../../../common/shared";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface AgentNodeInspectorProps {
   selectedAgentData: AgentNodeData;
@@ -51,9 +53,11 @@ export function AgentNodeInspector({
   onToggleMiddleware,
   onToggleMemory,
 }: AgentNodeInspectorProps) {
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+
   const memConfig: LangGraphAgentMemoryConfig = selectedAgentData.memoryConfig || {
     enabled: true,
-    checkpointer: "convex",
+    checkpointer: "memory",
     threadIdKey: "thread_id",
     threadScope: "session",
     autoSummarize: true,
@@ -360,18 +364,19 @@ export function AgentNodeInspector({
                 Checkpointer Saver Engine
               </Label>
               <Select
-                value={memConfig.checkpointer || "convex"}
-                onValueChange={(val: "convex" | "redis" | "postgres" | "sqlite" | "memory") => updateMemoryConfig({ checkpointer: val })}
+                value={memConfig.checkpointer || "memory"}
+                onValueChange={(val: string) => updateMemoryConfig({ checkpointer: val })}
               >
                 <SelectTrigger className="h-7 text-xs bg-background font-mono">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="convex">Convex DB (ConvexSaver)</SelectItem>
-                  <SelectItem value="postgres">PostgreSQL (PostgresSaver)</SelectItem>
-                  <SelectItem value="redis">Redis (RedisSaver)</SelectItem>
-                  <SelectItem value="sqlite">SQLite (SqliteSaver)</SelectItem>
                   <SelectItem value="memory">In-Memory (MemorySaver)</SelectItem>
+                  {entities.map((e) => (
+                    <SelectItem key={e.id} value={e.data?.label || e.id}>
+                      {e.data?.label || "Untitled Table"} (Schema Entity)
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground leading-tight">

@@ -118,9 +118,13 @@ export const DatabaseTableRefNode = ({ id, data, selected }: NodeProps<BackendNo
              <SelectValue placeholder="Select a Table..." />
            </SelectTrigger>
            <SelectContent>
-             {entities.map(e => (
-               <SelectItem key={e.id} value={e.id}>{e.data?.label || "Untitled"}</SelectItem>
-             ))}
+             {entities.length === 0 ? (
+               <div className="p-2 text-xs text-muted-foreground italic">No schema tables defined</div>
+             ) : (
+               entities.map(e => (
+                 <SelectItem key={e.id} value={e.id}>{e.data?.label || "Untitled Table"}</SelectItem>
+               ))
+             )}
            </SelectContent>
          </Select>
 

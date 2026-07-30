@@ -351,6 +351,8 @@ export interface BaseNodeData {
 
 /** Database entity / table schema fields (canvas type). */
 export interface CanvasEntityNodeData {
+  isSchemaGroup?: boolean;
+  variant?: string;
   dbType?: "relational" | "document" | "vector";
   /** Column definitions stored as part of the node. */
   columns?: {
@@ -748,7 +750,7 @@ export interface LangGraphAgentResponseFormatConfig {
 
 export interface LangGraphAgentMemoryConfig {
   enabled?: boolean;
-  checkpointer?: "convex" | "redis" | "postgres" | "sqlite" | "memory";
+  checkpointer?: string;
   threadIdKey?: string;
   threadScope?: "session" | "user" | "global";
   autoSummarize?: boolean;
@@ -760,7 +762,7 @@ export interface LangGraphMemoryDefinition {
   id?: string;
   memoryId?: string;
   name: string;
-  checkpointer: "convex" | "redis" | "postgres" | "sqlite" | "memory";
+  checkpointer: string;
   threadIdKey?: string;
   threadScope?: "session" | "user" | "global";
   autoSummarize?: boolean;

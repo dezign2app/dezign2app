@@ -9,7 +9,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { Button } from "@workspace/ui/components/button";
-import { PlusSquare, LayoutGrid, Database, LayoutTemplate } from "lucide-react";
+import { PlusSquare, Database, LayoutTemplate } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
@@ -42,17 +42,7 @@ export function SchemaView({ projectId }: SchemaViewProps) {
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { handleLayout } = useAutoLayout();
 
-  const schemaNodes = nodes
-    .filter((n) => n.type === "entity" || n.type === "group")
-    .map((n) => {
-      if (n.type === "group") {
-        return {
-          ...n,
-          style: { ...n.style, minWidth: 450, minHeight: 300 },
-        };
-      }
-      return n;
-    });
+  const schemaNodes = nodes.filter((n) => n.type === "entity");
   const schemaEdges = edges.filter((e) => e.type === "foreign-key");
 
   const hasFitted = useRef(false);

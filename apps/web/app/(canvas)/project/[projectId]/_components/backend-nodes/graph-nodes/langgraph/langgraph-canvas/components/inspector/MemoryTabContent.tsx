@@ -3,6 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@workspace/ui/components/switch";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphMemoryConfig } from "@/types/canvas";
+import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface MemoryTabContentProps {
   memoryConfig: LangGraphMemoryConfig;
@@ -13,6 +15,8 @@ export function MemoryTabContent({
   memoryConfig,
   setMemoryConfig,
 }: MemoryTabContentProps) {
+  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+
   return (
     <TabsContent
       value="memory"
@@ -20,10 +24,10 @@ export function MemoryTabContent({
     >
       <div className="flex flex-col gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Checkpointer
+          Checkpointer Engine
         </span>
         <Select
-          value={memoryConfig.checkpointer || "convex"}
+          value={memoryConfig.checkpointer || "memory"}
           onValueChange={(v: string) =>
             setMemoryConfig({
               ...memoryConfig,
@@ -35,10 +39,12 @@ export function MemoryTabContent({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="convex">Convex DB</SelectItem>
-            <SelectItem value="redis">Redis</SelectItem>
-            <SelectItem value="postgres">PostgreSQL</SelectItem>
-            <SelectItem value="memory">In-Memory</SelectItem>
+            <SelectItem value="memory">In-Memory (MemorySaver)</SelectItem>
+            {entities.map((e) => (
+              <SelectItem key={e.id} value={e.data?.label || e.id}>
+                {e.data?.label || "Untitled Table"} (Schema Entity)
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <span className="text-xs text-muted-foreground">

@@ -41,7 +41,7 @@ export type MemoryNodeData = LangGraphMemoryDefinition & {
   onSelectNode?: () => void;
 };
 
-export type AgentNodeData = LangGraphAgentDefinition & {
+export type CanvasNodeData = LangGraphAgentDefinition & {
   label: string;
   llmConfig?: {
     enabled?: boolean;
@@ -62,6 +62,8 @@ export type AgentNodeData = LangGraphAgentDefinition & {
   onOpenInspector?: () => void;
   onSelectNode?: () => void;
 };
+
+export type AgentNodeData = CanvasNodeData; // Backwards compatible alias
 
 export type LangGraphLLMNodeData = {
   label: string;
@@ -175,6 +177,7 @@ import {
   LANGGRAPH_CANVAS_NODE_LLM,
   LANGGRAPH_CANVAS_NODE_TOOL,
   LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+  LANGGRAPH_CANVAS_NODE_NODE,
   LANGGRAPH_CANVAS_NODE_AGENT,
   LANGGRAPH_CANVAS_NODE_MEMORY,
   STEP_TYPE_CUSTOM_CODE,
@@ -192,30 +195,33 @@ export type StateGlobalNode = Node<StateGlobalNodeData, typeof LANGGRAPH_CANVAS_
 
 export type ToolNode = Node<ToolNodeData, typeof LANGGRAPH_CANVAS_NODE_TOOL>;
 export type MiddlewareNode = Node<MiddlewareNodeData, typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE>;
-export type AgentNode = Node<AgentNodeData, typeof LANGGRAPH_CANVAS_NODE_AGENT>;
+export type CanvasNode = Node<CanvasNodeData, typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT>;
+export type AgentNode = CanvasNode; // Backwards compatible alias
 export type MemoryNode = Node<MemoryNodeData, typeof LANGGRAPH_CANVAS_NODE_MEMORY>;
 
 export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type LangGraphCanvasNode = StepNode | StartNode | EndNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | AgentNode | MemoryNode;
+export type LangGraphCanvasNodeUnion = StepNode | StartNode | EndNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | CanvasNode | MemoryNode;
+export type LangGraphCanvasNode = LangGraphCanvasNodeUnion;
 
 export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   if (node.type === LANGGRAPH_CANVAS_NODE_STEP) return node.data;
   return null;
 }
 
+export type LangGraphCanvasNodeAddType = LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END;
+
 export type ToolPaletteItem = {
-  type: LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END;
+  type: LangGraphCanvasNodeAddType;
   label: string;
   desc: string;
   icon: typeof Brain;
 };
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
-  { type: LANGGRAPH_CANVAS_NODE_AGENT, label: "Agent", desc: "Create an AI agent with LLM, tools, middleware & memory", icon: Bot },
-  { type: STEP_TYPE_CUSTOM_CODE, label: "Node", desc: "LangGraph node function that processes state", icon: Code2 },
+  { type: LANGGRAPH_CANVAS_NODE_NODE, label: "Node", desc: "LangGraph node with optional LLM, tools, middleware & memory", icon: Bot },
   { type: STEP_TYPE_ROUTER, label: "Conditional Router", desc: "Routes execution dynamically based on comparison rules", icon: GitBranch },
   { type: LANGGRAPH_CANVAS_NODE_END, label: "END Node", desc: "Terminal graph node representing __end__ execution", icon: CheckCircle2 },
   { type: LANGGRAPH_CANVAS_NODE_LLM, label: "LLM config", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },

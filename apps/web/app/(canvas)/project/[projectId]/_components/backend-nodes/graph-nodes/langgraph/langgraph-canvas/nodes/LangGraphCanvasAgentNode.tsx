@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap, Brain } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
@@ -19,6 +19,9 @@ import {
   DEFAULT_EVENT_STREAM_SIGNATURE,
   DEFAULT_STREAM_TRANSFORMERS,
   DEFAULT_SELECTED_STREAM_EVENTS,
+  DEFAULT_LLM_PROVIDER,
+  DEFAULT_LLM_MODEL,
+  DEFAULT_LLM_TEMPERATURE,
 } from "../constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 
@@ -38,6 +41,17 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
   const boundTools = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_TOOL_IN);
   const boundMiddlewares = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_MIDDLEWARE_IN);
   const boundMemories = edges.filter((e) => e.target === id && e.targetHandle === HANDLE_MEMORY_IN);
+
+  const llmConfig = {
+    enabled: data.llmConfig?.enabled !== undefined ? data.llmConfig.enabled : (data.modelConfig !== undefined ? true : true),
+    provider: data.llmConfig?.provider || data.modelConfig?.provider || DEFAULT_LLM_PROVIDER,
+    model: data.llmConfig?.model || data.modelConfig?.model || DEFAULT_LLM_MODEL,
+    temperature: data.llmConfig?.temperature ?? data.modelConfig?.temperature ?? DEFAULT_LLM_TEMPERATURE,
+  };
+
+  const stateUpdatesConfig = {
+    enabled: data.stateUpdatesConfig?.enabled !== false,
+  };
 
   const streamConfig: LangGraphAgentStreamConfig = data.streamConfig || {
     enabled: false,
@@ -71,6 +85,30 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
     setNodes((nds) =>
       nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_AGENT ? { ...n, data: { ...n.data, ...changes } } : n))
     );
+  };
+
+  const handleToggleLLMConfig = (enabled: boolean) => {
+    const updatedLLMConfig = {
+      ...llmConfig,
+      enabled,
+    };
+    const updatedModelConfig = enabled
+      ? data.modelConfig || {
+          provider: DEFAULT_LLM_PROVIDER,
+          model: DEFAULT_LLM_MODEL,
+          temperature: DEFAULT_LLM_TEMPERATURE,
+        }
+      : undefined;
+    updateAgentData({ llmConfig: updatedLLMConfig, modelConfig: updatedModelConfig });
+  };
+
+  const handleToggleStateUpdates = (enabled: boolean) => {
+    updateAgentData({
+      stateUpdatesConfig: {
+        ...stateUpdatesConfig,
+        enabled,
+      },
+    });
   };
 
   const updateStreamConfig = (changes: Partial<LangGraphAgentStreamConfig>) => {
@@ -278,7 +316,7 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
             <Cpu className="w-3.5 h-3.5 text-sky-400 mb-0.5" />
             <span className="text-[8px] font-semibold text-muted-foreground uppercase">Model</span>
             <span className="text-[10px] font-bold text-foreground font-mono truncate max-w-full">
-              {boundLLMs.length > 0 ? "Bound" : "Default"}
+              {boundLLMs.length > 0 ? "Bound" : llmConfig.enabled !== false ? "Default" : "Off"}
             </span>
           </div>
 
@@ -311,57 +349,126 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
           </div>
         </div>
 
-        {/* 1. System Prompt */}
-        <div className="flex flex-col gap-1 nodrag">
-          <span className="text-[9px] font-semibold text-muted-foreground uppercase">System Prompt</span>
-          <LocalTextarea
-            className="min-h-[50px] max-h-[100px] text-[11px] bg-secondary/20 border border-border/50 p-2 rounded font-mono leading-relaxed resize-y placeholder:text-muted-foreground/50 nodrag"
-            placeholder="System prompt / instructions for this agent..."
-            value={data.systemPrompt || ""}
-            onChange={(e) => updateAgentData({ systemPrompt: e.target.value })}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          />
+        {/* 1. LLM Configuration Panel */}
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-sky-500/5 border border-sky-500/20 nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className={`p-1 rounded shrink-0 ${llmConfig.enabled !== false ? "bg-sky-500/20 text-sky-500" : "bg-muted/30 text-muted-foreground"}`}>
+                <Brain className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                  LLM Config
+                  {boundLLMs.length > 0 ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-semibold shrink-0">
+                      Bound Edge
+                    </span>
+                  ) : llmConfig.enabled !== false ? (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-semibold shrink-0">
+                      {llmConfig.provider || "default"}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono truncate">
+                  {llmConfig.enabled !== false ? "Model execution enabled" : "LLM config disabled"}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="nodrag shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Switch
+                checked={llmConfig.enabled !== false}
+                onCheckedChange={handleToggleLLMConfig}
+                className="scale-90"
+              />
+            </div>
+          </div>
+
+          {llmConfig.enabled !== false && (
+            <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-sky-500/20 nodrag">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase">System Prompt</span>
+              <LocalTextarea
+                className="min-h-[50px] max-h-[100px] text-[11px] bg-secondary/20 border border-border/50 p-2 rounded font-mono leading-relaxed resize-y placeholder:text-muted-foreground/50 nodrag"
+                placeholder="System prompt / instructions for this agent..."
+                value={data.systemPrompt || ""}
+                onChange={(e) => updateAgentData({ systemPrompt: e.target.value })}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
         </div>
 
         {/* 2. State Channel Updates Panel */}
-        <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 nodrag">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-amber-500" /> State Updates
-            </span>
-            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              {stateUpdates.length}
-            </span>
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 nodrag">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className={`p-1 rounded shrink-0 ${stateUpdatesConfig.enabled !== false ? "bg-amber-500/20 text-amber-500" : "bg-muted/30 text-muted-foreground"}`}>
+                <Zap className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 truncate">
+                  State Updates
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 font-mono font-bold shrink-0">
+                    {stateUpdates.length}
+                  </span>
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono truncate">
+                  {stateUpdatesConfig.enabled !== false ? "Graph state mutation active" : "State updates disabled"}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="nodrag shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Switch
+                checked={stateUpdatesConfig.enabled !== false}
+                onCheckedChange={handleToggleStateUpdates}
+                className="scale-90"
+              />
+            </div>
           </div>
 
-          {stateUpdates.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              {stateUpdates.map((su, idx) => {
-                const matchedChannel = (data.availableStateChannels || []).find((c) => c.key === su.channelKey);
-                return (
-                  <div key={idx} className="flex flex-col gap-0.5 bg-amber-500/10 px-2 py-1 rounded text-[10px] font-mono border border-amber-500/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-amber-400 font-bold truncate max-w-[140px]">{su.channelKey}</span>
-                      <span className="text-[9px] text-muted-foreground uppercase px-1 rounded bg-secondary/50 font-semibold">{su.mode || "set"}</span>
-                    </div>
-                    {su.value ? (
-                      <span className="text-[9px] text-muted-foreground/90 truncate font-mono">{su.value}</span>
-                    ) : (
-                      matchedChannel && <span className="text-[9px] text-muted-foreground/70 font-mono">type: {matchedChannel.type}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1 bg-secondary/20 p-1.5 rounded border border-border/30">
-              <span className="text-[9px] text-muted-foreground font-mono flex items-center gap-1">
-                <span className="font-bold text-foreground">Graph Fields:</span>
-                <span className="truncate max-w-[180px]">
-                  {availableFields.length > 0 ? availableFields.join(", ") : "none"}
-                </span>
-              </span>
+          {stateUpdatesConfig.enabled !== false && (
+            <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-amber-500/20">
+              {stateUpdates.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {stateUpdates.map((su, idx) => {
+                    const matchedChannel = (data.availableStateChannels || []).find((c) => c.key === su.channelKey);
+                    return (
+                      <div key={idx} className="flex flex-col gap-0.5 bg-amber-500/10 px-2 py-1 rounded text-[10px] font-mono border border-amber-500/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-amber-400 font-bold truncate max-w-[140px]">{su.channelKey}</span>
+                          <span className="text-[9px] text-muted-foreground uppercase px-1 rounded bg-secondary/50 font-semibold">{su.mode || "set"}</span>
+                        </div>
+                        {su.value ? (
+                          <span className="text-[9px] text-muted-foreground/90 truncate font-mono">{su.value}</span>
+                        ) : (
+                          matchedChannel && <span className="text-[9px] text-muted-foreground/70 font-mono">type: {matchedChannel.type}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1 bg-secondary/20 p-1.5 rounded border border-border/30">
+                  <span className="text-[9px] text-muted-foreground font-mono flex items-center gap-1">
+                    <span className="font-bold text-foreground">Graph Fields:</span>
+                    <span className="truncate max-w-[180px]">
+                      {availableFields.length > 0 ? availableFields.join(", ") : "none"}
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

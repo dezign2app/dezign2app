@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Edge, Connection } from "@xyflow/react";
-import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check, Wrench, AlertCircle } from "lucide-react";
+import { Code2, Zap, Trash2, Brain, X, GitBranch, Plus, Settings, Check, Wrench, AlertCircle, FileText } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import type { StepNode, LangGraphCanvasNode, StepNodeData, LangGraphLLMNode, ToolNode } from "../types";
 import {
@@ -173,6 +173,34 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                 baseUrl: updates.baseUrl ?? n.data.modelConfig?.baseUrl,
                 apiKeyHeader: updates.apiKeyHeader ?? n.data.modelConfig?.apiKeyHeader,
                 customLlmNodeId: updates.customLlmNodeId ?? n.data.modelConfig?.customLlmNodeId,
+              },
+            },
+          };
+        }
+        return n;
+      })
+    );
+  };
+
+  const customCode = data.customCode;
+
+  const handleUpdateCustomCode = (updates: Partial<NonNullable<StepNodeData["customCode"]>> | null) => {
+    setNodes((nds: LangGraphCanvasNode[]) =>
+      nds.map((n: LangGraphCanvasNode) => {
+        if (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_STEP) {
+          if (updates === null) {
+            const { customCode, ...restData } = n.data;
+            return { ...n, data: restData };
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              customCode: {
+                ...n.data.customCode,
+                body: updates.body ?? n.data.customCode?.body ?? "",
+                timeoutMs: updates.timeoutMs ?? n.data.customCode?.timeoutMs,
+                memoryLimitMb: updates.memoryLimitMb ?? n.data.customCode?.memoryLimitMb,
               },
             },
           };
@@ -383,6 +411,57 @@ export const LangGraphCanvasStepNode = ({ id, data, selected }: NodeProps<StepNo
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Business Logic Configuration Option - Only for non-router nodes */}
+      {stepType !== STEP_TYPE_ROUTER && (
+        <div className="flex flex-col gap-1.5 border-t border-border/50 py-2.5 nodrag relative px-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                Business Logic
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={!!customCode?.body}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    handleUpdateCustomCode({ body: customCode?.body || "// Custom step node logic\nreturn { ...state };" });
+                  } else {
+                    handleUpdateCustomCode(null);
+                  }
+                }}
+                className="nodrag scale-75 origin-right"
+              />
+            </div>
+          </div>
+
+          {!!customCode?.body && (
+            <div
+              className="flex flex-col gap-1 mt-1 nodrag cursor-pointer group/logic"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onOpenInspector?.();
+              }}
+              title="Click to edit full business logic in sidebar"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-mono text-indigo-400/90 font-semibold uppercase">
+                  Custom Logic Summary
+                </span>
+                <span className="text-[8px] font-mono px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 rounded border border-indigo-500/20 group-hover/logic:bg-indigo-500/20 transition-colors">
+                  TS / JS
+                </span>
+              </div>
+              <div className="p-2 rounded bg-indigo-500/5 border border-indigo-500/20 text-[10px] font-mono text-muted-foreground line-clamp-3 leading-tight group-hover/logic:border-indigo-500/40 group-hover/logic:text-foreground transition-all">
+                {customCode.body}
+              </div>
             </div>
           )}
         </div>

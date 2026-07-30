@@ -38,10 +38,12 @@ import {
   ToolNodeData,
   MiddlewareNode,
   MiddlewareNodeData,
+  CanvasNode,
   AgentNode,
   AgentNodeData,
   MemoryNode,
   MemoryNodeData,
+  LangGraphCanvasNodeAddType,
   getStepData,
 } from "../types";
 import {
@@ -53,6 +55,7 @@ import {
   LANGGRAPH_CANVAS_NODE_LLM,
   LANGGRAPH_CANVAS_NODE_TOOL,
   LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+  LANGGRAPH_CANVAS_NODE_NODE,
   LANGGRAPH_CANVAS_NODE_AGENT,
   LANGGRAPH_CANVAS_NODE_MEMORY,
   DEFAULT_MIDDLEWARE_TYPE,
@@ -242,12 +245,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     const savedAgents = data.agentDefinitions || [];
     savedAgents.forEach((agDef) => {
       const agNode: AgentNode = {
-        id: agDef.id || agDef.agentId || `agent_${Date.now()}`,
-        type: LANGGRAPH_CANVAS_NODE_AGENT,
+        id: agDef.id || agDef.agentId || `node_${Date.now()}`,
+        type: LANGGRAPH_CANVAS_NODE_NODE,
         position: agDef.position || { x: 420, y: 160 },
         data: {
           label: agDef.name,
-          agentId: agDef.id || agDef.agentId || `agent_${Date.now()}`,
+          agentId: agDef.id || agDef.agentId || `node_${Date.now()}`,
           name: agDef.name,
           systemPrompt: agDef.systemPrompt,
           modelConfig: agDef.modelConfig,
@@ -426,7 +429,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             },
           };
         }
-        if (n.type === LANGGRAPH_CANVAS_NODE_AGENT) {
+        if (n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT) {
           return {
             ...n,
             data: {
@@ -603,7 +606,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? getStepData(found) : null;
   }, [nodes, selectedNodeId]);
 
-  const handleAddStep = (type: LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END, label: string) => {
+  const handleAddStep = (type: LangGraphCanvasNodeAddType, label: string) => {
     if (type === LANGGRAPH_CANVAS_NODE_END) {
       const endId = `end_${Date.now().toString(36).slice(-4)}`;
       const newEndNode: EndNode = {
@@ -733,30 +736,30 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       return;
     }
 
-    if (type === LANGGRAPH_CANVAS_NODE_AGENT) {
-      const agentId = `agent_${Date.now().toString(36).slice(-4)}`;
-      const newAgentNode: AgentNode = {
-        id: agentId,
-        type: LANGGRAPH_CANVAS_NODE_AGENT,
+    if (type === LANGGRAPH_CANVAS_NODE_NODE || type === LANGGRAPH_CANVAS_NODE_AGENT) {
+      const nodeId = `node_${Date.now().toString(36).slice(-4)}`;
+      const newNode: CanvasNode = {
+        id: nodeId,
+        type: LANGGRAPH_CANVAS_NODE_NODE,
         position: { x: 420 + Math.random() * 140, y: 160 + Math.random() * 80 },
         data: {
-          label: label || "AI Agent",
-          agentId,
-          name: "react_agent",
-          systemPrompt: "You are a helpful AI assistant...",
+          label: label || "Node",
+          agentId: nodeId,
+          name: label || "Node",
+          systemPrompt: "System prompt / instructions for this node...",
           modelConfig: { provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE },
           tools: [],
           middleware: [],
           onDeleteAgent: () => {
-            setNodes((nodes) => nodes.filter((node) => node.id !== agentId));
-            setEdges((edges) => edges.filter((edge) => edge.source !== agentId && edge.target !== agentId));
-            setSelectedNodeId((curr) => (curr === agentId ? null : curr));
+            setNodes((nodes) => nodes.filter((node) => node.id !== nodeId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+            setSelectedNodeId((curr) => (curr === nodeId ? null : curr));
           },
         },
       };
 
-      setNodes((nds) => [...nds, newAgentNode]);
-      setSelectedNodeId(agentId);
+      setNodes((nds) => [...nds, newNode]);
+      setSelectedNodeId(nodeId);
       setActiveSideTab("inspector");
       return;
     }
@@ -764,7 +767,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     const stepId = type === STEP_TYPE_ROUTER ? `router_${Date.now().toString(36).slice(-4)}` : `step_${Date.now().toString(36).slice(-4)}`;
     const newNode: StepNode = {
       id: stepId,
-      type: LANGGRAPH_CANVAS_NODE_STEP,
+      type: LANGGRAPH_CANVAS_NODE_STEP, 
       position: { x: 360 + Math.random() * 180, y: 160 + Math.random() * 100 },
       data: {
         label: label || (type === STEP_TYPE_ROUTER ? "Conditional Router" : "Node"),
@@ -810,7 +813,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   }, [nodes, selectedNodeId]);
 
   const selectedAgentData = useMemo((): AgentNodeData | null => {
-    const found = nodes.find((n): n is AgentNode => n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_AGENT);
+    const found = nodes.find((n): n is AgentNode => n.id === selectedNodeId && (n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT));
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
 
@@ -840,7 +843,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const updateSelectedAgent = (changes: Partial<AgentNodeData>) => {
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
-      n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_AGENT
+      n.id === selectedNodeId && (n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT)
         ? { ...n, data: { ...n.data, ...changes } }
         : n
     ));
@@ -1051,11 +1054,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       }));
 
     const agentDefinitions: LangGraphAgentDefinition[] = nodes
-      .filter((n): n is AgentNode => n.type === LANGGRAPH_CANVAS_NODE_AGENT)
+      .filter((n): n is AgentNode => n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT)
       .map((n) => ({
         id: n.data.agentId || n.id,
         agentId: n.data.agentId || n.id,
-        name: n.data.name || "AI Agent",
+        name: n.data.name || "Node",
         systemPrompt: n.data.systemPrompt,
         modelConfig: n.data.modelConfig,
         streamConfig: n.data.streamConfig,

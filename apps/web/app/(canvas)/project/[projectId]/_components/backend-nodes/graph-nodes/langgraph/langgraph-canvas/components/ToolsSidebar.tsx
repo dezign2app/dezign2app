@@ -1,11 +1,9 @@
 import React from "react";
 import { Wrench, HelpCircle } from "lucide-react";
-import type { LangGraphStepConfig } from "@/types/canvas";
-import { TOOL_PALETTE_ITEMS } from "../types";
-import { LANGGRAPH_CANVAS_NODE_LLM, LANGGRAPH_CANVAS_NODE_TOOL, LANGGRAPH_CANVAS_NODE_MIDDLEWARE, LANGGRAPH_CANVAS_NODE_AGENT, LANGGRAPH_CANVAS_NODE_MEMORY, LANGGRAPH_CANVAS_NODE_END } from "../constants";
+import { TOOL_PALETTE_ITEMS, LangGraphCanvasNodeAddType } from "../types";
 
 interface ToolsSidebarProps {
-  onAddStep: (type: LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END, label: string) => void;
+  onAddStep: (type: LangGraphCanvasNodeAddType, label: string) => void;
 }
 
 export function ToolsSidebar({ onAddStep }: ToolsSidebarProps) {

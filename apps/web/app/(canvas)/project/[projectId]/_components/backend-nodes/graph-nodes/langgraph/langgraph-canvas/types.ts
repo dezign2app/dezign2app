@@ -169,6 +169,22 @@ export type StateGlobalNodeData = {
   onAddChannel?: () => void;
 };
 
+export interface OutputChannelConfig {
+  id: string; // Permanent UUID
+  name: string;
+  type: "sse" | "websocket" | "event" | "webhook" | "rest";
+  topicOrEventName?: string;
+  targetStateChannel?: string;
+  description?: string;
+}
+
+export type OutputNodeData = OutputChannelConfig & {
+  label: string;
+  onDeleteOutput?: () => void;
+  onOpenInspector?: () => void;
+  onSelectNode?: () => void;
+};
+
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_START,
@@ -181,6 +197,7 @@ import {
   LANGGRAPH_CANVAS_NODE_NODE,
   LANGGRAPH_CANVAS_NODE_AGENT,
   LANGGRAPH_CANVAS_NODE_MEMORY,
+  LANGGRAPH_CANVAS_NODE_OUTPUT,
   STEP_TYPE_ROUTER,
 } from "./constants";
 
@@ -198,12 +215,13 @@ export type MiddlewareNode = Node<MiddlewareNodeData, typeof LANGGRAPH_CANVAS_NO
 export type CanvasNode = Node<CanvasNodeData, typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT>;
 export type AgentNode = CanvasNode; // Backwards compatible alias
 export type MemoryNode = Node<MemoryNodeData, typeof LANGGRAPH_CANVAS_NODE_MEMORY>;
+export type OutputNode = Node<OutputNodeData, typeof LANGGRAPH_CANVAS_NODE_OUTPUT>;
 
 export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type LangGraphCanvasNodeUnion = StepNode | StartNode | EndNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | CanvasNode | MemoryNode;
+export type LangGraphCanvasNodeUnion = StepNode | StartNode | EndNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | CanvasNode | MemoryNode | OutputNode;
 export type LangGraphCanvasNode = LangGraphCanvasNodeUnion;
 
 export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
@@ -211,7 +229,9 @@ export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   return null;
 }
 
-export type LangGraphCanvasNodeAddType = LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END;
+export type LangGraphCanvasNodeAddType = LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END | typeof LANGGRAPH_CANVAS_NODE_OUTPUT;
+
+import { Radio } from "lucide-react";
 
 export type ToolPaletteItem = {
   type: LangGraphCanvasNodeAddType;
@@ -228,4 +248,5 @@ export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
   { type: LANGGRAPH_CANVAS_NODE_TOOL, label: "Tool", desc: "Configure an executable tool for LLMs", icon: Wrench },
   { type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE, label: "Middleware", desc: "Interceptors for Human-in-the-loop, rate limit & tracing", icon: Shield },
   { type: LANGGRAPH_CANVAS_NODE_MEMORY, label: "Memory / DB Ref", desc: "Save chat history & state checkpoints per session", icon: Database },
+  { type: LANGGRAPH_CANVAS_NODE_OUTPUT, label: "Output Channel", desc: "Emit SSE, WebSocket, Event, or Webhook output", icon: Radio },
 ];

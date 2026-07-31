@@ -2,13 +2,14 @@ import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode } from "../../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, OutputNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, OutputNode } from "../../types";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
 import { ToolNodeInspector } from "./ToolNodeInspector";
 import { MiddlewareNodeInspector } from "./MiddlewareNodeInspector";
 import { AgentNodeInspector } from "./AgentNodeInspector";
 import { MemoryNodeInspector } from "./MemoryNodeInspector";
+import { OutputNodeInspector } from "./OutputNodeInspector";
 
 interface InspectorTabContentProps {
   selectedStepData: StepNodeData | null;
@@ -17,6 +18,7 @@ interface InspectorTabContentProps {
   selectedMiddlewareData?: MiddlewareNodeData | null;
   selectedAgentData?: AgentNodeData | null;
   selectedMemoryData?: MemoryNodeData | null;
+  selectedOutputData?: OutputNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
   availableLLMNodes?: LangGraphLLMNode[];
@@ -38,6 +40,7 @@ interface InspectorTabContentProps {
   onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
   onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
   onUpdateMemory?: (changes: Partial<MemoryNodeData>) => void;
+  onUpdateOutput?: (changes: Partial<OutputNodeData>) => void;
   stateChannels: LangGraphStateChannel[];
 }
 
@@ -48,6 +51,7 @@ export function InspectorTabContent({
   selectedMiddlewareData,
   selectedAgentData,
   selectedMemoryData,
+  selectedOutputData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
   availableLLMNodes,
@@ -69,6 +73,7 @@ export function InspectorTabContent({
   onUpdateMiddleware,
   onUpdateAgent,
   onUpdateMemory,
+  onUpdateOutput,
   stateChannels,
 }: InspectorTabContentProps) {
   return (
@@ -99,6 +104,13 @@ export function InspectorTabContent({
           selectedMemoryData={selectedMemoryData}
           onDeleteMemory={onDeleteStep}
           onUpdateMemory={onUpdateMemory || (() => {})}
+        />
+      ) : selectedOutputData ? (
+        <OutputNodeInspector
+          selectedOutputData={selectedOutputData}
+          onDeleteOutput={onDeleteStep}
+          onUpdateOutput={onUpdateOutput || (() => {})}
+          stateChannels={stateChannels}
         />
       ) : selectedAgentData ? (
         <AgentNodeInspector

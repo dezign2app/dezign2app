@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import {
-  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap, Settings,
+  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap, Settings, Radio, Globe,
 } from "lucide-react";
-import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
+import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, OutputChannelConfig } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
@@ -17,6 +17,32 @@ export interface ConnectedRouteInfo {
   method: string;
   sourceNodeLabel: string;
   payloadMapping?: Record<string, string>;
+}
+
+interface ChannelBadgeInfo {
+  label: string;
+  badgeColor: string;
+  iconColor: string;
+  icon: typeof Radio;
+}
+
+const DEFAULT_CHANNEL_TYPE_BADGE: ChannelBadgeInfo = {
+  label: "SSE",
+  badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  iconColor: "text-purple-400",
+  icon: Radio,
+};
+
+const CHANNEL_TYPE_BADGES: Record<string, ChannelBadgeInfo> = {
+  sse: DEFAULT_CHANNEL_TYPE_BADGE,
+  websocket: { label: "WS", badgeColor: "bg-blue-500/15 text-blue-400 border-blue-500/30", iconColor: "text-blue-400", icon: Plug },
+  event: { label: "EVENT", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30", iconColor: "text-amber-400", icon: Zap },
+  webhook: { label: "HOOK", badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", iconColor: "text-emerald-400", icon: Globe },
+  rest: { label: "REST", badgeColor: "bg-secondary text-foreground border-border/50", iconColor: "text-muted-foreground", icon: Radio },
+};
+
+function getChannelTypeBadge(type: string): ChannelBadgeInfo {
+  return CHANNEL_TYPE_BADGES[type] ?? DEFAULT_CHANNEL_TYPE_BADGE;
 }
 
 /** Resolves a readable label for each edge invoking this LangGraph node. */
@@ -306,6 +332,53 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
           </div>
         )}
       </div>
+
+      {/* Emitted Output Channels Section */}
+      {(data.outputChannels || []).length > 0 && (
+        <div className="flex flex-col border-t border-border/60">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/20 border-b border-border/40 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center gap-1.5">
+              <Radio className="w-3 h-3 text-primary" />
+              <span>Emitted Output Channels</span>
+            </div>
+            <span className="font-mono text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+              {(data.outputChannels || []).length}
+            </span>
+          </div>
+
+          <div className="flex flex-col divide-y divide-border/40">
+            {(data.outputChannels || []).map((ch) => {
+              const typeInfo = getChannelTypeBadge(ch.type);
+              const IconComponent = typeInfo.icon;
+              return (
+                <div
+                  key={ch.id}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/40 transition-colors nodrag relative group/channel"
+                  title={`Emitted output channel: ${ch.name} (${ch.type})`}
+                >
+                  <IconComponent className={`w-3 h-3 shrink-0 ${typeInfo.iconColor}`} />
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono ${typeInfo.badgeColor}`}>
+                    {typeInfo.label}
+                  </span>
+                  <span className="font-medium truncate text-foreground flex-1">
+                    {ch.name}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground font-mono truncate shrink-0">
+                    {ch.topicOrEventName || ch.targetStateChannel || "all"}
+                  </span>
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`channel-out-${ch.id}`}
+                    className="!bg-primary !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
+                    title={`Outgoing channel: ${ch.name}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Summary Preview ────────────────────────────────────────────── */}
       <div className="p-3 flex flex-col gap-2 nodrag">

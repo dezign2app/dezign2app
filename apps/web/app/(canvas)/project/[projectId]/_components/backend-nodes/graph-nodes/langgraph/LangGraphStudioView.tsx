@@ -51,6 +51,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     selectedMiddlewareData,
     selectedAgentData,
     selectedMemoryData,
+    selectedOutputData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -62,6 +63,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     updateSelectedMiddleware,
     updateSelectedAgent,
     updateSelectedMemory,
+    updateSelectedOutput,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,
@@ -211,6 +213,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           selectedMiddlewareData={selectedMiddlewareData}
           selectedAgentData={selectedAgentData}
           selectedMemoryData={selectedMemoryData}
+          selectedOutputData={selectedOutputData}
           connectedToolsCount={connectedToolsCount}
           connectedMiddlewareCount={connectedMiddlewareCount}
           availableLLMNodes={availableLLMNodes}
@@ -232,6 +235,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           onUpdateMiddleware={updateSelectedMiddleware}
           onUpdateAgent={updateSelectedAgent}
           onUpdateMemory={updateSelectedMemory}
+          onUpdateOutput={updateSelectedOutput}
           inputChannels={inputChannels}
           setInputChannels={setInputChannels}
           stateChannels={stateChannels}

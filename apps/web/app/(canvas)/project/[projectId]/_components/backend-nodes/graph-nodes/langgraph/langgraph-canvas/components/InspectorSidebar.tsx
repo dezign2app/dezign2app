@@ -4,7 +4,7 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode } from "../types";
+import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, OutputNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, OutputNode } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 
 export interface InspectorSidebarProps {
@@ -16,6 +16,7 @@ export interface InspectorSidebarProps {
   selectedMiddlewareData?: MiddlewareNodeData | null;
   selectedAgentData?: AgentNodeData | null;
   selectedMemoryData?: MemoryNodeData | null;
+  selectedOutputData?: OutputNodeData | null;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
   availableLLMNodes?: LangGraphLLMNode[];
@@ -37,6 +38,7 @@ export interface InspectorSidebarProps {
   onUpdateMiddleware?: (changes: Partial<MiddlewareNodeData>) => void;
   onUpdateAgent?: (changes: Partial<AgentNodeData>) => void;
   onUpdateMemory?: (changes: Partial<MemoryNodeData>) => void;
+  onUpdateOutput?: (changes: Partial<OutputNodeData>) => void;
   inputChannels?: LangGraphInputChannel[];
   setInputChannels?: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
   stateChannels: LangGraphStateChannel[];
@@ -52,6 +54,7 @@ export function InspectorSidebar({
   selectedMiddlewareData,
   selectedAgentData,
   selectedMemoryData,
+  selectedOutputData,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
   availableLLMNodes,
@@ -73,6 +76,7 @@ export function InspectorSidebar({
   onUpdateMiddleware,
   onUpdateAgent,
   onUpdateMemory,
+  onUpdateOutput,
   stateChannels,
 }: InspectorSidebarProps) {
   const [width, setWidth] = useState(340);
@@ -106,7 +110,7 @@ export function InspectorSidebar({
   );
 
   const hasSelectedNode = Boolean(
-    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData
+    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData || selectedOutputData
   );
 
   if (!hasSelectedNode) return null;
@@ -135,6 +139,7 @@ export function InspectorSidebar({
         selectedMiddlewareData={selectedMiddlewareData}
         selectedAgentData={selectedAgentData}
         selectedMemoryData={selectedMemoryData}
+        selectedOutputData={selectedOutputData}
         connectedToolsCount={connectedToolsCount}
         connectedMiddlewareCount={connectedMiddlewareCount}
         availableLLMNodes={availableLLMNodes}
@@ -156,6 +161,7 @@ export function InspectorSidebar({
         onUpdateMiddleware={onUpdateMiddleware}
         onUpdateAgent={onUpdateAgent}
         onUpdateMemory={onUpdateMemory}
+        onUpdateOutput={onUpdateOutput}
         stateChannels={stateChannels}
       />
     </div>

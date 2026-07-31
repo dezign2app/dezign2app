@@ -58,11 +58,14 @@ export function classifyHandle(
   }
 
   if (nodeType === "langgraph") {
-    if (id === "input-start" || id.startsWith("langgraph-in-")) return "langgraph-in";
-    if (id === "output-end" || id.startsWith("langgraph-out-")) return "langgraph-out";
+    if (id === "input-start" || id.startsWith("langgraph-in-") || id.startsWith("route-in-")) return "langgraph-in";
+    if (id === "output-end" || id.startsWith("langgraph-out-") || id.startsWith("route-out-") || id.startsWith("channel-out-")) return "langgraph-out";
     if (handleDirection === "target") return "langgraph-in";
     if (handleDirection === "source") return "langgraph-out";
   }
+
+  if (id.startsWith("route-in-")) return "langgraph-in";
+  if (id.startsWith("route-out-") || id.startsWith("channel-out-")) return "langgraph-out";
 
   if (nodeType === "entity") {
     if (id.startsWith("source-")) return "entity-column-source";

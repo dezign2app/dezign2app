@@ -29,7 +29,7 @@ export const CONNECTION_RULES: Record<HandleKind, HandleKind[]> = {
   "step-in": [],
   // --- LangGraph Agent (main canvas) ---
   "langgraph-in": [],
-  "langgraph-out": ["endpoint-in", "task-in", "consumed-event-in"],
+  "langgraph-out": ["endpoint-in", "task-in", "consumed-event-in", "database-target", "resource-def-in", "sse-in", "websocket-in"],
   "unknown": [],
 };
 

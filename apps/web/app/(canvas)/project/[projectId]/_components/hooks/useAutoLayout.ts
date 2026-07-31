@@ -24,6 +24,13 @@ const HEAD_NODE_TYPES = new Set<string>([
   'vector_db_ref',
 ]);
 
+const TARGET_NODE_TYPES = new Set<string>([
+  'langgraph_agent',
+  'langgraph_node',
+  'agent',
+  'step',
+]);
+
 export type LayoutNode = Node | BackendNode;
 export type LayoutEdge = Edge | BackendEdge;
 
@@ -49,7 +56,9 @@ function getNodeDimensions(node: LayoutNode): { width: number; height: number } 
     'width' in node.measured &&
     'height' in node.measured &&
     typeof node.measured.width === 'number' &&
-    typeof node.measured.height === 'number'
+    typeof node.measured.height === 'number' &&
+    node.measured.width > 0 &&
+    node.measured.height > 0
   ) {
     return {
       width: node.measured.width,
@@ -63,13 +72,15 @@ function getNodeDimensions(node: LayoutNode): { width: number; height: number } 
       return { width: 180, height: 70 };
     case 'state_global':
     case 'STATE_GLOBAL':
-      return { width: 240, height: 140 };
+      return { width: 260, height: 140 };
     case 'langgraph_agent':
-      return { width: 380, height: 440 };
+    case 'langgraph_node':
+    case 'agent':
+      return { width: 340, height: 180 };
     case 'langgraph_llm':
       return { width: 320, height: 220 };
     case 'langgraph_tool':
-      return { width: 300, height: 280 };
+      return { width: 300, height: 260 };
     case 'langgraph_middleware':
       return { width: 280, height: 160 };
     case 'langgraph_memory':
@@ -78,6 +89,11 @@ function getNodeDimensions(node: LayoutNode): { width: number; height: number } 
       return { width: 280, height: 180 };
     case 'step':
       return { width: 300, height: 220 };
+    case 'end':
+    case 'END':
+      return { width: 140, height: 60 };
+    case 'port':
+      return { width: 140, height: 50 };
     default:
       return { width: 300, height: 200 };
   }
@@ -95,26 +111,32 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
     (direction: string = 'LR') => {
       const isHorizontal = direction === 'LR';
 
-      // 1. Identify Agent nodes
-      const agentNodes: LayoutNode[] = nodes.filter(
-        (n: LayoutNode) => n.type === 'langgraph_agent' || n.type === 'agent'
-      );
-      const agentIds = new Set<string>(agentNodes.map((n: LayoutNode) => n.id));
+      // 1. Identify Target nodes (nodes that can have attached head nodes)
+      const targetNodeIds = new Set<string>();
+      nodes.forEach((n: LayoutNode) => {
+        if (TARGET_NODE_TYPES.has(n.type ?? '')) {
+          targetNodeIds.add(n.id);
+        }
+      });
+      edges.forEach((edge: LayoutEdge) => {
+        if (HEAD_TARGET_HANDLES.has(edge.targetHandle ?? '')) {
+          targetNodeIds.add(edge.target);
+        }
+      });
 
       // 2. Identify head-connection edges vs main flow edges
       const isHeadConnectionEdge = (edge: LayoutEdge): boolean => {
-        const isAgentTarget = agentIds.has(edge.target);
+        const isTargetMatch = targetNodeIds.has(edge.target);
         const isHeadHandle = HEAD_TARGET_HANDLES.has(edge.targetHandle ?? '');
-        const isHeadSourceType = HEAD_NODE_TYPES.has(
-          nodes.find((n: LayoutNode) => n.id === edge.source)?.type ?? ''
-        );
-        return isAgentTarget && (isHeadHandle || isHeadSourceType);
+        const sourceNodeType = nodes.find((n: LayoutNode) => n.id === edge.source)?.type ?? '';
+        const isHeadSourceType = HEAD_NODE_TYPES.has(sourceNodeType);
+        return isTargetMatch && (isHeadHandle || isHeadSourceType);
       };
 
       const headEdges: LayoutEdge[] = edges.filter(isHeadConnectionEdge);
       const flowEdges: LayoutEdge[] = edges.filter((e: LayoutEdge) => !isHeadConnectionEdge(e));
 
-      // 3. Identify attached head nodes (nodes attached to an Agent's top handles)
+      // 3. Identify attached head nodes (nodes attached to a target node's top handles)
       const attachedHeadNodeIdSet = new Set<string>(headEdges.map((e: LayoutEdge) => e.source));
       const attachedHeadNodes: LayoutNode[] = nodes.filter((n: LayoutNode) => attachedHeadNodeIdSet.has(n.id));
       const flowNodes: LayoutNode[] = nodes.filter((n: LayoutNode) => !attachedHeadNodeIdSet.has(n.id));
@@ -125,7 +147,7 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         rankdir: direction,
         marginx: 60,
         marginy: 60,
-        ranksep: isHorizontal ? 120 : 80,
+        ranksep: isHorizontal ? 140 : 100,
         nodesep: isHorizontal ? 80 : 80,
       });
 
@@ -155,24 +177,27 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         }
       });
 
-      // 6. Layout attached head nodes grouped by category columns, stacking multiple nodes in the same category vertically
-      agentNodes.forEach((agentNode: LayoutNode) => {
-        const agentPos = positionsMap.get(agentNode.id);
-        if (!agentPos) return;
+      // 6. Layout attached head nodes grouped by category columns above each target node
+      targetNodeIds.forEach((targetId: string) => {
+        const targetNode = nodes.find((n) => n.id === targetId);
+        if (!targetNode) return;
 
-        const { width: agentW } = getNodeDimensions(agentNode);
-        const agentCenterX = agentPos.x + agentW / 2;
+        const targetPos = positionsMap.get(targetId);
+        if (!targetPos) return;
 
-        const edgesForAgent = headEdges.filter((e: LayoutEdge) => e.target === agentNode.id);
-        const headNodesForAgent = attachedHeadNodes.filter((hn: LayoutNode) =>
-          edgesForAgent.some((e: LayoutEdge) => e.source === hn.id)
+        const { width: targetW } = getNodeDimensions(targetNode);
+        const targetCenterX = targetPos.x + targetW / 2;
+
+        const edgesForTarget = headEdges.filter((e: LayoutEdge) => e.target === targetId);
+        const headNodesForTarget = attachedHeadNodes.filter((hn: LayoutNode) =>
+          edgesForTarget.some((e: LayoutEdge) => e.source === hn.id)
         );
 
-        if (headNodesForAgent.length === 0) return;
+        if (headNodesForTarget.length === 0) return;
 
         // Categorize each head node (0: LLM, 1: Tool, 2: Middleware, 3: Memory)
         const getHeadCategoryIdx = (hn: LayoutNode): number => {
-          const edge = edgesForAgent.find((e: LayoutEdge) => e.source === hn.id);
+          const edge = edgesForTarget.find((e: LayoutEdge) => e.source === hn.id);
           const handle = edge?.targetHandle ?? '';
           if (handle === 'llm_in' || handle === 'HANDLE_LLM_IN' || hn.type === 'langgraph_llm') return 0;
           if (handle === 'tool_in' || handle === 'HANDLE_TOOL_IN' || hn.type === 'langgraph_tool') return 1;
@@ -183,7 +208,7 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
 
         // Group into 4 category columns
         const columns: LayoutNode[][] = [[], [], [], []];
-        headNodesForAgent.forEach((hn: LayoutNode) => {
+        headNodesForTarget.forEach((hn: LayoutNode) => {
           const catIdx = getHeadCategoryIdx(hn);
           const col = columns[catIdx];
           if (col) {
@@ -199,21 +224,21 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
           Math.max(...col.map((hn) => getNodeDimensions(hn).width))
         );
 
-        const columnGapX = 40;
-        const initialGapY = 80;
-        const verticalStackGapY = 40;
+        const columnGapX = 30;
+        const initialGapY = 60;
+        const verticalStackGapY = 30;
 
         const totalWidth =
           columnWidths.reduce((sum: number, w: number) => sum + w, 0) + (activeColumns.length - 1) * columnGapX;
 
-        let currentX = agentCenterX - totalWidth / 2;
+        let currentX = targetCenterX - totalWidth / 2;
 
         activeColumns.forEach((colNodes: LayoutNode[], colIdx: number) => {
           const colW = columnWidths[colIdx] ?? 300;
           const colCenterX = currentX + colW / 2;
 
           // Stack nodes in this column vertically from bottom to top
-          let currentBottomY = agentPos.y - initialGapY;
+          let currentBottomY = targetPos.y - initialGapY;
 
           colNodes.forEach((hn: LayoutNode) => {
             const { width, height } = getNodeDimensions(hn);
@@ -258,5 +283,6 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
 
   return { handleLayout };
 }
+
 
 

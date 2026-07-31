@@ -3,11 +3,14 @@ import type {
   LangGraphStateChannel,
   LangGraphInputChannel,
   LangGraphMemoryConfig,
+  LangGraphStepConfig,
 } from "@/types/canvas";
 import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, OutputNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, OutputNode } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
+import { StartNodeTestCasesInspector } from "./inspector/StartNodeTestCasesInspector";
 
 import type { ConnectedRouteInfo } from "../../LangGraphNode";
+import type { SimulationTestCase } from "@workspace/canvas";
 
 export interface InspectorSidebarProps {
   activeSideTab?: "inspector" | "inputs" | "state" | "memory";
@@ -19,6 +22,12 @@ export interface InspectorSidebarProps {
   selectedAgentData?: AgentNodeData | null;
   selectedMemoryData?: MemoryNodeData | null;
   selectedOutputData?: OutputNodeData | null;
+  selectedStartData?: { inputChannels?: LangGraphInputChannel[] } | null;
+  graphNodeId?: string;
+  graphSteps?: LangGraphStepConfig[];
+  graphEdges?: Array<{ source: string; sourceHandle?: string | null; target: string }>;
+  graphNodeLabels?: Record<string, string>;
+  onRunTestCase?: (testCase: SimulationTestCase) => void;
   connectedToolsCount?: number;
   connectedMiddlewareCount?: number;
   availableLLMNodes?: LangGraphLLMNode[];
@@ -58,6 +67,12 @@ export function InspectorSidebar({
   selectedAgentData,
   selectedMemoryData,
   selectedOutputData,
+  selectedStartData,
+  graphNodeId,
+  graphSteps = [],
+  graphEdges = [],
+  graphNodeLabels = {},
+  onRunTestCase,
   connectedToolsCount = 0,
   connectedMiddlewareCount = 0,
   availableLLMNodes,
@@ -82,6 +97,9 @@ export function InspectorSidebar({
   onUpdateMemory,
   onUpdateOutput,
   stateChannels,
+  activeSideTab,
+  inputChannels = [],
+  setInputChannels,
 }: InspectorSidebarProps) {
   const [width, setWidth] = useState(340);
   const [isResizing, setIsResizing] = useState(false);
@@ -114,7 +132,7 @@ export function InspectorSidebar({
   );
 
   const hasSelectedNode = Boolean(
-    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData || selectedOutputData
+    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData || selectedOutputData || selectedStartData
   );
 
   if (!hasSelectedNode) return null;
@@ -136,7 +154,11 @@ export function InspectorSidebar({
         title="Drag left/right to resize inspector"
       />
 
-      <InspectorTabContent
+      {selectedStartData ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {graphNodeId && <StartNodeTestCasesInspector graphNodeId={graphNodeId} inputChannels={inputChannels} stateChannels={stateChannels} graphSteps={graphSteps} graphEdges={graphEdges} graphNodeLabels={graphNodeLabels} connectedRoutes={connectedRoutes} onRunTestCase={onRunTestCase} />}
+        </div>
+      ) : <InspectorTabContent
         selectedStepData={selectedStepData}
         selectedLLMData={selectedLLMData}
         selectedToolData={selectedToolData}
@@ -168,7 +190,7 @@ export function InspectorSidebar({
         onUpdateMemory={onUpdateMemory}
         onUpdateOutput={onUpdateOutput}
         stateChannels={stateChannels}
-      />
+      />}
     </div>
   );
 }

@@ -20,7 +20,11 @@ import { ToolsSidebar } from "./langgraph-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./langgraph-canvas/components/InspectorSidebar";
 import { CompilerModal } from "../../../CompilerModal";
 import { compileLangGraph } from "@/lib/compiler";
+import { simulateLangGraphTestCase } from "@/lib/simulation/runtime";
+import { useSimulationStore } from "@/lib/stores/simulationStore";
+import type { SimulationTestCase } from "@workspace/canvas";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
+import type { LangGraphStepConfig } from "@/types/canvas";
 import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN, HANDLE_MEMORY_IN } from "./langgraph-canvas/constants";
 
 import { useConnectedRoutes } from "./LangGraphNode";
@@ -55,6 +59,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     selectedAgentData,
     selectedMemoryData,
     selectedOutputData,
+    selectedStartData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -114,6 +119,21 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
 
   const connectedToolsCount = connectedToolIds.length;
   const connectedMiddlewareCount = connectedMiddlewareIds.length;
+  const graphSteps = useMemo<LangGraphStepConfig[]>(() => nodes
+    .filter((canvasNode) => canvasNode.type === "step")
+    .map((canvasNode) => {
+      const data = canvasNode.data as unknown as { stepId: string; label: string; stepType: LangGraphStepConfig["type"]; routerConfig?: LangGraphStepConfig["routerConfig"]; stateUpdates?: LangGraphStepConfig["stateUpdates"]; modelConfig?: LangGraphStepConfig["modelConfig"]; customCode?: LangGraphStepConfig["customCode"] };
+      return { id: data.stepId, name: data.label, type: data.stepType, routerConfig: data.routerConfig, stateUpdates: data.stateUpdates, modelConfig: data.modelConfig, customCode: data.customCode };
+    }), [nodes]);
+  const graphPathEdges = useMemo(() => edges.map((edge) => ({ source: edge.source, sourceHandle: edge.sourceHandle, target: edge.target })), [edges]);
+  const graphNodeLabels = useMemo(() => Object.fromEntries(nodes.map((canvasNode) => [canvasNode.id, (canvasNode.data as { label?: string }).label || canvasNode.id])), [nodes]);
+  const runGraphTestCase = async (testCase: SimulationTestCase) => {
+    const graphEdges = edges
+      .filter((edge) => edge.source !== "STATE_GLOBAL" && edge.target !== "STATE_GLOBAL")
+      .map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle, targets: [{ id: edge.target, kind: edge.target === "END" ? "end" as const : "step" as const, targetHandle: edge.targetHandle }] }));
+    const result = await simulateLangGraphTestCase({ graph: { ...node, data: { ...node.data, graphSteps, graphEdges } }, testCase });
+    useSimulationStore.getState().start(result.trace);
+  };
 
   return (
     <div
@@ -172,7 +192,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             }}
             onNodeClick={(_: React.MouseEvent, n: LangGraphCanvasNode) => {
               setSelectedNodeId(n.id);
-              if (n.id === "START") setActiveSideTab("inputs");
+              if (n.id === "START") setActiveSideTab("inspector");
               else if (n.id === "STATE_GLOBAL") setActiveSideTab("state");
               else setActiveSideTab("inspector");
             }}
@@ -217,6 +237,12 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           selectedAgentData={selectedAgentData}
           selectedMemoryData={selectedMemoryData}
           selectedOutputData={selectedOutputData}
+          selectedStartData={selectedStartData}
+          graphNodeId={node.id}
+          graphSteps={graphSteps}
+          graphEdges={graphPathEdges}
+          graphNodeLabels={graphNodeLabels}
+          onRunTestCase={runGraphTestCase}
           connectedToolsCount={connectedToolsCount}
           connectedMiddlewareCount={connectedMiddlewareCount}
           availableLLMNodes={availableLLMNodes}

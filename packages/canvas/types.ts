@@ -1206,6 +1206,14 @@ export type SimulationTestCase = {
   name: string;
   targetNodeId: string;
   targetEventId?: string;
+  /** Incoming route/edge that invokes a LangGraph node. */
+  targetRouteId?: string;
+  /** Initial values for LangGraph state channels before the graph starts. */
+  initialState?: Record<string, JSONValue>;
+  /** Explicit branch choice for each router step, keyed by router step id. */
+  routerChoices?: Record<string, string>;
+  /** Expected final LangGraph state values. */
+  expectedState?: Record<string, JSONValue>;
   request?: {
     headers?: Record<string, string>;
     params?: Record<string, string>;

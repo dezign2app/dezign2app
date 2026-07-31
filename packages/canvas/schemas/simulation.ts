@@ -5,6 +5,11 @@ export const simulationTestCaseSchema = z.object({
   name: z.string(),
   targetNodeId: z.string(),
   targetEventId: z.string().optional(),
+  targetRouteId: z.string().optional(),
+  initialState: z.record(z.unknown()).optional(),
+  routerChoices: z.record(z.string()).optional(),
+  expectedState: z.record(z.unknown()).optional(),
+  expectedPath: z.array(z.string()).optional(),
   request: z.object({
     headers: z.record(z.string()).optional(),
     params: z.record(z.string()).optional(),
@@ -24,6 +29,11 @@ export const simulationTestCaseInputSchema = z.object({
   name: z.string().describe("Name or description of the test case / scenario"),
   targetNodeId: z.string().describe("ID of the target service or endpoint node being tested"),
   targetEventId: z.string().optional().describe("Optional target event ID for event handler test cases"),
+  targetRouteId: z.string().optional().describe("Incoming route/edge ID for a LangGraph invocation"),
+  initialState: z.record(z.unknown()).optional().describe("Initial LangGraph state channel values"),
+  routerChoices: z.record(z.string()).optional().describe("Selected conditional-router branches by router step ID"),
+  expectedState: z.record(z.unknown()).optional().describe("Expected final LangGraph state"),
+  expectedPath: z.array(z.string()).optional().describe("Expected LangGraph execution path"),
   request: z.object({
     headers: z.record(z.string()).optional().describe("Request headers for test execution"),
     params: z.record(z.string()).optional().describe("Path or query parameters for test execution"),

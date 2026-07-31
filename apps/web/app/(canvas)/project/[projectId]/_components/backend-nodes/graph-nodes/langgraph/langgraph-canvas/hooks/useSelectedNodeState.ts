@@ -8,6 +8,7 @@ import {
   AgentNodeData,
   MemoryNodeData,
   OutputNodeData,
+  StartNodeData,
   StepNode,
   LangGraphLLMNode,
   ToolNode,
@@ -15,6 +16,7 @@ import {
   AgentNode,
   MemoryNode,
   OutputNode,
+  StartNode,
   getStepData,
 } from "../types";
 import {
@@ -26,6 +28,7 @@ import {
   LANGGRAPH_CANVAS_NODE_AGENT,
   LANGGRAPH_CANVAS_NODE_MEMORY,
   LANGGRAPH_CANVAS_NODE_OUTPUT,
+  LANGGRAPH_CANVAS_NODE_START,
 } from "../constants";
 
 interface UseSelectedNodeStateProps {
@@ -71,6 +74,11 @@ export function useSelectedNodeState({
 
   const selectedOutputData = useMemo((): OutputNodeData | null => {
     const found = nodes.find((n): n is OutputNode => n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_OUTPUT);
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
+
+  const selectedStartData = useMemo((): StartNodeData | null => {
+    const found = nodes.find((n): n is StartNode => n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_START);
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
 
@@ -145,6 +153,7 @@ export function useSelectedNodeState({
     selectedAgentData,
     selectedMemoryData,
     selectedOutputData,
+    selectedStartData,
     updateSelectedStep,
     updateSelectedLLM,
     updateSelectedTool,

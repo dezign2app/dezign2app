@@ -23,5 +23,12 @@ export const edgeDataSchema = z.object({
   preInvokeLogicMode: z.enum(["natural_language", "code"]).optional(),
   preInvokePrompt: z.string().optional(),
   preInvokeCode: z.string().optional(),
+  // Response & Output configuration
+  responseExecutionMode: z.enum(["sync", "stream", "async_ack"]).optional(),
+  responseOutputMode: z.enum(["full", "selected"]).optional(),
+  responseFields: z.array(z.string()).optional(),
+  postInvokeLogicMode: z.enum(["natural_language", "code"]).optional(),
+  postInvokePrompt: z.string().optional(),
+  postInvokeCode: z.string().optional(),
 });
 

@@ -905,6 +905,13 @@ export type BackendEdge = {
     preInvokeLogicMode?: "natural_language" | "code";
     preInvokePrompt?: string;
     preInvokeCode?: string;
+    // Response & Output configuration
+    responseExecutionMode?: "sync" | "stream" | "async_ack";
+    responseOutputMode?: "full" | "selected";
+    responseFields?: string[];
+    postInvokeLogicMode?: "natural_language" | "code";
+    postInvokePrompt?: string;
+    postInvokeCode?: string;
   };
   fractionalIndex: string; // For sequence diagram ordering
 };

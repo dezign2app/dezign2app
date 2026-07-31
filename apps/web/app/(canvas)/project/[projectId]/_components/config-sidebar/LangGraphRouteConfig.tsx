@@ -57,16 +57,41 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
   const [preInvokeMode, setPreInvokeMode] = useState<LogicMode>(targetEdge?.data?.preInvokeLogicMode || "natural_language");
   const [preInvokePrompt, setPreInvokePrompt] = useState<string>(targetEdge?.data?.preInvokePrompt || "");
   const [preInvokeCode, setPreInvokeCode] = useState<string>(targetEdge?.data?.preInvokeCode || "");
+  
+  // Output & Response Config State
+  const [responseExecutionMode, setResponseExecutionMode] = useState<"sync" | "stream" | "async_ack">(targetEdge?.data?.responseExecutionMode || "sync");
+  const [responseOutputMode, setResponseOutputMode] = useState<"full" | "selected">(targetEdge?.data?.responseOutputMode || "full");
+  const [responseFields, setResponseFields] = useState<string[]>(targetEdge?.data?.responseFields || []);
+  const [postInvokeMode, setPostInvokeMode] = useState<LogicMode>(targetEdge?.data?.postInvokeLogicMode || "natural_language");
+  const [postInvokePrompt, setPostInvokePrompt] = useState<string>(targetEdge?.data?.postInvokePrompt || "");
+  const [postInvokeCode, setPostInvokeCode] = useState<string>(targetEdge?.data?.postInvokeCode || "");
+
   const [customFields, setCustomFields] = useState<Array<{ key: string; value: string }>>([]);
-  const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
     setMapping(targetEdge?.data?.payloadMapping || {});
     setPreInvokeMode(targetEdge?.data?.preInvokeLogicMode || "natural_language");
     setPreInvokePrompt(targetEdge?.data?.preInvokePrompt || "");
     setPreInvokeCode(targetEdge?.data?.preInvokeCode || "");
-    // Note: customFields is intentionally not reset here to avoid losing in-progress UI fields
-  }, [id, targetEdge?.data?.payloadMapping, targetEdge?.data?.preInvokeLogicMode, targetEdge?.data?.preInvokePrompt, targetEdge?.data?.preInvokeCode]);
+    setResponseExecutionMode(targetEdge?.data?.responseExecutionMode || "sync");
+    setResponseOutputMode(targetEdge?.data?.responseOutputMode || "full");
+    setResponseFields(targetEdge?.data?.responseFields || []);
+    setPostInvokeMode(targetEdge?.data?.postInvokeLogicMode || "natural_language");
+    setPostInvokePrompt(targetEdge?.data?.postInvokePrompt || "");
+    setPostInvokeCode(targetEdge?.data?.postInvokeCode || "");
+  }, [
+    id,
+    targetEdge?.data?.payloadMapping,
+    targetEdge?.data?.preInvokeLogicMode,
+    targetEdge?.data?.preInvokePrompt,
+    targetEdge?.data?.preInvokeCode,
+    targetEdge?.data?.responseExecutionMode,
+    targetEdge?.data?.responseOutputMode,
+    targetEdge?.data?.responseFields,
+    targetEdge?.data?.postInvokeLogicMode,
+    targetEdge?.data?.postInvokePrompt,
+    targetEdge?.data?.postInvokeCode,
+  ]);
 
   // Autosave Effect
   useEffect(() => {
@@ -84,7 +109,13 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
       JSON.stringify(currentMapping) !== JSON.stringify(finalMapping) ||
       targetEdge.data?.preInvokeLogicMode !== preInvokeMode ||
       (targetEdge.data?.preInvokePrompt || "") !== preInvokePrompt.trim() ||
-      (targetEdge.data?.preInvokeCode || "") !== preInvokeCode.trim();
+      (targetEdge.data?.preInvokeCode || "") !== preInvokeCode.trim() ||
+      (targetEdge.data?.responseExecutionMode || "sync") !== responseExecutionMode ||
+      (targetEdge.data?.responseOutputMode || "full") !== responseOutputMode ||
+      JSON.stringify(targetEdge.data?.responseFields || []) !== JSON.stringify(responseFields) ||
+      targetEdge.data?.postInvokeLogicMode !== postInvokeMode ||
+      (targetEdge.data?.postInvokePrompt || "") !== postInvokePrompt.trim() ||
+      (targetEdge.data?.postInvokeCode || "") !== postInvokeCode.trim();
 
     if (isDifferent) {
       const timeout = setTimeout(() => {
@@ -95,12 +126,31 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
             preInvokeLogicMode: preInvokeMode,
             preInvokePrompt: preInvokePrompt.trim(),
             preInvokeCode: preInvokeCode.trim(),
+            responseExecutionMode,
+            responseOutputMode,
+            responseFields,
+            postInvokeLogicMode: postInvokeMode,
+            postInvokePrompt: postInvokePrompt.trim(),
+            postInvokeCode: postInvokeCode.trim(),
           },
         });
       }, 500); // Debounce saves
       return () => clearTimeout(timeout);
     }
-  }, [mapping, customFields, preInvokeMode, preInvokePrompt, preInvokeCode, targetEdge]);
+  }, [
+    mapping,
+    customFields,
+    preInvokeMode,
+    preInvokePrompt,
+    preInvokeCode,
+    responseExecutionMode,
+    responseOutputMode,
+    responseFields,
+    postInvokeMode,
+    postInvokePrompt,
+    postInvokeCode,
+    targetEdge,
+  ]);
 
   const handleAutoMap = () => {
     const autoMapped: Record<string, string> = {};
@@ -309,6 +359,134 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
         promptPlaceholder={`Describe what should happen before invoking the graph:\n• Validate the request payload\n• Enrich state with user context (e.g. req.headers["x-user-id"])\n• Transform or format fields before passing into the agent`}
         codePlaceholder={`// Pre-invoke code executes before: await graph.invoke(state)\n// You have access to: req, res, state\n// Example:\nstate.userId = req.headers["x-user-id"] ?? "guest";\nif (!req.body.query) return res.status(400).json({ error: "query is required" });\nstate.query = req.body.query.trim();`}
         codeLanguageLabel="TypeScript (Express Route Body)"
+      />
+
+      {/* Section 3: Response Execution Mode & Output Selection */}
+      <div className="flex flex-col gap-3 p-3.5 bg-secondary/10 rounded-xl border border-border/60 shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-bold text-foreground font-mono uppercase tracking-wider">
+              Output Delivery & Field Selection
+            </span>
+          </div>
+        </div>
+
+        {/* Delivery Execution Mode Pills */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-semibold text-muted-foreground">Execution Delivery Mode</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-background/60 p-1 rounded-lg border border-border/50 text-xs">
+            <button
+              type="button"
+              onClick={() => setResponseExecutionMode("sync")}
+              className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
+                responseExecutionMode === "sync"
+                  ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary/40"
+              }`}
+            >
+              Sync REST (200)
+            </button>
+            <button
+              type="button"
+              onClick={() => setResponseExecutionMode("stream")}
+              className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
+                responseExecutionMode === "stream"
+                  ? "bg-purple-600 text-white font-bold shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary/40"
+              }`}
+            >
+              SSE Stream
+            </button>
+            <button
+              type="button"
+              onClick={() => setResponseExecutionMode("async_ack")}
+              className={`py-1.5 px-2 rounded-md font-medium text-center transition-all ${
+                responseExecutionMode === "async_ack"
+                  ? "bg-amber-600 text-white font-bold shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary/40"
+              }`}
+            >
+              Async Ack (202)
+            </button>
+          </div>
+        </div>
+
+        {/* Output Field Selector (only active for sync mode) */}
+        {responseExecutionMode === "sync" && (
+          <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-muted-foreground">Response Payload Fields</label>
+              <div className="flex items-center gap-1 text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setResponseOutputMode("full")}
+                  className={`px-2 py-0.5 rounded border ${
+                    responseOutputMode === "full"
+                      ? "bg-primary/15 text-primary border-primary/30 font-bold"
+                      : "text-muted-foreground border-border/40"
+                  }`}
+                >
+                  Full Graph State
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResponseOutputMode("selected")}
+                  className={`px-2 py-0.5 rounded border ${
+                    responseOutputMode === "selected"
+                      ? "bg-primary/15 text-primary border-primary/30 font-bold"
+                      : "text-muted-foreground border-border/40"
+                  }`}
+                >
+                  Selected Fields
+                </button>
+              </div>
+            </div>
+
+            {responseOutputMode === "selected" && (
+              <div className="flex flex-wrap gap-1.5 p-2 bg-background/80 rounded-lg border border-border/50">
+                {stateChannels.map((ch) => {
+                  const isSelected = responseFields.includes(ch.key);
+                  return (
+                    <button
+                      key={ch.key}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setResponseFields(responseFields.filter((f) => f !== ch.key));
+                        } else {
+                          setResponseFields([...responseFields, ch.key]);
+                        }
+                      }}
+                      className={`text-[11px] font-mono px-2 py-1 rounded border transition-all ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs"
+                          : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary"
+                      }`}
+                    >
+                      {isSelected ? "✓ " : "+ "}{ch.key}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Section 4: Post-Invoke Business Logic Block */}
+      <BusinessLogicBlock
+        title="Post-LangGraph Invoke Business Logic"
+        description={`Runs after graph execution finishes, before sending output to client`}
+        mode={postInvokeMode}
+        onModeChange={setPostInvokeMode}
+        prompt={postInvokePrompt}
+        onPromptChange={setPostInvokePrompt}
+        code={postInvokeCode}
+        onCodeChange={setPostInvokeCode}
+        promptPlaceholder={`Describe what to do after the graph completes:\n• Filter or redact sensitive response properties\n• Format final response object\n• Log execution completion`}
+        codePlaceholder={`// Post-invoke code executes after: const result = await graph.invoke(state)\n// You have access to: req, res, state, result\n// Example:\nresult.messages = result.messages?.slice(-1); // Keep last message only`}
+        codeLanguageLabel="TypeScript (Express Post-Processing)"
       />
 
     </div>

@@ -433,5 +433,13 @@ export function buildInitialEdges(
       };
     });
 
-  return [...mainEdges, ...resourceEdges, ...outputChannelEdges];
+  // Older saved graphs can contain resource connections in both `graphEdges`
+  // and the agent/step relationship arrays. Keep the first representation so
+  // React Flow never receives duplicate edge keys.
+  const uniqueEdges = new Map<string, LangGraphCanvasEdge>();
+  [...mainEdges, ...resourceEdges, ...outputChannelEdges].forEach((edge) => {
+    if (!uniqueEdges.has(edge.id)) uniqueEdges.set(edge.id, edge);
+  });
+
+  return Array.from(uniqueEdges.values());
 }

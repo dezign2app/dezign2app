@@ -5,7 +5,6 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphInputChannel } from "@/types/canvas";
 
 interface InputsTabContentProps {
@@ -18,10 +17,7 @@ export function InputsTabContent({
   setInputChannels,
 }: InputsTabContentProps) {
   return (
-    <TabsContent
-      value="inputs"
-      className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4"
-    >
+    <div className="flex-1 min-h-0 p-4 overflow-y-auto m-0 flex flex-col gap-4">
       <div className="flex items-center justify-between border-b border-border/50 pb-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -117,6 +113,6 @@ export function InputsTabContent({
           </div>
         </div>
       ))}
-    </TabsContent>
+    </div>
   );
 }

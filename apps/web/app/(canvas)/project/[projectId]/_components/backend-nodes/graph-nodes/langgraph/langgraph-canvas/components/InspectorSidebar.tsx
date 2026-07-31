@@ -7,6 +7,8 @@ import type {
 import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, OutputNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, OutputNode } from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 
+import type { ConnectedRouteInfo } from "../../LangGraphNode";
+
 export interface InspectorSidebarProps {
   activeSideTab?: "inspector" | "inputs" | "state" | "memory";
   setActiveSideTab?: (tab: "inspector" | "inputs" | "state" | "memory") => void;
@@ -23,6 +25,7 @@ export interface InspectorSidebarProps {
   availableToolNodes?: ToolNode[];
   availableMiddlewareNodes?: MiddlewareNode[];
   availableMemoryNodes?: MemoryNode[];
+  connectedRoutes?: ConnectedRouteInfo[];
   connectedLLMId?: string | null;
   connectedToolIds?: string[];
   connectedMiddlewareIds?: string[];
@@ -61,6 +64,7 @@ export function InspectorSidebar({
   availableToolNodes,
   availableMiddlewareNodes,
   availableMemoryNodes,
+  connectedRoutes = [],
   connectedLLMId,
   connectedToolIds,
   connectedMiddlewareIds,
@@ -146,6 +150,7 @@ export function InspectorSidebar({
         availableToolNodes={availableToolNodes}
         availableMiddlewareNodes={availableMiddlewareNodes}
         availableMemoryNodes={availableMemoryNodes}
+        connectedRoutes={connectedRoutes}
         connectedLLMId={connectedLLMId}
         connectedToolIds={connectedToolIds}
         connectedMiddlewareIds={connectedMiddlewareIds}

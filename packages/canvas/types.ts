@@ -569,6 +569,11 @@ export interface OutputChannelConfig {
   topicOrEventName?: string;
   targetStateChannel?: string;
   description?: string;
+  streamContentMode?: "ai_node_tokens" | "structured_output" | "step_output" | "full_state";
+  sourceStepId?: string;
+  boundRouteIds?: string[];
+  schemaJson?: string;
+  position?: { x: number; y: number };
 }
 
 /** LangGraph Agent node fields — the parent graph node (canvas type). */
@@ -798,6 +803,7 @@ export interface LangGraphAgentDefinition {
   agentId?: string;
   name: string;
   systemPrompt?: string;
+  llmNodeId?: string;
   modelConfig?: LangGraphStepConfig["modelConfig"];
   llmConfig?: {
     enabled?: boolean;

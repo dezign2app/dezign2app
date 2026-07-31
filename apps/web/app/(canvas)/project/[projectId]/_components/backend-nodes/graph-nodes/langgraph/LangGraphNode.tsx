@@ -46,7 +46,7 @@ function getChannelTypeBadge(type: string): ChannelBadgeInfo {
 }
 
 /** Resolves a readable label for each edge invoking this LangGraph node. */
-function useConnectedRoutes(nodeId: string): ConnectedRouteInfo[] {
+export function useConnectedRoutes(nodeId: string): ConnectedRouteInfo[] {
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);

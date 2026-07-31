@@ -1155,13 +1155,18 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       res.setHeader("Connection", "keep-alive");
 
       const state: Partial<${toPascalCase(ctx.graphId)}StateType> = ${stateInit};${preInvokeBlock}
-      const stream = await ${graphVarName}.stream(state${configLine});
+      const streamOptions = { streamMode: "messages"${configLine ? `, ${configLine.replace(/^, /, "")}` : ""} };
+      const stream = await ${graphVarName}.stream(state, streamOptions);
       activeStream = stream;
 
       for await (const chunk of stream) {
         if (isAborted) break;
-        const content = typeof chunk === "string" ? chunk : (chunk?.content ?? chunk);
-        res.write(\`data: \${JSON.stringify({ content })}\\n\\n\`);
+        const [messageChunk, metadata] = Array.isArray(chunk) ? chunk : [chunk, undefined];
+        const token = messageChunk?.content ?? (typeof chunk === "string" ? chunk : (chunk as { content?: string })?.content ?? chunk);
+        const nodeName = (metadata as { langgraph_node?: string } | undefined)?.langgraph_node;
+        if (token !== undefined && token !== "") {
+          res.write(\`data: \${JSON.stringify({ token, node: nodeName })}\\n\\n\`);
+        }
       }
       if (!isAborted) {
         res.write("data: [DONE]\\n\\n");

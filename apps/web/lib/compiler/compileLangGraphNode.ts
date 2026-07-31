@@ -66,6 +66,9 @@ export function resolveRouteEndpoints(
     const sourceNode = allNodes.find((n) => n.id === edge.source);
     const sourceNodeLabel = sourceNode?.data?.label || edge.source;
     const payloadMapping = edge.data?.payloadMapping;
+    const preInvokeLogicMode = edge.data?.preInvokeLogicMode;
+    const preInvokePrompt = edge.data?.preInvokePrompt;
+    const preInvokeCode = edge.data?.preInvokeCode;
 
     if (edge.sourceHandle?.startsWith("endpoint-out-")) {
       const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
@@ -82,6 +85,9 @@ export function resolveRouteEndpoints(
           method: epMethod,
           sourceNodeLabel,
           payloadMapping,
+          preInvokeLogicMode,
+          preInvokePrompt,
+          preInvokeCode,
         };
         return epRoute;
       }
@@ -97,6 +103,9 @@ export function resolveRouteEndpoints(
         eventName: ev?.name || eventId,
         sourceNodeLabel,
         payloadMapping,
+        preInvokeLogicMode,
+        preInvokePrompt,
+        preInvokeCode,
       };
     }
 
@@ -107,6 +116,9 @@ export function resolveRouteEndpoints(
       method: "POST",
       sourceNodeLabel,
       payloadMapping,
+      preInvokeLogicMode,
+      preInvokePrompt,
+      preInvokeCode,
     };
   });
 }

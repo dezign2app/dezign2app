@@ -11,6 +11,8 @@ import { AuthRuleConfig } from "./config-sidebar/AuthRuleConfig";
 import { IdentityProviderConfig } from "./config-sidebar/IdentityProviderConfig";
 import { EventTestingConfig } from "./config-sidebar/EventTestingConfig";
 
+import { LangGraphRouteConfig } from "./config-sidebar/LangGraphRouteConfig";
+
 export const ConfigSidebar = () => {
   const activeConfigItem = useBackendCanvasStore(s => s.activeConfigItem);
   const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
@@ -124,6 +126,7 @@ export const ConfigSidebar = () => {
          type === 'identityProvider' ? <IdentityProviderConfig id={id} nodeId={nodeId} /> :
          type === 'clientEvent' ? <ClientEventConfig id={id} nodeId={nodeId} /> :
          type === 'eventTesting' ? <EventTestingConfig id={id} nodeId={nodeId} targetNodeId={activeConfigItem.targetNodeId!} endpointId={activeConfigItem.endpointId!} initialTab={activeConfigItem.initialTab} /> :
+         type === 'langgraphRoute' ? <LangGraphRouteConfig id={id} nodeId={nodeId} /> :
          <EventConfig id={id} nodeId={nodeId} />}
       </SheetContent>
     </Sheet>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import {
-  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap,
+  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap, Settings,
 } from "lucide-react";
 import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
@@ -93,6 +93,7 @@ const METHOD_COLORS: Record<string, string> = {
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
+  const setActiveConfigItem = useBackendCanvasStore((s) => s.setActiveConfigItem);
   const storeProjectId = useBackendCanvasStore((s) => s.projectId);
   const params = useParams();
   const router = useRouter();
@@ -244,7 +245,17 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             {connectedRoutes.map((route) => (
               <div
                 key={route.edgeId}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/20 transition-colors nodrag relative"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveConfigItem({
+                    type: "langgraphRoute",
+                    id: route.edgeId,
+                    nodeId: id,
+                    edgeId: route.edgeId,
+                  });
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/40 cursor-pointer transition-colors nodrag relative group/route"
+                title="Click to configure route payload mapping & pre-invoke business logic"
               >
                 <Handle
                   type="target"
@@ -273,10 +284,13 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                 >
                   {route.method}
                 </span>
-                <span className="font-medium truncate text-foreground flex-1">{route.label}</span>
+                <span className="font-medium truncate text-foreground flex-1 group-hover/route:text-primary transition-colors">
+                  {route.label}
+                </span>
                 <span className="text-[9px] text-muted-foreground truncate shrink-0">
                   {route.sourceNodeLabel}
                 </span>
+                <Settings className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/route:text-primary group-hover/route:rotate-45 transition-all shrink-0 ml-0.5" />
               </div>
             ))}
           </div>

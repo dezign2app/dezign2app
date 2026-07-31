@@ -901,6 +901,10 @@ export type BackendEdge = {
     // Lives on the edge so the graph itself stays immutable and reusable.
     // e.g. { "messages": "body.message", "userId": "headers.x-user-id" }
     payloadMapping?: Record<string, string>;
+    // Pre-invoke business logic (supports natural_language or code mode)
+    preInvokeLogicMode?: "natural_language" | "code";
+    preInvokePrompt?: string;
+    preInvokeCode?: string;
   };
   fractionalIndex: string; // For sequence diagram ordering
 };

@@ -17,4 +17,11 @@ export const edgeDataSchema = z.object({
   responseType: z.string().optional(),
   responseMode: z.string().optional(),
   notes: z.string().optional(),
+  // --- LangGraph Route Invocation ---
+  // Maps HTTP body / event payload fields → LangGraph state channel keys.
+  payloadMapping: z.record(z.string(), z.string()).optional(),
+  preInvokeLogicMode: z.enum(["natural_language", "code"]).optional(),
+  preInvokePrompt: z.string().optional(),
+  preInvokeCode: z.string().optional(),
 });
+

@@ -52,6 +52,7 @@ export const langgraphConvexDataValidator = v.object({
   recursionLimit: v.optional(v.number()),
   stepTimeoutMs: v.optional(v.number()),
   inputChannels: v.optional(v.array(v.any())),
+  outputChannels: v.optional(v.array(v.any())),
   stateChannels: v.optional(v.array(v.any())),
   outputPorts: v.optional(v.array(v.any())),
   tools: v.optional(v.array(v.any())),

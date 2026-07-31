@@ -322,15 +322,43 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       });
     }
 
+    const savedOutputs = data.outputChannels || [];
+    savedOutputs.forEach((outDef, idx) => {
+      const outNodeId = outDef.id ? (outDef.id.startsWith("output_") || outDef.id.startsWith("out_") ? outDef.id : `output_${outDef.id}`) : `output_${Date.now()}_${idx}`;
+      if (!result.some((n) => n.id === outNodeId || (n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && n.data.id === outDef.id))) {
+        const outputNode: OutputNode = {
+          id: outNodeId,
+          type: LANGGRAPH_CANVAS_NODE_OUTPUT,
+          position: outDef.position || { x: 100, y: 480 + idx * 90 },
+          data: {
+            id: outDef.id,
+            label: outDef.name || "Output Channel",
+            name: outDef.name || "Output Channel",
+            type: outDef.type || "sse",
+            topicOrEventName: outDef.topicOrEventName,
+            targetStateChannel: outDef.targetStateChannel,
+            description: outDef.description,
+            streamContentMode: outDef.streamContentMode,
+            sourceStepId: outDef.sourceStepId,
+            boundRouteIds: outDef.boundRouteIds,
+            schemaJson: outDef.schemaJson,
+            position: outDef.position,
+          },
+        };
+        result.push(outputNode);
+      }
+    });
+
     return result;
   }, []); // computed once on mount
 
-  // ── Build initial edges from graphEdges ──
+  // ── Build initial edges from graphEdges, outputChannels & resource definitions ──
   const initialEdges: LangGraphCanvasEdge[] = useMemo(() => {
     const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || [];
     const steps: LangGraphStepConfig[] = data.graphSteps || [];
+    const agentDefs: LangGraphAgentDefinition[] = data.agentDefinitions || [];
 
-    return graphEdges
+    const mainEdges = graphEdges
       .filter((e) => !e.id.startsWith("auto_edge_"))
       .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
       .flatMap(
@@ -400,6 +428,92 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
           };
         })
       );
+
+    const resourceEdges: LangGraphCanvasEdge[] = [];
+    agentDefs.forEach((ag) => {
+      const agId = ag.id || ag.agentId;
+      if (!agId) return;
+
+      (ag.tools || []).forEach((toolId) => {
+        resourceEdges.push({
+          id: `edge_${toolId}_${agId}`,
+          source: toolId,
+          target: agId,
+          sourceHandle: HANDLE_TOOL_OUT,
+          targetHandle: HANDLE_TOOL_IN,
+          animated: true,
+          style: { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" },
+        });
+      });
+
+      (ag.middleware || []).forEach((mwId) => {
+        resourceEdges.push({
+          id: `edge_${mwId}_${agId}`,
+          source: mwId,
+          target: agId,
+          sourceHandle: HANDLE_MIDDLEWARE_OUT,
+          targetHandle: HANDLE_MIDDLEWARE_IN,
+          animated: true,
+          style: { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" },
+        });
+      });
+
+      (ag.memory || []).forEach((memId) => {
+        resourceEdges.push({
+          id: `edge_${memId}_${agId}`,
+          source: memId,
+          target: agId,
+          sourceHandle: HANDLE_MEMORY_OUT,
+          targetHandle: HANDLE_MEMORY_IN,
+          animated: true,
+          style: { stroke: "#f59e0b", strokeWidth: 2, strokeDasharray: "4 4" },
+        });
+      });
+
+      const connectedLlmId = ag.llmNodeId;
+      if (connectedLlmId && (data.customLlmNodes || []).some((llm) => llm.id === connectedLlmId)) {
+        resourceEdges.push({
+          id: `edge_${connectedLlmId}_${agId}`,
+          source: connectedLlmId,
+          target: agId,
+          sourceHandle: HANDLE_LLM_OUT,
+          targetHandle: HANDLE_LLM_IN,
+          animated: true,
+          style: { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" },
+        });
+      }
+    });
+
+    steps.forEach((step) => {
+      (step.tools || []).forEach((toolId) => {
+        resourceEdges.push({
+          id: `edge_${toolId}_${step.id}`,
+          source: toolId,
+          target: step.id,
+          sourceHandle: HANDLE_TOOL_OUT,
+          targetHandle: HANDLE_TOOL_IN,
+          animated: true,
+          style: { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" },
+        });
+      });
+    });
+
+    const outputChannelEdges: LangGraphCanvasEdge[] = (data.outputChannels || [])
+      .filter((ch) => Boolean(ch.sourceStepId))
+      .map((ch) => {
+        const outNodeId = ch.id ? (ch.id.startsWith("output_") || ch.id.startsWith("out_") ? ch.id : `output_${ch.id}`) : `output_${ch.id}`;
+        return {
+          id: `edge_${ch.sourceStepId}_${outNodeId}`,
+          source: ch.sourceStepId!,
+          target: outNodeId,
+          sourceHandle: "out",
+          targetHandle: "in",
+          animated: true,
+          style: { stroke: "#c084fc", strokeWidth: 2, strokeDasharray: "4 4" },
+        };
+      });
+
+    return [...mainEdges, ...resourceEdges, ...outputChannelEdges];
   }, []);
 
   const [nodes, setNodes] = useState<LangGraphCanvasNode[]>(initialNodes);
@@ -1144,25 +1258,31 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
     const agentDefinitions: LangGraphAgentDefinition[] = nodes
       .filter((n): n is AgentNode => n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT)
-      .map((n) => ({
-        id: n.data.agentId || n.id,
-        agentId: n.data.agentId || n.id,
-        name: n.data.name || "Node",
-        systemPrompt: n.data.systemPrompt,
-        modelConfig: n.data.modelConfig,
-        streamConfig: n.data.streamConfig,
-        memoryConfig: n.data.memoryConfig,
-        tools: edges
-          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
-          .map((e) => e.source),
-        middleware: edges
-          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MIDDLEWARE_IN)
-          .map((e) => e.source),
-        memory: edges
-          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MEMORY_IN)
-          .map((e) => e.source),
-        position: n.position,
-      }));
+      .map((n) => {
+        const llmNodeId = edges.find((e) => e.target === n.id && e.targetHandle === HANDLE_LLM_IN)?.source;
+        return {
+          id: n.data.agentId || n.id,
+          agentId: n.data.agentId || n.id,
+          name: n.data.name || "Node",
+          systemPrompt: n.data.systemPrompt,
+          llmNodeId,
+          modelConfig: {
+            ...(n.data.modelConfig || {}),
+          },
+          streamConfig: n.data.streamConfig,
+          memoryConfig: n.data.memoryConfig,
+          tools: edges
+            .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
+            .map((e) => e.source),
+          middleware: edges
+            .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+            .map((e) => e.source),
+          memory: edges
+            .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MEMORY_IN)
+            .map((e) => e.source),
+          position: n.position,
+        };
+      });
 
     const graphSteps: LangGraphStepConfig[] = nodes
       .filter((n): n is StepNode => n.type === LANGGRAPH_CANVAS_NODE_STEP)
@@ -1204,8 +1324,37 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         };
       });
 
+    const outputNodes = nodes.filter((n): n is OutputNode => n.type === LANGGRAPH_CANVAS_NODE_OUTPUT);
+    const outputNodeIds = new Set(outputNodes.map((n) => n.id));
+
+    const outputChannels: OutputChannelConfig[] = outputNodes.map((n) => {
+      const incomingEdge = edges.find((e) => e.target === n.id);
+      const sourceStepId = incomingEdge ? incomingEdge.source : n.data.sourceStepId;
+      return {
+        id: n.data.id || n.id,
+        name: n.data.name || n.data.label || "Output Channel",
+        type: n.data.type || "sse",
+        topicOrEventName: n.data.topicOrEventName,
+        targetStateChannel: n.data.targetStateChannel,
+        description: n.data.description,
+        streamContentMode: n.data.streamContentMode,
+        sourceStepId,
+        boundRouteIds: n.data.boundRouteIds,
+        schemaJson: n.data.schemaJson,
+        position: n.position,
+      };
+    });
+
     const graphEdges: LangGraphEdgeConfig[] = edges
       .filter((e) => e.source !== NODE_ID_STATE_GLOBAL && e.target !== NODE_ID_STATE_GLOBAL)
+      .filter((e) => {
+        const isTool = e.targetHandle === HANDLE_TOOL_IN || e.source.startsWith("tool_");
+        const isLLM = e.targetHandle === HANDLE_LLM_IN || e.source.startsWith("llm_");
+        const isMiddleware = e.targetHandle === HANDLE_MIDDLEWARE_IN || e.source.startsWith("mw_");
+        const isMemory = e.targetHandle === HANDLE_MEMORY_IN || e.source.startsWith("mem_") || e.source.startsWith("db_");
+        const isOutput = outputNodeIds.has(e.target) || e.target.startsWith("output_");
+        return !isTool && !isLLM && !isMiddleware && !isMemory && !isOutput;
+      })
       .map((e) => {
         const isEndTarget =
           e.target === NODE_ID_END ||
@@ -1265,6 +1414,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       ...data,
       graphSteps,
       graphEdges,
+      outputChannels,
       inputChannels,
       stateChannels,
       memoryConfig,

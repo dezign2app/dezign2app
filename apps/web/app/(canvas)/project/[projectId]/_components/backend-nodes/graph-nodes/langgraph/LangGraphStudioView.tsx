@@ -23,6 +23,8 @@ import { compileLangGraph } from "@/lib/compiler";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
 import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN, HANDLE_MEMORY_IN } from "./langgraph-canvas/constants";
 
+import { useConnectedRoutes } from "./LangGraphNode";
+
 interface LangGraphStudioViewProps {
   node: BackendNode;
   onClose: () => void;
@@ -30,6 +32,7 @@ interface LangGraphStudioViewProps {
 
 export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps) {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const connectedRoutes = useConnectedRoutes(node.id);
 
   const {
     nodes,
@@ -220,6 +223,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           availableToolNodes={availableToolNodes}
           availableMiddlewareNodes={availableMiddlewareNodes}
           availableMemoryNodes={availableMemoryNodes}
+          connectedRoutes={connectedRoutes}
           connectedLLMId={connectedLLMId}
           connectedToolIds={connectedToolIds}
           connectedMiddlewareIds={connectedMiddlewareIds}

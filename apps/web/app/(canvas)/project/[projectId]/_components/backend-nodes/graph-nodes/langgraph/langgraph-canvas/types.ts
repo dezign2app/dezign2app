@@ -176,6 +176,11 @@ export interface OutputChannelConfig {
   topicOrEventName?: string;
   targetStateChannel?: string;
   description?: string;
+  streamContentMode?: "ai_node_tokens" | "structured_output" | "step_output" | "full_state";
+  sourceStepId?: string;
+  boundRouteIds?: string[];
+  schemaJson?: string;
+  position?: { x: number; y: number };
 }
 
 export type OutputNodeData = OutputChannelConfig & {

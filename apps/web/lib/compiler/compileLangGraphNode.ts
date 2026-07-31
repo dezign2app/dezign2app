@@ -12,6 +12,7 @@ import {
   LangGraphMiddlewareDefinition,
   LangGraphMemoryDefinition,
   LangGraphAgentDefinition,
+  OutputChannelConfig,
 } from "@/types/canvas";
 import { CompiledServiceResult } from "./types";
 import { compileLangGraph, CompileLangGraphInput, RouteEndpoint } from "./langgraph/typescript/v1";
@@ -24,6 +25,7 @@ import type {
   MemoryNode,
   AgentNode,
   StepNode,
+  OutputNode,
 } from "@/app/(canvas)/project/[projectId]/_components/backend-nodes/graph-nodes/langgraph/langgraph-canvas/types";
 import {
   NODE_ID_STATE_GLOBAL,
@@ -37,6 +39,7 @@ import {
   LANGGRAPH_CANVAS_NODE_NODE,
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_END,
+  LANGGRAPH_CANVAS_NODE_OUTPUT,
   NODE_ID_END,
   HANDLE_LLM_IN,
   HANDLE_LLM_OUT,
@@ -351,6 +354,28 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
         position: endNode.position || data.endNodePosition || { x: 750, y: 320 },
         data: { label: endNode.label || "END State" },
       });
+    }
+  });
+
+  const outputChannels: OutputChannelConfig[] = data.outputChannels || [];
+  outputChannels.forEach((ch, idx) => {
+    const outNodeId = `out_${ch.id}`;
+    if (!reconstructedNodes.some((n) => n.id === outNodeId)) {
+      const outputNode: OutputNode = {
+        id: outNodeId,
+        type: LANGGRAPH_CANVAS_NODE_OUTPUT,
+        position: { x: 500, y: 240 + idx * 80 },
+        data: {
+          id: ch.id,
+          label: ch.name || "Output Channel",
+          name: ch.name || "Output Channel",
+          type: ch.type || "sse",
+          topicOrEventName: ch.topicOrEventName,
+          targetStateChannel: ch.targetStateChannel,
+          description: ch.description,
+        },
+      };
+      reconstructedNodes.push(outputNode);
     }
   });
 

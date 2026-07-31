@@ -285,6 +285,7 @@ export const agentDefinitionSchema = z.object({
   name: z.string(),
   systemPrompt: z.string().optional(),
   modelConfig: z.record(z.unknown()).optional(),
+  llmNodeId: z.string().optional(),
   streamConfig: streamConfigSchema,
   memoryConfig: agentMemoryConfigSchema,
   tools: z.array(z.string()).optional().default([]),
@@ -418,6 +419,21 @@ export const graphStepSchema = z.object({
 });
 export type GraphStep = z.infer<typeof graphStepSchema>;
 
+export const outputChannelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(["sse", "websocket", "event", "webhook", "rest"]).default("sse"),
+  topicOrEventName: z.string().optional(),
+  targetStateChannel: z.string().optional(),
+  description: z.string().optional(),
+  streamContentMode: z.enum(["ai_node_tokens", "structured_output", "step_output", "full_state"]).optional(),
+  sourceStepId: z.string().optional(),
+  boundRouteIds: z.array(z.string()).optional(),
+  schemaJson: z.string().optional(),
+  position: z.object({ x: z.number(), y: z.number() }).optional(),
+});
+export type OutputChannel = z.infer<typeof outputChannelSchema>;
+
 export const langgraphDataSchema = baseNodeDataSchema
   .extend({
     version: z.number().default(2),
@@ -425,6 +441,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     stepTimeoutMs: z.number().default(30000),
 
     inputChannels: z.array(inputChannelSchema).default([]),
+    outputChannels: z.array(outputChannelSchema).optional().default([]),
 
     stateChannels: z
       .array(
@@ -509,6 +526,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     const memoryIds = new Set(data.memoryDefinitions.map((m) => m.memoryId || m.id).filter((id): id is string => Boolean(id)));
     const portIds = new Set(data.outputPorts.map((p) => p.id));
     const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
+    const outputChannelIds = new Set(data.outputChannels?.map((o) => o.id) || []);
 
     // 1. Enforce Step Type Restrictions on retryPolicy & Tool Integrity
     data.graphSteps.forEach((step, idx) => {
@@ -518,7 +536,7 @@ export const langgraphDataSchema = baseNodeDataSchema
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Step type "${step.type}" cannot have a retryPolicy. Retries are restricted to llm_call, tool_node, vector_search, evaluator, and summarizer.`,
+          message: `Step "${step.id}" cannot have retryPolicy defined. Retry policies are strictly restricted to execution steps.`,
           path: ["graphSteps", idx, "retryPolicy"],
         });
       }
@@ -554,7 +572,9 @@ export const langgraphDataSchema = baseNodeDataSchema
         !toolIds.has(edge.source) &&
         !middlewareIds.has(edge.source) &&
         !agentIds.has(edge.source) &&
-        !memoryIds.has(edge.source)
+        !memoryIds.has(edge.source) &&
+        !outputChannelIds.has(edge.source) &&
+        !edge.source.startsWith("output_")
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -608,7 +628,9 @@ export const langgraphDataSchema = baseNodeDataSchema
           !customLlmIds.has(itemTarget.id) &&
           !toolIds.has(itemTarget.id) &&
           !middlewareIds.has(itemTarget.id) &&
-          !agentIds.has(itemTarget.id)
+          !agentIds.has(itemTarget.id) &&
+          !outputChannelIds.has(itemTarget.id) &&
+          !itemTarget.id.startsWith("output_")
         ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -637,7 +659,9 @@ export const langgraphDataSchema = baseNodeDataSchema
             !customLlmIds.has(target.id) &&
             !toolIds.has(target.id) &&
             !middlewareIds.has(target.id) &&
-            !agentIds.has(target.id)
+            !agentIds.has(target.id) &&
+            !outputChannelIds.has(target.id) &&
+            !target.id.startsWith("output_")
           ) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,

@@ -10,6 +10,7 @@ import { MiddlewareNodeInspector } from "./MiddlewareNodeInspector";
 import { AgentNodeInspector } from "./AgentNodeInspector";
 import { MemoryNodeInspector } from "./MemoryNodeInspector";
 import { OutputNodeInspector } from "./OutputNodeInspector";
+import type { ConnectedRouteInfo } from "../../../LangGraphNode";
 
 interface InspectorTabContentProps {
   selectedStepData: StepNodeData | null;
@@ -25,6 +26,7 @@ interface InspectorTabContentProps {
   availableToolNodes?: ToolNode[];
   availableMiddlewareNodes?: MiddlewareNode[];
   availableMemoryNodes?: MemoryNode[];
+  connectedRoutes?: ConnectedRouteInfo[];
   connectedLLMId?: string | null;
   connectedToolIds?: string[];
   connectedMiddlewareIds?: string[];
@@ -58,6 +60,7 @@ export function InspectorTabContent({
   availableToolNodes,
   availableMiddlewareNodes,
   availableMemoryNodes,
+  connectedRoutes = [],
   connectedLLMId,
   connectedToolIds,
   connectedMiddlewareIds,
@@ -111,6 +114,8 @@ export function InspectorTabContent({
           onDeleteOutput={onDeleteStep}
           onUpdateOutput={onUpdateOutput || (() => {})}
           stateChannels={stateChannels}
+          availableLLMNodes={availableLLMNodes}
+          connectedRoutes={connectedRoutes}
         />
       ) : selectedAgentData ? (
         <AgentNodeInspector

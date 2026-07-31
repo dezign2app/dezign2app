@@ -19,7 +19,14 @@ export const leafComparisonSchema = z.object({
     "is_not_null",
     "has_tool_calls",
   ]),
-  value: z.any().optional(),
+  value: z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    z.record(z.unknown()),
+  ]).optional(),
 });
 
 export type LeafComparison = z.infer<typeof leafComparisonSchema>;
@@ -277,7 +284,7 @@ export const agentDefinitionSchema = z.object({
   agentId: z.string().optional(),
   name: z.string(),
   systemPrompt: z.string().optional(),
-  modelConfig: z.any().optional(),
+  modelConfig: z.record(z.unknown()).optional(),
   streamConfig: streamConfigSchema,
   memoryConfig: agentMemoryConfigSchema,
   tools: z.array(z.string()).optional().default([]),
@@ -302,7 +309,7 @@ export const inputChannelSchema = z.object({
   type: z.enum(["string", "messages", "json", "number", "boolean", "object", "array"]).default("string"),
   required: z.boolean().default(true),
   description: z.string().optional(),
-  defaultValue: z.any().optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.unknown()), z.record(z.unknown())]).optional(),
 });
 export type InputChannel = z.infer<typeof inputChannelSchema>;
 
@@ -353,7 +360,7 @@ export const graphStepSchema = z.object({
   interruptConfig: z
     .object({
       callbackKey: z.string(),
-      expectedPayloadSchema: z.record(z.any()).optional(),
+      expectedPayloadSchema: z.record(z.unknown()).optional(),
       timeoutMs: z.number().default(86400000),
     })
     .optional(),
@@ -386,6 +393,7 @@ export const graphStepSchema = z.object({
           ]),
           value: z.string().optional(),
           isDefault: z.boolean().optional(),
+          targetId: z.string().optional(),
         })
       ),
     })
@@ -424,7 +432,7 @@ export const langgraphDataSchema = baseNodeDataSchema
           key: z.string(),
           type: z.enum(["messages", "string", "json", "number", "boolean"]),
           reducer: z.enum(["add_messages", "append", "replace", "merge_object", "concat_array"]),
-          defaultValue: z.any(),
+          defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.unknown()), z.record(z.unknown())]).optional(),
         })
       )
       .default([
@@ -446,7 +454,7 @@ export const langgraphDataSchema = baseNodeDataSchema
     middlewareDefinitions: z.array(middlewareDefinitionSchema).default([]),
     agentDefinitions: z.array(agentDefinitionSchema).default([]),
     memoryDefinitions: z.array(memoryDefinitionSchema).default([]),
-    tools: z.array(z.any()).default([]), // For backwards compatibility if needed
+    tools: z.array(z.union([z.string(), toolDefinitionSchema])).default([]),
     graphSteps: z.array(graphStepSchema).default([]),
     graphEdges: z.array(graphEdgeSchema).default([]),
     memoryConfig: z
@@ -474,6 +482,19 @@ export const langgraphDataSchema = baseNodeDataSchema
           apiKeyHeader: z.string().optional(),
           temperature: z.number().optional(),
           maxTokens: z.number().optional(),
+          position: z.object({ x: z.number(), y: z.number() }).optional(),
+        })
+      )
+      .optional()
+      .default([]),
+    startNodePosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    stateNodePosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    endNodePosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    endNodes: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string().optional(),
           position: z.object({ x: z.number(), y: z.number() }).optional(),
         })
       )
@@ -634,15 +655,7 @@ export const langgraphDataSchema = baseNodeDataSchema
       });
     });
 
-    sourcesWithConditionalEdge.forEach((source) => {
-      if (!sourcesWithDefaultOrUnconditional.has(source)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Source "${source}" has conditional edges but no default/unconditional fallback branch (isDefault: true). Graph execution would dead-end at runtime.`,
-          path: ["graphEdges"],
-        });
-      }
-    });
+    // Conditional edge fallback check relaxed for interactive canvas editing
 
     // 3. Reachability Check (relaxed for interactive canvas editing)
   });
@@ -652,8 +665,8 @@ export type LangGraphNodeData = z.infer<typeof langgraphDataSchema>;
 export const langgraphStepDataSchema = baseNodeDataSchema.extend({
   stepId: z.string().optional(),
   stepType: z.string().optional(),
-  modelConfig: z.any().optional(),
-  humanGateConfig: z.any().optional(),
-  interruptConfig: z.any().optional(),
-  customCode: z.any().optional(),
+  modelConfig: z.record(z.unknown()).optional(),
+  humanGateConfig: z.record(z.unknown()).optional(),
+  interruptConfig: z.record(z.unknown()).optional(),
+  customCode: z.record(z.unknown()).optional(),
 });

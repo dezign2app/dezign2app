@@ -47,6 +47,25 @@ import {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+/** Describes one HTTP/event entry point that invokes this LangGraph agent. */
+export interface RouteEndpoint {
+  kind: "endpoint" | "event" | "task";
+  /** HTTP path, e.g. "/chat" or "/analyze-ticket" */
+  path: string;
+  /** HTTP method to expose this route on */
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** Name of the event (for kind=="event") */
+  eventName?: string;
+  /** Source service/node label for documentation purposes */
+  sourceNodeLabel?: string;
+  /**
+   * Optional per-route payload mapping:
+   * key = LangGraph state channel key, value = dot-path into the HTTP body/headers
+   * e.g. { "messages": "body.message", "userId": "headers.x-user-id" }
+   */
+  payloadMapping?: Record<string, string>;
+}
+
 export interface CompileLangGraphInput {
   graphLabel: string;
   stateChannels: LangGraphStateChannel[];
@@ -54,6 +73,8 @@ export interface CompileLangGraphInput {
   nodes: LangGraphCanvasNode[];
   edges: LangGraphCanvasEdge[];
   memoryConfig?: LangGraphMemoryConfig;
+  /** Connected HTTP/event entry points that invoke this agent (from main canvas edges). */
+  routeEndpoints?: RouteEndpoint[];
 }
 
 /**
@@ -173,6 +194,15 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
     language: "typescript",
     content: buildIndexFile(ctx),
   });
+
+  // src/server.ts — only generated when routes are connected on the main canvas
+  if (input.routeEndpoints && input.routeEndpoints.length > 0) {
+    files.push({
+      filename: "src/server.ts",
+      language: "typescript",
+      content: buildServerFile(ctx, input.routeEndpoints),
+    });
+  }
 
   return files;
 }
@@ -355,6 +385,11 @@ function buildDependencies(ctx: CompileContext): Record<string, string> {
   for (const llmNode of ctx.llmNodes) {
     const pkg = getProviderPackage(llmNode.data.provider);
     if (pkg) deps[pkg] = "latest";
+  }
+
+  // Add express when routes are connected
+  if (ctx.input.routeEndpoints && ctx.input.routeEndpoints.length > 0) {
+    deps["express"] = "^4.21.2";
   }
 
   return deps;
@@ -703,6 +738,10 @@ function buildStepNodeFile(
       branches?: Array<{
         id: string;
         label: string;
+        field?: string;
+        operator?: string;
+        value?: string;
+        isDefault?: boolean;
         conditions?: Array<{ field?: string; operator?: string; value?: string }>;
         targetId?: string;
       }>;
@@ -714,17 +753,26 @@ function buildStepNodeFile(
     const possibleTargets = new Set<string>();
 
     for (const branch of branches) {
+      // Find connected target node if targetId is not explicitly set
+      let targetId = branch.targetId;
+      if (!targetId) {
+        const edge = ctx.input.edges.find((e) => e.source === stepNode.id && e.sourceHandle === branch.id);
+        if (edge) {
+          targetId = edge.target;
+        }
+      }
+
       let targetExpr = "";
-      if (branch.targetId) {
-        const meta = nodeMetaMap.get(branch.targetId);
+      if (targetId) {
+        const meta = nodeMetaMap.get(targetId);
         if (meta) {
           targetExpr = `"${meta.exportName}"`;
           possibleTargets.add(`"${meta.exportName}"`);
-        } else if (branch.targetId === "END" || branch.targetId === "__end__") {
+        } else if (targetId === "END" || targetId === "__end__" || targetId === NODE_ID_END) {
           targetExpr = "END";
           possibleTargets.add("typeof END");
         } else {
-          const ident = toIdentifier(branch.targetId);
+          const ident = toIdentifier(targetId);
           targetExpr = `"${ident}"`;
           possibleTargets.add(`"${ident}"`);
         }
@@ -739,18 +787,46 @@ function buildStepNodeFile(
         }
       }
 
-      const conditions = branch.conditions || [];
-      if (conditions.length > 0) {
-        const condParts = conditions.map((c) => {
-          const field = c.field ? `state.${toCamelCase(c.field)}` : "state.messages.at(-1)";
-          return buildCondition(field, c.operator || "==", c.value || "");
+      let condExpr = "";
+      if (branch.conditions && branch.conditions.length > 0) {
+        const condParts = branch.conditions.map((c) => {
+          const rawField = c.field || "messages";
+          const field = rawField.startsWith("state.") ? rawField : `state.${toCamelCase(rawField)}`;
+          return buildCondition(field, c.operator || "eq", c.value || "");
         });
-        branchLines.push(`  if (${condParts.join(" && ")}) return ${targetExpr};`);
+        condExpr = condParts.join(" && ");
+      } else if (branch.field) {
+        const rawField = branch.field;
+        const field = rawField.startsWith("state.") ? rawField : `state.${toCamelCase(rawField)}`;
+        condExpr = buildCondition(field, branch.operator || "eq", branch.value || "");
+      }
+
+      if (condExpr) {
+        branchLines.push(`  if (${condExpr}) return ${targetExpr};`);
+      } else if (branch.isDefault) {
+        // default branch handled below if no condition match
       }
     }
 
     let defaultTargetExpr = "END";
-    if (routerConfig?.defaultBranchId) {
+    const defaultBranch = branches.find((b) => b.isDefault);
+    if (defaultBranch) {
+      let defTargetId = defaultBranch.targetId;
+      if (!defTargetId) {
+        const edge = ctx.input.edges.find((e) => e.source === stepNode.id && e.sourceHandle === defaultBranch.id);
+        if (edge) defTargetId = edge.target;
+      }
+      if (defTargetId) {
+        const meta = nodeMetaMap.get(defTargetId);
+        if (meta) {
+          defaultTargetExpr = `"${meta.exportName}"`;
+          possibleTargets.add(`"${meta.exportName}"`);
+        } else if (defTargetId === "END" || defTargetId === "__end__" || defTargetId === NODE_ID_END) {
+          defaultTargetExpr = "END";
+          possibleTargets.add("typeof END");
+        }
+      }
+    } else if (routerConfig?.defaultBranchId) {
       const meta = nodeMetaMap.get(routerConfig.defaultBranchId);
       if (meta) {
         defaultTargetExpr = `"${meta.exportName}"`;
@@ -920,6 +996,107 @@ async function main() {
 }
 
 main().catch(console.error);
+`;
+}
+
+function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
+  const graphVarName = `${toCamelCase(ctx.graphId)}Graph`;
+  const hasMemory = ctx.hasMemory;
+
+  // Deduplicate routes by path+method so we don't emit the same route twice
+  const seen = new Set<string>();
+  const deduped = routes.filter((r) => {
+    const key = `${r.method}:${r.path}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const routeHandlers = deduped.map((route) => {
+    const mappingEntries = Object.entries(route.payloadMapping ?? {});
+    const isEvent = route.kind === "event";
+
+    // Build state object initializer
+    let stateInit: string;
+    if (mappingEntries.length > 0) {
+      // User-specified field mapping
+      const fields = mappingEntries.map(([stateKey, sourcePath]) => {
+        const accessor = sourcePath.startsWith("headers.")
+          ? `req.headers["${sourcePath.slice(8)}"]`
+          : sourcePath.startsWith("body.")
+          ? `req.body?.${sourcePath.slice(5)}`
+          : `req.body?.${sourcePath}`;
+        return `      ${JSON.stringify(stateKey)}: ${accessor}`;
+      });
+      stateInit = `{\n${fields.join(",\n")}\n    }`;
+    } else if (isEvent) {
+      // Event: forward the entire body as messages
+      stateInit = `{\n      messages: [{ role: "user", content: JSON.stringify(req.body) }]\n    }`;
+    } else {
+      // Default HTTP endpoint: extract message from body.message or body
+      stateInit = `{\n      messages: [{ role: "user", content: req.body?.message ?? JSON.stringify(req.body) }]\n    }`;
+    }
+
+    const threadIdLine = hasMemory
+      ? `\n    const threadId = req.body?.thread_id ?? req.headers["x-thread-id"] ?? "default";`
+      : "";
+
+    const configLine = hasMemory
+      ? `,\n      { configurable: { thread_id: threadId } }`
+      : "";
+
+    const comment = isEvent
+      ? `// Event: ${route.eventName ?? route.path} (from ${route.sourceNodeLabel ?? "event source"})`
+      : `// Route: ${route.method} ${route.path} (from ${route.sourceNodeLabel ?? "service"})`;
+
+    return `
+  ${comment}
+  app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
+    try {${threadIdLine}
+      const state = ${stateInit};
+      const result = await ${graphVarName}.invoke(state${configLine});
+      res.json({ ok: true, result });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[${route.method} ${route.path}] error:", message);
+      res.status(500).json({ ok: false, error: message });
+    }
+  });`;
+  }).join("\n");
+
+  const portEnvLine = `const PORT = Number(process.env.PORT ?? 3001);`;
+  const agentLabel = escapeStr(ctx.input.graphLabel || "LangGraph Agent");
+
+  return `import "dotenv/config";
+import express from "express";
+import { ${graphVarName} } from "./graph";
+
+/**
+ * HTTP Server for ${agentLabel}
+ *
+ * Auto-generated by Blueprint — exposes the LangGraph agent over HTTP.
+ * Each route corresponds to a connected endpoint or event on the main canvas.
+ *
+ * Start: ts-node src/server.ts  (or compile and run dist/server.js)
+ */
+
+const app = express();
+app.use(express.json());
+${portEnvLine}
+
+// ── Health check ──────────────────────────────────────────────────────────────
+app.get("/health", (_req, res) => res.json({ ok: true, agent: ${JSON.stringify(agentLabel)} }));
+
+// ── Agent routes ──────────────────────────────────────────────────────────────
+${routeHandlers}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+app.listen(PORT, () => {
+  console.log(\`🤖 ${agentLabel} running on http://localhost:\${PORT}\`);
+  console.log("Routes:");
+${deduped.map((r) => `  console.log("  ${r.method.padEnd(6)} http://localhost:\${PORT}${r.path}");`).join("\n")}
+  console.log("  GET    http://localhost:\${PORT}/health");
+});
 `;
 }
 
@@ -1121,19 +1298,36 @@ function getNodeLabel(nodeId: string, ctx: CompileContext): string | null {
 }
 
 function buildCondition(field: string, operator: string, value: string): string {
+  const formattedVal = value === "true" ? "true" : value === "false" ? "false" : JSON.stringify(value);
   switch (operator) {
-    case "==": case "equals": return `${field} === ${JSON.stringify(value)}`;
-    case "!=": case "not_equals": return `${field} !== ${JSON.stringify(value)}`;
-    case ">": return `${field} > ${value}`;
-    case "<": return `${field} < ${value}`;
-    case ">=": return `${field} >= ${value}`;
-    case "<=": return `${field} <= ${value}`;
-    case "contains": return `String(${field}).includes(${JSON.stringify(value)})`;
-    case "starts_with": return `String(${field}).startsWith(${JSON.stringify(value)})`;
-    case "ends_with": return `String(${field}).endsWith(${JSON.stringify(value)})`;
-    case "is_true": return `Boolean(${field})`;
-    case "is_false": return `!${field}`;
-    default: return `${field} === ${JSON.stringify(value)}`;
+    case "eq": case "==": case "equals":
+      return `${field} === ${formattedVal}`;
+    case "neq": case "!=": case "not_equals":
+      return `${field} !== ${formattedVal}`;
+    case "gt": case ">":
+      return `Number(${field}) > ${Number(value) || 0}`;
+    case "gte": case ">=":
+      return `Number(${field}) >= ${Number(value) || 0}`;
+    case "lt": case "<":
+      return `Number(${field}) < ${Number(value) || 0}`;
+    case "lte": case "<=":
+      return `Number(${field}) <= ${Number(value) || 0}`;
+    case "contains":
+      return `String(${field} ?? "").includes(${JSON.stringify(value)})`;
+    case "starts_with":
+      return `String(${field} ?? "").startsWith(${JSON.stringify(value)})`;
+    case "ends_with":
+      return `String(${field} ?? "").endsWith(${JSON.stringify(value)})`;
+    case "is_not_null":
+      return `${field} != null && ${field} !== ""`;
+    case "has_tool_calls":
+      return `(Array.isArray((state as any).messages?.at(-1)?.tool_calls) && (state as any).messages.at(-1).tool_calls.length > 0)`;
+    case "is_true":
+      return `Boolean(${field})`;
+    case "is_false":
+      return `!${field}`;
+    default:
+      return `${field} === ${formattedVal}`;
   }
 }
 

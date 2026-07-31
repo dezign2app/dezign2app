@@ -2,6 +2,7 @@ import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
 import { CompiledFile, CompiledMonorepoResult } from "./types";
 import { compileServiceNode } from "./compileServiceNode";
+import { compileLangGraphNode } from "./compileLangGraphNode";
 import { compileDatabaseNodes } from "./compileDatabaseNodes";
 import { compileWebClientNodes } from "./compileWebClientNode";
 import { compileUiPackage } from "./compileUiPackage";
@@ -23,6 +24,7 @@ export function compileMonorepo(
   const files: CompiledFile[] = [];
 
   const serviceNodes = nodes.filter((n) => n.type === "service");
+  const langGraphNodes = nodes.filter((n) => n.type === "langgraph");
   const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
   const webClientNodes = nodes.filter((n) => n.type === "webClient" || n.data?.isWebClient);
 
@@ -212,6 +214,29 @@ dist
 
     const srvResult = compileServiceNode(srvNode, endpoints, events, nodes, edges, testCases);
     srvResult.files.forEach((f) => {
+      files.push({
+        filename: `apps/${folderName}/${f.filename}`,
+        language: f.language,
+        content: f.content,
+      });
+    });
+  });
+
+  // 5.5. Generate Apps: apps/<sanitizedName> for LangGraph Service Nodes
+  langGraphNodes.forEach((lgNode) => {
+    const rawName = lgNode.data?.label || "LangGraph Service";
+    let folderName = rawName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "langgraph-service";
+    if (servicesInfo.some((s) => s.folderName === folderName)) {
+      folderName = `${folderName}-agent`;
+    }
+    servicesInfo.push({
+      id: lgNode.id,
+      name: rawName,
+      folderName,
+    });
+
+    const lgResult = compileLangGraphNode(lgNode);
+    lgResult.files.forEach((f) => {
       files.push({
         filename: `apps/${folderName}/${f.filename}`,
         language: f.language,

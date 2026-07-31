@@ -3,6 +3,7 @@ export * from "./utils";
 export * from "./traceResolver";
 export * from "./compileDatabaseNodes";
 export * from "./compileServiceNode";
+export * from "./compileLangGraphNode";
 export * from "./compileWebClientNode";
 export * from "./compileUiPackage";
 export * from "./compileMonorepo";

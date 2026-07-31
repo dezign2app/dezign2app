@@ -10,19 +10,26 @@ import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "../common/shared";
 
+export interface ConnectedRouteInfo {
+  edgeId: string;
+  kind: "endpoint" | "event" | "task";
+  label: string;
+  method: string;
+  sourceNodeLabel: string;
+  payloadMapping?: Record<string, string>;
+}
+
 /** Resolves a readable label for each edge invoking this LangGraph node. */
-function useConnectedRoutes(nodeId: string) {
+function useConnectedRoutes(nodeId: string): ConnectedRouteInfo[] {
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
 
-  // All edges that target this langgraph node via input-start
-  const incomingEdges = edges.filter(
-    (e) => e.target === nodeId && e.targetHandle === "input-start"
-  );
+  // All edges that target this langgraph node
+  const incomingEdges = edges.filter((e) => e.target === nodeId);
 
-  return incomingEdges.map((edge) => {
+  return incomingEdges.map((edge): ConnectedRouteInfo => {
     const sourceNode = nodes.find((n) => n.id === edge.source);
     const sourceNodeLabel = sourceNode?.data?.label || edge.source;
 
@@ -31,14 +38,15 @@ function useConnectedRoutes(nodeId: string) {
       const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
       const ep = endpoints.find((e) => e.id === endpointId);
       if (ep) {
-        return {
+        const item: ConnectedRouteInfo = {
           edgeId: edge.id,
-          kind: "endpoint" as const,
+          kind: "endpoint",
           label: ep.name || ep.id,
           method: ep.type || "GET",
           sourceNodeLabel,
           payloadMapping: edge.data?.payloadMapping,
         };
+        return item;
       }
     }
 
@@ -47,26 +55,28 @@ function useConnectedRoutes(nodeId: string) {
       const eventId = edge.sourceHandle.replace("consumedEvents-out-", "");
       const ev = events.find((e) => e.id === eventId);
       if (ev) {
-        return {
+        const item: ConnectedRouteInfo = {
           edgeId: edge.id,
-          kind: "event" as const,
+          kind: "event",
           label: ev.name || eventId,
           method: "EVENT",
           sourceNodeLabel,
           payloadMapping: edge.data?.payloadMapping,
         };
+        return item;
       }
     }
 
-    // Fallback — task or unknown connection
-    return {
+    // Fallback — task or general connection
+    const fallbackItem: ConnectedRouteInfo = {
       edgeId: edge.id,
-      kind: "task" as const,
+      kind: "task",
       label: sourceNodeLabel,
       method: "INVOKE",
       sourceNodeLabel,
       payloadMapping: edge.data?.payloadMapping,
     };
+    return fallbackItem;
   });
 }
 
@@ -126,15 +136,6 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
       )}
       onDoubleClick={handleOpenEditor}
     >
-      {/* Main Entry Input Handle — shared by all callers (endpoints, events, tasks) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input-start"
-        className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
-        title="Connect endpoints or events here to invoke this agent"
-      />
-
       {/* Main Exit Output Handle */}
       <Handle
         type="source"
@@ -243,8 +244,22 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             {connectedRoutes.map((route) => (
               <div
                 key={route.edgeId}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/20 transition-colors nodrag"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/20 transition-colors nodrag relative"
               >
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id={`route-in-${route.edgeId}`}
+                  className="!bg-primary !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+                  title={`Incoming route: ${route.label} (${route.sourceNodeLabel})`}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id="input-start"
+                  className="!bg-primary !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+                  title={`Incoming route: ${route.label} (${route.sourceNodeLabel})`}
+                />
                 {route.kind === "event" ? (
                   <Zap className="w-3 h-3 text-purple-400 shrink-0" />
                 ) : (
@@ -253,7 +268,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                 <span
                   className={cn(
                     "text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono",
-                    METHOD_COLORS[route.method] ?? METHOD_COLORS["INVOKE"]!
+                    METHOD_COLORS[route.method] || METHOD_COLORS["INVOKE"] || ""
                   )}
                 >
                   {route.method}
@@ -266,7 +281,14 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             ))}
           </div>
         ) : (
-          <div className="px-3 py-2 flex items-center gap-2 text-[10px] text-muted-foreground/50 italic">
+          <div className="px-3 py-2 flex items-center gap-2 text-[10px] text-muted-foreground/50 italic relative">
+            <Handle
+              type="target"
+              position={Position.Left}
+              id="input-start"
+              className="!bg-primary !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-left-[7px]"
+              title="Drag from an endpoint handle to invoke this agent"
+            />
             <Plug className="w-3 h-3 shrink-0" />
             <span>Drag from an endpoint handle to invoke this agent</span>
           </div>

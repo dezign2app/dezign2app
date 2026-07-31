@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap, Brain, ChevronDown, ChevronUp } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap, Brain, ChevronDown, ChevronUp, GitBranch, Plus, X } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import type { CanvasNode, LangGraphCanvasNodeUnion, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
 import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
@@ -319,19 +319,21 @@ export const LangGraphCanvasNode = ({ id, data, selected }: NodeProps<CanvasNode
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
-          {data.onDeleteAgent && (
-            <button
-              type="button"
-              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0 nodrag"
-              onClick={(e) => {
-                e.stopPropagation();
-                data.onDeleteAgent?.();
-              }}
-              title="Delete Node"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0 nodrag"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (data.onDeleteAgent) {
+                data.onDeleteAgent();
+              } else {
+                setNodes((nds) => nds.filter((n) => n.id !== id));
+              }
+            }}
+            title="Delete Node"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

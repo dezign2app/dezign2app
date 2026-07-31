@@ -59,7 +59,7 @@ export function resolveRouteEndpoints(
   events: Array<{ id: string; name?: string; variant?: string }>,
 ): RouteEndpoint[] {
   const incoming = edges.filter(
-    (e) => e.target === nodeId && e.targetHandle === "input-start"
+    (e) => e.target === nodeId
   );
 
   return incoming.map((edge): RouteEndpoint => {
@@ -71,13 +71,19 @@ export function resolveRouteEndpoints(
       const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
       const ep = endpoints.find((e) => e.id === endpointId);
       if (ep) {
-        return {
+        let epMethod: RouteEndpoint["method"] = "POST";
+        const rawType = ep.type;
+        if (rawType === "GET" || rawType === "POST" || rawType === "PUT" || rawType === "PATCH" || rawType === "DELETE") {
+          epMethod = rawType;
+        }
+        const epRoute: RouteEndpoint = {
           kind: "endpoint",
           path: ep.name || "/invoke",
-          method: (ep.type || "POST") as RouteEndpoint["method"],
+          method: epMethod,
           sourceNodeLabel,
           payloadMapping,
         };
+        return epRoute;
       }
     }
 

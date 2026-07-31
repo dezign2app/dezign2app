@@ -50,6 +50,10 @@ export type HandleKind =
   | "step-in"
   | "step-out"
 
+  // --- LangGraph Agent (main canvas) ---
+  | "langgraph-in"
+  | "langgraph-out"
+
   // --- Fallback ---
   | "unknown";
 
@@ -182,8 +186,9 @@ export type StateUpdateMode = "set" | "append" | "expression";
 export type StoreOperation = "get" | "put" | "delete" | "list";
 
 export type LangGraphToolDefinition = {
-  id: string;
+  id?: string;
   toolId?: string;
+  label?: string;
   name: string;
   description: string;
   inputSchema?: string;
@@ -234,6 +239,7 @@ export type LangGraphRouterBranch = {
   operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "is_not_null" | "has_tool_calls" | "expression";
   value?: string;
   isDefault?: boolean;
+  targetId?: string;
 };
 
 export type LangGraphRouterConfig = {
@@ -558,6 +564,8 @@ export interface CanvasIdentityProviderNodeData {
 
 /** LangGraph Agent node fields — the parent graph node (canvas type). */
 export interface CanvasLangGraphNodeData {
+  label?: string;
+  description?: string;
   inputChannels?: LangGraphInputChannel[];
   stateChannels?: LangGraphStateChannel[];
   graphSteps?: LangGraphStepConfig[];
@@ -584,6 +592,10 @@ export interface CanvasLangGraphNodeData {
   agentDefinitions?: LangGraphAgentDefinition[];
   memoryDefinitions?: LangGraphMemoryDefinition[];
   mcpServerConnections?: McpServerConnection[];
+  startNodePosition?: { x: number; y: number };
+  stateNodePosition?: { x: number; y: number };
+  endNodePosition?: { x: number; y: number };
+  endNodes?: { id: string; label?: string; position?: { x: number; y: number } }[];
 }
 
 export type LangGraphMiddlewareType =
@@ -884,6 +896,11 @@ export type BackendEdge = {
     responseType?: string;
     responseMode?: string;
     notes?: string;
+    // --- LangGraph Route Invocation ---
+    // Maps HTTP body / event payload fields → LangGraph state channel keys.
+    // Lives on the edge so the graph itself stays immutable and reusable.
+    // e.g. { "messages": "body.message", "userId": "headers.x-user-id" }
+    payloadMapping?: Record<string, string>;
   };
   fractionalIndex: string; // For sequence diagram ordering
 };

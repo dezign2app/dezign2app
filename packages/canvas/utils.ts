@@ -57,6 +57,13 @@ export function classifyHandle(
     if (handleDirection === "source") return "step-out";
   }
 
+  if (nodeType === "langgraph") {
+    if (id === "input-start" || id.startsWith("langgraph-in-")) return "langgraph-in";
+    if (id === "output-end" || id.startsWith("langgraph-out-")) return "langgraph-out";
+    if (handleDirection === "target") return "langgraph-in";
+    if (handleDirection === "source") return "langgraph-out";
+  }
+
   if (nodeType === "entity") {
     if (id.startsWith("source-")) return "entity-column-source";
     if (id.startsWith("target-")) return "entity-column-target";

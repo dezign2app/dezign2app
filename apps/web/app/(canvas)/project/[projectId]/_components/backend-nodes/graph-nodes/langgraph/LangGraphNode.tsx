@@ -2,13 +2,83 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import {
-  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil,
+  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap,
 } from "lucide-react";
 import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { LocalInput } from "../common/shared";
+
+/** Resolves a readable label for each edge invoking this LangGraph node. */
+function useConnectedRoutes(nodeId: string) {
+  const edges = useBackendCanvasStore((s) => s.edges);
+  const nodes = useBackendCanvasStore((s) => s.nodes);
+  const endpoints = useBackendCanvasStore((s) => s.endpoints);
+  const events = useBackendCanvasStore((s) => s.events);
+
+  // All edges that target this langgraph node via input-start
+  const incomingEdges = edges.filter(
+    (e) => e.target === nodeId && e.targetHandle === "input-start"
+  );
+
+  return incomingEdges.map((edge) => {
+    const sourceNode = nodes.find((n) => n.id === edge.source);
+    const sourceNodeLabel = sourceNode?.data?.label || edge.source;
+
+    // Resolve specific endpoint
+    if (edge.sourceHandle?.startsWith("endpoint-out-")) {
+      const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
+      const ep = endpoints.find((e) => e.id === endpointId);
+      if (ep) {
+        return {
+          edgeId: edge.id,
+          kind: "endpoint" as const,
+          label: ep.name || ep.id,
+          method: ep.type || "GET",
+          sourceNodeLabel,
+          payloadMapping: edge.data?.payloadMapping,
+        };
+      }
+    }
+
+    // Resolve consumed event
+    if (edge.sourceHandle?.startsWith("consumedEvents-out-")) {
+      const eventId = edge.sourceHandle.replace("consumedEvents-out-", "");
+      const ev = events.find((e) => e.id === eventId);
+      if (ev) {
+        return {
+          edgeId: edge.id,
+          kind: "event" as const,
+          label: ev.name || eventId,
+          method: "EVENT",
+          sourceNodeLabel,
+          payloadMapping: edge.data?.payloadMapping,
+        };
+      }
+    }
+
+    // Fallback — task or unknown connection
+    return {
+      edgeId: edge.id,
+      kind: "task" as const,
+      label: sourceNodeLabel,
+      method: "INVOKE",
+      sourceNodeLabel,
+      payloadMapping: edge.data?.payloadMapping,
+    };
+  });
+}
+
+const METHOD_COLORS: Record<string, string> = {
+  GET:    "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  POST:   "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  PUT:    "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  PATCH:  "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  DELETE: "bg-red-500/15 text-red-400 border-red-500/30",
+  EVENT:  "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  INVOKE: "bg-secondary text-muted-foreground border-border/50",
+};
 
 export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -20,6 +90,8 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
 
   const [isEditing, setIsEditing] = useState(data.label === "" || data.label === "Untitled");
   const [name, setName] = useState(data.label || "LangGraph Agent");
+
+  const connectedRoutes = useConnectedRoutes(id);
 
   useEffect(() => {
     setName(data.label || "LangGraph Agent");
@@ -54,12 +126,13 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
       )}
       onDoubleClick={handleOpenEditor}
     >
-      {/* Main Entry Input Handle */}
+      {/* Main Entry Input Handle — shared by all callers (endpoints, events, tasks) */}
       <Handle
         type="target"
         position={Position.Left}
         id="input-start"
         className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
+        title="Connect endpoints or events here to invoke this agent"
       />
 
       {/* Main Exit Output Handle */}
@@ -68,6 +141,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         position={Position.Right}
         id="output-end"
         className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
+        title="Agent output — connect to downstream endpoints or tasks"
       />
 
       {/* Header */}
@@ -150,8 +224,56 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         </div>
       </div>
 
+      {/* ── Connected Routes Section ───────────────────────────────────── */}
+      <div className="border-b border-border/60">
+        <div className="px-3 py-1 bg-secondary/40 flex items-center justify-between">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Plug className="w-3 h-3" />
+            Invoked By
+          </span>
+          {connectedRoutes.length > 0 && (
+            <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+              {connectedRoutes.length}
+            </span>
+          )}
+        </div>
 
-      {/* Summary Preview */}
+        {connectedRoutes.length > 0 ? (
+          <div className="flex flex-col divide-y divide-border/40">
+            {connectedRoutes.map((route) => (
+              <div
+                key={route.edgeId}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/20 transition-colors nodrag"
+              >
+                {route.kind === "event" ? (
+                  <Zap className="w-3 h-3 text-purple-400 shrink-0" />
+                ) : (
+                  <Plug className="w-3 h-3 text-primary/60 shrink-0" />
+                )}
+                <span
+                  className={cn(
+                    "text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono",
+                    METHOD_COLORS[route.method] ?? METHOD_COLORS["INVOKE"]!
+                  )}
+                >
+                  {route.method}
+                </span>
+                <span className="font-medium truncate text-foreground flex-1">{route.label}</span>
+                <span className="text-[9px] text-muted-foreground truncate shrink-0">
+                  {route.sourceNodeLabel}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-3 py-2 flex items-center gap-2 text-[10px] text-muted-foreground/50 italic">
+            <Plug className="w-3 h-3 shrink-0" />
+            <span>Drag from an endpoint handle to invoke this agent</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Summary Preview ────────────────────────────────────────────── */}
       <div className="p-3 flex flex-col gap-2 nodrag">
         {/* State schema preview */}
         <div className="flex flex-col gap-1 bg-[#006ddd]/10 p-2 rounded-xl border border-[#006ddd]/30">
@@ -225,4 +347,3 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
     </div>
   );
 };
-

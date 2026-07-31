@@ -23,6 +23,7 @@ import type {
   LangGraphMiddlewareDefinition,
   LangGraphAgentDefinition,
   LangGraphMemoryDefinition,
+  OutputChannelConfig,
 } from "@/types/canvas";
 import { STEP_TYPE_ROUTER, ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
@@ -43,6 +44,8 @@ import {
   AgentNodeData,
   MemoryNode,
   MemoryNodeData,
+  OutputNode,
+  OutputNodeData,
   LangGraphCanvasNodeAddType,
   getStepData,
 } from "../types";
@@ -58,6 +61,7 @@ import {
   LANGGRAPH_CANVAS_NODE_NODE,
   LANGGRAPH_CANVAS_NODE_AGENT,
   LANGGRAPH_CANVAS_NODE_MEMORY,
+  LANGGRAPH_CANVAS_NODE_OUTPUT,
   DEFAULT_MIDDLEWARE_TYPE,
   MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
   HANDLE_LLM_IN,
@@ -807,6 +811,34 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       return;
     }
 
+    if (type === LANGGRAPH_CANVAS_NODE_OUTPUT) {
+      const outId = `output_${Date.now().toString(36).slice(-4)}`;
+      const permanentChannelId = `channel_${crypto.randomUUID()}`;
+      const newOutputNode: OutputNode = {
+        id: outId,
+        type: LANGGRAPH_CANVAS_NODE_OUTPUT,
+        position: { x: 420 + Math.random() * 140, y: 240 + Math.random() * 80 },
+        data: {
+          id: permanentChannelId,
+          label: label || "Output Channel",
+          name: label || "Output Channel",
+          type: "sse",
+          targetStateChannel: "messages",
+          topicOrEventName: "messages",
+          onDeleteOutput: () => {
+            setNodes((nodes) => nodes.filter((node) => node.id !== outId));
+            setEdges((edges) => edges.filter((edge) => edge.source !== outId && edge.target !== outId));
+            setSelectedNodeId((curr) => (curr === outId ? null : curr));
+          },
+        },
+      };
+
+      setNodes((nds) => [...nds, newOutputNode]);
+      setSelectedNodeId(outId);
+      setActiveSideTab("inspector");
+      return;
+    }
+
     const stepId = type === STEP_TYPE_ROUTER ? `router_${Date.now().toString(36).slice(-4)}` : `step_${Date.now().toString(36).slice(-4)}`;
     const newNode: StepNode = {
       id: stepId,
@@ -865,6 +897,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     return found ? found.data : null;
   }, [nodes, selectedNodeId]);
 
+  const selectedOutputData = useMemo((): OutputNodeData | null => {
+    const found = nodes.find((n): n is OutputNode => n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_OUTPUT);
+    return found ? found.data : null;
+  }, [nodes, selectedNodeId]);
+
   const updateSelectedMiddleware = (changes: Partial<MiddlewareNodeData>) => {
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
@@ -878,6 +915,15 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     if (!selectedNodeId) return;
     setNodes((nds) => nds.map((n) =>
       n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_MEMORY
+        ? { ...n, data: { ...n.data, ...changes } }
+        : n
+    ));
+  };
+
+  const updateSelectedOutput = (changes: Partial<OutputNodeData>) => {
+    if (!selectedNodeId) return;
+    setNodes((nds) => nds.map((n) =>
+      n.id === selectedNodeId && n.type === LANGGRAPH_CANVAS_NODE_OUTPUT
         ? { ...n, data: { ...n.data, ...changes } }
         : n
     ));
@@ -1342,6 +1388,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     selectedMiddlewareData,
     selectedAgentData,
     selectedMemoryData,
+    selectedOutputData,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -1353,6 +1400,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     updateSelectedMiddleware,
     updateSelectedAgent,
     updateSelectedMemory,
+    updateSelectedOutput,
     handleDeleteStep,
     handleDeleteSelected,
     handleSave,

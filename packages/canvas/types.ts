@@ -562,6 +562,15 @@ export interface CanvasIdentityProviderNodeData {
   };
 }
 
+export interface OutputChannelConfig {
+  id: string;
+  name: string;
+  type: "sse" | "websocket" | "event" | "webhook" | "rest";
+  topicOrEventName?: string;
+  targetStateChannel?: string;
+  description?: string;
+}
+
 /** LangGraph Agent node fields — the parent graph node (canvas type). */
 export interface CanvasLangGraphNodeData {
   label?: string;
@@ -571,6 +580,7 @@ export interface CanvasLangGraphNodeData {
   graphSteps?: LangGraphStepConfig[];
   graphEdges?: LangGraphEdgeConfig[];
   outputPorts?: LangGraphOutputPort[];
+  outputChannels?: OutputChannelConfig[];
   memoryConfig?: LangGraphMemoryConfig;
   customLlmNodes?: {
     id: string;

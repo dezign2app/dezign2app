@@ -43,6 +43,7 @@ import {
   MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
   LANGGRAPH_CANVAS_NODE_START,
   LANGGRAPH_CANVAS_NODE_END,
+  LANGGRAPH_CANVAS_NODE_OUTPUT,
 } from "@/app/(canvas)/project/[projectId]/_components/backend-nodes/graph-nodes/langgraph/langgraph-canvas/constants";
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -394,6 +395,13 @@ function buildDependencies(ctx: CompileContext): Record<string, string> {
   for (const llmNode of ctx.llmNodes) {
     const pkg = getProviderPackage(llmNode.data.provider);
     if (pkg) deps[pkg] = "latest";
+  }
+
+  const hasWebSocket = ctx.input.nodes.some(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && (n.data).type === "websocket"
+  );
+  if (hasWebSocket) {
+    deps["socket.io"] = "^4.7.5";
   }
 
   // Add express when routes are connected

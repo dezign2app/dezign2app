@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap, Brain } from "lucide-react";
+import { Bot, Trash2, Cpu, Wrench, Shield, Sparkles, Radio, Check, FileJson, Layers, Database, HardDrive, Key, Zap, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import type { AgentNode, LangGraphCanvasNode, LangGraphAgentStreamConfig, LangGraphAgentResponseFormatConfig } from "../types";
@@ -29,10 +29,23 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
   const { setNodes, getEdges } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.name || "AI Agent");
+  const [isExpanded, setIsExpanded] = useState(data.isExpanded ?? false);
 
   useEffect(() => {
     setNameValue(data.name || "AI Agent");
   }, [data.name]);
+
+  useEffect(() => {
+    if (data.isExpanded !== undefined) {
+      setIsExpanded(data.isExpanded);
+    }
+  }, [data.isExpanded]);
+
+  const toggleExpand = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    updateAgentData({ isExpanded: next });
+  };
 
   const edges = getEdges();
   
@@ -293,19 +306,33 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
           </div>
         </div>
 
-        {data.onDeleteAgent && (
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
-            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0 nodrag"
+            className="p-1.5 rounded-lg hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 transition-colors shrink-0 nodrag"
             onClick={(e) => {
               e.stopPropagation();
-              data.onDeleteAgent?.();
+              toggleExpand();
             }}
-            title="Delete Agent Node"
+            title={isExpanded ? "Collapse Node" : "Expand Node"}
           >
-            <Trash2 className="w-4 h-4" />
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
-        )}
+
+          {data.onDeleteAgent && (
+            <button
+              type="button"
+              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0 nodrag"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onDeleteAgent?.();
+              }}
+              title="Delete Agent Node"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Body */}
@@ -348,6 +375,33 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
             </span>
           </div>
         </div>
+
+        {/* Expand / Collapse Action Bar */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpand();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-md bg-secondary/30 hover:bg-secondary/60 text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/40 transition-colors nodrag"
+        >
+          {isExpanded ? (
+            <>
+              <span>Hide Details</span>
+              <ChevronUp className="w-3 h-3 text-sky-500" />
+            </>
+          ) : (
+            <>
+              <span>Show Details & Config</span>
+              <ChevronDown className="w-3 h-3 text-sky-500" />
+            </>
+          )}
+        </button>
+
+        {isExpanded && (
+          <>
 
         {/* 1. LLM Configuration Panel */}
         <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-sky-500/5 border border-sky-500/20 nodrag">
@@ -650,6 +704,8 @@ export const LangGraphCanvasAgentNode = ({ id, data, selected }: NodeProps<Agent
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

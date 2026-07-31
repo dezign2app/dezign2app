@@ -43,6 +43,7 @@ export type MemoryNodeData = LangGraphMemoryDefinition & {
 
 export type CanvasNodeData = LangGraphAgentDefinition & {
   label: string;
+  isExpanded?: boolean;
   llmConfig?: {
     enabled?: boolean;
     provider?: string;

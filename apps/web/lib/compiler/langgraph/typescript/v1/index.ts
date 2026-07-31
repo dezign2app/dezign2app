@@ -64,6 +64,9 @@ export interface RouteEndpoint {
    * e.g. { "messages": "body.message", "userId": "headers.x-user-id" }
    */
   payloadMapping?: Record<string, string>;
+  preInvokeLogicMode?: "natural_language" | "code";
+  preInvokePrompt?: string;
+  preInvokeCode?: string;
 }
 
 export interface CompileLangGraphInput {
@@ -1043,29 +1046,53 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
   });
 
   const routeHandlers = deduped.map((route) => {
-    const mappingEntries = Object.entries(route.payloadMapping ?? {});
     const isEvent = route.kind === "event";
+    const payloadMap = route.payloadMapping ?? {};
+    const stateChannels = ctx.input.stateChannels || [];
 
-    // Build state object initializer
-    let stateInit: string;
-    if (mappingEntries.length > 0) {
-      // User-specified field mapping
-      const fields = mappingEntries.map(([stateKey, sourcePath]) => {
-        const accessor = sourcePath.startsWith("headers.")
-          ? `req.headers["${sourcePath.slice(8)}"]`
-          : sourcePath.startsWith("body.")
-          ? `req.body?.${sourcePath.slice(5)}`
-          : `req.body?.${sourcePath}`;
-        return `      ${JSON.stringify(stateKey)}: ${accessor}`;
-      });
-      stateInit = `{\n${fields.join(",\n")}\n    }`;
-    } else if (isEvent) {
-      // Event: forward the entire body as messages
-      stateInit = `{\n      messages: [{ role: "user", content: JSON.stringify(req.body) }]\n    }`;
-    } else {
-      // Default HTTP endpoint: extract message from body.message or body
-      stateInit = `{\n      messages: [{ role: "user", content: req.body?.message ?? JSON.stringify(req.body) }]\n    }`;
+    // Collect all defined state channel keys + explicit payload mapping keys
+    const allStateKeys = new Set<string>();
+    stateChannels.forEach((ch) => allStateKeys.add(ch.key));
+    Object.keys(payloadMap).forEach((k) => allStateKeys.add(k));
+    if (allStateKeys.size === 0) {
+      allStateKeys.add("messages");
     }
+
+    const stateFields: string[] = [];
+    for (const key of allStateKeys) {
+      const customPath = payloadMap[key];
+      if (customPath) {
+        const accessor = customPath.startsWith("headers.")
+          ? `req.headers["${customPath.slice(8)}"]`
+          : customPath.startsWith("body.")
+          ? `req.body?.${customPath.slice(5)}`
+          : `req.body?.${customPath}`;
+        stateFields.push(`      ${JSON.stringify(key)}: ${accessor}`);
+      } else if (key === "messages") {
+        if (isEvent) {
+          stateFields.push(`      messages: req.body?.messages ?? [{ role: "user", content: JSON.stringify(req.body) }]`);
+        } else {
+          stateFields.push(`      messages: req.body?.messages ?? [{ role: "user", content: req.body?.message ?? (typeof req.body === "string" ? req.body : JSON.stringify(req.body)) }]`);
+        }
+      } else {
+        stateFields.push(`      ${JSON.stringify(key)}: req.body?.${key}`);
+      }
+    }
+
+    const stateInit = `{\n${stateFields.join(",\n")}\n    }`;
+
+    const preInvokeBlock = (() => {
+      if (route.preInvokeCode && route.preInvokeCode.trim()) {
+        return `\n      // Pre-Invoke Business Logic\n      ${route.preInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
+      }
+      if (route.preInvokePrompt && route.preInvokePrompt.trim()) {
+        // Natural language: emit as a comment directive for the AI agent
+        const lines = route.preInvokePrompt.trim().split("\n");
+        const commentLines = lines.map((l, i) => `      // STEP ${i + 1}: ${l.trim()}`).join("\n");
+        return `\n      // Pre-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
+      }
+      return "";
+    })();
 
     const threadIdLine = hasMemory
       ? `\n    const threadId = req.body?.thread_id ?? req.headers["x-thread-id"] ?? "default";`
@@ -1083,7 +1110,7 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
   ${comment}
   app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
     try {${threadIdLine}
-      const state = ${stateInit};
+      const state: Partial<${toPascalCase(ctx.graphId)}StateType> = ${stateInit};${preInvokeBlock}
       const result = await ${graphVarName}.invoke(state${configLine});
       res.json({ ok: true, result });
     } catch (err: unknown) {
@@ -1100,6 +1127,7 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
   return `import "dotenv/config";
 import express from "express";
 import { ${graphVarName} } from "./graph";
+import type { ${toPascalCase(ctx.graphId)}StateType } from "./state";
 
 /**
  * HTTP Server for ${agentLabel}

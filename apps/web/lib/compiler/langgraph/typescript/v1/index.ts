@@ -66,6 +66,9 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
   const pkgId = toIdentifier(input.graphLabel || "langgraph-agent").toLowerCase().replace(/_/g, "-");
   const deps = buildDependencies(ctx);
 
+  const llmMetaMap = buildLLMMetaMap(ctx);
+  const nodeMetaMap = buildNodeMetaMap(ctx);
+
   // package.json
   files.push({
     filename: "package.json",
@@ -109,27 +112,59 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
     });
   }
 
-  // src/llm.ts (if LLM nodes exist)
+  // src/llm/ folder (if LLM nodes exist)
   if (ctx.llmNodes.length > 0) {
+    for (const llmNode of ctx.llmNodes) {
+      const meta = llmMetaMap.get(llmNode.id);
+      if (meta) {
+        files.push({
+          filename: `src/llm/${meta.fileName}.ts`,
+          language: "typescript",
+          content: buildIndividualLLMFile(llmNode, ctx, llmMetaMap),
+        });
+      }
+    }
     files.push({
-      filename: "src/llm.ts",
+      filename: "src/llm/index.ts",
       language: "typescript",
-      content: buildLLMFile(ctx),
+      content: buildLLMIndexFile(ctx, llmMetaMap),
     });
   }
 
-  // src/nodes.ts
-  files.push({
-    filename: "src/nodes.ts",
-    language: "typescript",
-    content: buildNodesFile(ctx),
-  });
+  // src/nodes/ folder (if agent or step nodes exist)
+  if (ctx.agentNodes.length > 0 || ctx.stepNodes.length > 0) {
+    for (const agentNode of ctx.agentNodes) {
+      const meta = nodeMetaMap.get(agentNode.id);
+      if (meta) {
+        files.push({
+          filename: `src/nodes/${meta.fileName}.ts`,
+          language: "typescript",
+          content: buildAgentNodeFile(agentNode, ctx, nodeMetaMap, llmMetaMap),
+        });
+      }
+    }
+    for (const stepNode of ctx.stepNodes) {
+      const meta = nodeMetaMap.get(stepNode.id);
+      if (meta) {
+        files.push({
+          filename: `src/nodes/${meta.fileName}.ts`,
+          language: "typescript",
+          content: buildStepNodeFile(stepNode, ctx, nodeMetaMap, llmMetaMap),
+        });
+      }
+    }
+    files.push({
+      filename: "src/nodes/index.ts",
+      language: "typescript",
+      content: buildNodesIndexFile(ctx, nodeMetaMap),
+    });
+  }
 
   // src/graph.ts
   files.push({
     filename: "src/graph.ts",
     language: "typescript",
-    content: buildGraphFile(ctx),
+    content: buildGraphFile(ctx, nodeMetaMap),
   });
 
   // src/index.ts
@@ -142,7 +177,87 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
   return files;
 }
 
-// ─── Internal Context ─────────────────────────────────────────────────────────
+// ─── Internal Context & Metadata ─────────────────────────────────────────────
+
+interface LLMMeta {
+  fileName: string;
+  varName: string;
+}
+
+interface NodeMeta {
+  fileName: string;
+  exportName: string;
+}
+
+function buildLLMMetaMap(ctx: CompileContext): Map<string, LLMMeta> {
+  const map = new Map<string, LLMMeta>();
+  const used = new Set<string>();
+
+  for (const llmNode of ctx.llmNodes) {
+    const d = llmNode.data;
+    const raw = d.label || d.model || d.provider || `llm_${llmNode.id}`;
+    let base = toIdentifier(raw);
+    if (!base) base = `llm_${llmNode.id}`;
+
+    let name = base;
+    let counter = 2;
+    while (used.has(name)) {
+      name = `${base}${counter}`;
+      counter++;
+    }
+    used.add(name);
+    map.set(llmNode.id, { fileName: name, varName: name });
+  }
+
+  return map;
+}
+
+function buildNodeMetaMap(ctx: CompileContext): Map<string, NodeMeta> {
+  const map = new Map<string, NodeMeta>();
+  const used = new Set<string>();
+
+  for (const agentNode of ctx.agentNodes) {
+    const d = agentNode.data;
+    const raw = d.name || d.label || `node_${agentNode.id}`;
+    let base = toIdentifier(raw);
+    if (!base) base = `node_${agentNode.id}`;
+
+    let fileName = base;
+    let counter = 2;
+    while (used.has(fileName)) {
+      fileName = `${base}${counter}`;
+      counter++;
+    }
+    used.add(fileName);
+    map.set(agentNode.id, { fileName, exportName: fileName });
+  }
+
+  for (const stepNode of ctx.stepNodes) {
+    const d = stepNode.data;
+    let raw = d.label || `step_${stepNode.id}`;
+    if (d.stepType === "router") {
+      raw = d.label || `router_${stepNode.id}`;
+    }
+    let base = toIdentifier(raw);
+    if (!base) base = `step_${stepNode.id}`;
+
+    let fileName = base;
+    let counter = 2;
+    while (used.has(fileName)) {
+      fileName = `${base}${counter}`;
+      counter++;
+    }
+    used.add(fileName);
+
+    const exportName = d.stepType === "router"
+      ? (base.endsWith("Router") ? base : `${base}Router`)
+      : base;
+
+    map.set(stepNode.id, { fileName, exportName });
+  }
+
+  return map;
+}
 
 interface CompileContext {
   input: CompileLangGraphInput;
@@ -438,187 +553,152 @@ ${body}
   return parts.join("\n\n");
 }
 
-function buildLLMFile(ctx: CompileContext): string {
-  if (ctx.llmNodes.length === 0) return "// No LLMs configured";
+function buildIndividualLLMFile(
+  llmNode: { id: string; data: LangGraphLLMNodeData },
+  ctx: CompileContext,
+  llmMetaMap: Map<string, LLMMeta>
+): string {
+  const d = llmNode.data;
+  const meta = llmMetaMap.get(llmNode.id);
+  const varName = meta ? meta.varName : toIdentifier(d.label || `llm_${llmNode.id}`);
 
-  const providerMap = new Map<string, Set<string>>();
-  for (const llmNode of ctx.llmNodes) {
-    const pkg = getProviderPackage(llmNode.data.provider);
-    const cls = getProviderClass(llmNode.data.provider);
-    if (pkg && cls) {
-      const set = providerMap.get(pkg) || new Set<string>();
-      set.add(cls);
-      providerMap.set(pkg, set);
-    }
-  }
+  const pkg = getProviderPackage(d.provider);
+  const cls = getProviderClass(d.provider);
 
   const imports: string[] = [];
-  for (const [pkg, classes] of providerMap) {
-    imports.push(`import { ${[...classes].join(", ")} } from "${pkg}";`);
+  if (pkg && cls) {
+    imports.push(`import { ${cls} } from "${pkg}";`);
   }
 
-  if (ctx.hasTools) {
-    const toolNames = ctx.toolNodes.map(t => toIdentifier(t.data.name || `tool_${t.id}`));
-    imports.push(`import { ${toolNames.join(", ")} } from "./tools.js";`);
+  const connectedAgentIds = [...ctx.agentLLMMap.entries()]
+    .filter(([, llmId]) => llmId === llmNode.id)
+    .map(([agentId]) => agentId);
+
+  const connectedToolIds = new Set<string>();
+  for (const agentId of connectedAgentIds) {
+    const toolIds = ctx.agentToolsMap.get(agentId) || [];
+    toolIds.forEach((tid) => connectedToolIds.add(tid));
+  }
+
+  const toolVarNames = [...connectedToolIds]
+    .map((tid) => {
+      const toolNode = ctx.toolNodes.find((t) => t.id === tid);
+      return toolNode ? toIdentifier(toolNode.data.name || `tool_${tid}`) : null;
+    })
+    .filter(Boolean) as string[];
+
+  if (toolVarNames.length > 0) {
+    imports.push(`import { ${toolVarNames.join(", ")} } from "../tools";`);
+  }
+
+  const configLines: string[] = [];
+  if (d.model) configLines.push(`  model: "${d.model}",`);
+  if (d.temperature !== undefined) configLines.push(`  temperature: ${d.temperature},`);
+  if (d.maxTokens !== undefined) configLines.push(`  maxTokens: ${d.maxTokens},`);
+
+  if ((d.provider === "ollama" || d.provider === "custom") && (d.baseUrl || d.url)) {
+    configLines.push(`  baseURL: "${d.baseUrl || d.url}",`);
   }
 
   const parts: string[] = [imports.join("\n"), ""];
 
-  for (const llmNode of ctx.llmNodes) {
-    const d = llmNode.data;
-    const varName = toIdentifier(d.label || `llm_${llmNode.id}`);
-    const cls = getProviderClass(d.provider);
-
-    const connectedAgentIds = [...ctx.agentLLMMap.entries()]
-      .filter(([, llmId]) => llmId === llmNode.id)
-      .map(([agentId]) => agentId);
-
-    const connectedToolIds = new Set<string>();
-    for (const agentId of connectedAgentIds) {
-      const toolIds = ctx.agentToolsMap.get(agentId) || [];
-      toolIds.forEach((tid) => connectedToolIds.add(tid));
-    }
-
-    const toolVarNames = [...connectedToolIds]
-      .map((tid) => {
-        const toolNode = ctx.toolNodes.find((t) => t.id === tid);
-        return toolNode ? toIdentifier(toolNode.data.name || `tool_${tid}`) : null;
-      })
-      .filter(Boolean) as string[];
-
-    const configLines: string[] = [];
-    if (d.model) configLines.push(`  model: "${d.model}",`);
-    if (d.temperature !== undefined) configLines.push(`  temperature: ${d.temperature},`);
-    if (d.maxTokens !== undefined) configLines.push(`  maxTokens: ${d.maxTokens},`);
-
-    if ((d.provider === "ollama" || d.provider === "custom") && (d.baseUrl || d.url)) {
-      configLines.push(`  baseURL: "${d.baseUrl || d.url}",`);
-    }
-
-    if (toolVarNames.length > 0) {
-      parts.push(`const ${varName}Base = new ${cls}({\n${configLines.join("\n")}\n});`);
-      parts.push(`export const ${varName} = ${varName}Base.bindTools([${toolVarNames.join(", ")}]);`);
-    } else {
-      parts.push(`export const ${varName} = new ${cls}({\n${configLines.join("\n")}\n});`);
-    }
+  if (toolVarNames.length > 0) {
+    parts.push(`const ${varName}Base = new ${cls}({\n${configLines.join("\n")}\n});`);
+    parts.push(`export const ${varName} = ${varName}Base.bindTools([${toolVarNames.join(", ")}]);`);
+  } else {
+    parts.push(`export const ${varName} = new ${cls}({\n${configLines.join("\n")}\n});`);
   }
 
   return parts.join("\n\n");
 }
 
-function buildNodesFile(ctx: CompileContext): string {
+function buildLLMIndexFile(ctx: CompileContext, llmMetaMap: Map<string, LLMMeta>): string {
+  const exports = ctx.llmNodes.map((l) => {
+    const meta = llmMetaMap.get(l.id);
+    return `export * from "./${meta?.fileName}";`;
+  });
+  return exports.join("\n") + "\n";
+}
+
+function buildAgentNodeFile(
+  agentNode: { id: string; data: CanvasNodeData },
+  ctx: CompileContext,
+  nodeMetaMap: Map<string, NodeMeta>,
+  llmMetaMap: Map<string, LLMMeta>
+): string {
+  const d = agentNode.data;
+  const nodeMeta = nodeMetaMap.get(agentNode.id);
+  const fnName = nodeMeta ? nodeMeta.exportName : toIdentifier(d.name || d.label || `node_${agentNode.id}`);
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
-  const imports = [
-    `import { ${schemaName}Type } from "./state.js";`,
+
+  const llmId = ctx.agentLLMMap.get(agentNode.id);
+  const llmNode = llmId ? ctx.llmNodes.find((l) => l.id === llmId) : null;
+  const llmMeta = llmId ? llmMetaMap.get(llmId) : null;
+  const llmVar = llmMeta ? llmMeta.varName : null;
+
+  const imports: string[] = [
+    `import { ${schemaName}Type } from "../state";`,
   ];
 
-  if (ctx.agentNodes.length > 0 || ctx.stepNodes.some((s) => s.data.stepType === "llm_call")) {
-    imports.push(`import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";`);
+  const systemPrompt = d.systemPrompt?.trim();
+  if (systemPrompt && llmVar) {
+    imports.push(`import { SystemMessage } from "@langchain/core/messages";`);
   }
 
-  if (ctx.hasHumanInLoop) {
-    imports.push(`import { interrupt } from "@langchain/langgraph";`);
+  if (llmVar && llmMeta) {
+    imports.push(`import { ${llmVar} } from "../llm/${llmMeta.fileName}";`);
   }
 
-  if (ctx.stepNodes.some((s) => s.data.stepType === "tool_node")) {
-    imports.push(`import { ToolNode } from "@langchain/langgraph";`);
-    const toolVarNames = ctx.toolNodes.map((t) => toIdentifier(t.data.name || `tool_${t.id}`));
-    imports.push(`import { ${toolVarNames.join(", ")} } from "./tools.js";`);
+  const bodyLines: string[] = [];
+
+  if (systemPrompt && llmVar) {
+    bodyLines.push(`  const messages = [`);
+    bodyLines.push(`    new SystemMessage(\`${escapeTemplateLiteral(systemPrompt)}\`),`);
+    bodyLines.push(`    ...state.messages,`);
+    bodyLines.push(`  ];`);
+    bodyLines.push(`  const response = await ${llmVar}.invoke(messages);`);
+  } else if (llmVar) {
+    bodyLines.push(`  const response = await ${llmVar}.invoke(state.messages);`);
+  } else {
+    bodyLines.push(`  // Node without LLM execution logic`);
+    bodyLines.push(`  const response = null;`);
   }
 
-  if (ctx.llmNodes.length > 0) {
-    const llmVars = ctx.llmNodes.map((l) => toIdentifier(l.data.label || `llm_${l.id}`));
-    imports.push(`import { ${llmVars.join(", ")} } from "./llm.js";`);
+  const stateUpdates = d.stateUpdates || [];
+  const returnEntries: string[] = [];
+  if (llmVar) returnEntries.push(`    messages: [response],`);
+
+  for (const su of stateUpdates) {
+    if (su.channelKey === "messages") continue;
+    const key = toCamelCase(su.channelKey);
+    const val = su.value ? `${su.value}` : `state.${key}`;
+    returnEntries.push(`    ${key}: ${val},`);
   }
 
-  const parts: string[] = [imports.join("\n")];
+  bodyLines.push(`  return {`);
+  bodyLines.push(...returnEntries);
+  bodyLines.push(`  };`);
 
-  // Agent Nodes
-  for (const agentNode of ctx.agentNodes) {
-    const d = agentNode.data;
-    const fnName = toIdentifier(d.name || d.label || `node_${agentNode.id}`);
-    const llmId = ctx.agentLLMMap.get(agentNode.id);
-    const llmNode = llmId ? ctx.llmNodes.find((l) => l.id === llmId) : null;
-    const llmVar = llmNode ? toIdentifier(llmNode.data.label || `llm_${llmId}`) : null;
+  return `${imports.join("\n")}
 
-    const bodyLines: string[] = [];
-    const systemPrompt = d.systemPrompt?.trim();
-
-    if (systemPrompt && llmVar) {
-      bodyLines.push(`  const messages = [`);
-      bodyLines.push(`    new SystemMessage(\`${escapeTemplateLiteral(systemPrompt)}\`),`);
-      bodyLines.push(`    ...state.messages,`);
-      bodyLines.push(`  ];`);
-      bodyLines.push(`  const response = await ${llmVar}.invoke(messages);`);
-    } else if (llmVar) {
-      bodyLines.push(`  const response = await ${llmVar}.invoke(state.messages);`);
-    } else {
-      bodyLines.push(`  // Node without LLM execution logic`);
-      bodyLines.push(`  const response = null;`);
-    }
-
-    const stateUpdates = d.stateUpdates || [];
-    const returnEntries: string[] = [];
-    if (llmVar) returnEntries.push(`    messages: [response],`);
-
-    for (const su of stateUpdates) {
-      if (su.channelKey === "messages") continue;
-      const key = toCamelCase(su.channelKey);
-      const val = su.value ? `${su.value}` : `state.${key}`;
-      returnEntries.push(`    ${key}: ${val},`);
-    }
-
-    bodyLines.push(`  return {`);
-    bodyLines.push(...returnEntries);
-    bodyLines.push(`  };`);
-
-    parts.push(`export async function ${fnName}(state: ${schemaName}Type) {
+export async function ${fnName}(state: ${schemaName}Type) {
 ${bodyLines.join("\n")}
-}`);
-  }
+}
+`;
+}
 
-  // Step Nodes
-  for (const stepNode of ctx.stepNodes) {
-    const d = stepNode.data;
-    const fnName = toIdentifier(d.label || `step_${stepNode.id}`);
+function buildStepNodeFile(
+  stepNode: { id: string; data: StepNodeData },
+  ctx: CompileContext,
+  nodeMetaMap: Map<string, NodeMeta>,
+  llmMetaMap: Map<string, LLMMeta>
+): string {
+  const d = stepNode.data;
+  const nodeMeta = nodeMetaMap.get(stepNode.id);
+  const fnName = nodeMeta ? nodeMeta.exportName : toIdentifier(d.label || `step_${stepNode.id}`);
+  const schemaName = `${toPascalCase(ctx.graphId)}State`;
 
-    if (d.stepType === "router") continue;
-
-    if (d.stepType === "tool_node") {
-      const toolVarNames = ctx.toolNodes.map((t) => toIdentifier(t.data.name || `tool_${t.id}`));
-      parts.push(`export const ${fnName} = new ToolNode([${toolVarNames.join(", ")}]);`);
-      continue;
-    }
-
-    if (d.stepType === "human_gate" || d.stepType === "interrupt") {
-      parts.push(`export async function ${fnName}(state: ${schemaName}Type) {
-  const humanInput = interrupt({
-    question: "Review step input:",
-    state,
-  });
-  return { messages: [{ role: "human", content: humanInput }] };
-}`);
-      continue;
-    }
-
-    if (d.stepType === "custom_code" && d.customCode?.body?.trim()) {
-      const body = indent(d.customCode.body.trim(), 2);
-      parts.push(`export async function ${fnName}(state: ${schemaName}Type) {
-${body}
-}`);
-      continue;
-    }
-
-    parts.push(`export async function ${fnName}(state: ${schemaName}Type) {
-  return {};
-}`);
-  }
-
-  // Router Functions
-  const routerSteps = ctx.stepNodes.filter((s) => s.data.stepType === "router");
-  for (const routerStep of routerSteps) {
-    const d = routerStep.data;
-    const fnName = `${toIdentifier(d.label || `router_${routerStep.id}`)}Router`;
+  if (d.stepType === "router") {
     const routerConfig = d.routerConfig as {
       branches?: Array<{
         id: string;
@@ -631,54 +711,153 @@ ${body}
 
     const branches = routerConfig?.branches || [];
     const branchLines: string[] = [];
+    const possibleTargets = new Set<string>();
 
     for (const branch of branches) {
-      const targetId = branch.targetId ? toIdentifier(branch.targetId) : `"${branch.label}"`;
+      let targetExpr = "";
+      if (branch.targetId) {
+        const meta = nodeMetaMap.get(branch.targetId);
+        if (meta) {
+          targetExpr = `"${meta.exportName}"`;
+          possibleTargets.add(`"${meta.exportName}"`);
+        } else if (branch.targetId === "END" || branch.targetId === "__end__") {
+          targetExpr = "END";
+          possibleTargets.add("typeof END");
+        } else {
+          const ident = toIdentifier(branch.targetId);
+          targetExpr = `"${ident}"`;
+          possibleTargets.add(`"${ident}"`);
+        }
+      } else {
+        const label = branch.label || "END";
+        if (label === "END" || label === "__end__") {
+          targetExpr = "END";
+          possibleTargets.add("typeof END");
+        } else {
+          targetExpr = `"${label}"`;
+          possibleTargets.add(`"${label}"`);
+        }
+      }
+
       const conditions = branch.conditions || [];
       if (conditions.length > 0) {
         const condParts = conditions.map((c) => {
           const field = c.field ? `state.${toCamelCase(c.field)}` : "state.messages.at(-1)";
           return buildCondition(field, c.operator || "==", c.value || "");
         });
-        branchLines.push(`  if (${condParts.join(" && ")}) return ${targetId};`);
+        branchLines.push(`  if (${condParts.join(" && ")}) return ${targetExpr};`);
       }
     }
 
-    const defaultTarget = routerConfig?.defaultBranchId
-      ? toIdentifier(routerConfig.defaultBranchId)
-      : "END";
+    let defaultTargetExpr = "END";
+    if (routerConfig?.defaultBranchId) {
+      const meta = nodeMetaMap.get(routerConfig.defaultBranchId);
+      if (meta) {
+        defaultTargetExpr = `"${meta.exportName}"`;
+        possibleTargets.add(`"${meta.exportName}"`);
+      } else if (routerConfig.defaultBranchId === "END" || routerConfig.defaultBranchId === "__end__") {
+        defaultTargetExpr = "END";
+        possibleTargets.add("typeof END");
+      } else {
+        const ident = toIdentifier(routerConfig.defaultBranchId);
+        defaultTargetExpr = `"${ident}"`;
+        possibleTargets.add(`"${ident}"`);
+      }
+    } else {
+      possibleTargets.add("typeof END");
+    }
 
-    parts.push(`export function ${fnName}(state: ${schemaName}Type): string {
+    const returnTypeStr = possibleTargets.size > 0 ? [...possibleTargets].join(" | ") : "string";
+    const hasEnd = possibleTargets.has("typeof END");
+    const importHeader = hasEnd
+      ? `import { END } from "@langchain/langgraph";\nimport { ${schemaName}Type } from "../state";`
+      : `import { ${schemaName}Type } from "../state";`;
+
+    return `${importHeader}
+
+export function ${fnName}(state: ${schemaName}Type): ${returnTypeStr} {
 ${branchLines.join("\n")}
-  return ${defaultTarget};
-}`);
+  return ${defaultTargetExpr};
+}
+`;
   }
 
-  return parts.join("\n\n");
+  if (d.stepType === "tool_node") {
+    const toolVarNames = ctx.toolNodes.map((t) => toIdentifier(t.data.name || `tool_${t.id}`));
+    return `import { ToolNode } from "@langchain/langgraph";
+import { ${toolVarNames.join(", ")} } from "../tools";
+
+export const ${fnName} = new ToolNode([${toolVarNames.join(", ")}]);
+`;
+  }
+
+  if (d.stepType === "human_gate" || d.stepType === "interrupt") {
+    return `import { interrupt } from "@langchain/langgraph";
+import { ${schemaName}Type } from "../state";
+
+export async function ${fnName}(state: ${schemaName}Type) {
+  const humanInput = interrupt({
+    question: "Review step input:",
+    state,
+  });
+  return { messages: [{ role: "human", content: humanInput }] };
+}
+`;
+  }
+
+  if (d.stepType === "custom_code" && d.customCode?.body?.trim()) {
+    const body = indent(d.customCode.body.trim(), 2);
+    return `import { ${schemaName}Type } from "../state";
+
+export async function ${fnName}(state: ${schemaName}Type) {
+${body}
+}
+`;
+  }
+
+  return `import { ${schemaName}Type } from "../state";
+
+export async function ${fnName}(state: ${schemaName}Type) {
+  return {};
+}
+`;
 }
 
-function buildGraphFile(ctx: CompileContext): string {
+function buildNodesIndexFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string {
+  const files = new Set<string>();
+  for (const agentNode of ctx.agentNodes) {
+    const meta = nodeMetaMap.get(agentNode.id);
+    if (meta) files.add(meta.fileName);
+  }
+  for (const stepNode of ctx.stepNodes) {
+    const meta = nodeMetaMap.get(stepNode.id);
+    if (meta) files.add(meta.fileName);
+  }
+  return [...files].map((f) => `export * from "./${f}";`).join("\n") + "\n";
+}
+
+function buildGraphFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string {
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
   const graphVarName = `${toCamelCase(ctx.graphId)}Graph`;
   const builderVarName = `${toCamelCase(ctx.graphId)}Builder`;
 
   const nodeExports: string[] = [];
   for (const agentNode of ctx.agentNodes) {
-    nodeExports.push(toIdentifier(agentNode.data.name || agentNode.data.label || `node_${agentNode.id}`));
+    const meta = nodeMetaMap.get(agentNode.id);
+    if (meta) nodeExports.push(meta.exportName);
   }
   for (const stepNode of ctx.stepNodes) {
-    if (stepNode.data.stepType === "router") {
-      nodeExports.push(`${toIdentifier(stepNode.data.label || `router_${stepNode.id}`)}Router`);
-    } else {
-      nodeExports.push(toIdentifier(stepNode.data.label || `step_${stepNode.id}`));
-    }
+    const meta = nodeMetaMap.get(stepNode.id);
+    if (meta) nodeExports.push(meta.exportName);
   }
 
   const imports = [
     `import { StateGraph, START, END${ctx.hasMemory ? ", MemorySaver" + (ctxMemoryNeedsStore(ctx) ? ", MemoryStore" : "") : ""} } from "@langchain/langgraph";`,
-    `import { ${schemaName} } from "./state.js";`,
-    `import { ${nodeExports.join(", ")} } from "./nodes.js";`,
-  ];
+    `import { ${schemaName} } from "./state";`,
+    nodeExports.length > 0
+      ? `import { ${nodeExports.join(", ")} } from "./nodes";`
+      : "",
+  ].filter(Boolean);
 
   const lines: string[] = [
     imports.join("\n"),
@@ -687,17 +866,19 @@ function buildGraphFile(ctx: CompileContext): string {
   ];
 
   for (const agentNode of ctx.agentNodes) {
-    const fnName = toIdentifier(agentNode.data.name || agentNode.data.label || `node_${agentNode.id}`);
+    const meta = nodeMetaMap.get(agentNode.id);
+    const fnName = meta ? meta.exportName : toIdentifier(agentNode.data.name || agentNode.data.label || `node_${agentNode.id}`);
     lines.push(`  .addNode("${fnName}", ${fnName})`);
   }
 
   for (const stepNode of ctx.stepNodes) {
     if (stepNode.data.stepType === "router") continue;
-    const fnName = toIdentifier(stepNode.data.label || `step_${stepNode.id}`);
+    const meta = nodeMetaMap.get(stepNode.id);
+    const fnName = meta ? meta.exportName : toIdentifier(stepNode.data.label || `step_${stepNode.id}`);
     lines.push(`  .addNode("${fnName}", ${fnName})`);
   }
 
-  const flowEdges = buildFlowEdges(ctx);
+  const flowEdges = buildFlowEdges(ctx, nodeMetaMap);
   lines.push(...flowEdges);
 
   const lastLine = lines[lines.length - 1];
@@ -724,7 +905,7 @@ function buildIndexFile(ctx: CompileContext): string {
 
   return `import "dotenv/config";
 import { HumanMessage } from "@langchain/core/messages";
-import { ${graphVarName} } from "./graph.js";
+import { ${graphVarName} } from "./graph";
 
 async function main() {
   console.log("🚀 Running ${ctx.input.graphLabel || "LangGraph Agent"}...");
@@ -744,10 +925,11 @@ main().catch(console.error);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildFlowEdges(ctx: CompileContext): string[] {
+function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string[] {
   const { edges } = ctx.input;
   const lines: string[] = [];
 
+  // Filter to only flow edges (exclude wiring edges like LLM/tool/memory connections)
   const flowEdges = edges.filter((e) => {
     return (
       e.targetHandle !== HANDLE_LLM_IN &&
@@ -763,30 +945,58 @@ function buildFlowEdges(ctx: CompileContext): string[] {
     );
   });
 
-  const processedPairs = new Set<string>();
+  // Collect edges that ENTER a router node.
+  // Each such edge means: from upstream node → router → downstream targets
+  // This becomes: .addConditionalEdges(upstreamNode, routerFn, [targets])
+  const processedSources = new Set<string>();
 
   for (const edge of flowEdges) {
-    const pairKey = `${edge.source}->${edge.target}`;
-    if (processedPairs.has(pairKey)) continue;
-    processedPairs.add(pairKey);
+    // If this edge points INTO a router node
+    if (ctx.routerStepIds.has(edge.target)) {
+      const routerId = edge.target;
+      if (processedSources.has(edge.source + "->" + routerId)) continue;
+      processedSources.add(edge.source + "->" + routerId);
 
-    const sourceName = resolveNodeName(edge.source, ctx);
-    const targetName = resolveNodeName(edge.target, ctx);
+      const sourceName = resolveNodeName(edge.source, ctx, nodeMetaMap);
+      if (!sourceName) continue;
 
-    if (!sourceName || !targetName) continue;
+      // Get the router function name
+      const routerMeta = nodeMetaMap.get(routerId);
+      const routerFnName = routerMeta ? routerMeta.exportName : `${toIdentifier(getNodeLabel(routerId, ctx) || routerId)}Router`;
 
-    if (ctx.routerStepIds.has(edge.source)) {
-      const routerFnName = `${toIdentifier(getNodeLabel(edge.source, ctx) || edge.source)}Router`;
-      const routerTargets = flowEdges
-        .filter((e2) => e2.source === edge.source)
-        .map((e2) => resolveNodeName(e2.target, ctx))
-        .filter(Boolean) as string[];
-      const uniqueTargets = [...new Set(routerTargets)];
-      const targetsStr = uniqueTargets.map((t) => (t === "END" ? "END" : `"${t}"`)).join(", ");
-      lines.push(`  .addConditionalEdges("${sourceName}", ${routerFnName}, [${targetsStr}])`);
-      uniqueTargets.forEach((t) => processedPairs.add(`${edge.source}->${t}`));
+      // Collect all downstream targets that the router can route to
+      const routerOutEdges = flowEdges.filter((e2) => e2.source === routerId);
+      const uniqueTargets = [
+        ...new Set(
+          routerOutEdges
+            .map((e2) => resolveNodeName(e2.target, ctx, nodeMetaMap))
+            .filter(Boolean) as string[]
+        ),
+      ];
+
+      const targetsStr = uniqueTargets
+        .map((t) => (t === "END" ? "END" : `"${t}"`))
+        .join(", ");
+
+      if (sourceName === "START") {
+        lines.push(`  .addConditionalEdges(START, ${routerFnName}, [${targetsStr}])`);
+      } else {
+        lines.push(`  .addConditionalEdges("${sourceName}", ${routerFnName}, [${targetsStr}])`);
+      }
       continue;
     }
+
+    // Skip edges that originate FROM a router node — those are covered above
+    if (ctx.routerStepIds.has(edge.source)) continue;
+
+    const pairKey = `${edge.source}->${edge.target}`;
+    if (processedSources.has(pairKey)) continue;
+    processedSources.add(pairKey);
+
+    const sourceName = resolveNodeName(edge.source, ctx, nodeMetaMap);
+    const targetName = resolveNodeName(edge.target, ctx, nodeMetaMap);
+
+    if (!sourceName || !targetName) continue;
 
     if (sourceName === "START") {
       lines.push(`  .addEdge(START, "${targetName}")`);
@@ -881,9 +1091,14 @@ function jsonSchemaToZod(schema: Record<string, unknown>): string {
   return `z.object({\n${fields.join("\n")}\n})`;
 }
 
-function resolveNodeName(nodeId: string, ctx: CompileContext): string | null {
+function resolveNodeName(nodeId: string, ctx: CompileContext, nodeMetaMap?: Map<string, NodeMeta>): string | null {
   if (nodeId === NODE_ID_START) return "START";
   if (nodeId === NODE_ID_END || nodeId === "END") return "END";
+
+  if (nodeMetaMap) {
+    const meta = nodeMetaMap.get(nodeId);
+    if (meta) return meta.exportName;
+  }
 
   const node = ctx.input.nodes.find((n) => n.id === nodeId);
   if (!node) return null;

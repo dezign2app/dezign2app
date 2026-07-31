@@ -29,6 +29,7 @@ export const endpointSchema = z.object({
   // Frontend-specific legacy fields
   params: z.array(parameterSchema).optional(),
   body: z.string().optional(),
+  code: z.string().optional(),
   businessLogic: z.string().optional(),
   logicMode: z.enum(["natural_language", "code"]).optional(),
   prompt: z.string().optional(),
@@ -85,6 +86,7 @@ export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
   }).passthrough()).describe("Executable request-processing steps in order."),
   output: z.string().optional().describe("Short response description; do not use this instead of responseBody."),
   businessLogic: z.string().optional().describe("Human-readable purpose of the endpoint."),
+  code: z.string().optional().describe("Executable custom code logic for the endpoint."),
   summary: z.string().optional().describe("Summary of what the endpoint does."),
   requiredRoles: z.array(z.string()).optional().describe("List of roles required to access this endpoint."),
   requiredScopes: z.array(z.string()).optional().describe("List of scopes required to access this endpoint."),

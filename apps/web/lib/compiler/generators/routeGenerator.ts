@@ -183,14 +183,29 @@ export async function ${handlerName}(
 
       routeHandlerCode += `    // =========================================================================\n`;
 
-      if (ep.businessLogic && ep.businessLogic.trim()) {
-        ep.businessLogic.split("\n").forEach((line, idx) => {
+      const promptText = (ep.businessLogic || ep.prompt || "").trim();
+      const codeBlock = (ep.body || ep.code || "").trim();
+
+      // Section 1: Natural Language / Instruction (commented out steps)
+      if (promptText) {
+        routeHandlerCode += `    // --- Natural Language Instructions ---\n`;
+        promptText.split("\n").forEach((line: string, idx: number) => {
           if (line.trim()) routeHandlerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
         });
-      } else {
+        routeHandlerCode += `\n`;
+      } else if (!codeBlock) {
         routeHandlerCode += `    // STEP 1: Validate request payload and params\n`;
         routeHandlerCode += `    // STEP 2: Execute database query/mutation\n`;
         routeHandlerCode += `    // STEP 3: Return structured JSON response\n`;
+      }
+
+      // Section 2: Code Block / Actual Code (formatted, UNCOMMENTED code)
+      if (codeBlock) {
+        routeHandlerCode += `    // --- Business Logic Code Execution ---\n`;
+        codeBlock.split("\n").forEach((line: string) => {
+          routeHandlerCode += `    ${line}\n`;
+        });
+        routeHandlerCode += `\n`;
       }
 
       const statusCode = ep.type === "POST" ? 201 : 200;

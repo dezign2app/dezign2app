@@ -37,6 +37,8 @@ interface CompilerModalProps {
   onOpenChange: (open: boolean) => void;
   projectName?: string;
   projectId?: string;
+  overrideFiles?: CompiledFile[];
+  overrideTitle?: string;
 }
 
 interface FileTreeNode {
@@ -185,7 +187,7 @@ function FileTreeItem({
   );
 }
 
-export function CompilerModal({ open, onOpenChange, projectName, projectId }: CompilerModalProps) {
+export function CompilerModal({ open, onOpenChange, projectName, projectId, overrideFiles, overrideTitle }: CompilerModalProps) {
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
@@ -221,7 +223,10 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
     [nodes, endpoints, events, edges, testCases, formattedProjectName]
   );
 
-  const fileTree = useMemo(() => buildFileTree(monorepoResult.files), [monorepoResult.files]);
+  const files = overrideFiles || monorepoResult.files;
+  const displayTitle = overrideTitle || (overrideFiles ? (projectName || "Compiled Code Workspace") : "Monorepo Compiler Engine");
+
+  const fileTree = useMemo(() => buildFileTree(files), [files]);
 
   // Restore last opened file and expanded folder structure when modal opens
   React.useEffect(() => {
@@ -245,12 +250,12 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
       console.error("Failed to restore compiler modal state", e);
     }
 
-    const fileExists = restoredFile && monorepoResult.files.some((f) => f.filename === restoredFile);
+    const fileExists = restoredFile && files.some((f) => f.filename === restoredFile);
     let targetFile = fileExists ? restoredFile! : "";
 
     if (!targetFile) {
-      const readme = monorepoResult.files.find((f) => f.filename.toLowerCase() === "readme.md");
-      targetFile = readme ? readme.filename : monorepoResult.files[0]?.filename || "README.md";
+      const readme = files.find((f) => f.filename.toLowerCase() === "readme.md");
+      targetFile = readme ? readme.filename : files[0]?.filename || "README.md";
     }
 
     setSelectedFilename(targetFile);
@@ -258,7 +263,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
     const parents = getParentPaths(targetFile);
     const newExpandedSet = new Set<string>([...restoredExpanded, ...parents]);
     setExpandedPaths(newExpandedSet);
-  }, [open, projectId]);
+  }, [open, projectId, files]);
 
   const handleSelectFile = (filename: string) => {
     setSelectedFilename(filename);
@@ -306,7 +311,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
     });
   };
 
-  const activeFile = monorepoResult.files.find((f) => f.filename === selectedFilename) || monorepoResult.files[0];
+  const activeFile = files.find((f) => f.filename === selectedFilename) || files[0];
 
   const handleCopy = () => {
     if (!activeFile) return;
@@ -329,14 +334,14 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
   };
 
   const handleDownloadZip = async () => {
-    if (monorepoResult.files.length === 0) return;
+    if (files.length === 0) return;
     setDownloadingZip(true);
-    toast.info("Compressing monorepo project into ZIP...");
+    toast.info("Compressing project into ZIP...");
     try {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
 
-      monorepoResult.files.forEach((file) => {
+      files.forEach((file) => {
         zip.file(file.filename, file.content);
       });
 
@@ -344,7 +349,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const zipName = `${monorepoResult.projectName.toLowerCase().replace(/[^a-z0-9]/g, "-")}.zip`;
+      const zipName = `${displayTitle.toLowerCase().replace(/[^a-z0-9]/g, "-")}.zip`;
       a.download = zipName;
       a.click();
       URL.revokeObjectURL(url);
@@ -358,22 +363,22 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
   };
 
   const handleRunInCloud = () => {
-    if (serviceNodes.length === 0 && entityNodes.length === 0) return;
+    if (files.length === 0) return;
 
     const fileMap: Record<string, string> = {};
-    monorepoResult.files.forEach((f) => {
+    files.forEach((f) => {
       fileMap[f.filename] = f.content;
     });
 
     const defaultOpenFile =
-      serviceNodes.length > 0
-        ? `apps/${serviceNodes[0]?.data.label?.toLowerCase().replace(/[^a-z0-9]/g, "-") || "service"}/src/index.ts`
-        : `packages/db/schema/index.ts`;
+      files.find((f) => f.filename.endsWith("index.ts") || f.filename.endsWith("index.js"))?.filename ||
+      files[0]?.filename ||
+      "README.md";
 
     sdk.openProject(
       {
-        title: monorepoResult.projectName,
-        description: `Generated Turborepo + pnpm monorepo workspace containing ${serviceNodes.length} service(s)`,
+        title: displayTitle,
+        description: `Generated project workspace`,
         template: "node",
         files: fileMap,
         settings: {
@@ -388,7 +393,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
         openFile: defaultOpenFile,
       }
     );
-    toast.success(`Opening monorepo workspace live in StackBlitz Cloud IDE!`);
+    toast.success(`Opening project workspace live in StackBlitz Cloud IDE!`);
   };
 
   return (
@@ -402,7 +407,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                  Monorepo Compiler Engine 
+                  {displayTitle}
                 </DialogTitle>
                 <DialogDescription className="text-xs mt-0.5 text-orange-500">
                   NOTICE: 🚧 Automated AI Business logic implementation,Testing & Deployment is under construction🚧
@@ -411,7 +416,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
               </div>
             </div>
 
-            {(serviceNodes.length > 0 || entityNodes.length > 0) && (
+            {files.length > 0 && (
               <div className="flex items-center gap-2">
                 <Button onClick={handleDownloadZip} disabled={downloadingZip} variant="outline" size="sm" className="gap-1.5 text-xs">
                   <Archive className="w-4 h-4 text-primary" />
@@ -427,12 +432,12 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId }: Co
           </div>
         </DialogHeader>
 
-        {serviceNodes.length === 0 && entityNodes.length === 0 ? (
+        {files.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Server className="w-12 h-12 text-muted-foreground/40" />
             <p className="text-sm font-medium text-muted-foreground">No Nodes Found</p>
             <p className="text-xs text-muted-foreground/70 max-w-sm">
-              Add Service or Database Entity nodes on the canvas to generate backend code templates.
+              Add Service, Database Entity, or LangGraph nodes on the canvas to generate backend code templates.
             </p>
           </div>
         ) : (

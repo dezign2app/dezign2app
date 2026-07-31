@@ -1,5 +1,5 @@
 import React from "react";
-import { Network, Save, ArrowLeft, X, Check, Loader2, ArrowRight, ArrowDown } from "lucide-react";
+import { Network, Save, ArrowLeft, X, Check, Loader2, Code2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
 import { LocalInput } from "../../../common/shared";
@@ -10,6 +10,7 @@ interface LangGraphCanvasHeaderProps {
   onSave: () => void;
   onClose: () => void;
   onAutoLayout?: (direction?: "LR" | "TB") => void;
+  onCompile?: () => void;
   saveStatus?: "saved" | "saving" | "idle";
 }
 
@@ -19,6 +20,7 @@ export function LangGraphCanvasHeader({
   onSave,
   onClose,
   onAutoLayout,
+  onCompile,
   saveStatus = "idle",
 }: LangGraphCanvasHeaderProps) {
   return (
@@ -64,6 +66,18 @@ export function LangGraphCanvasHeader({
       </div>
 
       <div className="flex items-center gap-3">
+        {onCompile && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 font-semibold gap-1.5 px-4 border-border text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-all"
+            onClick={onCompile}
+            title="Export as TypeScript LangGraph code"
+          >
+            <Code2 className="w-4 h-4 text-primary" />
+            Export Code
+          </Button>
+        )}
         <Button variant="default" size="sm" className="h-8 font-semibold gap-1.5 px-4" onClick={onSave}>
           <Save className="w-4 h-4" /> Save & Close
         </Button>

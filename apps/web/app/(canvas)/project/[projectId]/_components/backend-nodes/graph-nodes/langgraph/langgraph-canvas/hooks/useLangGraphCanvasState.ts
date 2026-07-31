@@ -116,6 +116,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeSideTab, setActiveSideTab] = useState<"inspector" | "inputs" | "state" | "memory">("inspector");
+  const [showCompileModal, setShowCompileModal] = useState(false);
 
   const { fitView: triggerFitView } = useReactFlow();
 
@@ -1274,6 +1275,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     handleToggleToolForAgent,
     handleToggleMiddlewareForAgent,
     handleToggleMemoryForAgent,
+    showCompileModal,
+    setShowCompileModal,
   };
 }
 

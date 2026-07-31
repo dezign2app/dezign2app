@@ -8,7 +8,7 @@ import {
   Panel,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { LayoutTemplate, ArrowRight, ArrowDown, Layout } from "lucide-react";
+import { Layout } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import type { BackendNode } from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
@@ -18,6 +18,8 @@ import { useLangGraphCanvasState } from "./langgraph-canvas/hooks/useLangGraphCa
 import { LangGraphCanvasHeader } from "./langgraph-canvas/components/LangGraphCanvasHeader";
 import { ToolsSidebar } from "./langgraph-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./langgraph-canvas/components/InspectorSidebar";
+import { CompilerModal } from "../../../CompilerModal";
+import { compileLangGraph } from "@/lib/compiler";
 import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
 import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN, HANDLE_MEMORY_IN } from "./langgraph-canvas/constants";
 
@@ -72,6 +74,8 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     handleToggleToolForAgent,
     handleToggleMiddlewareForAgent,
     handleToggleMemoryForAgent,
+    showCompileModal,
+    setShowCompileModal,
   } = useLangGraphCanvasState({ node, updateNode, onClose });
 
   const { handleLayout } = useAutoLayout({ nodes, edges, onNodesChange });
@@ -135,6 +139,7 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
         onSave={handleSave}
         onClose={onClose}
         onAutoLayout={(dir) => handleLayout(dir || "LR")}
+        onCompile={() => setShowCompileModal(true)}
         saveStatus={saveStatus}
       />
 
@@ -235,6 +240,25 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           setMemoryConfig={setMemoryConfig}
         />
       </div>
+
+      {/* Compiled Code Modal */}
+      <CompilerModal
+        open={showCompileModal}
+        onOpenChange={setShowCompileModal}
+        projectName={node.data.label || "LangGraph Agent Project"}
+        overrideTitle={`${node.data.label || "LangGraph Agent"} Compiler Engine`}
+        overrideFiles={useMemo(() => {
+          if (!showCompileModal) return [];
+          return compileLangGraph({
+            graphLabel: node.data.label || "LangGraph Agent",
+            stateChannels,
+            inputChannels,
+            nodes,
+            edges,
+            memoryConfig,
+          });
+        }, [showCompileModal, node.data.label, stateChannels, inputChannels, nodes, edges, memoryConfig])}
+      />
     </div>
   );
 }

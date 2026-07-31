@@ -69,6 +69,12 @@ export function resolveRouteEndpoints(
     const preInvokeLogicMode = edge.data?.preInvokeLogicMode;
     const preInvokePrompt = edge.data?.preInvokePrompt;
     const preInvokeCode = edge.data?.preInvokeCode;
+    const responseExecutionMode = edge.data?.responseExecutionMode;
+    const responseOutputMode = edge.data?.responseOutputMode;
+    const responseFields = edge.data?.responseFields;
+    const postInvokeLogicMode = edge.data?.postInvokeLogicMode;
+    const postInvokePrompt = edge.data?.postInvokePrompt;
+    const postInvokeCode = edge.data?.postInvokeCode;
 
     if (edge.sourceHandle?.startsWith("endpoint-out-")) {
       const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
@@ -88,6 +94,12 @@ export function resolveRouteEndpoints(
           preInvokeLogicMode,
           preInvokePrompt,
           preInvokeCode,
+          responseExecutionMode,
+          responseOutputMode,
+          responseFields,
+          postInvokeLogicMode,
+          postInvokePrompt,
+          postInvokeCode,
         };
         return epRoute;
       }
@@ -106,6 +118,12 @@ export function resolveRouteEndpoints(
         preInvokeLogicMode,
         preInvokePrompt,
         preInvokeCode,
+        responseExecutionMode,
+        responseOutputMode,
+        responseFields,
+        postInvokeLogicMode,
+        postInvokePrompt,
+        postInvokeCode,
       };
     }
 
@@ -119,6 +137,12 @@ export function resolveRouteEndpoints(
       preInvokeLogicMode,
       preInvokePrompt,
       preInvokeCode,
+      responseExecutionMode,
+      responseOutputMode,
+      responseFields,
+      postInvokeLogicMode,
+      postInvokePrompt,
+      postInvokeCode,
     };
   });
 }

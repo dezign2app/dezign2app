@@ -137,15 +137,6 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
       )}
       onDoubleClick={handleOpenEditor}
     >
-      {/* Main Exit Output Handle */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output-end"
-        className="!bg-primary !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform"
-        title="Agent output — connect to downstream endpoints or tasks"
-      />
-
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b border-border/60 rounded-t-2xl">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -291,6 +282,13 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                   {route.sourceNodeLabel}
                 </span>
                 <Settings className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/route:text-primary group-hover/route:rotate-45 transition-all shrink-0 ml-0.5" />
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`route-out-${route.edgeId}`}
+                  className="!bg-primary !w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform !-right-[7px]"
+                  title={`Outgoing response channel for route: ${route.label}`}
+                />
               </div>
             ))}
           </div>

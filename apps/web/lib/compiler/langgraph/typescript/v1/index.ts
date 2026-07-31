@@ -67,6 +67,12 @@ export interface RouteEndpoint {
   preInvokeLogicMode?: "natural_language" | "code";
   preInvokePrompt?: string;
   preInvokeCode?: string;
+  responseExecutionMode?: "sync" | "stream" | "async_ack";
+  responseOutputMode?: "full" | "selected";
+  responseFields?: string[];
+  postInvokeLogicMode?: "natural_language" | "code";
+  postInvokePrompt?: string;
+  postInvokeCode?: string;
 }
 
 export interface CompileLangGraphInput {
@@ -1094,6 +1100,18 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       return "";
     })();
 
+    const postInvokeBlock = (() => {
+      if (route.postInvokeCode && route.postInvokeCode.trim()) {
+        return `\n      // Post-Invoke Business Logic\n      ${route.postInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
+      }
+      if (route.postInvokePrompt && route.postInvokePrompt.trim()) {
+        const lines = route.postInvokePrompt.trim().split("\n");
+        const commentLines = lines.map((l, i) => `      // POST-STEP ${i + 1}: ${l.trim()}`).join("\n");
+        return `\n      // Post-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
+      }
+      return "";
+    })();
+
     const threadIdLine = hasMemory
       ? `\n    const threadId = req.body?.thread_id ?? req.headers["x-thread-id"] ?? "default";`
       : "";
@@ -1106,19 +1124,102 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       ? `// Event: ${route.eventName ?? route.path} (from ${route.sourceNodeLabel ?? "event source"})`
       : `// Route: ${route.method} ${route.path} (from ${route.sourceNodeLabel ?? "service"})`;
 
+    const isStream = route.responseExecutionMode === "stream";
+    const isAsyncAck = route.responseExecutionMode === "async_ack";
+
+    if (isStream) {
+      return `
+  ${comment}
+  app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
+    let isAborted = false;
+    let activeStream: { return?: () => void } | null = null;
+
+    req.on("close", () => {
+      isAborted = true;
+      if (activeStream && typeof activeStream.return === "function") {
+        activeStream.return();
+      }
+    });
+
+    try {${threadIdLine}
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const state: Partial<${toPascalCase(ctx.graphId)}StateType> = ${stateInit};${preInvokeBlock}
+      const stream = await ${graphVarName}.stream(state${configLine});
+      activeStream = stream;
+
+      for await (const chunk of stream) {
+        if (isAborted) break;
+        const content = typeof chunk === "string" ? chunk : (chunk?.content ?? chunk);
+        res.write(\`data: \${JSON.stringify({ content })}\\n\\n\`);
+      }
+      if (!isAborted) {
+        res.write("data: [DONE]\\n\\n");
+        res.end();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[${route.method} ${route.path}] stream error:", message);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: message });
+      } else {
+        res.write(\`data: \${JSON.stringify({ error: message })}\\n\\n\`);
+        res.end();
+      }
+    }
+  });`;
+    }
+
+    if (isAsyncAck) {
+      return `
+  ${comment}
+  app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
+    try {${threadIdLine}
+      const state: Partial<${toPascalCase(ctx.graphId)}StateType> = ${stateInit};${preInvokeBlock}
+      
+      // Async background execution: acknowledge caller immediately with 202 Accepted
+      res.status(202).json({ ok: true, status: "processing"${hasMemory ? `, threadId` : ""} });
+
+      // Run graph asynchronously with promise rejection handling
+      ${graphVarName}.invoke(state${configLine}).then((result) => {${postInvokeBlock}
+        console.log("[${route.method} ${route.path}] Async background execution completed:", result);
+      }).catch((err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[${route.method} ${route.path}] Async background error:", message);
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[${route.method} ${route.path}] error:", message);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: message });
+      }
+    }
+  });`;
+    }
+
+    // Default Sync REST Response Mode
+    const resultExpr = route.responseOutputMode === "selected" && route.responseFields && route.responseFields.length > 0
+      ? `{\n${route.responseFields.map(f => `        ${JSON.stringify(f)}: result[${JSON.stringify(f)}]`).join(",\n")}\n      }`
+      : "result";
+
     return `
   ${comment}
   app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
     try {${threadIdLine}
       const state: Partial<${toPascalCase(ctx.graphId)}StateType> = ${stateInit};${preInvokeBlock}
-      const result = await ${graphVarName}.invoke(state${configLine});
-      res.json({ ok: true, result });
-    } catch (err: unknown) {
+      const result = await ${graphVarName}.invoke(state${configLine});${postInvokeBlock}
+      res.json({ ok: true, result: ${resultExpr} });
+    } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[${route.method} ${route.path}] error:", message);
-      res.status(500).json({ ok: false, error: message });
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: message });
+      }
     }
   });`;
+
   }).join("\n");
 
   const portEnvLine = `const PORT = Number(process.env.PORT ?? 3001);`;

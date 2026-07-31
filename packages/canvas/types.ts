@@ -1200,6 +1200,10 @@ export type AnyMessagingResource = {
   publishedWhen?: string;
   payloadSchema?: Schema;
   handlerLogic?: string;
+  body?: string;
+  code?: string;
+  prompt?: string;
+  functionBody?: string;
   retryPolicy?: RetryPolicy | string;
   maxRetries?: number;
   deadLetterQueue?: string;

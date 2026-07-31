@@ -149,8 +149,8 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         onModeChange={(logicMode) => updateEndpoint(item.id, { logicMode })}
         prompt={item.businessLogic || item.prompt || ""}
         onPromptChange={(val) => updateEndpoint(item.id, { businessLogic: val, prompt: val })}
-        code={item.body || ""}
-        onCodeChange={(val) => updateEndpoint(item.id, { body: val })}
+        code={item.body || item.code || ""}
+        onCodeChange={(val) => updateEndpoint(item.id, { body: val, code: val })}
         title="Endpoint Business Logic"
         description="Define endpoint processing steps or custom code handler"
         crudConfig={crudConfig}

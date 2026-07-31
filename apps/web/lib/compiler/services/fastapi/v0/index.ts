@@ -280,14 +280,29 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       routeCode += `    try:\n`;
       routeCode += `        logger.info(f"Handling ${ep.type || "GET"} ${path}")\n`;
 
-      if (ep.businessLogic && ep.businessLogic.trim()) {
-        ep.businessLogic.split("\n").forEach((line, idx) => {
+      const promptText = (ep.businessLogic || ep.prompt || "").trim();
+      const codeBlock = (ep.body || ep.code || "").trim();
+
+      // Section 1: Natural Language / Instruction (commented out steps)
+      if (promptText) {
+        routeCode += `        # --- Natural Language Instructions ---\n`;
+        promptText.split("\n").forEach((line: string, idx: number) => {
           if (line.trim()) routeCode += `        # STEP ${idx + 1}: ${line.trim()}\n`;
         });
-      } else {
+        routeCode += `\n`;
+      } else if (!codeBlock) {
         routeCode += `        # STEP 1: Validate payload and path params\n`;
         routeCode += `        # STEP 2: Execute database query/mutation\n`;
         routeCode += `        # STEP 3: Return response\n`;
+      }
+
+      // Section 2: Code Block / Actual Code (formatted, UNCOMMENTED Python code)
+      if (codeBlock) {
+        routeCode += `        # --- Business Logic Code Execution ---\n`;
+        codeBlock.split("\n").forEach((line: string) => {
+          routeCode += `        ${line}\n`;
+        });
+        routeCode += `\n`;
       }
 
       routeCode += `        return format_response(${responseDataJson}, "${summary}")\n`;

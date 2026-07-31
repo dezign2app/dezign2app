@@ -569,9 +569,23 @@ function buildToolsFile(ctx: CompileContext): string {
       continue;
     }
 
-    const body = d.functionBody?.trim()
-      ? indent(d.functionBody.trim(), 4)
-      : `    return "Tool execution success";`;
+    const promptText = (d.prompt || "").trim();
+    const codeBlock = (d.functionBody || "").trim();
+
+    let bodyLines: string[] = [];
+    if (promptText) {
+      bodyLines.push(`    // --- Natural Language Instructions ---`);
+      promptText.split("\n").forEach((line: string, idx: number) => {
+        if (line.trim()) bodyLines.push(`    // STEP ${idx + 1}: ${line.trim()}`);
+      });
+    }
+    if (codeBlock) {
+      bodyLines.push(indent(codeBlock, 4));
+    } else if (!promptText) {
+      bodyLines.push(`    return "Tool execution success";`);
+    }
+
+    const body = bodyLines.join("\n");
 
     parts.push(`export const ${fnName} = tool(
   async (input) => {
@@ -881,8 +895,24 @@ export async function ${fnName}(state: ${schemaName}Type) {
 `;
   }
 
-  if (d.stepType === "custom_code" && d.customCode?.body?.trim()) {
-    const body = indent(d.customCode.body.trim(), 2);
+  if (d.stepType === "custom_code" || d.customCode?.body?.trim()) {
+    const promptText = (d.modelConfig?.systemPrompt || "").trim();
+    const codeBlock = (d.customCode?.body || "").trim();
+
+    let bodyLines: string[] = [];
+    if (promptText) {
+      bodyLines.push(`  // --- Natural Language Instructions ---`);
+      promptText.split("\n").forEach((line: string, idx: number) => {
+        if (line.trim()) bodyLines.push(`  // STEP ${idx + 1}: ${line.trim()}`);
+      });
+    }
+    if (codeBlock) {
+      bodyLines.push(indent(codeBlock, 2));
+    } else if (!promptText) {
+      bodyLines.push(`  return {};`);
+    }
+
+    const body = bodyLines.join("\n");
     return `import { ${schemaName}Type } from "../state";
 
 export async function ${fnName}(state: ${schemaName}Type) {

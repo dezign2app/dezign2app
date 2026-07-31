@@ -81,30 +81,27 @@ export async function ${handlerName}(rawPayload: unknown): Promise<void> {
         consumerCode += `    const payload = rawPayload as ${payloadInterfaceName};\n`;
       }
 
-      consumerCode += `\n    // =========================================================================\n`;
-      consumerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
-      consumerCode += `    // Process consumed event: "${ev.name}"\n`;
-      consumerCode += `    // Handler Logic: ${ev.handlerLogic || "Process event payload"}\n`;
-      consumerCode += `    //\n`;
-      consumerCode += `    // 📥 CONNECTED INCOMING EVENT NODE(S):\n`;
-      if (trace.incoming.length > 0) {
-        trace.incoming.forEach((inc) => {
-          consumerCode += `    // - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
-          if (inc.dataContext) consumerCode += `    //   Data Payload: ${inc.dataContext}\n`;
+      const promptText = (ev.handlerLogic || ev.description || "").trim();
+      const codeBlock = (ev.body || ev.code || ev.functionBody || "").trim();
+
+      if (promptText) {
+        consumerCode += `    // --- Natural Language Instructions ---\n`;
+        promptText.split("\n").forEach((line: string, idx: number) => {
+          if (line.trim()) consumerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
         });
-      } else {
-        consumerCode += `    // - Event Topic/Channel "${ev.name}"\n`;
+        consumerCode += `\n`;
+      } else if (!codeBlock) {
+        consumerCode += `    // STEP 1: Parse and validate event payload\n`;
+        consumerCode += `    // STEP 2: Execute side effects / domain logic\n`;
       }
-      consumerCode += `    //\n`;
-      consumerCode += `    // 📤 CONNECTED OUTGOING IMPACT NODE(S):\n`;
-      if (trace.outgoing.length > 0) {
-        trace.outgoing.forEach((out) => {
-          consumerCode += `    // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+
+      if (codeBlock) {
+        consumerCode += `    // --- Event Handler Code Execution ---\n`;
+        codeBlock.split("\n").forEach((line: string) => {
+          consumerCode += `    ${line}\n`;
         });
-      } else {
-        consumerCode += `    // - Executes domain side-effects for ${ev.name}\n`;
+        consumerCode += `\n`;
       }
-      consumerCode += `    // =========================================================================\n`;
 
       consumerCode += `  } catch (error) {\n`;
       consumerCode += `    logger.error(\`Error processing event [${ev.name}]:\`, error);\n`;

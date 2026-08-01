@@ -616,12 +616,11 @@ export const EffortlessSection = () => {
       <div className="relative z-20 flex flex-col items-center text-center w-full pointer-events-none">
         <h2 className="font-black text-[#1a1a1a] flex flex-col items-center drop-shadow-sm w-full">
           {/* Building apps */}
-          <div className="flex justify-center text-[70px] lg:text-[70px] leading-[0.9] tracking-[-0.04em] z-20">
-             <span>Building apps now feels</span>
+          <div className="flex justify-center text-[50px] lg:text-[50px] leading-[0.9] tracking-[-0.04em] z-20">
+             <span>Embrace Architecture Automation</span>
           </div>          
-          {/* effortless */}
-          <div className="text-[#ff6b00] text-[90px] lg:text-[110px] leading-[0.8] tracking-[-0.05em] mt-4 z-40 drop-shadow-md">
-            effortless
+          <div className="text-[#ff6b00] text-[70px] lg:text-[70px] leading-[0.8] tracking-[-0.05em] mt-4 z-40 drop-shadow-md">
+            Save Tokens.
           </div>
         </h2>
         

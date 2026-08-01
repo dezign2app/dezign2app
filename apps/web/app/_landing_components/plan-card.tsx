@@ -56,7 +56,6 @@ interface PlanCardProps {
 export function PlanCard({ plan, billing }: PlanCardProps) {
   const { id, name, desc, price, billingPeriod, freeLabel, featured, features } = plan;
 
-  console.log(id);
   const displayPrice = price;
 
   return (

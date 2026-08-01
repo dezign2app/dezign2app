@@ -1,7 +1,13 @@
 import React from "react";
 import { Database, Layers, Key } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import { LocalInput } from "../../../../../common/shared";
 import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
@@ -68,7 +74,9 @@ export function AgentMemoryConfigSection({
             </Label>
             <Select
               value={memConfig.checkpointer || "memory"}
-              onValueChange={(val: string) => updateMemoryConfig({ checkpointer: val })}
+              onValueChange={(val: string) =>
+                updateMemoryConfig({ checkpointer: val })
+              }
             >
               <SelectTrigger className="h-7 text-xs bg-background font-mono">
                 <SelectValue />
@@ -83,7 +91,8 @@ export function AgentMemoryConfigSection({
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground leading-tight">
-              Specifies backend persistence engine used to checkpoint and restore conversation state across turns.
+              Specifies backend persistence engine used to checkpoint and
+              restore conversation state across turns.
             </p>
           </div>
 
@@ -95,7 +104,9 @@ export function AgentMemoryConfigSection({
             </Label>
             <LocalInput
               value={memConfig.threadIdKey || "thread_id"}
-              onChange={(e) => updateMemoryConfig({ threadIdKey: e.target.value })}
+              onChange={(e) =>
+                updateMemoryConfig({ threadIdKey: e.target.value })
+              }
               className="h-7 text-xs font-mono bg-background"
               placeholder="thread_id"
             />
@@ -116,19 +127,26 @@ export function AgentMemoryConfigSection({
               ))}
             </div>
             <p className="text-[9px] font-mono text-muted-foreground">
-              Runtime config key: <code>{`configurable: { ${memConfig.threadIdKey || "thread_id"}: "..." }`}</code>
+              Runtime config key:{" "}
+              <code>{`configurable: { ${memConfig.threadIdKey || "thread_id"}: "..." }`}</code>
             </p>
           </div>
 
           {/* Auto Summarization & Limits */}
           <div className="flex items-center justify-between p-2 rounded bg-background/60 border border-border/40">
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-foreground">Auto-Summarize</span>
-              <span className="text-[9px] text-muted-foreground">Compress past messages when token window exceeds limit</span>
+              <span className="text-xs font-semibold text-foreground">
+                Auto-Summarize
+              </span>
+              <span className="text-[9px] text-muted-foreground">
+                Compress past messages when token window exceeds limit
+              </span>
             </div>
             <Switch
               checked={memConfig.autoSummarize ?? true}
-              onCheckedChange={(autoSummarize) => updateMemoryConfig({ autoSummarize })}
+              onCheckedChange={(autoSummarize) =>
+                updateMemoryConfig({ autoSummarize })
+              }
               className="scale-85 origin-right"
             />
           </div>

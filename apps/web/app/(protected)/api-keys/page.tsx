@@ -14,22 +14,24 @@ import { GeneratedKeyDialog } from "./_components/generated-key-dialog";
 import { Doc, Id } from "@workspace/backend/_generated/dataModel";
 
 export default function ApiKeysPage() {
-  const [newKeyName, setNewKeyName] = useState(""); 
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
 
-  const { 
-    results: keys, 
-    status: keysStatus, 
-    loadMore: loadMoreKeys 
+  const {
+    results: keys,
+    status: keysStatus,
+    loadMore: loadMoreKeys,
   } = usePaginatedQuery(
     api.api_keys.listPaginated,
     {},
-    { initialNumItems: 20 }
+    { initialNumItems: 20 },
   );
 
   // Fetch all user projects for the project selector
-  const projectsResult = useQuery(api.projects.getProjectsByOrganization, { 
-    paginationOpts: { numItems: 100, cursor: null } 
+  const projectsResult = useQuery(api.projects.getProjectsByOrganization, {
+    paginationOpts: { numItems: 100, cursor: null },
   });
   const projects = projectsResult?.page ?? [];
 
@@ -54,8 +56,8 @@ export default function ApiKeysPage() {
 
     setIsGenerating(true);
     try {
-      const key = await generateKey({ 
-        name: newKeyName, 
+      const key = await generateKey({
+        name: newKeyName,
         projectId: selectedProjectId,
       });
       setJustGeneratedKey(key);
@@ -69,7 +71,6 @@ export default function ApiKeysPage() {
       setIsGenerating(false);
     }
   };
-
 
   const confirmRevoke = (key: Doc<"api_keys">) => {
     setKeyToRevoke(key);
@@ -93,8 +94,8 @@ export default function ApiKeysPage() {
     toast.success("Copied to clipboard");
   };
 
-  const filteredKeys = keys?.filter(k => 
-    k.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredKeys = keys?.filter((k) =>
+    k.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -103,7 +104,7 @@ export default function ApiKeysPage() {
 
       <div className="grid gap-6 md:grid-cols-12">
         <div className="md:col-span-8 space-y-6">
-          <ApiKeyList 
+          <ApiKeyList
             keys={keys}
             filteredKeys={filteredKeys}
             status={keysStatus}
@@ -115,12 +116,12 @@ export default function ApiKeysPage() {
         </div>
 
         <div className="md:col-span-4 space-y-6">
-          <CreateKeyCard 
+          <CreateKeyCard
             newKeyName={newKeyName}
             setNewKeyName={setNewKeyName}
             isGenerating={isGenerating}
             handleGenerate={handleGenerate}
-            projects={projects.map(p => ({ _id: p._id, name: p.name }))}
+            projects={projects.map((p) => ({ _id: p._id, name: p.name }))}
             selectedProjectId={selectedProjectId}
             setSelectedProjectId={(id) => setSelectedProjectId(id)}
           />
@@ -129,14 +130,14 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      <RevokeKeyDialog 
+      <RevokeKeyDialog
         isOpen={isRevokeDialogOpen}
         onOpenChange={setIsRevokeDialogOpen}
         keyToRevoke={keyToRevoke}
         handleRevoke={handleRevoke}
       />
 
-      <GeneratedKeyDialog 
+      <GeneratedKeyDialog
         justGeneratedKey={justGeneratedKey}
         setJustGeneratedKey={setJustGeneratedKey}
         copyToClipboard={copyToClipboard}

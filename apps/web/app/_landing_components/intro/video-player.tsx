@@ -1,6 +1,6 @@
 import React from "react";
 
-const VideoPlayer = ({src}: {src: string}) => {
+const VideoPlayer = ({ src }: { src: string }) => {
   return (
     <iframe
       width="100%"

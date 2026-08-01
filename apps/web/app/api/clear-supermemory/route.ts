@@ -10,7 +10,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Proxy the request to the system-design-engine
-    const backendUrl = process.env.NEXT_PUBLIC_SYSTEM_DESIGN_ENGINE_URL || "http://localhost:3002";
+    const backendUrl =
+      process.env.NEXT_PUBLIC_SYSTEM_DESIGN_ENGINE_URL ||
+      "http://localhost:3002";
     const response = await fetch(`${backendUrl}/clear-supermemory`, {
       method: "POST",
       headers: {
@@ -25,7 +27,9 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       console.error("System Design Engine error:", await response.text());
-      return new NextResponse("Error from backend AI service", { status: response.status });
+      return new NextResponse("Error from backend AI service", {
+        status: response.status,
+      });
     }
 
     const data = await response.json();

@@ -32,7 +32,7 @@ export function getStableOutgoingEdge(
   step: LangGraphStepConfig | undefined,
   edges: TraceEdge[],
   stepOrder: Map<string, number>,
-  selectedBranchId?: string
+  selectedBranchId?: string,
 ): TraceEdge | undefined {
   const outgoing = edges.filter((edge) => edge.source === sourceId);
   if (outgoing.length === 0) return undefined;
@@ -98,7 +98,7 @@ export function buildTracePath({
       stepOrder,
       currentStep?.type === "router"
         ? selectedCase?.routerChoices?.[currentId]
-        : undefined
+        : undefined,
     );
     currentId = nextEdge?.target;
   }

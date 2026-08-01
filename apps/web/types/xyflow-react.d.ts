@@ -66,8 +66,17 @@ declare module "@xyflow/react" {
   }
 
   export type NodeChange<TNode = Node> =
-    | { id: string; type: "add" | "remove" | "replace" | "select" | "dimensions"; selected?: boolean }
-    | { id: string; type: "position"; position?: XYPosition; dragging?: boolean };
+    | {
+        id: string;
+        type: "add" | "remove" | "replace" | "select" | "dimensions";
+        selected?: boolean;
+      }
+    | {
+        id: string;
+        type: "position";
+        position?: XYPosition;
+        dragging?: boolean;
+      };
 
   export type EdgeChange<TEdge = Edge> = {
     id: string;
@@ -127,7 +136,10 @@ declare module "@xyflow/react" {
   export function useReactFlow<TNode = Node, TEdge = Edge>(): {
     fitView: (options?: Record<string, unknown>) => void;
     screenToFlowPosition: (position: XYPosition) => XYPosition;
-    setViewport: (viewport: Viewport, options?: Record<string, unknown>) => void;
+    setViewport: (
+      viewport: Viewport,
+      options?: Record<string, unknown>,
+    ) => void;
     getViewport: () => Viewport;
     setNodes: (nodes: TNode[] | ((nodes: TNode[]) => TNode[])) => void;
     setEdges: (edges: TEdge[] | ((edges: TEdge[]) => TEdge[])) => void;
@@ -145,8 +157,12 @@ declare module "@xyflow/react" {
     edges: TEdge[],
   ): TEdge[];
 
-  export function getSmoothStepPath(params: any): [string, number, number, number, number];
-  export function getBezierPath(params: any): [string, number, number, number, number];
-  
+  export function getSmoothStepPath(
+    params: any,
+  ): [string, number, number, number, number];
+  export function getBezierPath(
+    params: any,
+  ): [string, number, number, number, number];
+
   export function addEdge(edgeParams: any, edges: any[]): any[];
 }

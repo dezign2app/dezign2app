@@ -69,11 +69,14 @@ export function AgentEventStreamingSection({
         <div className="flex flex-col gap-4 pt-2 border-t border-cyan-500/20">
           {/* Event Projections Selection */}
           <div className="flex flex-col gap-2">
-            <Label className="text-xs font-semibold text-foreground">Active Event Projections</Label>
+            <Label className="text-xs font-semibold text-foreground">
+              Active Event Projections
+            </Label>
             <div className="flex flex-wrap gap-1.5">
               {STREAM_EVENT_TYPES.map((ev) => {
                 const currentEvents =
-                  selectedAgentData.streamConfig?.selectedEvents || DEFAULT_SELECTED_STREAM_EVENTS;
+                  selectedAgentData.streamConfig?.selectedEvents ||
+                  DEFAULT_SELECTED_STREAM_EVENTS;
                 const isSelected = currentEvents.includes(ev.id);
                 return (
                   <button
@@ -97,7 +100,9 @@ export function AgentEventStreamingSection({
                         : "bg-background/60 border-border/50 text-muted-foreground hover:bg-secondary/50"
                     }`}
                   >
-                    {isSelected && <Check className="w-3 h-3 text-cyan-500 shrink-0" />}
+                    {isSelected && (
+                      <Check className="w-3 h-3 text-cyan-500 shrink-0" />
+                    )}
                     <span>{ev.id}</span>
                   </button>
                 );
@@ -131,7 +136,10 @@ export function AgentEventStreamingSection({
               Specifies standard JSON envelope signature for frontend parsing.
             </p>
             <LocalTextarea
-              value={selectedAgentData.streamConfig?.eventSignature ?? DEFAULT_EVENT_STREAM_SIGNATURE}
+              value={
+                selectedAgentData.streamConfig?.eventSignature ??
+                DEFAULT_EVENT_STREAM_SIGNATURE
+              }
               onChange={(e) => {
                 onUpdateAgent({
                   streamConfig: {
@@ -171,7 +179,10 @@ export function AgentEventStreamingSection({
               Configure stream projection transformers and options.
             </p>
             <LocalTextarea
-              value={selectedAgentData.streamConfig?.customTransformers ?? DEFAULT_STREAM_TRANSFORMERS}
+              value={
+                selectedAgentData.streamConfig?.customTransformers ??
+                DEFAULT_STREAM_TRANSFORMERS
+              }
               onChange={(e) => {
                 onUpdateAgent({
                   streamConfig: {

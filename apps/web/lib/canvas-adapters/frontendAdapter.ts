@@ -1,5 +1,9 @@
 import { Editor, getSnapshot, TLShapeId } from "tldraw";
-import { CanvasAdapter, CanvasOperation, FrontendDesignDoc } from "@/types/canvas";
+import {
+  CanvasAdapter,
+  CanvasOperation,
+  FrontendDesignDoc,
+} from "@/types/canvas";
 
 export class FrontendCanvasAdapter implements CanvasAdapter<FrontendDesignDoc> {
   private editor: Editor;
@@ -52,7 +56,7 @@ export class FrontendCanvasAdapter implements CanvasAdapter<FrontendDesignDoc> {
   serialize(): string {
     // Serialize current shapes to a concise format for AI context
     const shapes = Array.from(this.editor.store.allRecords()).filter(
-      (r) => r.typeName === "shape"
+      (r) => r.typeName === "shape",
     ) as any[];
 
     if (shapes.length === 0) return "Canvas is empty.";
@@ -61,7 +65,7 @@ export class FrontendCanvasAdapter implements CanvasAdapter<FrontendDesignDoc> {
       let text = "";
       if (s.props?.text) text = ` text: "${s.props.text}"`;
       return `- [${s.type}] id: ${s.id}, x: ${Math.round(s.x)}, y: ${Math.round(
-        s.y
+        s.y,
       )}${text}`;
     });
 

@@ -14,12 +14,16 @@ export const addSchemaTool = tool(
     const convex = getConvexClient(state);
 
     const entityId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const fractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
-    
+    const fractionalIndex =
+      "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+
     const offsetX = Math.floor(Math.random() * 600) - 300;
     const offsetY = Math.floor(Math.random() * 600) - 300;
     const position = state.viewportCenter
-      ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
+      ? {
+          x: state.viewportCenter.x + offsetX,
+          y: state.viewportCenter.y + offsetY,
+        }
       : { x: 100 + offsetX, y: 100 + offsetY };
 
     try {
@@ -32,7 +36,7 @@ export const addSchemaTool = tool(
         fractionalIndex,
       });
 
-      return `Added schema '${label}' with ID ${entityId}${groupId ? ` inside group ${groupId}` : ''}`;
+      return `Added schema '${label}' with ID ${entityId}${groupId ? ` inside group ${groupId}` : ""}`;
     } catch (error: unknown) {
       const e = error as Error;
       return `Failed to add schema: ${e.message || String(error)}`;
@@ -43,9 +47,14 @@ export const addSchemaTool = tool(
     description: "Add a single database schema (table/entity) to the canvas.",
     schema: entityDataInputSchema.extend({
       label: z.string().describe("Name of the table/entity (e.g. 'Users')"),
-      groupId: z.string().optional().describe("Optional ID of the schema group to place this schema inside"),
-    })
-  }
+      groupId: z
+        .string()
+        .optional()
+        .describe(
+          "Optional ID of the schema group to place this schema inside",
+        ),
+    }),
+  },
 );
 
 export const addDbRefNodeTool = tool(
@@ -61,9 +70,13 @@ export const addDbRefNodeTool = tool(
     const offsetX = Math.floor(Math.random() * 600) - 300;
     const offsetY = Math.floor(Math.random() * 600) - 300;
     const position = state.viewportCenter
-      ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
+      ? {
+          x: state.viewportCenter.x + offsetX,
+          y: state.viewportCenter.y + offsetY,
+        }
       : { x: 100 + offsetX, y: 100 + offsetY };
-    const fractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+    const fractionalIndex =
+      "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
 
     try {
       await convex.mutation(api.canvas.upsertBackendNode, {
@@ -83,12 +96,18 @@ export const addDbRefNodeTool = tool(
   },
   {
     name: "add_db_ref_node",
-    description: "Add a database table reference node to the canvas. Use this to represent a reference to an existing database table (entity) so services can connect to it.",
+    description:
+      "Add a database table reference node to the canvas. Use this to represent a reference to an existing database table (entity) so services can connect to it.",
     schema: dbRefDataInputSchema.extend({
-      label: z.string().describe("Name of the table reference (e.g. 'Users Table')"),
-      tableRef: z.string().optional().describe("The ID of the target entity node this references, if known"),
+      label: z
+        .string()
+        .describe("Name of the table reference (e.g. 'Users Table')"),
+      tableRef: z
+        .string()
+        .optional()
+        .describe("The ID of the target entity node this references, if known"),
       type: z.string().optional(),
       data: z.any().optional(),
-    })
-  }
+    }),
+  },
 );

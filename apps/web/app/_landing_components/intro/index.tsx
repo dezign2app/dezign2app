@@ -128,7 +128,12 @@ export const Intro = () => {
         r="3.5"
         fill={color}
         animate={{ offsetDistance: ["0%", "100%"] }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay }}
+        transition={{
+          duration: 2.4,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay,
+        }}
         style={{ offsetPath: `path('${path}')` }}
       />
     );
@@ -163,7 +168,9 @@ export const Intro = () => {
             dezign2app
           </span>
           <span className="text-[11px] text-[#9AA1AC]">/</span>
-          <span className="text-[11px] text-[#5B6472]">autonomous_sdlc.run()</span>
+          <span className="text-[11px] text-[#5B6472]">
+            autonomous_sdlc.run()
+          </span>
         </motion.div>
 
         {/* Headline — benefit-first, plain language */}
@@ -186,8 +193,8 @@ export const Intro = () => {
           className="relative z-10 text-sm text-[#5B6472] leading-relaxed max-w-lg font-normal mt-5"
         >
           Write requirements in plain English. Autonomous agents compile
-          production code, load-test it under simulated traffic, and deploy
-          it to Kubernetes — no engineer in the loop.
+          production code, load-test it under simulated traffic, and deploy it
+          to Kubernetes — no engineer in the loop.
         </motion.p>
 
         <motion.div
@@ -253,7 +260,14 @@ export const Intro = () => {
                     className="transition-all duration-300"
                   />
                   {/* connector dot marks exactly where the card meets the line */}
-                  <circle cx={LEFT_X} cy={node.y} r={3} fill="#fff" stroke={COLOR.violet} strokeWidth={1.5} />
+                  <circle
+                    cx={LEFT_X}
+                    cy={node.y}
+                    r={3}
+                    fill="#fff"
+                    stroke={COLOR.violet}
+                    strokeWidth={1.5}
+                  />
                   {flowCircle(d, COLOR.violet, index * 0.4)}
                 </g>
               );
@@ -271,7 +285,14 @@ export const Intro = () => {
                     strokeWidth={isHovered ? 2 : 1.25}
                     className="transition-all duration-300"
                   />
-                  <circle cx={RIGHT_X} cy={node.y} r={3} fill="#fff" stroke={node.color} strokeWidth={1.5} />
+                  <circle
+                    cx={RIGHT_X}
+                    cy={node.y}
+                    r={3}
+                    fill="#fff"
+                    stroke={node.color}
+                    strokeWidth={1.5}
+                  />
                   {flowCircle(d, node.color, 1.2 + index * 0.4)}
                 </g>
               );
@@ -284,15 +305,26 @@ export const Intro = () => {
           {/* Compiler core — a chip, not a mascot */}
           <div
             className="absolute z-20 flex flex-col items-center"
-            style={{ left: pct(HUB.x, DIAGRAM_W), top: pct(HUB.y, DIAGRAM_H), transform: "translate(-50%, -50%)" }}
+            style={{
+              left: pct(HUB.x, DIAGRAM_W),
+              top: pct(HUB.y, DIAGRAM_H),
+              transform: "translate(-50%, -50%)",
+            }}
           >
             <div className="relative flex items-center justify-center">
               {!reduceMotion && (
                 <motion.div
                   animate={{ scale: [1, 1.12, 1], opacity: [0.15, 0.35, 0.15] }}
-                  transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 3.5,
+                    ease: "easeInOut",
+                  }}
                   className="absolute w-28 h-28 rounded-full"
-                  style={{ backgroundColor: COLOR.violet, filter: "blur(20px)" }}
+                  style={{
+                    backgroundColor: COLOR.violet,
+                    filter: "blur(20px)",
+                  }}
                 />
               )}
               <div
@@ -323,7 +355,10 @@ export const Intro = () => {
           {/* Left column — each card's vertical center is pinned to the
               exact same y used by its connecting path via `top: pct(node.y)`.
               No flex distribution, no drift. */}
-          <div className="absolute z-20" style={{ left: "4%", width: "22%", top: 0, bottom: 0 }}>
+          <div
+            className="absolute z-20"
+            style={{ left: "4%", width: "22%", top: 0, bottom: 0 }}
+          >
             {leftNodes.map((node) => {
               const Icon = node.icon;
               const isHovered = hoveredNode === node.id;
@@ -363,7 +398,10 @@ export const Intro = () => {
           </div>
 
           {/* Right column — same pinning strategy, mirrored. */}
-          <div className="absolute z-20" style={{ right: "4%", width: "24%", top: 0, bottom: 0 }}>
+          <div
+            className="absolute z-20"
+            style={{ right: "4%", width: "24%", top: 0, bottom: 0 }}
+          >
             {rightNodes.map((node) => {
               const Icon = node.icon;
               const isHovered = hoveredNode === node.id;
@@ -386,7 +424,10 @@ export const Intro = () => {
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div
                       className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${node.color}18`, color: node.color }}
+                      style={{
+                        backgroundColor: `${node.color}18`,
+                        color: node.color,
+                      }}
                     >
                       <Icon className="w-4 h-4" />
                     </div>

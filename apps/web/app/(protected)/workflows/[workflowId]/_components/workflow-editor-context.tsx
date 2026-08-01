@@ -5,7 +5,9 @@ import { useWorkflowEditor } from "../hooks/use-workflow-editor";
 
 type WorkflowEditorContextType = ReturnType<typeof useWorkflowEditor>;
 
-const WorkflowEditorContext = createContext<WorkflowEditorContextType | null>(null);
+const WorkflowEditorContext = createContext<WorkflowEditorContextType | null>(
+  null,
+);
 
 export const WorkflowEditorProvider = ({
   children,

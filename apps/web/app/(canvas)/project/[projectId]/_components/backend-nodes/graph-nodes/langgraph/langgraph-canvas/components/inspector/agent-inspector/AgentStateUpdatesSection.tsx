@@ -3,7 +3,13 @@ import { Zap, Plus, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Switch } from "@workspace/ui/components/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { AgentNodeData } from "../../../types";
 
@@ -41,7 +47,10 @@ export function AgentStateUpdatesSection({
               onClick={() => {
                 const defaultKey = stateChannels[0]?.key || "messages";
                 onUpdateAgent({
-                  stateUpdates: [...stateUpdates, { channelKey: defaultKey, mode: "set", value: "" }],
+                  stateUpdates: [
+                    ...stateUpdates,
+                    { channelKey: defaultKey, mode: "set", value: "" },
+                  ],
                 });
               }}
             >
@@ -66,89 +75,99 @@ export function AgentStateUpdatesSection({
       {isEnabled && (
         <>
           {stateUpdates.map((su: StateUpdateItem, sIdx: number) => (
-        <div key={sIdx} className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs">
-          <div className="flex items-center justify-between gap-1.5">
-            <Select
-              value={su.channelKey}
-              onValueChange={(v: string) => {
-                const updated = [...stateUpdates];
-                const current = updated[sIdx];
-                if (current) {
-                  updated[sIdx] = { ...current, channelKey: v };
-                  onUpdateAgent({ stateUpdates: updated });
-                }
-              }}
+            <div
+              key={sIdx}
+              className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs"
             >
-              <SelectTrigger className="h-7 text-xs bg-background font-mono flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {stateChannels.map((ch: LangGraphStateChannel) => (
-                  <SelectItem key={ch.key} value={ch.key}>
-                    {ch.key}
-                  </SelectItem>
-                ))}
-                {!stateChannels.some((c: LangGraphStateChannel) => c.key === su.channelKey) && su.channelKey && (
-                  <SelectItem value={su.channelKey}>{su.channelKey}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+              <div className="flex items-center justify-between gap-1.5">
+                <Select
+                  value={su.channelKey}
+                  onValueChange={(v: string) => {
+                    const updated = [...stateUpdates];
+                    const current = updated[sIdx];
+                    if (current) {
+                      updated[sIdx] = { ...current, channelKey: v };
+                      onUpdateAgent({ stateUpdates: updated });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs bg-background font-mono flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stateChannels.map((ch: LangGraphStateChannel) => (
+                      <SelectItem key={ch.key} value={ch.key}>
+                        {ch.key}
+                      </SelectItem>
+                    ))}
+                    {!stateChannels.some(
+                      (c: LangGraphStateChannel) => c.key === su.channelKey,
+                    ) &&
+                      su.channelKey && (
+                        <SelectItem value={su.channelKey}>
+                          {su.channelKey}
+                        </SelectItem>
+                      )}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={su.mode || "set"}
-              onValueChange={(v: "set" | "append" | "expression") => {
-                const updated = [...stateUpdates];
-                const current = updated[sIdx];
-                if (current) {
-                  updated[sIdx] = { ...current, mode: v };
-                  onUpdateAgent({ stateUpdates: updated });
-                }
-              }}
-            >
-              <SelectTrigger className="h-7 text-[11px] w-24 bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="set">Set / Replace</SelectItem>
-                <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="expression">Expression</SelectItem>
-              </SelectContent>
-            </Select>
+                <Select
+                  value={su.mode || "set"}
+                  onValueChange={(v: "set" | "append" | "expression") => {
+                    const updated = [...stateUpdates];
+                    const current = updated[sIdx];
+                    if (current) {
+                      updated[sIdx] = { ...current, mode: v };
+                      onUpdateAgent({ stateUpdates: updated });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-[11px] w-24 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="set">Set / Replace</SelectItem>
+                    <SelectItem value="append">Append</SelectItem>
+                    <SelectItem value="expression">Expression</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-              onClick={() => {
-                const updated = stateUpdates.filter((_: StateUpdateItem, i: number) => i !== sIdx);
-                onUpdateAgent({ stateUpdates: updated });
-              }}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                  onClick={() => {
+                    const updated = stateUpdates.filter(
+                      (_: StateUpdateItem, i: number) => i !== sIdx,
+                    );
+                    onUpdateAgent({ stateUpdates: updated });
+                  }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
 
-          <Input
-            className="h-7 text-[11px] bg-background font-mono"
-            placeholder="Value / expression (e.g. state.messages + input)"
-            value={su.value || ""}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              const updated = [...stateUpdates];
-              const current = updated[sIdx];
-              if (current) {
-                updated[sIdx] = { ...current, value: e.target.value };
-                onUpdateAgent({ stateUpdates: updated });
-              }
-            }}
-          />
-        </div>
-      ))}
+              <Input
+                className="h-7 text-[11px] bg-background font-mono"
+                placeholder="Value / expression (e.g. state.messages + input)"
+                value={su.value || ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const updated = [...stateUpdates];
+                  const current = updated[sIdx];
+                  if (current) {
+                    updated[sIdx] = { ...current, value: e.target.value };
+                    onUpdateAgent({ stateUpdates: updated });
+                  }
+                }}
+              />
+            </div>
+          ))}
 
-      {stateUpdates.length === 0 && (
-        <span className="text-xs text-muted-foreground italic text-center py-1">
-          No graph state updates configured for this Agent.
-        </span>
-      )}
+          {stateUpdates.length === 0 && (
+            <span className="text-xs text-muted-foreground italic text-center py-1">
+              No graph state updates configured for this Agent.
+            </span>
+          )}
         </>
       )}
     </div>

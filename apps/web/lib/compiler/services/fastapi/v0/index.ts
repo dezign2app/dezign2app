@@ -2,7 +2,11 @@ import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
 import { CompiledFile, CompiledServiceResult } from "../../../types";
 import { parseSchemaJson, toVarName, toPascalCase } from "../../../utils";
-import { resolveEndpointTrace, resolveConsumerTrace, resolveProducerTrace } from "../../../traceResolver";
+import {
+  resolveEndpointTrace,
+  resolveConsumerTrace,
+  resolveProducerTrace,
+} from "../../../traceResolver";
 
 /**
  * Converts Express/URL path params (:id) to FastAPI/Python format ({id})
@@ -14,7 +18,11 @@ function convertPathParams(path: string): string {
 /**
  * Generates a clean Pythonic snake_case route file name without double underscores (__)
  */
-function toPythonRouteFileName(method: string, pathOrName: string, index: number): string {
+function toPythonRouteFileName(
+  method: string,
+  pathOrName: string,
+  index: number,
+): string {
   const methodStr = (method || "get").toLowerCase();
   const cleanPath = (pathOrName || "")
     .replace(/^https?:\/\/[^\/]+/, "")
@@ -35,13 +43,21 @@ function toPythonRouteFileName(method: string, pathOrName: string, index: number
 export function compileFastAPIService(
   node: BackendNode,
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledServiceResult {
   const serviceName = node.data.label || "Service";
-  const sanitizedName = serviceName.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "service";
+  const sanitizedName =
+    serviceName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "") || "service";
   const port = node.data.port || "8080";
   const cors = node.data.cors ?? true;
   const corsOrigins = node.data.corsOrigins || "*";
@@ -58,14 +74,26 @@ export function compileFastAPIService(
     }
   }
 
-  let nodeConsumedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "consume");
+  let nodeConsumedEvents = events.filter(
+    (e) => e.nodeId === node.id && e.variant === "consume",
+  );
   if (nodeConsumedEvents.length === 0 && node.data?.consumedEvents) {
-    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "consume" }));
+    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({
+      ...e,
+      nodeId: node.id,
+      variant: "consume",
+    }));
   }
 
-  let nodePublishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
+  let nodePublishedEvents = events.filter(
+    (e) => e.nodeId === node.id && e.variant === "publish",
+  );
   if (nodePublishedEvents.length === 0 && node.data?.publishedEvents) {
-    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "publish" }));
+    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({
+      ...e,
+      nodeId: node.id,
+      variant: "publish",
+    }));
   }
 
   const files: CompiledFile[] = [];
@@ -190,7 +218,13 @@ async def default_handler():
         responseDataJson = `{\n        "success": True,\n        "message": f"Successfully executed ${ep.type || "GET"} ${path}"\n    }`;
       }
 
-      const trace = resolveEndpointTrace(node, ep, allNodes, allEdges, endpoints);
+      const trace = resolveEndpointTrace(
+        node,
+        ep,
+        allNodes,
+        allEdges,
+        endpoints,
+      );
       const isBodyMethod = ["post", "put", "patch"].includes(method);
 
       // Build Pydantic model if request body schema is provided
@@ -208,14 +242,16 @@ async def default_handler():
             else if (typeof val === "number") pyType = "float";
             else if (typeof val === "boolean") pyType = "bool";
             else if (Array.isArray(val)) pyType = "List[Any]";
-            else if (typeof val === "object" && val !== null) pyType = "Dict[str, Any]";
+            else if (typeof val === "object" && val !== null)
+              pyType = "Dict[str, Any]";
             pydanticModelCode += `    ${key}: Optional[${pyType}] = None\n`;
           });
           pydanticModelCode += `\n`;
         }
       }
 
-      const statusCode = method === "post" ? "status.HTTP_201_CREATED" : "status.HTTP_200_OK";
+      const statusCode =
+        method === "post" ? "status.HTTP_201_CREATED" : "status.HTTP_200_OK";
       const bodyParamStr = requestModelName ? `body: ${requestModelName}` : "";
 
       let routeCode = `from fastapi import APIRouter, HTTPException, status
@@ -241,7 +277,8 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       if (trace.incoming.length > 0) {
         trace.incoming.forEach((inc) => {
           routeCode += `    - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
-          if (inc.dataContext) routeCode += `      Data Context: ${inc.dataContext}\n`;
+          if (inc.dataContext)
+            routeCode += `      Data Context: ${inc.dataContext}\n`;
         });
       } else {
         routeCode += `    - Direct HTTP Client\n`;
@@ -251,19 +288,23 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
           routeCode += `    - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
-          if (out.dataContext) routeCode += `      Data Context: ${out.dataContext}\n`;
+          if (out.dataContext)
+            routeCode += `      Data Context: ${out.dataContext}\n`;
         });
       } else {
         routeCode += `    - Returns HTTP response\n`;
       }
-      
+
       if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
         routeCode += `    \n    🗄️ DATABASE OPERATIONS REQUIRED:\n`;
         for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
           if (ops && ops.length > 0) {
-            const tableNode = allNodes.find(n => n.id === tableId);
-            const tableName = tableNode?.data?.label || tableNode?.data?.tableRef || "Unknown Table";
-            routeCode += `    - Table [${tableName}]: ${ops.map(o => o.toUpperCase()).join(", ")}\n`;
+            const tableNode = allNodes.find((n) => n.id === tableId);
+            const tableName =
+              tableNode?.data?.label ||
+              tableNode?.data?.tableRef ||
+              "Unknown Table";
+            routeCode += `    - Table [${tableName}]: ${ops.map((o) => o.toUpperCase()).join(", ")}\n`;
             if (ep.crudExplanations && ep.crudExplanations[tableId]) {
               for (const op of ops) {
                 const explanation = ep.crudExplanations[tableId][op];
@@ -275,7 +316,7 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
           }
         }
       }
-      
+
       routeCode += `    """\n`;
       routeCode += `    try:\n`;
       routeCode += `        logger.info(f"Handling ${ep.type || "GET"} ${path}")\n`;
@@ -287,7 +328,8 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       if (promptText) {
         routeCode += `        # --- Natural Language Instructions ---\n`;
         promptText.split("\n").forEach((line: string, idx: number) => {
-          if (line.trim()) routeCode += `        # STEP ${idx + 1}: ${line.trim()}\n`;
+          if (line.trim())
+            routeCode += `        # STEP ${idx + 1}: ${line.trim()}\n`;
         });
         routeCode += `\n`;
       } else if (!codeBlock) {
@@ -316,7 +358,9 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
         content: routeCode,
       });
 
-      routeImports.push(`from .${routeFileName} import router as ${routeFileName}_router`);
+      routeImports.push(
+        `from .${routeFileName} import router as ${routeFileName}_router`,
+      );
       routeInclusions.push(`router.include_router(${routeFileName}_router)`);
     });
   }
@@ -355,7 +399,12 @@ def init_consumers() -> None:
     });
   } else {
     nodeConsumedEvents.forEach((ev) => {
-      const consumerFileName = ev.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "event_consumer";
+      const consumerFileName =
+        ev.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "") || "event_consumer";
       const handlerName = `handle_${consumerFileName}`;
       const trace = resolveConsumerTrace(node, ev, allNodes, allEdges);
 
@@ -408,7 +457,9 @@ async def ${handlerName}(raw_payload: Dict[str, Any]) -> None:
       });
 
       consumerImports.push(`from .${consumerFileName} import ${handlerName}`);
-      consumerInits.push(`    logger.info("Registered listener for event: ${ev.name}")`);
+      consumerInits.push(
+        `    logger.info("Registered listener for event: ${ev.name}")`,
+      );
     });
 
     files.push({
@@ -445,7 +496,12 @@ logger = get_logger("${serviceName}:producers")
     });
   } else {
     nodePublishedEvents.forEach((ev) => {
-      const producerFileName = ev.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "event_producer";
+      const producerFileName =
+        ev.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "") || "event_producer";
       const publishName = `publish_${producerFileName}`;
       const trace = resolveProducerTrace(node, ev, allNodes, allEdges);
 
@@ -498,7 +554,10 @@ async def ${publishName}(payload: Dict[str, Any]) -> None:
   // 5. MAIN APP SERVER (main.py)
   // =========================================================================
 
-  const originsList = corsOrigins === "*" ? '["*"]' : JSON.stringify(corsOrigins.split(",").map((s) => s.trim()));
+  const originsList =
+    corsOrigins === "*"
+      ? '["*"]'
+      : JSON.stringify(corsOrigins.split(",").map((s) => s.trim()));
 
   const mainPyCode = `import os
 import time
@@ -609,7 +668,10 @@ def test_default_route():
 
       const testFilename = `tests/unit/test_${routeFileName}.py`;
       const rawPath = ep.name?.startsWith("/") ? ep.name : `/${ep.name || ""}`;
-      const path = convertPathParams(rawPath).replace(/\{([a-zA-Z0-9_]+)\}/g, "1");
+      const path = convertPathParams(rawPath).replace(
+        /\{([a-zA-Z0-9_]+)\}/g,
+        "1",
+      );
       const expectedStatus = method === "post" ? 201 : 200;
 
       let testContent = `from fastapi.testclient import TestClient
@@ -740,13 +802,23 @@ testpaths = [
     readmeLines.push(`- Default route: \`GET /example\``);
   } else {
     nodeEndpoints.forEach((ep) => {
-      const trace = resolveEndpointTrace(node, ep, allNodes, allEdges, endpoints);
-      readmeLines.push(`### \`${(ep.type || "GET").toUpperCase()} ${ep.name || "/"}\``);
+      const trace = resolveEndpointTrace(
+        node,
+        ep,
+        allNodes,
+        allEdges,
+        endpoints,
+      );
+      readmeLines.push(
+        `### \`${(ep.type || "GET").toUpperCase()} ${ep.name || "/"}\``,
+      );
       readmeLines.push(`- **Summary**: ${ep.summary || "Endpoint handler"}`);
       readmeLines.push(`- **Incoming Callers**:`);
       if (trace.incoming.length > 0) {
         trace.incoming.forEach((inc) => {
-          readmeLines.push(`  - ${inc.nodeName} (${inc.nodeType}): ${inc.detail}`);
+          readmeLines.push(
+            `  - ${inc.nodeName} (${inc.nodeType}): ${inc.detail}`,
+          );
         });
       } else {
         readmeLines.push(`  - Direct HTTP Clients`);
@@ -754,7 +826,9 @@ testpaths = [
       readmeLines.push(`- **Outgoing Destinations**:`);
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
-          readmeLines.push(`  - ${out.nodeName} (${out.nodeType}): ${out.detail}`);
+          readmeLines.push(
+            `  - ${out.nodeName} (${out.nodeType}): ${out.detail}`,
+          );
         });
       } else {
         readmeLines.push(`  - HTTP Response`);

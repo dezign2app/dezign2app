@@ -1,5 +1,5 @@
-import { OrganizationList } from '@clerk/nextjs';
-import React from 'react';
+import { OrganizationList } from "@clerk/nextjs";
+import React from "react";
 
 export const OrgSelectionView = () => {
   return (

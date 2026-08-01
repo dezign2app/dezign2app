@@ -1,4 +1,8 @@
-import type { BackendNodeType, BackendEdgeType, BackendNodeData } from "@workspace/canvas";
+import type {
+  BackendNodeType,
+  BackendEdgeType,
+  BackendNodeData,
+} from "@workspace/canvas";
 import type {
   CanvasGraph,
   CanvasElements,
@@ -91,7 +95,10 @@ function getAdjacentEdges(
 
   const seen = new Set<string>();
   const result: GraphEdge[] = [];
-  for (const edge of [...(graph.outgoing.get(nodeId) ?? []), ...(graph.incoming.get(nodeId) ?? [])]) {
+  for (const edge of [
+    ...(graph.outgoing.get(nodeId) ?? []),
+    ...(graph.incoming.get(nodeId) ?? []),
+  ]) {
     if (!seen.has(edge.id)) {
       seen.add(edge.id);
       result.push(edge);
@@ -214,12 +221,18 @@ export function resolveHandleLabel(
     handleId.startsWith("routeEndpoints-in-") ||
     handleId.startsWith("routeEndpoints-out-")
   ) {
-    const epId = handleId.replace(/^(endpoint|endpoints|routeEndpoints)-(in|out)-/, "");
+    const epId = handleId.replace(
+      /^(endpoint|endpoints|routeEndpoints)-(in|out)-/,
+      "",
+    );
     const nodeDataEndpoints = data?.endpoints ?? [];
-    let ep: { id?: string; type?: string; name?: string } | undefined = nodeDataEndpoints.find((e) => e.id === epId);
+    let ep: { id?: string; type?: string; name?: string } | undefined =
+      nodeDataEndpoints.find((e) => e.id === epId);
 
     if (!ep && elements?.endpoints) {
-      const rawEp = elements.endpoints.find((e) => e.id === epId || (e.nodeId === node.nodeId && e.id === epId));
+      const rawEp = elements.endpoints.find(
+        (e) => e.id === epId || (e.nodeId === node.nodeId && e.id === epId),
+      );
       if (rawEp) ep = rawEp;
     }
 
@@ -229,9 +242,12 @@ export function resolveHandleLabel(
   }
 
   // 2. Published Event handles: publishedEvents-out-ID, publishedEvents-in-ID
-  if (handleId.startsWith("publishedEvents-out-") || handleId.startsWith("publishedEvents-in-")) {
+  if (
+    handleId.startsWith("publishedEvents-out-") ||
+    handleId.startsWith("publishedEvents-in-")
+  ) {
     const evId = handleId.replace(/^publishedEvents-(out|in)-/, "");
-    
+
     // Search elements.events and node.data.publishedEvents
     let evName: string | undefined = undefined;
     if (elements?.events) {
@@ -245,7 +261,12 @@ export function resolveHandleLabel(
     }
 
     // Find associated endpoint on this node
-    let allEndpoints: Array<{ id?: string; type?: string; name?: string; publishedEvents?: Array<{ id?: string; name?: string }> }> = [];
+    let allEndpoints: Array<{
+      id?: string;
+      type?: string;
+      name?: string;
+      publishedEvents?: Array<{ id?: string; name?: string }>;
+    }> = [];
     if (data?.endpoints) {
       allEndpoints = data.endpoints;
     }
@@ -255,17 +276,23 @@ export function resolveHandleLabel(
     }
 
     let parentEp = allEndpoints.find((ep) =>
-      ep.publishedEvents?.some((pe) => pe.id === evId || (evName && pe.name === evName)),
+      ep.publishedEvents?.some(
+        (pe) => pe.id === evId || (evName && pe.name === evName),
+      ),
     );
 
     // Fallback: if no endpoint explicitly references the event ID in publishedEvents array,
     // match non-GET endpoint on this node (e.g. POST /presentation or POST /slide)
     if (!parentEp && allEndpoints.length > 0) {
-      parentEp = allEndpoints.find((ep) => ep.type && ep.type.toUpperCase() !== "GET") ?? allEndpoints[0];
+      parentEp =
+        allEndpoints.find((ep) => ep.type && ep.type.toUpperCase() !== "GET") ??
+        allEndpoints[0];
     }
 
     if (parentEp && parentEp.name) {
-      const epStr = parentEp.type ? `${parentEp.type} ${parentEp.name}` : parentEp.name;
+      const epStr = parentEp.type
+        ? `${parentEp.type} ${parentEp.name}`
+        : parentEp.name;
       return evName ? `${epStr} (${evName})` : epStr;
     }
 
@@ -273,7 +300,10 @@ export function resolveHandleLabel(
   }
 
   // 3. Consumed Event handles: consumedEvents-in-ID, consumedEvents-out-ID
-  if (handleId.startsWith("consumedEvents-in-") || handleId.startsWith("consumedEvents-out-")) {
+  if (
+    handleId.startsWith("consumedEvents-in-") ||
+    handleId.startsWith("consumedEvents-out-")
+  ) {
     const evId = handleId.replace(/^consumedEvents-(in|out)-/, "");
     let evName: string | undefined = undefined;
     if (elements?.events) {
@@ -291,7 +321,9 @@ export function resolveHandleLabel(
   }
 
   // 4. Messaging Resource handles: topic:in:ID, topics:in:ID, stream:out:ID, etc.
-  const resourceMatch = handleId.match(/^(topic|topics|stream|streams|queue|queues|channel|channels|cache|caches|bucket|buckets):(in|out):(.+)$/);
+  const resourceMatch = handleId.match(
+    /^(topic|topics|stream|streams|queue|queues|channel|channels|cache|caches|bucket|buckets):(in|out):(.+)$/,
+  );
   if (resourceMatch) {
     const [, resType, , resId] = resourceMatch;
     if (resType && resId && data) {
@@ -300,7 +332,9 @@ export function resolveHandleLabel(
         const topic = topics.find((t) => t.id === resId);
         if (topic && topic.name) return `topic: ${topic.name}`;
         if (elements?.events) {
-          const rawEv = elements.events.find((e) => e.id === resId || e.messagingResourceId === resId);
+          const rawEv = elements.events.find(
+            (e) => e.id === resId || e.messagingResourceId === resId,
+          );
           if (rawEv) return `topic: ${rawEv.name}`;
         }
       } else if (resType.startsWith("stream")) {
@@ -418,7 +452,9 @@ const STRIPPED_KEYS = new Set<string>([
   "fractionalIndex",
 ]);
 
-export function cleanNodeData(data: BackendNodeData | Record<string, unknown> | undefined): Record<string, unknown> | null {
+export function cleanNodeData(
+  data: BackendNodeData | Record<string, unknown> | undefined,
+): Record<string, unknown> | null {
   if (!data) return null;
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
@@ -486,7 +522,10 @@ export function serializeSubgraph(
     if (nodeEndpoints.length > 0) {
       lines.push("Endpoints:");
       for (const ep of nodeEndpoints) {
-        const roleStr = ep.requiredRoles.length > 0 ? ` [roles: ${ep.requiredRoles.join(", ")}]` : "";
+        const roleStr =
+          ep.requiredRoles.length > 0
+            ? ` [roles: ${ep.requiredRoles.join(", ")}]`
+            : "";
         lines.push(`  ${ep.type} ${ep.name}${roleStr}`);
         if (ep.summary) lines.push(`    Summary: ${ep.summary}`);
         if (ep.businessLogic) lines.push(`    Logic: ${ep.businessLogic}`);
@@ -498,7 +537,8 @@ export function serializeSubgraph(
     if (nodeTestCases.length > 0) {
       lines.push("Test Cases:");
       for (const tc of nodeTestCases) {
-        const statusStr = tc.expectedStatus !== undefined ? ` → HTTP ${tc.expectedStatus}` : "";
+        const statusStr =
+          tc.expectedStatus !== undefined ? ` → HTTP ${tc.expectedStatus}` : "";
         lines.push(`  - ${tc.name}${statusStr}`);
       }
     }
@@ -575,10 +615,12 @@ export function generateSystemOverview(
   // ───────────────────────────────────────────────────────────────────────────
 
   const entityNodes = Array.from(graph.nodes.values()).filter(
-    (n) => n.type === "entity"
+    (n) => n.type === "entity",
   );
 
-  lines.push(`## 1. Database Schema & Entity Relations (${entityNodes.length} table${entityNodes.length === 1 ? "" : "s"})`);
+  lines.push(
+    `## 1. Database Schema & Entity Relations (${entityNodes.length} table${entityNodes.length === 1 ? "" : "s"})`,
+  );
   lines.push("");
 
   if (entityNodes.length === 0) {
@@ -614,7 +656,9 @@ export function generateSystemOverview(
           if (col.isNotNull) flags.push("NOT NULL");
           if (col.isUnique) flags.push("UNIQUE");
           const flagStr = flags.length > 0 ? ` [${flags.join(", ")}]` : "";
-          const refStr = col.references ? ` -> ${col.references.table}.${col.references.column}` : "";
+          const refStr = col.references
+            ? ` -> ${col.references.table}.${col.references.column}`
+            : "";
           lines.push(`  - \`${col.name}\` (${col.type})${flagStr}${refStr}`);
         }
       }
@@ -628,7 +672,9 @@ export function generateSystemOverview(
       }
 
       const fkEdges = graph.edges.filter(
-        (e) => (e.source === node.nodeId || e.target === node.nodeId) && e.type === "foreign-key"
+        (e) =>
+          (e.source === node.nodeId || e.target === node.nodeId) &&
+          e.type === "foreign-key",
       );
       if (fkEdges.length > 0) {
         lines.push("Relationships:");
@@ -645,7 +691,9 @@ export function generateSystemOverview(
   // PART 2: Architecture Graph (Services, Messaging & Infrastructure)
   // ───────────────────────────────────────────────────────────────────────────
 
-  let archNodes = Array.from(graph.nodes.values()).filter((n) => n.type !== "entity");
+  let archNodes = Array.from(graph.nodes.values()).filter(
+    (n) => n.type !== "entity",
+  );
 
   if (query && query.trim()) {
     const lower = query.toLowerCase();
@@ -653,7 +701,7 @@ export function generateSystemOverview(
       (n) =>
         n.label.toLowerCase().includes(lower) ||
         n.description.toLowerCase().includes(lower) ||
-        n.type.toLowerCase().includes(lower)
+        n.type.toLowerCase().includes(lower),
     );
     if (matched.length > 0) {
       archNodes = matched;
@@ -662,9 +710,13 @@ export function generateSystemOverview(
 
   const totalArchNodes = archNodes.length;
   const isTruncated = totalArchNodes > maxGraphNodes;
-  const displayNodes = isTruncated ? archNodes.slice(0, maxGraphNodes) : archNodes;
+  const displayNodes = isTruncated
+    ? archNodes.slice(0, maxGraphNodes)
+    : archNodes;
 
-  lines.push(`## 2. Architecture Graph (${displayNodes.length} of ${totalArchNodes} node${totalArchNodes === 1 ? "" : "s"})`);
+  lines.push(
+    `## 2. Architecture Graph (${displayNodes.length} of ${totalArchNodes} node${totalArchNodes === 1 ? "" : "s"})`,
+  );
   lines.push("");
 
   if (displayNodes.length === 0) {
@@ -672,18 +724,32 @@ export function generateSystemOverview(
     lines.push("");
   } else {
     const nodeIdSet = new Set<string>(displayNodes.map((n) => n.nodeId));
-    const endpointSummaries = extractEndpointSummaries(elements.endpoints, nodeIdSet);
-    const testCaseSummaries = extractTestCaseSummaries(elements.testCases, nodeIdSet);
+    const endpointSummaries = extractEndpointSummaries(
+      elements.endpoints,
+      nodeIdSet,
+    );
+    const testCaseSummaries = extractTestCaseSummaries(
+      elements.testCases,
+      nodeIdSet,
+    );
 
-    lines.push(serializeSubgraph(graph, displayNodes, endpointSummaries, testCaseSummaries, elements));
+    lines.push(
+      serializeSubgraph(
+        graph,
+        displayNodes,
+        endpointSummaries,
+        testCaseSummaries,
+        elements,
+      ),
+    );
   }
 
   if (isTruncated) {
     lines.push("");
     lines.push(
       `> [!WARNING]\n` +
-      `> **Notice: Graph output truncated (${totalArchNodes} total nodes present).**\n` +
-      `> Showing the first ${maxGraphNodes} nodes above. To inspect specific nodes or routes in detail, please call \`get_system_design_context\` or \`traverse_architecture_graph\` with a specific \`query\` / \`topic\` (e.g. \`query: "payment"\` or \`query: "kafka"\`).`
+        `> **Notice: Graph output truncated (${totalArchNodes} total nodes present).**\n` +
+        `> Showing the first ${maxGraphNodes} nodes above. To inspect specific nodes or routes in detail, please call \`get_system_design_context\` or \`traverse_architecture_graph\` with a specific \`query\` / \`topic\` (e.g. \`query: "payment"\` or \`query: "kafka"\`).`,
     );
   }
 

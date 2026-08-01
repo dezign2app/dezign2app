@@ -13,7 +13,8 @@ export function SecurityTip() {
         <div className="space-y-1">
           <h4 className="text-sm font-semibold">Security Tip</h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Never share your API keys or commit them to public repositories. If a key is compromised, revoke it immediately.
+            Never share your API keys or commit them to public repositories. If
+            a key is compromised, revoke it immediately.
           </p>
         </div>
       </CardContent>

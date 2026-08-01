@@ -10,11 +10,9 @@ interface LangGraphConditionalRoutesProps {
   onDeleteRoute: (routeId: string) => void;
 }
 
-export const LangGraphConditionalRoutes: React.FC<LangGraphConditionalRoutesProps> = ({
-  data,
-  onAddRoute,
-  onDeleteRoute,
-}) => {
+export const LangGraphConditionalRoutes: React.FC<
+  LangGraphConditionalRoutesProps
+> = ({ data, onAddRoute, onDeleteRoute }) => {
   const branches = data.routerConfig?.branches || [];
 
   return (

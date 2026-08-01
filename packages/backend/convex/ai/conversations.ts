@@ -25,7 +25,7 @@ export const startConversation = mutation({
 
 export const listConversations = query({
   args: {
-    orgId: v.optional(v.string())
+    orgId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -35,7 +35,7 @@ export const listConversations = query({
         message: "User not authenticated",
       });
     }
-    
+
     // As per user request, listing all conversations for the user irrespective of org
     // But allowing optional filtering if needed in future
     let q = ctx.db
@@ -44,9 +44,9 @@ export const listConversations = query({
 
     // If we wanted to filter by org, we would do it here or use a different index
     // For now, returning all user conversations as requested
-    
+
     const conversations = await q.order("desc").collect();
-    
+
     return conversations;
   },
 });
@@ -73,7 +73,7 @@ export const getConversation = query({
     conversationId: v.id("conversations"),
   },
   handler: async (ctx, args) => {
-     const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new ConvexError({
         code: "UNAUTHORIZED",
@@ -81,22 +81,22 @@ export const getConversation = query({
       });
     }
     const conversation = await ctx.db.get(args.conversationId);
-    if(!conversation){
-        throw new ConvexError({
-            code: "NOT_FOUND",
-            message: "Conversation not found",
-        });
+    if (!conversation) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Conversation not found",
+      });
     }
 
-    if(conversation.userId !== identity.subject){
-        throw new ConvexError({
-            code: "UNAUTHORIZED",
-            message: "User not authorized to access this conversation",
-        });
+    if (conversation.userId !== identity.subject) {
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "User not authorized to access this conversation",
+      });
     }
 
     return conversation;
-  }
+  },
 });
 
 export const deleteConversation = mutation({
@@ -130,7 +130,7 @@ export const deleteConversation = mutation({
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
-        q.eq("conversationId", args.conversationId)
+        q.eq("conversationId", args.conversationId),
       )
       .collect();
 

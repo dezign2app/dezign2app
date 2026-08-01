@@ -31,6 +31,99 @@ type SimulationState = {
 let activeRun = 0;
 
 export const useSimulationStore = create<SimulationState>((set) => ({
+  status: "idle",
+  trace: [],
+  activeIndex: -1,
+  activeNodeIds: [],
+  activeEdgeIds: [],
+  currentNodeId: undefined,
+  currentEdgeId: undefined,
+  testExplorerOpen: false,
+  toggleTestExplorer: () =>
+    set((state) => ({ testExplorerOpen: !state.testExplorerOpen })),
+  terminalOpen: true,
+  selectedCaseId: undefined,
+  testCases: [],
+  setTestCases: (testCases) => set({ testCases }),
+  selectTestCase: (caseId) => set({ selectedCaseId: caseId }),
+  clearSelectedTestCase: () => set({ selectedCaseId: undefined }),
+  addTestCase: (testCase) =>
+    set((state) => ({ testCases: [...state.testCases, testCase] })),
+  updateTestCase: (id, updates) =>
+    set((state) => ({
+      testCases: state.testCases.map((tc) =>
+        tc.id === id ? { ...tc, ...updates } : tc,
+      ),
+    })),
+  deleteTestCase: (id) =>
+    set((state) => ({
+      testCases: state.testCases.filter((tc) => tc.id !== id),
+      selectedCaseId:
+        state.selectedCaseId === id ? undefined : state.selectedCaseId,
+    })),
+  start: (trace) => {
+    const run = ++activeRun;
+    const first = trace[0];
+    const firstFailed = first?.status === "failed";
+    set({
+      status:
+        trace.length <= 1
+          ? firstFailed
+            ? "failed"
+            : "completed"
+          : firstFailed
+            ? "failed"
+            : "running",
+      trace,
+      activeIndex: first ? 0 : -1,
+      activeNodeIds: first?.nodeId ? [first.nodeId] : [],
+      activeEdgeIds: first?.edgeId ? [first.edgeId] : [],
+      currentNodeId: first?.nodeId,
+      currentEdgeId: first?.edgeId,
+      terminalOpen: true,
+    });
+
+    if (firstFailed) return;
+
+    let stopped = false;
+    trace.slice(1).forEach((entry, offset) => {
+      const index = offset + 1;
+      window.setTimeout(() => {
+        if (run !== activeRun || stopped) return;
+        set((state) => {
+          const visited = state.trace.slice(0, index + 1);
+          const activeNodeIds = [
+            ...new Set(
+              visited.flatMap((item) => (item.nodeId ? [item.nodeId] : [])),
+            ),
+          ];
+          const activeEdgeIds = [
+            ...new Set(
+              visited.flatMap((item) => (item.edgeId ? [item.edgeId] : [])),
+            ),
+          ];
+          const isFailed = entry.status === "failed";
+          const isFinal = index === trace.length - 1 || isFailed;
+
+          if (isFailed) {
+            stopped = true;
+          }
+
+          return {
+            activeIndex: index,
+            activeNodeIds,
+            activeEdgeIds,
+            currentNodeId: entry.nodeId,
+            currentEdgeId: entry.edgeId,
+            status: isFailed ? "failed" : isFinal ? "completed" : "running",
+          };
+        });
+      }, index * 550);
+    });
+  },
+  clear: () => {
+    activeRun++;
+    set({
       status: "idle",
       trace: [],
       activeIndex: -1,
@@ -38,78 +131,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
       activeEdgeIds: [],
       currentNodeId: undefined,
       currentEdgeId: undefined,
-      testExplorerOpen: false,
-      toggleTestExplorer: () => set((state) => ({ testExplorerOpen: !state.testExplorerOpen })),
-      terminalOpen: true,
-      selectedCaseId: undefined,
-      testCases: [],
-      setTestCases: (testCases) => set({ testCases }),
-      selectTestCase: (caseId) => set({ selectedCaseId: caseId }),
-      clearSelectedTestCase: () => set({ selectedCaseId: undefined }),
-      addTestCase: (testCase) => set((state) => ({ testCases: [...state.testCases, testCase] })),
-      updateTestCase: (id, updates) => set((state) => ({
-        testCases: state.testCases.map((tc) => tc.id === id ? { ...tc, ...updates } : tc)
-      })),
-      deleteTestCase: (id) => set((state) => ({
-        testCases: state.testCases.filter((tc) => tc.id !== id),
-        selectedCaseId: state.selectedCaseId === id ? undefined : state.selectedCaseId
-      })),
-      start: (trace) => {
-        const run = ++activeRun;
-        const first = trace[0];
-        const firstFailed = first?.status === "failed";
-        set({
-          status: trace.length <= 1 ? (firstFailed ? "failed" : "completed") : (firstFailed ? "failed" : "running"),
-          trace,
-          activeIndex: first ? 0 : -1,
-          activeNodeIds: first?.nodeId ? [first.nodeId] : [],
-          activeEdgeIds: first?.edgeId ? [first.edgeId] : [],
-          currentNodeId: first?.nodeId,
-          currentEdgeId: first?.edgeId,
-          terminalOpen: true,
-        });
-
-        if (firstFailed) return;
-
-        let stopped = false;
-        trace.slice(1).forEach((entry, offset) => {
-          const index = offset + 1;
-          window.setTimeout(() => {
-            if (run !== activeRun || stopped) return;
-            set((state) => {
-              const visited = state.trace.slice(0, index + 1);
-              const activeNodeIds = [...new Set(visited.flatMap((item) => item.nodeId ? [item.nodeId] : []))];
-              const activeEdgeIds = [...new Set(visited.flatMap((item) => item.edgeId ? [item.edgeId] : []))];
-              const isFailed = entry.status === "failed";
-              const isFinal = index === trace.length - 1 || isFailed;
-
-              if (isFailed) {
-                stopped = true;
-              }
-
-              return {
-                activeIndex: index,
-                activeNodeIds,
-                activeEdgeIds,
-                currentNodeId: entry.nodeId,
-                currentEdgeId: entry.edgeId,
-                status: isFailed ? "failed" : isFinal ? "completed" : "running",
-              };
-            });
-          }, index * 550);
-        });
-      },
-      clear: () => {
-        activeRun++;
-        set({
-          status: "idle",
-          trace: [],
-          activeIndex: -1,
-          activeNodeIds: [],
-          activeEdgeIds: [],
-          currentNodeId: undefined,
-          currentEdgeId: undefined,
-        });
-      },
-      toggleTerminal: () => set((state) => ({ terminalOpen: !state.terminalOpen })),
+    });
+  },
+  toggleTerminal: () => set((state) => ({ terminalOpen: !state.terminalOpen })),
 }));

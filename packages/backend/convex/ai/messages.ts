@@ -13,7 +13,14 @@ export const insertMessage = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    const { conversationId, content, role, context, thinking, clientMessageId } = args;
+    const {
+      conversationId,
+      content,
+      role,
+      context,
+      thinking,
+      clientMessageId,
+    } = args;
     if (!identity) {
       throw new ConvexError({
         code: "UNAUTHORIZED",
@@ -55,7 +62,6 @@ export const updateMessage = mutation({
   },
 });
 
-
 export const listMessages = query({
   args: {
     conversationId: v.id("conversations"),
@@ -77,7 +83,7 @@ export const listMessages = query({
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
-        q.eq("conversationId", conversationId)
+        q.eq("conversationId", conversationId),
       )
       .order("desc")
       .paginate(args.paginationOpts);
@@ -106,7 +112,7 @@ export const getLastNMessages = query({
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
-        q.eq("conversationId", conversationId)
+        q.eq("conversationId", conversationId),
       )
       .order("desc")
       .take(n);

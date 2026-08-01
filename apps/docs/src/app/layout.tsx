@@ -20,7 +20,8 @@ export const metadata: Metadata = {
     default: "Workflow Template Docs",
     template: "%s | Workflow Template Docs",
   },
-  description: "Fumadocs-powered documentation for the Workflow Template monorepo.",
+  description:
+    "Fumadocs-powered documentation for the Workflow Template monorepo.",
 };
 
 export default function RootLayout({

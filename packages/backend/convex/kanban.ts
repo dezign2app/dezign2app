@@ -1,5 +1,12 @@
 import { v } from "convex/values";
-import { mutation, query, action, internalMutation, internalAction, internalQuery } from "./_generated/server";
+import {
+  mutation,
+  query,
+  action,
+  internalMutation,
+  internalAction,
+  internalQuery,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Doc } from "./_generated/dataModel";
 
@@ -19,7 +26,9 @@ export const listTasks = query({
     if (args.organizationId) {
       tasks = await ctx.db
         .query("kanban_tasks")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
         .collect();
     } else {
       tasks = await ctx.db
@@ -36,7 +45,11 @@ export const createTask = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
-    status: v.union(v.literal("todo"), v.literal("in-progress"), v.literal("done")),
+    status: v.union(
+      v.literal("todo"),
+      v.literal("in-progress"),
+      v.literal("done"),
+    ),
     organizationId: v.optional(v.string()),
     userId: v.optional(v.string()),
   },
@@ -52,7 +65,7 @@ export const createTask = mutation({
       .query("kanban_tasks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    
+
     const maxPosition = tasks.reduce((max, t) => Math.max(max, t.position), 0);
 
     const taskId = await ctx.db.insert("kanban_tasks", {
@@ -154,7 +167,9 @@ export const updateTask = mutation({
     id: v.id("kanban_tasks"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("todo"), v.literal("in-progress"), v.literal("done"))),
+    status: v.optional(
+      v.union(v.literal("todo"), v.literal("in-progress"), v.literal("done")),
+    ),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -175,7 +190,11 @@ export const updateTask = mutation({
 export const moveTask = mutation({
   args: {
     id: v.id("kanban_tasks"),
-    status: v.union(v.literal("todo"), v.literal("in-progress"), v.literal("done")),
+    status: v.union(
+      v.literal("todo"),
+      v.literal("in-progress"),
+      v.literal("done"),
+    ),
     position: v.float64(),
   },
   handler: async (ctx, args) => {
@@ -191,13 +210,13 @@ export const deleteTask = mutation({
   args: { id: v.id("kanban_tasks") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
-    
+
     // Clean up associated embedding
     const existing = await ctx.db
       .query("embeddings")
       .withIndex("by_task", (q) => q.eq("task_id", args.id))
       .unique();
-    
+
     if (existing) {
       await ctx.db.delete(existing._id);
     }
@@ -208,7 +227,10 @@ export const searchTasks = action({
   args: {
     query: v.string(),
   },
-  handler: async (ctx, args): Promise<Array<Doc<"kanban_tasks"> & { score: number }>> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<Array<Doc<"kanban_tasks"> & { score: number }>> => {
     const url = process.env.EMBEDDING_384_MODEL_URL;
     if (!url) throw new Error("EMBEDDING_384_MODEL_URL not set");
 
@@ -218,7 +240,8 @@ export const searchTasks = action({
       body: JSON.stringify({ input: args.query }),
     });
 
-    if (!response.ok) throw new Error(`Failed to fetch embedding: ${response.statusText}`);
+    if (!response.ok)
+      throw new Error(`Failed to fetch embedding: ${response.statusText}`);
 
     const result = await response.json();
     const embedding = result.embeddings[0] as number[];
@@ -230,8 +253,8 @@ export const searchTasks = action({
 
     const tasks: Array<Doc<"kanban_tasks"> & { score: number }> = [];
     for (const res of results) {
-      const task = await ctx.runQuery(internal.kanban.getTaskFromEmbedding, { 
-        embeddingId: res._id 
+      const task = await ctx.runQuery(internal.kanban.getTaskFromEmbedding, {
+        embeddingId: res._id,
       });
       if (task) {
         tasks.push({ ...task, score: res._score });

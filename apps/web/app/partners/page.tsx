@@ -7,7 +7,8 @@ import { Handshake, Globe, Zap, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Partners & Ecosystem | dezign2app",
-  description: "Partner with dezign2app to integrate canvas architecture into your development workflow.",
+  description:
+    "Partner with dezign2app to integrate canvas architecture into your development workflow.",
 };
 
 export default function PartnersPage() {
@@ -25,22 +26,29 @@ export default function PartnersPage() {
             Grow with dezign2app Ecosystem
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-xl">
-            Collaborate with us as an agency partner, technology integration provider, or design system creator.
+            Collaborate with us as an agency partner, technology integration
+            provider, or design system creator.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 border border-gray-200 rounded-2xl bg-white flex flex-col gap-3">
-            <h3 className="text-base font-bold text-gray-900">Technology Partners</h3>
+            <h3 className="text-base font-bold text-gray-900">
+              Technology Partners
+            </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Integrate your developer APIs, UI component libraries, or database connectors directly into the dezign2app canvas node palette.
+              Integrate your developer APIs, UI component libraries, or database
+              connectors directly into the dezign2app canvas node palette.
             </p>
           </div>
 
           <div className="p-6 border border-gray-200 rounded-2xl bg-white flex flex-col gap-3">
-            <h3 className="text-base font-bold text-gray-900">Agency & Solution Partners</h3>
+            <h3 className="text-base font-bold text-gray-900">
+              Agency & Solution Partners
+            </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Accelerate client deliverables by 10x with automated diagram-to-code pipelines and enterprise workspace features.
+              Accelerate client deliverables by 10x with automated
+              diagram-to-code pipelines and enterprise workspace features.
             </p>
           </div>
         </div>
@@ -48,7 +56,9 @@ export default function PartnersPage() {
         <div className="p-8 bg-gray-900 text-white rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg">
           <div className="flex flex-col gap-1">
             <h3 className="text-lg font-bold">Become a Partner</h3>
-            <p className="text-xs text-gray-300">Contact our partnerships leadership team.</p>
+            <p className="text-xs text-gray-300">
+              Contact our partnerships leadership team.
+            </p>
           </div>
           <a
             href="mailto:founder@dezign2app.com?subject=Partner Program Inquiry"

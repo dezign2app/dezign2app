@@ -21,7 +21,9 @@ export async function callConvexAPI(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token && !token.startsWith("sk_") ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token && !token.startsWith("sk_")
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
         },
         body: JSON.stringify({
           path: functionName,

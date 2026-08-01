@@ -20,7 +20,11 @@ export function isValidConnection(
     }>;
   },
 ): ValidationResult {
-  if (options?.sourceNodeId && options?.targetNodeId && options.sourceNodeId === options.targetNodeId) {
+  if (
+    options?.sourceNodeId &&
+    options?.targetNodeId &&
+    options.sourceNodeId === options.targetNodeId
+  ) {
     return {
       valid: false,
       code: "SELF_CONNECTION",
@@ -34,7 +38,8 @@ export function isValidConnection(
     return {
       valid: false,
       code: "UNKNOWN_SOURCE_KIND",
-      message: `Unrecognized source handle pattern: nodeType="${sourceNodeType}", handleId="${sourceHandleId ?? "null"}". ` +
+      message:
+        `Unrecognized source handle pattern: nodeType="${sourceNodeType}", handleId="${sourceHandleId ?? "null"}". ` +
         `This handle ID does not match any known pattern in the taxonomy — possible handle ID typo or missing node type registration.`,
       rulesVersion: RULES_VERSION,
     };
@@ -45,7 +50,8 @@ export function isValidConnection(
     return {
       valid: false,
       code: "UNKNOWN_TARGET_KIND",
-      message: `Unrecognized target handle pattern: nodeType="${targetNodeType}", handleId="${targetHandleId ?? "null"}". ` +
+      message:
+        `Unrecognized target handle pattern: nodeType="${targetNodeType}", handleId="${targetHandleId ?? "null"}". ` +
         `This handle ID does not match any known pattern in the taxonomy — possible handle ID typo or missing node type registration.`,
       rulesVersion: RULES_VERSION,
     };
@@ -75,7 +81,8 @@ export function isValidConnection(
       return {
         valid: false,
         code: "DUPLICATE_EDGE",
-        message: `An edge already exists between these exact handles. ` +
+        message:
+          `An edge already exists between these exact handles. ` +
           `source="${options.sourceNodeId}" (${sourceHandleId ?? "default"}) → ` +
           `target="${options.targetNodeId}" (${targetHandleId ?? "default"}).`,
         rulesVersion: RULES_VERSION,

@@ -1,11 +1,19 @@
-import { AgentStateAnnotation, callAI, ChatHistoryItem, ChatMessage } from "../index";
+import {
+  AgentStateAnnotation,
+  callAI,
+  ChatHistoryItem,
+  ChatMessage,
+} from "../index";
 
 export async function classifyIntent(state: typeof AgentStateAnnotation.State) {
   console.log("🔍 Classifying intent...");
-  
-  const chatHistoryContext = state.chatHistory?.length > 0 
-    ? state.chatHistory.map((m: ChatHistoryItem) => `${m.role.toUpperCase()}: ${m.content}`).join("\n")
-    : "No recent history.";
+
+  const chatHistoryContext =
+    state.chatHistory?.length > 0
+      ? state.chatHistory
+          .map((m: ChatHistoryItem) => `${m.role.toUpperCase()}: ${m.content}`)
+          .join("\n")
+      : "No recent history.";
 
   const prompt = `You are an AI assistant for a Kanban board.
 Analyze the user's request and classify it into ONE of these categories:
@@ -31,12 +39,13 @@ Return ONLY valid JSON:
 `;
 
   try {
-    const messages: ChatMessage[] = state.chatHistory?.length > 0 
-      ? state.chatHistory.map((m: ChatHistoryItem) => ({
-          role: m.role?.toLowerCase() === 'user' ? 'user' : 'assistant',
-          content: m.content || ""
-      }))
-      : [];
+    const messages: ChatMessage[] =
+      state.chatHistory?.length > 0
+        ? state.chatHistory.map((m: ChatHistoryItem) => ({
+            role: m.role?.toLowerCase() === "user" ? "user" : "assistant",
+            content: m.content || "",
+          }))
+        : [];
 
     messages.push({ role: "user", content: prompt });
 
@@ -45,14 +54,14 @@ Return ONLY valid JSON:
     return {
       intent: result.intent,
       confidence: result.confidence,
-      intentReasoning: result.reasoning
+      intentReasoning: result.reasoning,
     };
   } catch (error) {
     console.error("Intent classification failed:", error);
-    return { 
+    return {
       intent: "general",
       confidence: 0.5,
-      error: "Failed to classify intent"
+      error: "Failed to classify intent",
     };
   }
 }

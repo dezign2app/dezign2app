@@ -15,10 +15,13 @@ export const resolveSecretValueByName = async (
     return secretCache.get(cacheKey)!;
   }
 
-  const secret = await client.query(api.workflows.secrets.getWorkflowSecretByNameForExecution, {
-    workflowId,
-    secretName,
-  });
+  const secret = await client.query(
+    api.workflows.secrets.getWorkflowSecretByNameForExecution,
+    {
+      workflowId,
+      secretName,
+    },
+  );
 
   secretCache.set(cacheKey, secret.value);
   return secret.value;
@@ -35,10 +38,13 @@ export const resolveSecretValueById = async (
     return secretCache.get(cacheKey)!;
   }
 
-  const secret = await client.query(api.workflows.secrets.getWorkflowSecretByIdForExecution, {
-    workflowId,
-    secretId,
-  });
+  const secret = await client.query(
+    api.workflows.secrets.getWorkflowSecretByIdForExecution,
+    {
+      workflowId,
+      secretId,
+    },
+  );
 
   secretCache.set(cacheKey, secret.value);
   return secret.value;
@@ -46,16 +52,12 @@ export const resolveSecretValueById = async (
 
 export const getWorkflowMaps = (context: WorkflowRunContext) => ({
   nodesByKey: new Map<string, WorkflowNodeDoc>(
-    context.nodes.map((node) => [node.nodeKey, node])
+    context.nodes.map((node) => [node.nodeKey, node]),
   ),
-  outgoingEdgesByNodeKey: context.edges.reduce(
-    (map, edge) => {
-      const existingEdges = map.get(edge.sourceNodeKey) ?? [];
-      existingEdges.push(edge);
-      map.set(edge.sourceNodeKey, existingEdges);
-      return map;
-    },
-    new Map<string, WorkflowEdgeDoc[]>(),
-  ),
+  outgoingEdgesByNodeKey: context.edges.reduce((map, edge) => {
+    const existingEdges = map.get(edge.sourceNodeKey) ?? [];
+    existingEdges.push(edge);
+    map.set(edge.sourceNodeKey, existingEdges);
+    return map;
+  }, new Map<string, WorkflowEdgeDoc[]>()),
 });
-

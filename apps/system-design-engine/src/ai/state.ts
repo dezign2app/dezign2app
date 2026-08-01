@@ -20,11 +20,24 @@ export const GraphAnnotation = Annotation.Root({
     status: "pending" | "confirmed";
   }>({
     reducer: (_, y) => y, // last-write-wins — this is a snapshot, not something to accumulate
-    default: () => ({ functional: [], nonFunctional: [], assumptions: [], status: "pending" }),
+    default: () => ({
+      functional: [],
+      nonFunctional: [],
+      assumptions: [],
+      status: "pending",
+    }),
   }),
   implementationPlan: Annotation<{
     content: string;
-    status: "none" | "proposed" | "approved" | "schema_built" | "schema_approved" | "nodes_built" | "nodes_approved" | "edges_built";
+    status:
+      | "none"
+      | "proposed"
+      | "approved"
+      | "schema_built"
+      | "schema_approved"
+      | "nodes_built"
+      | "nodes_approved"
+      | "edges_built";
   }>({
     reducer: (_, y) => y,
     default: () => ({ content: "", status: "none" }),
@@ -47,8 +60,9 @@ export const requirementsSchema = z.object({
   assumptions: z.array(z.string()),
 });
 
-export type RequirementsState = typeof GraphAnnotation.State["requirements"];
-export type ImplementationPlanState = typeof GraphAnnotation.State["implementationPlan"];
+export type RequirementsState = (typeof GraphAnnotation.State)["requirements"];
+export type ImplementationPlanState =
+  (typeof GraphAnnotation.State)["implementationPlan"];
 
 export const DEFAULT_REQUIREMENTS: RequirementsState = {
   functional: [],
@@ -57,4 +71,7 @@ export const DEFAULT_REQUIREMENTS: RequirementsState = {
   status: "pending",
 };
 
-export const DEFAULT_PLAN: ImplementationPlanState = { content: "", status: "none" };
+export const DEFAULT_PLAN: ImplementationPlanState = {
+  content: "",
+  status: "none",
+};

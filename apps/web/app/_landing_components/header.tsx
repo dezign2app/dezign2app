@@ -18,9 +18,14 @@ export const Header = () => {
         {/* Logo */}
         <Link href="/" className="flex gap-2 items-center group">
           <div className="w-7 h-7 bg-black rounded-md flex items-center justify-center">
-            <HugeiconsIcon icon={Blockchain04Icon} className="text-white size-4" />
+            <HugeiconsIcon
+              icon={Blockchain04Icon}
+              className="text-white size-4"
+            />
           </div>
-          <span className="text-sm font-bold tracking-tight text-black">dezign2app</span>
+          <span className="text-sm font-bold tracking-tight text-black">
+            dezign2app
+          </span>
         </Link>
 
         {/* Nav */}

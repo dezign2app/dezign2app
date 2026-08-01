@@ -17,10 +17,13 @@ import { generateServiceUnitTests } from "../../../generators/testGenerator";
 export function compileExpressV4Service(
   node: BackendNode,
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledServiceResult {
   const serviceName = node.data.label || "Service";
   const sanitizedName = serviceName.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -40,23 +43,64 @@ export function compileExpressV4Service(
     }
   }
 
-  let nodeConsumedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "consume");
+  let nodeConsumedEvents = events.filter(
+    (e) => e.nodeId === node.id && e.variant === "consume",
+  );
   if (nodeConsumedEvents.length === 0 && node.data?.consumedEvents) {
-    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "consume" }));
+    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({
+      ...e,
+      nodeId: node.id,
+      variant: "consume",
+    }));
   }
 
-  let nodePublishedEvents = events.filter((e) => e.nodeId === node.id && e.variant === "publish");
+  let nodePublishedEvents = events.filter(
+    (e) => e.nodeId === node.id && e.variant === "publish",
+  );
   if (nodePublishedEvents.length === 0 && node.data?.publishedEvents) {
-    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({ ...e, nodeId: node.id, variant: "publish" }));
+    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({
+      ...e,
+      nodeId: node.id,
+      variant: "publish",
+    }));
   }
 
   const files: CompiledFile[] = [
-    ...generateRoutes(serviceName, nodeEndpoints, node, allNodes, allEdges, endpoints),
-    ...generateConsumers(serviceName, nodeConsumedEvents, node, allNodes, allEdges),
-    ...generateProducers(serviceName, nodePublishedEvents, node, allNodes, allEdges),
+    ...generateRoutes(
+      serviceName,
+      nodeEndpoints,
+      node,
+      allNodes,
+      allEdges,
+      endpoints,
+    ),
+    ...generateConsumers(
+      serviceName,
+      nodeConsumedEvents,
+      node,
+      allNodes,
+      allEdges,
+    ),
+    ...generateProducers(
+      serviceName,
+      nodePublishedEvents,
+      node,
+      allNodes,
+      allEdges,
+    ),
     ...generateLibFiles(),
     generateServerFile(serviceName, port, cors, corsOrigins),
-    ...generateConfigFiles(node, sanitizedName, serviceName, port, cors, endpoints, events, allNodes, allEdges),
+    ...generateConfigFiles(
+      node,
+      sanitizedName,
+      serviceName,
+      port,
+      cors,
+      endpoints,
+      events,
+      allNodes,
+      allEdges,
+    ),
     ...generateServiceUnitTests(serviceName, nodeEndpoints, testCases),
   ];
 

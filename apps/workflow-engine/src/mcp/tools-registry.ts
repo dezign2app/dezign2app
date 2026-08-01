@@ -15,22 +15,30 @@ export async function registerTools(
       description: "Creates a new task on the Kanban board",
       inputSchema: {
         title: z.string().describe("The title of the task"),
-        description: z.string().optional().describe("A brief description of the task"),
-        status: z.enum(["todo", "in-progress", "done"]).default("todo").describe("Initial status"),
+        description: z
+          .string()
+          .optional()
+          .describe("A brief description of the task"),
+        status: z
+          .enum(["todo", "in-progress", "done"])
+          .default("todo")
+          .describe("Initial status"),
       },
     },
     async ({ title, description, status }) => {
       const client = getConvexClient(token);
-      await client.mutation(api.kanban.createTask, { 
-        title, 
-        description, 
+      await client.mutation(api.kanban.createTask, {
+        title,
+        description,
         status,
         userId,
       });
-      return { 
-        content: [{ type: "text", text: `✅ Task "${title}" created successfully.` }] 
+      return {
+        content: [
+          { type: "text", text: `✅ Task "${title}" created successfully.` },
+        ],
       };
-    }
+    },
   );
 
   server.registerTool(
@@ -44,36 +52,42 @@ export async function registerTools(
     },
     async ({ taskId }) => {
       const client = getConvexClient(token);
-      await client.mutation(api.kanban.deleteTask, { 
-        id: taskId as any 
+      await client.mutation(api.kanban.deleteTask, {
+        id: taskId as any,
       });
-      return { 
-        content: [{ type: "text", text: `✅ Task deleted successfully.` }] 
+      return {
+        content: [{ type: "text", text: `✅ Task deleted successfully.` }],
       };
-    }
+    },
   );
 
   server.registerTool(
     "move_task",
     {
       title: "Move Task",
-      description: "Moves a task to a different status column on the Kanban board",
+      description:
+        "Moves a task to a different status column on the Kanban board",
       inputSchema: {
         taskId: z.string().describe("The ID of the task to move"),
         status: z.enum(["todo", "in-progress", "done"]).describe("New status"),
-        position: z.number().optional().describe("New position (fractional index)"),
+        position: z
+          .number()
+          .optional()
+          .describe("New position (fractional index)"),
       },
     },
     async ({ taskId, status, position }) => {
       const client = getConvexClient(token);
-      await client.mutation(api.kanban.moveTask, { 
-        id: taskId as any, 
-        status, 
-        position: position ?? 1024 
+      await client.mutation(api.kanban.moveTask, {
+        id: taskId as any,
+        status,
+        position: position ?? 1024,
       });
-      return { 
-        content: [{ type: "text", text: `✅ Task moved to ${status} successfully.` }] 
+      return {
+        content: [
+          { type: "text", text: `✅ Task moved to ${status} successfully.` },
+        ],
       };
-    }
+    },
   );
 }

@@ -1,53 +1,99 @@
 import React from "react";
 import { Plus, X, Text } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@workspace/ui/components/tabs";
 import { Label } from "@workspace/ui/components/label";
-import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from "@workspace/ui/components/combobox";
-import { Parameter, Schema, ProcessingStep, JSONValue, JSONObject } from "@/types/canvas";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@workspace/ui/components/combobox";
+import {
+  Parameter,
+  Schema,
+  ProcessingStep,
+  JSONValue,
+  JSONObject,
+} from "@/types/canvas";
 import { generateId, LocalInput, LocalTextarea } from "./shared";
 
 // --- Processing Steps Editor ---
 
-export const ProcessingStepsEditor = ({ steps, onChange }: { steps: ProcessingStep[], onChange: (steps: ProcessingStep[]) => void }) => {
+export const ProcessingStepsEditor = ({
+  steps,
+  onChange,
+}: {
+  steps: ProcessingStep[];
+  onChange: (steps: ProcessingStep[]) => void;
+}) => {
   const addStep = () => {
-    onChange([...steps, { id: generateId(), text: "", operation: "passthrough" }]);
+    onChange([
+      ...steps,
+      { id: generateId(), text: "", operation: "passthrough" },
+    ]);
   };
 
   const updateStep = (id: string, text: string) => {
-    onChange(steps.map(s => s.id === id ? { ...s, text } : s));
+    onChange(steps.map((s) => (s.id === id ? { ...s, text } : s)));
   };
 
-  const updateOperation = (id: string, operation: ProcessingStep["operation"]) => {
-    onChange(steps.map(s => s.id === id ? { ...s, operation } : s));
+  const updateOperation = (
+    id: string,
+    operation: ProcessingStep["operation"],
+  ) => {
+    onChange(steps.map((s) => (s.id === id ? { ...s, operation } : s)));
   };
 
   const updateConfig = (id: string, raw: string) => {
     try {
       const config = raw.trim() ? JSON.parse(raw) : {};
-      onChange(steps.map(s => s.id === id ? { ...s, config } : s));
+      onChange(steps.map((s) => (s.id === id ? { ...s, config } : s)));
     } catch {
       // Keep the last valid config while the user is typing JSON.
     }
   };
 
   const removeStep = (id: string) => {
-    onChange(steps.filter(s => s.id !== id));
+    onChange(steps.filter((s) => s.id !== id));
   };
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Processing Steps</span>
-        <Button size="sm" variant="secondary" className="h-7 text-[10px] gap-1 rounded-full px-3" onClick={addStep}>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Processing Steps
+        </span>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-7 text-[10px] gap-1 rounded-full px-3"
+          onClick={addStep}
+        >
           <Plus size={12} /> Add Step
         </Button>
       </div>
-      
+
       <div className="flex flex-col gap-2.5 mt-1">
         {steps.map((step, index) => (
-          <div key={step.id} className="flex flex-col gap-2 rounded-lg border bg-background/50 p-2.5 group/step transition-all hover:border-primary/30 hover:shadow-sm">
+          <div
+            key={step.id}
+            className="flex flex-col gap-2 rounded-lg border bg-background/50 p-2.5 group/step transition-all hover:border-primary/30 hover:shadow-sm"
+          >
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-muted-foreground">
                 {index + 1}
@@ -56,17 +102,50 @@ export const ProcessingStepsEditor = ({ steps, onChange }: { steps: ProcessingSt
                 className="h-7 text-xs flex-1 nodrag bg-background border-none shadow-none focus-visible:ring-1"
                 placeholder="Describe this step..."
                 value={step.text || ""}
-                onBlur={e => updateStep(step.id, e.target.value)}
+                onBlur={(e) => updateStep(step.id, e.target.value)}
               />
-              <Select value={step.operation || "passthrough"} onValueChange={(value) => updateOperation(step.id, value as ProcessingStep["operation"])}>
-                <SelectTrigger className="h-7 w-[120px] text-xs nodrag bg-secondary/50 border-none"><SelectValue /></SelectTrigger>
+              <Select
+                value={step.operation || "passthrough"}
+                onValueChange={(value) =>
+                  updateOperation(step.id, value as ProcessingStep["operation"])
+                }
+              >
+                <SelectTrigger className="h-7 w-[120px] text-xs nodrag bg-secondary/50 border-none">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {['passthrough', 'validate', 'pick', 'omit', 'rename', 'set', 'filter', 'map', 'db_get', 'db_get_many', 'db_insert', 'db_update', 'db_delete', 'return'].map(operation => (
-                    <SelectItem key={operation} value={operation} className="text-xs">{operation}</SelectItem>
+                  {[
+                    "passthrough",
+                    "validate",
+                    "pick",
+                    "omit",
+                    "rename",
+                    "set",
+                    "filter",
+                    "map",
+                    "db_get",
+                    "db_get_many",
+                    "db_insert",
+                    "db_update",
+                    "db_delete",
+                    "return",
+                  ].map((operation) => (
+                    <SelectItem
+                      key={operation}
+                      value={operation}
+                      className="text-xs"
+                    >
+                      {operation}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover/step:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 transition-all rounded-full" onClick={() => removeStep(step.id)}>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 opacity-0 group-hover/step:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 transition-all rounded-full"
+                onClick={() => removeStep(step.id)}
+              >
                 <X size={14} />
               </Button>
             </div>
@@ -74,9 +153,11 @@ export const ProcessingStepsEditor = ({ steps, onChange }: { steps: ProcessingSt
               <div className="pl-7 pr-9">
                 <LocalTextarea
                   className="min-h-[48px] text-[11px] p-2 nodrag bg-secondary/30 font-mono border-dashed border-secondary-foreground/20 focus-visible:ring-1 focus-visible:border-solid rounded-md resize-none"
-                  placeholder={'Config JSON, e.g. {"tableRef":"users-ref","where":{"id":"$request.params.userId"}}'}
+                  placeholder={
+                    'Config JSON, e.g. {"tableRef":"users-ref","where":{"id":"$request.params.userId"}}'
+                  }
                   value={JSON.stringify(step.config || {}, null, 2)}
-                  onBlur={e => updateConfig(step.id, e.target.value)}
+                  onBlur={(e) => updateConfig(step.id, e.target.value)}
                 />
               </div>
             )}
@@ -89,100 +170,162 @@ export const ProcessingStepsEditor = ({ steps, onChange }: { steps: ProcessingSt
 
 // --- Parameter / Schema Editor ---
 
-export const ParameterEditor = ({ 
-  title, 
-  parameters, 
+export const ParameterEditor = ({
+  title,
+  parameters,
   onChange,
   fieldOptions,
-}: { 
-  title: string, 
-  parameters: Parameter[], 
-  onChange: (params: Parameter[]) => void,
-  fieldOptions?: string[],
+}: {
+  title: string;
+  parameters: Parameter[];
+  onChange: (params: Parameter[]) => void;
+  fieldOptions?: string[];
 }) => {
   const addParam = () => {
-    onChange([...parameters, { id: generateId(), name: "", type: "string", required: true }]);
+    onChange([
+      ...parameters,
+      { id: generateId(), name: "", type: "string", required: true },
+    ]);
   };
 
   const updateParam = (id: string, changes: Partial<Parameter>) => {
-    onChange(parameters.map(p => p.id === id ? { ...p, ...changes } : p));
+    onChange(parameters.map((p) => (p.id === id ? { ...p, ...changes } : p)));
   };
 
   const removeParam = (id: string) => {
-    onChange(parameters.filter(p => p.id !== id));
+    onChange(parameters.filter((p) => p.id !== id));
   };
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
-        <Button size="sm" variant="secondary" className="h-7 text-[10px] gap-1 rounded-full px-3" onClick={addParam}>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </span>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-7 text-[10px] gap-1 rounded-full px-3"
+          onClick={addParam}
+        >
           <Plus size={12} /> Add Field
         </Button>
       </div>
-      
+
       <div className="flex flex-col gap-2.5 mt-1">
         {parameters.map((p) => (
-          <div key={p.id} className="flex flex-col gap-2 rounded-lg border bg-background/50 p-2.5 relative group/param transition-all hover:border-primary/30 hover:shadow-sm">
+          <div
+            key={p.id}
+            className="flex flex-col gap-2 rounded-lg border bg-background/50 p-2.5 relative group/param transition-all hover:border-primary/30 hover:shadow-sm"
+          >
             <div className="flex items-center gap-2">
               {fieldOptions ? (
-                <Combobox value={p.name || ""} onValueChange={(value) => { if (value !== null) updateParam(p.id, { name: value }); }}>
-                  <ComboboxInput className="h-7 text-xs flex-1 nodrag bg-background font-mono border-none shadow-none focus-visible:ring-1" placeholder="Select table field" />
+                <Combobox
+                  value={p.name || ""}
+                  onValueChange={(value) => {
+                    if (value !== null) updateParam(p.id, { name: value });
+                  }}
+                >
+                  <ComboboxInput
+                    className="h-7 text-xs flex-1 nodrag bg-background font-mono border-none shadow-none focus-visible:ring-1"
+                    placeholder="Select table field"
+                  />
                   <ComboboxContent>
                     <ComboboxList>
-                      <ComboboxEmpty className="bg-sidebar">No fields found on the selected table.</ComboboxEmpty>
-                      {fieldOptions.map((field) => <ComboboxItem key={field} value={field}>{field}</ComboboxItem>)}
+                      <ComboboxEmpty className="bg-sidebar">
+                        No fields found on the selected table.
+                      </ComboboxEmpty>
+                      {fieldOptions.map((field) => (
+                        <ComboboxItem key={field} value={field}>
+                          {field}
+                        </ComboboxItem>
+                      ))}
                     </ComboboxList>
                   </ComboboxContent>
                 </Combobox>
               ) : (
-                <LocalInput 
-                  className="h-7 text-xs flex-1 nodrag bg-background font-mono border-none shadow-none focus-visible:ring-1 placeholder:font-sans" 
-                  placeholder="Field name" 
-                  value={p.name || ""} 
-                  onBlur={e => updateParam(p.id, { name: e.target.value })} 
+                <LocalInput
+                  className="h-7 text-xs flex-1 nodrag bg-background font-mono border-none shadow-none focus-visible:ring-1 placeholder:font-sans"
+                  placeholder="Field name"
+                  value={p.name || ""}
+                  onBlur={(e) => updateParam(p.id, { name: e.target.value })}
                 />
               )}
-              <Select value={p.type} onValueChange={v => updateParam(p.id, { type: v })}>
+              <Select
+                value={p.type}
+                onValueChange={(v) => updateParam(p.id, { type: v })}
+              >
                 <SelectTrigger className="h-7 w-[95px] text-xs py-0 nodrag bg-secondary/50 border-none font-mono">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="string" className="text-xs">string</SelectItem>
-                  <SelectItem value="number" className="text-xs">number</SelectItem>
-                  <SelectItem value="boolean" className="text-xs">boolean</SelectItem>
-                  <SelectItem value="UUID" className="text-xs">UUID</SelectItem>
-                  <SelectItem value="timestamp" className="text-xs">timestamp</SelectItem>
-                  <SelectItem value="object" className="text-xs">object</SelectItem>
-                  <SelectItem value="array" className="text-xs">array</SelectItem>
+                  <SelectItem value="string" className="text-xs">
+                    string
+                  </SelectItem>
+                  <SelectItem value="number" className="text-xs">
+                    number
+                  </SelectItem>
+                  <SelectItem value="boolean" className="text-xs">
+                    boolean
+                  </SelectItem>
+                  <SelectItem value="UUID" className="text-xs">
+                    UUID
+                  </SelectItem>
+                  <SelectItem value="timestamp" className="text-xs">
+                    timestamp
+                  </SelectItem>
+                  <SelectItem value="object" className="text-xs">
+                    object
+                  </SelectItem>
+                  <SelectItem value="array" className="text-xs">
+                    array
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 className={`h-7 px-2.5 text-[10px] nodrag rounded-full transition-colors ${p.required ? 'text-primary font-bold bg-primary/10 hover:bg-primary/20' : 'text-muted-foreground bg-secondary/50 hover:bg-secondary'}`}
-                 onClick={() => updateParam(p.id, { required: !p.required })}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 px-2.5 text-[10px] nodrag rounded-full transition-colors ${p.required ? "text-primary font-bold bg-primary/10 hover:bg-primary/20" : "text-muted-foreground bg-secondary/50 hover:bg-secondary"}`}
+                onClick={() => updateParam(p.id, { required: !p.required })}
               >
                 {p.required ? "REQUIRED" : "OPTIONAL"}
               </Button>
               {p.description === undefined && (
-                <Button size="icon" variant="ghost" title="Add Description" className="h-7 w-7 opacity-0 group-hover/param:opacity-100 text-muted-foreground hover:bg-secondary shrink-0 transition-all rounded-full" onClick={() => updateParam(p.id, { description: "" })}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Add Description"
+                  className="h-7 w-7 opacity-0 group-hover/param:opacity-100 text-muted-foreground hover:bg-secondary shrink-0 transition-all rounded-full"
+                  onClick={() => updateParam(p.id, { description: "" })}
+                >
                   <Text size={14} />
                 </Button>
               )}
-              <Button size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover/param:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 transition-all rounded-full" onClick={() => removeParam(p.id)}>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 opacity-0 group-hover/param:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0 transition-all rounded-full"
+                onClick={() => removeParam(p.id)}
+              >
                 <X size={14} />
               </Button>
             </div>
             {p.description !== undefined && (
               <div className="relative w-full">
-                <LocalInput 
-                   className="h-6 text-[10px] pl-2.5 pr-6 w-full nodrag bg-transparent border-none shadow-none text-muted-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:bg-secondary/30 rounded" 
-                   placeholder="Add a description..." 
-                   value={p.description || ""} 
-                   onBlur={e => updateParam(p.id, { description: e.target.value })} 
+                <LocalInput
+                  className="h-6 text-[10px] pl-2.5 pr-6 w-full nodrag bg-transparent border-none shadow-none text-muted-foreground placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:bg-secondary/30 rounded"
+                  placeholder="Add a description..."
+                  value={p.description || ""}
+                  onBlur={(e) =>
+                    updateParam(p.id, { description: e.target.value })
+                  }
                 />
-                <Button size="icon" variant="ghost" className="h-5 w-5 absolute right-0.5 top-0.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 shrink-0 transition-all rounded" onClick={() => updateParam(p.id, { description: undefined })}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-5 w-5 absolute right-0.5 top-0.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 shrink-0 transition-all rounded"
+                  onClick={() => updateParam(p.id, { description: undefined })}
+                >
                   <X size={10} />
                 </Button>
               </div>
@@ -213,7 +356,7 @@ export const SchemaEditor = ({
   const handleRawChange = (val: string) => {
     setRawInput(val);
     onChange({ ...safeSchema, rawJson: val });
-    
+
     if (!val.trim()) {
       setJsonError(null);
       return;
@@ -229,12 +372,14 @@ export const SchemaEditor = ({
   return (
     <div className="flex flex-col gap-2 border p-3 rounded-lg bg-secondary/5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </span>
       </div>
-      
+
       <div className="flex flex-col gap-2 mt-1">
         <LocalTextarea
-          className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? "border-destructive focus-visible:ring-destructive" : ""}`}
           placeholder={'{\n  "key": "value"\n}'}
           value={rawInput !== undefined ? rawInput : initialString}
           onChange={(e) => handleRawChange(e.target.value)}
@@ -260,13 +405,16 @@ export const JsonPayloadEditor = ({
   value: JSONValue | undefined;
   onChange: (value: JSONValue) => void;
 }) => {
-  const initialString = value !== undefined ? JSON.stringify(value, null, 2) : (schema?.rawJson || "");
+  const initialString =
+    value !== undefined
+      ? JSON.stringify(value, null, 2)
+      : schema?.rawJson || "";
   const [rawInput, setRawInput] = React.useState<string | undefined>(undefined);
   const [jsonError, setJsonError] = React.useState<string | null>(null);
 
   const handleRawChange = (val: string) => {
     setRawInput(val);
-    
+
     if (!val.trim()) {
       setJsonError(null);
       onChange({});
@@ -294,17 +442,24 @@ export const JsonPayloadEditor = ({
   return (
     <div className="flex flex-col gap-2 border p-3 rounded-lg bg-secondary/5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </span>
         {schema && value === undefined && (
-          <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 shadow-sm" onClick={generateMockFromSchema}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-[10px] px-2 shadow-sm"
+            onClick={generateMockFromSchema}
+          >
             Infer Mock from Schema
           </Button>
         )}
       </div>
-      
+
       <div className="flex flex-col gap-2 mt-1">
         <LocalTextarea
-          className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`min-h-[120px] text-xs font-mono resize-y bg-background focus-visible:ring-1 ${jsonError ? "border-destructive focus-visible:ring-destructive" : ""}`}
           placeholder={'{\n  "key": "value"\n}'}
           value={rawInput !== undefined ? rawInput : initialString}
           onChange={(e) => handleRawChange(e.target.value)}

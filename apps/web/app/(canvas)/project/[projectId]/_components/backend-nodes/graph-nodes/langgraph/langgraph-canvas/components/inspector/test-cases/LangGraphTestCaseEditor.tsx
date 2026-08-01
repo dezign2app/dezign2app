@@ -47,8 +47,11 @@ export type LangGraphTestCaseEditorProps = {
   onSave: (updated: SimulationTestCase) => void;
   onDelete: () => void;
   onRunTestCase?: (
-    testCase: SimulationTestCase
-  ) => Promise<SimulationTestCaseResult | void> | SimulationTestCaseResult | void;
+    testCase: SimulationTestCase,
+  ) =>
+    | Promise<SimulationTestCaseResult | void>
+    | SimulationTestCaseResult
+    | void;
 };
 
 export const LangGraphTestCaseEditor = ({
@@ -65,18 +68,22 @@ export const LangGraphTestCaseEditor = ({
 }: LangGraphTestCaseEditorProps) => {
   const [name, setName] = useState(testCase.name);
   const [targetRouteId, setTargetRouteId] = useState(testCase.targetRouteId);
-  const [body, setBody] = useState<JSONValue | undefined>(testCase.request?.body);
+  const [body, setBody] = useState<JSONValue | undefined>(
+    testCase.request?.body,
+  );
   const [initialState, setInitialState] = useState<Record<string, JSONValue>>(
-    (testCase.initialState as Record<string, JSONValue> | undefined) || defaultState
+    (testCase.initialState as Record<string, JSONValue> | undefined) ||
+      defaultState,
   );
   const [routerChoices, setRouterChoices] = useState<Record<string, string>>(
-    testCase.routerChoices || {}
+    testCase.routerChoices || {},
   );
   const [mocks, setMocks] = useState<
     Record<string, { returnData: JSONValue; status: number }>
   >(testCase.mocks || {});
   const [expectedState, setExpectedState] = useState<Record<string, JSONValue>>(
-    (testCase.expectedState as Record<string, JSONValue> | undefined) || defaultState
+    (testCase.expectedState as Record<string, JSONValue> | undefined) ||
+      defaultState,
   );
 
   useEffect(() => {
@@ -84,12 +91,14 @@ export const LangGraphTestCaseEditor = ({
     setTargetRouteId(testCase.targetRouteId);
     setBody(testCase.request?.body);
     setInitialState(
-      (testCase.initialState as Record<string, JSONValue> | undefined) || defaultState
+      (testCase.initialState as Record<string, JSONValue> | undefined) ||
+        defaultState,
     );
     setRouterChoices(testCase.routerChoices || {});
     setMocks(testCase.mocks || {});
     setExpectedState(
-      (testCase.expectedState as Record<string, JSONValue> | undefined) || defaultState
+      (testCase.expectedState as Record<string, JSONValue> | undefined) ||
+        defaultState,
     );
   }, [
     testCase.id,
@@ -139,7 +148,7 @@ export const LangGraphTestCaseEditor = ({
       ...testCase,
       routerChoices,
     }),
-    [testCase, routerChoices]
+    [testCase, routerChoices],
   );
 
   const pathPreview = useMemo(
@@ -150,7 +159,7 @@ export const LangGraphTestCaseEditor = ({
         graphSteps,
         selectedCase: currentCaseForTrace,
       }),
-    [graphEdges, graphNodeLabels, graphSteps, currentCaseForTrace]
+    [graphEdges, graphNodeLabels, graphSteps, currentCaseForTrace],
   );
 
   return (
@@ -201,12 +210,15 @@ export const LangGraphTestCaseEditor = ({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Test Case</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this test case? This action cannot be undone.
+                  Are you sure you want to delete this test case? This action
+                  cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDelete()}>Delete</AlertDialogAction>
+                <AlertDialogAction onClick={() => onDelete()}>
+                  Delete
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -215,7 +227,9 @@ export const LangGraphTestCaseEditor = ({
 
       {/* Test Case Name */}
       <div className="flex flex-col gap-1.5">
-        <Label className="text-xs font-mono text-muted-foreground">Test Case Name</Label>
+        <Label className="text-xs font-mono text-muted-foreground">
+          Test Case Name
+        </Label>
         <Input
           className="h-7 text-xs bg-background font-medium"
           value={name}
@@ -232,7 +246,9 @@ export const LangGraphTestCaseEditor = ({
           </Label>
           <Select
             value={targetRouteId || "none"}
-            onValueChange={(value) => setTargetRouteId(value === "none" ? undefined : value)}
+            onValueChange={(value) =>
+              setTargetRouteId(value === "none" ? undefined : value)
+            }
           >
             <SelectTrigger className="h-7 text-xs bg-background">
               <SelectValue placeholder="Select route" />
@@ -270,7 +286,8 @@ export const LangGraphTestCaseEditor = ({
       />
 
       {/* Sequential Execution Steps & Router Choices */}
-      {pathPreview.filter((node) => node.id !== "START" && node.id !== "END").length > 0 && (
+      {pathPreview.filter((node) => node.id !== "START" && node.id !== "END")
+        .length > 0 && (
         <div className="flex flex-col gap-3 pt-2">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Graph Execution Steps & Mock Outputs
@@ -280,13 +297,18 @@ export const LangGraphTestCaseEditor = ({
             .map((node) => {
               const step = graphSteps.find((s) => s.id === node.id);
               const isRouter = step?.type === "router";
-              const isOutputNode = node.id.startsWith("output_") || node.id.startsWith("channel_");
+              const isOutputNode =
+                node.id.startsWith("output_") || node.id.startsWith("channel_");
 
               if (isRouter) {
                 return (
-                  <div key={node.id} className="flex flex-col gap-2 border rounded-lg p-3 bg-background/50">
+                  <div
+                    key={node.id}
+                    className="flex flex-col gap-2 border rounded-lg p-3 bg-background/50"
+                  >
                     <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1">
-                      <GitBranch className="w-3.5 h-3.5" /> {node.label} · Router Choice
+                      <GitBranch className="w-3.5 h-3.5" /> {node.label} ·
+                      Router Choice
                     </div>
                     <Select
                       value={routerChoices[node.id] || "auto"}
@@ -301,7 +323,9 @@ export const LangGraphTestCaseEditor = ({
                         <SelectValue placeholder="Evaluate conditions automatically" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto">Evaluate conditions automatically</SelectItem>
+                        <SelectItem value="auto">
+                          Evaluate conditions automatically
+                        </SelectItem>
                         {(step.routerConfig?.branches || []).map((branch) => (
                           <SelectItem key={branch.id} value={branch.id}>
                             {branch.label || branch.id}
@@ -320,7 +344,10 @@ export const LangGraphTestCaseEditor = ({
 
               const mock = mocks[node.id];
               return (
-                <div key={node.id} className="flex flex-col gap-2 pt-3 border-t">
+                <div
+                  key={node.id}
+                  className="flex flex-col gap-2 pt-3 border-t"
+                >
                   <h5 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
                     <span className="normal-case font-mono bg-background border px-1.5 py-0.5 rounded text-[9px] text-foreground">
                       {node.label}
@@ -330,14 +357,18 @@ export const LangGraphTestCaseEditor = ({
                     </span>
                   </h5>
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs font-mono text-muted-foreground w-24">Status</Label>
+                    <Label className="text-xs font-mono text-muted-foreground w-24">
+                      Status
+                    </Label>
                     <Input
                       type="number"
                       placeholder="200"
                       className="h-7 text-xs font-mono bg-background w-24"
                       value={mock?.status ?? 200}
                       onChange={(e) => {
-                        const val = e.target.value ? Number(e.target.value) : 200;
+                        const val = e.target.value
+                          ? Number(e.target.value)
+                          : 200;
                         setMocks((prev) => ({
                           ...prev,
                           [node.id]: {

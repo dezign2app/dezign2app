@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  Network, Plug, Sparkles, Layers, Check, RefreshCw, Plus, Trash2, ArrowRight, Zap
+  Network,
+  Plug,
+  Sparkles,
+  Layers,
+  Check,
+  RefreshCw,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Zap,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -14,7 +23,10 @@ interface LangGraphRouteConfigProps {
   nodeId: string;
 }
 
-export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, nodeId }) => {
+export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({
+  id,
+  nodeId,
+}) => {
   const edges = useBackendCanvasStore((s) => s.edges);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
@@ -23,7 +35,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
 
   const targetEdge = edges.find((e) => e.id === id);
   const targetNode = nodes.find((n) => n.id === nodeId);
-  const sourceNode = targetEdge ? nodes.find((n) => n.id === targetEdge.source) : null;
+  const sourceNode = targetEdge
+    ? nodes.find((n) => n.id === targetEdge.source)
+    : null;
 
   // Resolve caller details
   let routeLabel = sourceNode?.data?.label || "Connected Route";
@@ -48,35 +62,67 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
     }
   }
 
-  const stateChannels: LangGraphStateChannel[] = targetNode?.data?.stateChannels || [
-    { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+  const stateChannels: LangGraphStateChannel[] = targetNode?.data
+    ?.stateChannels || [
+    {
+      key: "messages",
+      type: "messages",
+      reducer: "add_messages",
+      defaultValue: [],
+    },
   ];
 
-  const existingMapping: Record<string, string> = targetEdge?.data?.payloadMapping || {};
-  const [mapping, setMapping] = useState<Record<string, string>>(existingMapping);
-  const [preInvokeMode, setPreInvokeMode] = useState<LogicMode>(targetEdge?.data?.preInvokeLogicMode || "natural_language");
-  const [preInvokePrompt, setPreInvokePrompt] = useState<string>(targetEdge?.data?.preInvokePrompt || "");
-  const [preInvokeCode, setPreInvokeCode] = useState<string>(targetEdge?.data?.preInvokeCode || "");
-  
-  // Output & Response Config State
-  const [responseExecutionMode, setResponseExecutionMode] = useState<"sync" | "stream" | "async_ack">(targetEdge?.data?.responseExecutionMode || "sync");
-  const [responseOutputMode, setResponseOutputMode] = useState<"full" | "selected">(targetEdge?.data?.responseOutputMode || "full");
-  const [responseFields, setResponseFields] = useState<string[]>(targetEdge?.data?.responseFields || []);
-  const [postInvokeMode, setPostInvokeMode] = useState<LogicMode>(targetEdge?.data?.postInvokeLogicMode || "natural_language");
-  const [postInvokePrompt, setPostInvokePrompt] = useState<string>(targetEdge?.data?.postInvokePrompt || "");
-  const [postInvokeCode, setPostInvokeCode] = useState<string>(targetEdge?.data?.postInvokeCode || "");
+  const existingMapping: Record<string, string> =
+    targetEdge?.data?.payloadMapping || {};
+  const [mapping, setMapping] =
+    useState<Record<string, string>>(existingMapping);
+  const [preInvokeMode, setPreInvokeMode] = useState<LogicMode>(
+    targetEdge?.data?.preInvokeLogicMode || "natural_language",
+  );
+  const [preInvokePrompt, setPreInvokePrompt] = useState<string>(
+    targetEdge?.data?.preInvokePrompt || "",
+  );
+  const [preInvokeCode, setPreInvokeCode] = useState<string>(
+    targetEdge?.data?.preInvokeCode || "",
+  );
 
-  const [customFields, setCustomFields] = useState<Array<{ key: string; value: string }>>([]);
+  // Output & Response Config State
+  const [responseExecutionMode, setResponseExecutionMode] = useState<
+    "sync" | "stream" | "async_ack"
+  >(targetEdge?.data?.responseExecutionMode || "sync");
+  const [responseOutputMode, setResponseOutputMode] = useState<
+    "full" | "selected"
+  >(targetEdge?.data?.responseOutputMode || "full");
+  const [responseFields, setResponseFields] = useState<string[]>(
+    targetEdge?.data?.responseFields || [],
+  );
+  const [postInvokeMode, setPostInvokeMode] = useState<LogicMode>(
+    targetEdge?.data?.postInvokeLogicMode || "natural_language",
+  );
+  const [postInvokePrompt, setPostInvokePrompt] = useState<string>(
+    targetEdge?.data?.postInvokePrompt || "",
+  );
+  const [postInvokeCode, setPostInvokeCode] = useState<string>(
+    targetEdge?.data?.postInvokeCode || "",
+  );
+
+  const [customFields, setCustomFields] = useState<
+    Array<{ key: string; value: string }>
+  >([]);
 
   useEffect(() => {
     setMapping(targetEdge?.data?.payloadMapping || {});
-    setPreInvokeMode(targetEdge?.data?.preInvokeLogicMode || "natural_language");
+    setPreInvokeMode(
+      targetEdge?.data?.preInvokeLogicMode || "natural_language",
+    );
     setPreInvokePrompt(targetEdge?.data?.preInvokePrompt || "");
     setPreInvokeCode(targetEdge?.data?.preInvokeCode || "");
     setResponseExecutionMode(targetEdge?.data?.responseExecutionMode || "sync");
     setResponseOutputMode(targetEdge?.data?.responseOutputMode || "full");
     setResponseFields(targetEdge?.data?.responseFields || []);
-    setPostInvokeMode(targetEdge?.data?.postInvokeLogicMode || "natural_language");
+    setPostInvokeMode(
+      targetEdge?.data?.postInvokeLogicMode || "natural_language",
+    );
     setPostInvokePrompt(targetEdge?.data?.postInvokePrompt || "");
     setPostInvokeCode(targetEdge?.data?.postInvokeCode || "");
   }, [
@@ -96,7 +142,7 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
   // Autosave Effect
   useEffect(() => {
     if (!targetEdge) return;
-    
+
     const finalMapping: Record<string, string> = { ...mapping };
     customFields.forEach((cf) => {
       if (cf.key.trim()) {
@@ -105,14 +151,16 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
     });
 
     const currentMapping = targetEdge.data?.payloadMapping || {};
-    const isDifferent = 
+    const isDifferent =
       JSON.stringify(currentMapping) !== JSON.stringify(finalMapping) ||
       targetEdge.data?.preInvokeLogicMode !== preInvokeMode ||
       (targetEdge.data?.preInvokePrompt || "") !== preInvokePrompt.trim() ||
       (targetEdge.data?.preInvokeCode || "") !== preInvokeCode.trim() ||
-      (targetEdge.data?.responseExecutionMode || "sync") !== responseExecutionMode ||
+      (targetEdge.data?.responseExecutionMode || "sync") !==
+        responseExecutionMode ||
       (targetEdge.data?.responseOutputMode || "full") !== responseOutputMode ||
-      JSON.stringify(targetEdge.data?.responseFields || []) !== JSON.stringify(responseFields) ||
+      JSON.stringify(targetEdge.data?.responseFields || []) !==
+        JSON.stringify(responseFields) ||
       targetEdge.data?.postInvokeLogicMode !== postInvokeMode ||
       (targetEdge.data?.postInvokePrompt || "") !== postInvokePrompt.trim() ||
       (targetEdge.data?.postInvokeCode || "") !== postInvokeCode.trim();
@@ -183,7 +231,11 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
     setCustomFields((prev) => [...prev, { key: "", value: "body." }]);
   };
 
-  const updateCustomField = (index: number, field: "key" | "value", val: string) => {
+  const updateCustomField = (
+    index: number,
+    field: "key" | "value",
+    val: string,
+  ) => {
     setCustomFields((prev) => {
       const next = [...prev];
       if (next[index]) {
@@ -214,9 +266,14 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
                 {method}
               </span>
             </div>
-            <h2 className="text-lg font-bold truncate text-foreground">{routeLabel}</h2>
+            <h2 className="text-lg font-bold truncate text-foreground">
+              {routeLabel}
+            </h2>
             <p className="text-xs text-muted-foreground">
-              Invokes agent: <span className="text-foreground font-semibold">{targetNode?.data?.label || "LangGraph Node"}</span>
+              Invokes agent:{" "}
+              <span className="text-foreground font-semibold">
+                {targetNode?.data?.label || "LangGraph Node"}
+              </span>
             </p>
           </div>
         </div>
@@ -225,10 +282,18 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
       {/* Overview Card */}
       <div className="p-3.5 rounded-xl bg-secondary/30 border border-border/50 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
-          {kind === "event" ? <Zap className="w-4 h-4 text-purple-400" /> : <Plug className="w-4 h-4 text-primary" />}
-          <span className="font-semibold text-foreground">{sourceNode?.data?.label || "Source Node"}</span>
+          {kind === "event" ? (
+            <Zap className="w-4 h-4 text-purple-400" />
+          ) : (
+            <Plug className="w-4 h-4 text-primary" />
+          )}
+          <span className="font-semibold text-foreground">
+            {sourceNode?.data?.label || "Source Node"}
+          </span>
           <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="font-semibold text-primary">{targetNode?.data?.label || "LangGraph Node"}</span>
+          <span className="font-semibold text-primary">
+            {targetNode?.data?.label || "LangGraph Node"}
+          </span>
         </div>
         <span className="text-[10px] font-mono text-muted-foreground bg-background/50 px-2 py-0.5 rounded border border-border/40">
           Edge: {id.slice(0, 8)}
@@ -240,7 +305,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">State Channels Payload Mapping</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              State Channels Payload Mapping
+            </h3>
           </div>
           <Button
             variant="outline"
@@ -255,20 +322,26 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Map incoming request body/headers (`req.body`, `req.headers`) to graph state channels defined on this LangGraph agent.
+          Map incoming request body/headers (`req.body`, `req.headers`) to graph
+          state channels defined on this LangGraph agent.
         </p>
 
         {/* Channels List */}
         <div className="flex flex-col gap-2 bg-secondary/20 p-3 rounded-xl border border-border/50">
           <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
             <span className="col-span-5">Graph State Channel</span>
-            <span className="col-span-6">Source Payload Accessor (`req.body...`)</span>
+            <span className="col-span-6">
+              Source Payload Accessor (`req.body...`)
+            </span>
             <span className="col-span-1 text-right">Clear</span>
           </div>
 
           {stateChannels.map((ch) => {
             return (
-              <div key={ch.key} className="grid grid-cols-12 gap-2 items-center text-xs">
+              <div
+                key={ch.key}
+                className="grid grid-cols-12 gap-2 items-center text-xs"
+              >
                 <div className="col-span-5 flex items-center gap-1.5 min-w-0">
                   <span className="font-mono font-bold text-primary truncate bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 text-[11px]">
                     {ch.key}
@@ -281,7 +354,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
                   <Input
                     value={mapping[ch.key] ?? ""}
                     placeholder={`e.g. body.${ch.key} or headers.x-key`}
-                    onChange={(e) => handleMappingChange(ch.key, e.target.value)}
+                    onChange={(e) =>
+                      handleMappingChange(ch.key, e.target.value)
+                    }
                     className="h-8 text-xs font-mono bg-background/80"
                   />
                 </div>
@@ -304,12 +379,17 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
 
           {/* Custom Additional Fields */}
           {customFields.map((cf, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-2 items-center text-xs pt-1 border-t border-border/30">
+            <div
+              key={idx}
+              className="grid grid-cols-12 gap-2 items-center text-xs pt-1 border-t border-border/30"
+            >
               <div className="col-span-5">
                 <Input
                   value={cf.key}
                   placeholder="Custom state key"
-                  onChange={(e) => updateCustomField(idx, "key", e.target.value)}
+                  onChange={(e) =>
+                    updateCustomField(idx, "key", e.target.value)
+                  }
                   className="h-8 text-xs font-mono bg-background/80"
                 />
               </div>
@@ -317,7 +397,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
                 <Input
                   value={cf.value}
                   placeholder="Source accessor e.g. body.custom"
-                  onChange={(e) => updateCustomField(idx, "value", e.target.value)}
+                  onChange={(e) =>
+                    updateCustomField(idx, "value", e.target.value)
+                  }
                   className="h-8 text-xs font-mono bg-background/80"
                 />
               </div>
@@ -374,7 +456,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
 
         {/* Delivery Execution Mode Pills */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-semibold text-muted-foreground">Execution Delivery Mode</label>
+          <label className="text-[11px] font-semibold text-muted-foreground">
+            Execution Delivery Mode
+          </label>
           <div className="grid grid-cols-3 gap-1.5 bg-background/60 p-1 rounded-lg border border-border/50 text-xs">
             <button
               type="button"
@@ -416,7 +500,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
         {responseExecutionMode === "sync" && (
           <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-semibold text-muted-foreground">Response Payload Fields</label>
+              <label className="text-[11px] font-semibold text-muted-foreground">
+                Response Payload Fields
+              </label>
               <div className="flex items-center gap-1 text-[10px]">
                 <button
                   type="button"
@@ -453,7 +539,9 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
                       type="button"
                       onClick={() => {
                         if (isSelected) {
-                          setResponseFields(responseFields.filter((f) => f !== ch.key));
+                          setResponseFields(
+                            responseFields.filter((f) => f !== ch.key),
+                          );
                         } else {
                           setResponseFields([...responseFields, ch.key]);
                         }
@@ -464,7 +552,8 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
                           : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary"
                       }`}
                     >
-                      {isSelected ? "✓ " : "+ "}{ch.key}
+                      {isSelected ? "✓ " : "+ "}
+                      {ch.key}
                     </button>
                   );
                 })}
@@ -488,7 +577,6 @@ export const LangGraphRouteConfig: React.FC<LangGraphRouteConfigProps> = ({ id, 
         codePlaceholder={`// Post-invoke code executes after: const result = await graph.invoke(state)\n// You have access to: req, res, state, result\n// Example:\nresult.messages = result.messages?.slice(-1); // Keep last message only`}
         codeLanguageLabel="TypeScript (Express Post-Processing)"
       />
-
     </div>
   );
 };

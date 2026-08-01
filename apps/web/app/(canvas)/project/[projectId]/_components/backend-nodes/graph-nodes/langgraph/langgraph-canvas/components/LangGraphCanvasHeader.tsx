@@ -1,5 +1,13 @@
 import React from "react";
-import { Network, Save, ArrowLeft, X, Check, Loader2, Code2 } from "lucide-react";
+import {
+  Network,
+  Save,
+  ArrowLeft,
+  X,
+  Check,
+  Loader2,
+  Code2,
+} from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
 import { LocalInput } from "../../../common/shared";
@@ -26,7 +34,12 @@ export function LangGraphCanvasHeader({
   return (
     <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border shrink-0">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" onClick={onClose}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
+          onClick={onClose}
+        >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="p-2 rounded-xl bg-secondary text-foreground border border-border">
@@ -78,14 +91,23 @@ export function LangGraphCanvasHeader({
             Export Code
           </Button>
         )}
-        <Button variant="default" size="sm" className="h-8 font-semibold gap-1.5 px-4" onClick={onSave}>
+        <Button
+          variant="default"
+          size="sm"
+          className="h-8 font-semibold gap-1.5 px-4"
+          onClick={onSave}
+        >
           <Save className="w-4 h-4" /> Save & Close
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onClose}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={onClose}
+        >
           <X className="w-4 h-4" />
         </Button>
       </div>
     </div>
   );
 }
-

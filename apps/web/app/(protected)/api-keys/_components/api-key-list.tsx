@@ -1,18 +1,18 @@
 "use client";
 
-import { 
-  SearchIcon, 
-  KeyIcon, 
-  TrashIcon, 
+import {
+  SearchIcon,
+  KeyIcon,
+  TrashIcon,
   CalendarIcon,
-  FolderIcon
+  FolderIcon,
 } from "lucide-react";
 import { Input } from "@workspace/ui/components/input";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@workspace/ui/components/card";
 import {
   Table,
@@ -37,14 +37,14 @@ interface ApiKeyListProps {
   confirmRevoke: (key: Doc<"api_keys">) => void;
 }
 
-export function ApiKeyList({ 
-  keys, 
-  filteredKeys, 
+export function ApiKeyList({
+  keys,
+  filteredKeys,
   status,
   loadMore,
-  searchQuery, 
-  setSearchQuery, 
-  confirmRevoke 
+  searchQuery,
+  setSearchQuery,
+  confirmRevoke,
 }: ApiKeyListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +57,7 @@ export function ApiKeyList({
           loadMore();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (sentinelRef.current) {
@@ -101,7 +101,9 @@ export function ApiKeyList({
             <div>
               <h3 className="font-medium">No results found</h3>
               <p className="text-sm text-muted-foreground">
-                {searchQuery ? "Try a different search term" : "Generate your first API key to get started"}
+                {searchQuery
+                  ? "Try a different search term"
+                  : "Generate your first API key to get started"}
               </p>
             </div>
           </div>
@@ -118,11 +120,17 @@ export function ApiKeyList({
               </TableHeader>
               <TableBody>
                 {filteredKeys?.map((k) => (
-                  <TableRow key={k._id} className="group hover:bg-muted/20 transition-colors">
+                  <TableRow
+                    key={k._id}
+                    className="group hover:bg-muted/20 transition-colors"
+                  >
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span>{k.name}</span>
-                        <Badge variant="outline" className="w-fit text-xs h-4 px-1 font-normal opacity-70">
+                        <Badge
+                          variant="outline"
+                          className="w-fit text-xs h-4 px-1 font-normal opacity-70"
+                        >
                           active
                         </Badge>
                       </div>
@@ -131,7 +139,9 @@ export function ApiKeyList({
                       {k.projectName ? (
                         <div className="flex items-center gap-1.5">
                           <FolderIcon className="size-3 text-primary/70" />
-                          <span className="font-medium text-foreground/80">{k.projectName}</span>
+                          <span className="font-medium text-foreground/80">
+                            {k.projectName}
+                          </span>
                         </div>
                       ) : (
                         <span className="opacity-50 italic">All projects</span>
@@ -157,11 +167,11 @@ export function ApiKeyList({
             </Table>
           </div>
         )}
-        
+
         {/* Sentinel for Infinite Scroll */}
         {(status === "CanLoadMore" || status === "LoadingMore") && (
-          <div 
-            ref={sentinelRef} 
+          <div
+            ref={sentinelRef}
             className="flex items-center justify-center py-6 mt-2"
           >
             {status === "LoadingMore" && (

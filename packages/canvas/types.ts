@@ -1,5 +1,14 @@
 import type { MessagingResourceType, MessagingNodeType } from "./constants";
-import type { ServiceTechStack, ServiceTechVersion, WebClientTechStack, WebClientTechVersion, DatabaseEngine, DatabaseEngineVersion, DatabaseORM, DatabaseOrmVersion } from "./techStack";
+import type {
+  ServiceTechStack,
+  ServiceTechVersion,
+  WebClientTechStack,
+  WebClientTechVersion,
+  DatabaseEngine,
+  DatabaseEngineVersion,
+  DatabaseORM,
+  DatabaseOrmVersion,
+} from "./techStack";
 export type { MessagingResourceType, MessagingNodeType };
 export * from "./techStack";
 
@@ -67,14 +76,43 @@ export type RejectionCode =
   | "TARGET_NODE_NOT_FOUND";
 
 export type ValidationResult =
-  | { valid: true; edgeType: string; rulesVersion: number; resourceKind?: string }
-  | { valid: false; code: RejectionCode; message: string; suggestion?: string; rulesVersion: number };
+  | {
+      valid: true;
+      edgeType: string;
+      rulesVersion: number;
+      resourceKind?: string;
+    }
+  | {
+      valid: false;
+      code: RejectionCode;
+      message: string;
+      suggestion?: string;
+      rulesVersion: number;
+    };
 
 export type BackendCanvasView = "graph" | "sequence" | "schema";
 
 // --- Backend Canvas Types ---
-import type { KafkaTopic, KafkaBrokerConfig, Endpoint, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider } from "./schemas";
-export type { KafkaTopic, KafkaBrokerConfig, Endpoint, ProcessingStep, WorkerTask, SearchIndexItem, SearchSource, IdentityProvider };
+import type {
+  KafkaTopic,
+  KafkaBrokerConfig,
+  Endpoint,
+  ProcessingStep,
+  WorkerTask,
+  SearchIndexItem,
+  SearchSource,
+  IdentityProvider,
+} from "./schemas";
+export type {
+  KafkaTopic,
+  KafkaBrokerConfig,
+  Endpoint,
+  ProcessingStep,
+  WorkerTask,
+  SearchIndexItem,
+  SearchSource,
+  IdentityProvider,
+};
 
 export type RedisStream = {
   id: string;
@@ -93,8 +131,6 @@ export type SQSQueue = {
   payloadSchema?: Schema;
   version?: string;
 };
-
-
 
 export type RedisStreamsBrokerConfig = {
   consumerGroup?: string;
@@ -153,17 +189,46 @@ export type BackendNodeType =
 
 export type LangGraphStateChannel = {
   key: string;
-  type: "messages" | "string" | "json" | "number" | "boolean" | "array" | "object";
-  reducer: "add_messages" | "append" | "replace" | "merge_object" | "concat_array";
-  defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
+  type:
+    | "messages"
+    | "string"
+    | "json"
+    | "number"
+    | "boolean"
+    | "array"
+    | "object";
+  reducer:
+    | "add_messages"
+    | "append"
+    | "replace"
+    | "merge_object"
+    | "concat_array";
+  defaultValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[];
 };
 
 export type LangGraphInputChannel = {
   key: string;
-  type: "string" | "messages" | "json" | "number" | "boolean" | "object" | "array";
+  type:
+    | "string"
+    | "messages"
+    | "json"
+    | "number"
+    | "boolean"
+    | "object"
+    | "array";
   required?: boolean;
   description?: string;
-  defaultValue?: string | number | boolean | Record<string, unknown> | unknown[];
+  defaultValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[];
 };
 
 export type LangGraphOutputPort = {
@@ -228,7 +293,7 @@ export type LangGraphToolDefinition = {
     retryCount?: number;
     customErrorMessage?: string;
   };
-  
+
   position?: { x: number; y: number };
 };
 
@@ -236,7 +301,17 @@ export type LangGraphRouterBranch = {
   id: string;
   label: string;
   field: string;
-  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "contains" | "is_not_null" | "has_tool_calls" | "expression";
+  operator:
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "contains"
+    | "is_not_null"
+    | "has_tool_calls"
+    | "expression";
   value?: string;
   isDefault?: boolean;
   targetId?: string;
@@ -249,9 +324,24 @@ export type LangGraphRouterConfig = {
 export type LangGraphStepConfig = {
   id: string;
   name: string;
-  type: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search" | "router";
+  type:
+    | "llm_call"
+    | "tool_node"
+    | "evaluator"
+    | "summarizer"
+    | "custom_code"
+    | "human_gate"
+    | "interrupt"
+    | "vector_search"
+    | "router";
   modelConfig?: {
-    provider?: "groq" | "openai" | "anthropic" | "google" | "other" | (string & {});
+    provider?:
+      | "groq"
+      | "openai"
+      | "anthropic"
+      | "google"
+      | "other"
+      | (string & {});
     model?: string;
     temperature?: number;
     maxTokens?: number;
@@ -297,7 +387,11 @@ export type LangGraphEdgeConfig = {
   source: string;
   sourceHandle?: string;
   targetHandle?: string;
-  targets: { id: string; kind: "step" | "port" | "end"; targetHandle?: string }[];
+  targets: {
+    id: string;
+    kind: "step" | "port" | "end";
+    targetHandle?: string;
+  }[];
   condition?: {
     field?: string;
     operator?: string;
@@ -569,7 +663,11 @@ export interface OutputChannelConfig {
   topicOrEventName?: string;
   targetStateChannel?: string;
   description?: string;
-  streamContentMode?: "ai_node_tokens" | "structured_output" | "step_output" | "full_state";
+  streamContentMode?:
+    | "ai_node_tokens"
+    | "structured_output"
+    | "step_output"
+    | "full_state";
   sourceStepId?: string;
   boundRouteIds?: string[];
   schemaJson?: string;
@@ -610,7 +708,11 @@ export interface CanvasLangGraphNodeData {
   startNodePosition?: { x: number; y: number };
   stateNodePosition?: { x: number; y: number };
   endNodePosition?: { x: number; y: number };
-  endNodes?: { id: string; label?: string; position?: { x: number; y: number } }[];
+  endNodes?: {
+    id: string;
+    label?: string;
+    position?: { x: number; y: number };
+  }[];
 }
 
 export type LangGraphMiddlewareType =
@@ -822,16 +924,25 @@ export interface LangGraphAgentDefinition {
     mode?: StateUpdateMode;
     value?: string;
   }[];
-  tools?: string[];        // Bound tool IDs
-  middleware?: string[];   // Bound middleware IDs
-  memory?: string[];       // Bound memory / checkpointer / db_ref IDs
+  tools?: string[]; // Bound tool IDs
+  middleware?: string[]; // Bound middleware IDs
+  memory?: string[]; // Bound memory / checkpointer / db_ref IDs
   position?: { x: number; y: number };
 }
 
 /** LangGraph Step node fields — child step nodes inside a graph (canvas type). */
 export interface CanvasLangGraphStepNodeData {
   stepId?: string;
-  stepType?: "llm_call" | "tool_node" | "evaluator" | "summarizer" | "custom_code" | "human_gate" | "interrupt" | "vector_search" | "router";
+  stepType?:
+    | "llm_call"
+    | "tool_node"
+    | "evaluator"
+    | "summarizer"
+    | "custom_code"
+    | "human_gate"
+    | "interrupt"
+    | "vector_search"
+    | "router";
   modelConfig?: LangGraphStepConfig["modelConfig"];
   humanGateConfig?: {
     approvalPrompt: string;
@@ -856,19 +967,18 @@ export interface CanvasLangGraphStepNodeData {
  * Sub-type interfaces are prefixed with `Canvas` to avoid naming conflicts
  * with the Zod-inferred schema types in `@workspace/canvas/schemas`.
  */
-export type BackendNodeData =
-  BaseNodeData &
+export type BackendNodeData = BaseNodeData &
   Partial<
     CanvasEntityNodeData &
-    CanvasServiceNodeData &
-    MessagingNodeData &
-    CanvasWorkerNodeData &
-    CanvasServerlessNodeData &
-    CanvasInfrastructureNodeData &
-    CanvasAINodeData &
-    CanvasIdentityProviderNodeData &
-    CanvasLangGraphNodeData &
-    CanvasLangGraphStepNodeData
+      CanvasServiceNodeData &
+      MessagingNodeData &
+      CanvasWorkerNodeData &
+      CanvasServerlessNodeData &
+      CanvasInfrastructureNodeData &
+      CanvasAINodeData &
+      CanvasIdentityProviderNodeData &
+      CanvasLangGraphNodeData &
+      CanvasLangGraphStepNodeData
   >;
 
 export type BackendNode = {
@@ -884,7 +994,11 @@ export type BackendNode = {
   selected?: boolean;
 };
 
-export type BackendEdgeType = "connection" | "foreign-key" | "message" | "identity-connection";
+export type BackendEdgeType =
+  | "connection"
+  | "foreign-key"
+  | "message"
+  | "identity-connection";
 
 export type BackendEdge = {
   id: string;
@@ -941,15 +1055,37 @@ export type BackendDesignDoc = {
 // --- AI Adapter Types ---
 
 export type CanvasOperation =
-  | { op: "add_node"; type: BackendNodeType; label: string; position?: { x: number; y: number }; data?: Partial<BackendNode["data"]> }
+  | {
+      op: "add_node";
+      type: BackendNodeType;
+      label: string;
+      position?: { x: number; y: number };
+      data?: Partial<BackendNode["data"]>;
+    }
   | { op: "update_node"; id: string; changes: Partial<BackendNode> }
   | { op: "delete_node"; id: string }
-  | { op: "add_edge"; source: string; target: string; type: BackendEdgeType; data?: Partial<BackendEdge["data"]> }
+  | {
+      op: "add_edge";
+      source: string;
+      target: string;
+      type: BackendEdgeType;
+      data?: Partial<BackendEdge["data"]>;
+    }
   | { op: "update_edge"; id: string; changes: Partial<BackendEdge> }
   | { op: "delete_edge"; id: string }
   | { op: "run_auto_layout" }
-  | { op: "add_shape"; type: string; x: number; y: number; props: Record<string, string | number | boolean | null> }
-  | { op: "update_shape"; id: string; props: Record<string, string | number | boolean | null> }
+  | {
+      op: "add_shape";
+      type: string;
+      x: number;
+      y: number;
+      props: Record<string, string | number | boolean | null>;
+    }
+  | {
+      op: "update_shape";
+      id: string;
+      props: Record<string, string | number | boolean | null>;
+    }
   | { op: "delete_shape"; id: string };
 
 export interface CanvasAdapter<TDoc> {
@@ -957,7 +1093,6 @@ export interface CanvasAdapter<TDoc> {
   applyOperations: (ops: CanvasOperation[]) => void;
   serialize: () => string; // For AI context
 }
-
 
 // --- Enums & Primitives ---
 
@@ -984,103 +1119,174 @@ export type IdentityProviderPreset = {
   outputs: IdPOutputs;
 };
 
-export const IDENTITY_PROVIDER_PRESETS: Record<string, IdentityProviderPreset> = {
-  auth0: { 
-    provider: "Auth0", 
-    issuerUrl: "https://<tenant>.auth0.com/", 
-    discoveryUrl: "https://<tenant>.auth0.com/.well-known/openid-configuration",
-    jwksUrl: "https://<tenant>.auth0.com/.well-known/jwks.json", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: false, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  clerk: { 
-    provider: "Clerk", 
-    issuerUrl: "https://clerk.<your-domain>.com", 
-    discoveryUrl: "https://clerk.<your-domain>.com/.well-known/openid-configuration",
-    jwksUrl: "https://clerk.<your-domain>.com/.well-known/jwks.json", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: false, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  keycloak: { 
-    provider: "Keycloak", 
-    issuerUrl: "https://<domain>/realms/<realm>", 
-    discoveryUrl: "https://<domain>/realms/<realm>/.well-known/openid-configuration",
-    jwksUrl: "https://<domain>/realms/<realm>/protocol/openid-connect/certs", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  okta: { 
-    provider: "Okta", 
-    issuerUrl: "https://<domain>.okta.com/oauth2/default", 
-    discoveryUrl: "https://<domain>.okta.com/oauth2/default/.well-known/openid-configuration",
-    jwksUrl: "https://<domain>.okta.com/oauth2/default/v1/keys", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  cognito: { 
-    provider: "AWS Cognito", 
-    issuerUrl: "https://cognito-idp.<region>.amazonaws.com/<pool-id>", 
-    discoveryUrl: "https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/openid-configuration",
-    jwksUrl: "https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/jwks.json", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  firebase: { 
-    provider: "Firebase", 
-    issuerUrl: "https://securetoken.google.com/<project-id>", 
-    discoveryUrl: "https://securetoken.google.com/<project-id>/.well-known/openid-configuration",
-    jwksUrl: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: false },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  supabase: { 
-    provider: "Supabase", 
-    issuerUrl: "https://<project-ref>.supabase.co/auth/v1", 
-    discoveryUrl: "https://<project-ref>.supabase.co/auth/v1/.well-known/openid-configuration",
-    jwksUrl: "https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  entraid: { 
-    provider: "Azure Entra ID", 
-    issuerUrl: "https://login.microsoftonline.com/<tenant-id>/v2.0", 
-    discoveryUrl: "https://login.microsoftonline.com/<tenant-id>/v2.0/.well-known/openid-configuration",
-    jwksUrl: "https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: true, identity: true, authorization: true },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  oidc: { 
-    provider: "OpenID Connect", 
-    issuerUrl: "https://<domain>", 
-    discoveryUrl: "https://<domain>/.well-known/openid-configuration",
-    jwksUrl: "https://<domain>/.well-known/jwks.json", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: true, userManagement: false, identity: false, authorization: false },
-    outputs: { user: true, tokens: true, claims: true }
-  },
-  custom: { 
-    provider: "Custom JWT", 
-    issuerUrl: "", 
-    discoveryUrl: "",
-    jwksUrl: "", 
-    supportedAlgorithms: ["RS256"],
-    capabilities: { authentication: false, userManagement: false, identity: false, authorization: false },
-    outputs: { user: false, tokens: false, claims: false }
-  }
-} as const;
+export const IDENTITY_PROVIDER_PRESETS: Record<string, IdentityProviderPreset> =
+  {
+    auth0: {
+      provider: "Auth0",
+      issuerUrl: "https://<tenant>.auth0.com/",
+      discoveryUrl:
+        "https://<tenant>.auth0.com/.well-known/openid-configuration",
+      jwksUrl: "https://<tenant>.auth0.com/.well-known/jwks.json",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: false,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    clerk: {
+      provider: "Clerk",
+      issuerUrl: "https://clerk.<your-domain>.com",
+      discoveryUrl:
+        "https://clerk.<your-domain>.com/.well-known/openid-configuration",
+      jwksUrl: "https://clerk.<your-domain>.com/.well-known/jwks.json",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: false,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    keycloak: {
+      provider: "Keycloak",
+      issuerUrl: "https://<domain>/realms/<realm>",
+      discoveryUrl:
+        "https://<domain>/realms/<realm>/.well-known/openid-configuration",
+      jwksUrl: "https://<domain>/realms/<realm>/protocol/openid-connect/certs",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    okta: {
+      provider: "Okta",
+      issuerUrl: "https://<domain>.okta.com/oauth2/default",
+      discoveryUrl:
+        "https://<domain>.okta.com/oauth2/default/.well-known/openid-configuration",
+      jwksUrl: "https://<domain>.okta.com/oauth2/default/v1/keys",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    cognito: {
+      provider: "AWS Cognito",
+      issuerUrl: "https://cognito-idp.<region>.amazonaws.com/<pool-id>",
+      discoveryUrl:
+        "https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/openid-configuration",
+      jwksUrl:
+        "https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/jwks.json",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    firebase: {
+      provider: "Firebase",
+      issuerUrl: "https://securetoken.google.com/<project-id>",
+      discoveryUrl:
+        "https://securetoken.google.com/<project-id>/.well-known/openid-configuration",
+      jwksUrl:
+        "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: false,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    supabase: {
+      provider: "Supabase",
+      issuerUrl: "https://<project-ref>.supabase.co/auth/v1",
+      discoveryUrl:
+        "https://<project-ref>.supabase.co/auth/v1/.well-known/openid-configuration",
+      jwksUrl:
+        "https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    entraid: {
+      provider: "Azure Entra ID",
+      issuerUrl: "https://login.microsoftonline.com/<tenant-id>/v2.0",
+      discoveryUrl:
+        "https://login.microsoftonline.com/<tenant-id>/v2.0/.well-known/openid-configuration",
+      jwksUrl:
+        "https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    oidc: {
+      provider: "OpenID Connect",
+      issuerUrl: "https://<domain>",
+      discoveryUrl: "https://<domain>/.well-known/openid-configuration",
+      jwksUrl: "https://<domain>/.well-known/jwks.json",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: false,
+        identity: false,
+        authorization: false,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    custom: {
+      provider: "Custom JWT",
+      issuerUrl: "",
+      discoveryUrl: "",
+      jwksUrl: "",
+      supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: false,
+        userManagement: false,
+        identity: false,
+        authorization: false,
+      },
+      outputs: { user: false, tokens: false, claims: false },
+    },
+  } as const;
 
 export type RetryPolicy = "NONE" | "IMMEDIATE" | "EXPONENTIAL";
-export type DeliveryGuarantee = "EXACTLY_ONCE" | "AT_LEAST_ONCE" | "AT_MOST_ONCE" | "FIRE_AND_FORGET";
+export type DeliveryGuarantee =
+  | "EXACTLY_ONCE"
+  | "AT_LEAST_ONCE"
+  | "AT_MOST_ONCE"
+  | "FIRE_AND_FORGET";
 export type EventOrdering = "NONE" | "GLOBAL" | "PER_ENTITY" | "PER_AGGREGATE";
-export type EventCategory = "DOMAIN" | "INTEGRATION" | "INTERNAL" | "NOTIFICATION";
+export type EventCategory =
+  | "DOMAIN"
+  | "INTEGRATION"
+  | "INTERNAL"
+  | "NOTIFICATION";
 export type SchemaVersion = "v1" | "v2" | "v3";
 
 export * from "./techStack";
@@ -1099,15 +1305,49 @@ export type GatewayRoute = {
   authRuleId?: string;
 };
 
-
-
 export type AuthRule =
-  | { type: "jwt"; id: string; name: string; description?: string; config: { providerId?: string; algorithms?: string[] } }
-  | { type: "oauth2"; id: string; name: string; description?: string; config: { providerId?: string; algorithms?: string[] } }
-  | { type: "apiKey"; id: string; name: string; description?: string; config: { headerName?: string } }
-  | { type: "mtls"; id: string; name: string; description?: string; config: { clientCa?: string } }
-  | { type: "basic"; id: string; name: string; description?: string; config?: Record<string, never> }
-  | { type: "none"; id: string; name: string; description?: string; config?: Record<string, never> };
+  | {
+      type: "jwt";
+      id: string;
+      name: string;
+      description?: string;
+      config: { providerId?: string; algorithms?: string[] };
+    }
+  | {
+      type: "oauth2";
+      id: string;
+      name: string;
+      description?: string;
+      config: { providerId?: string; algorithms?: string[] };
+    }
+  | {
+      type: "apiKey";
+      id: string;
+      name: string;
+      description?: string;
+      config: { headerName?: string };
+    }
+  | {
+      type: "mtls";
+      id: string;
+      name: string;
+      description?: string;
+      config: { clientCa?: string };
+    }
+  | {
+      type: "basic";
+      id: string;
+      name: string;
+      description?: string;
+      config?: Record<string, never>;
+    }
+  | {
+      type: "none";
+      id: string;
+      name: string;
+      description?: string;
+      config?: Record<string, never>;
+    };
 
 export type Parameter = {
   id: string;
@@ -1124,8 +1364,6 @@ export type Schema = {
   id: string;
   rawJson?: string;
 };
-
-
 
 export type ProcessingOperation =
   | "passthrough"
@@ -1149,11 +1387,11 @@ export type PublishedEvent = {
   id: string; // The canonical Event ID
   name: string; // e.g., chat.message.sent
   publishedWhen: string; // e.g. "Message successfully persisted"
-  
+
   // Topic Mapping
-  brokerNodeId: string; 
+  brokerNodeId: string;
   messagingResourceId: string;
-  
+
   // Contract
   payloadSchema: Schema;
   version: SchemaVersion;
@@ -1161,28 +1399,28 @@ export type PublishedEvent = {
   delivery: DeliveryGuarantee;
   ordering: EventOrdering;
   correlationId?: string;
-  
+
   // Lifecycle
   deprecated: boolean;
   replacementEventId?: string;
-  
+
   metadata?: ArchitectureMetadata;
 };
 
 export type ConsumedEvent = {
   id: string; // Consumer instance ID
   eventId: string; // References the PublishedEvent's canonical ID
-  
+
   // Topic Mapping
-  brokerNodeId: string; 
+  brokerNodeId: string;
   messagingResourceId: string;
-  
+
   // Consumer Behavior
   retryPolicy: RetryPolicy;
   maxRetries?: number;
   deadLetterQueue?: string; // e.g. "chat.failed.messages"
   isIdempotent: boolean;
-  
+
   metadata?: ArchitectureMetadata;
 };
 
@@ -1197,7 +1435,9 @@ export type UIEventItem = {
 
 export type JSONPrimitive = string | number | boolean | null;
 export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
-export interface JSONObject { [key: string]: JSONValue }
+export interface JSONObject {
+  [key: string]: JSONValue;
+}
 export interface JSONArray extends Array<JSONValue> {}
 
 /** A global simulation scenario. */
@@ -1248,7 +1488,7 @@ export type AnyMessagingResource = {
   delivery?: DeliveryGuarantee | string;
   brokerNodeId?: string;
   messagingResourceId?: string;
-  
+
   // Storage specific fields
   storageType?: string;
   storageTypeOther?: string;
@@ -1271,8 +1511,6 @@ export type AnyMessagingResource = {
   persistence?: string;
   replication?: string;
 };
-
-
 
 // --- Input Types (for AI tools & Store operations) ---
 
@@ -1316,7 +1554,12 @@ export interface EndpointInputType {
   requestBody?: { fields: ParameterInputType[] };
   responseBody?: { fields: ParameterInputType[] };
   simulationOutput?: unknown;
-  processingSteps?: { id?: string; text: string; operation?: string; config?: Record<string, string | number | boolean | null> }[];
+  processingSteps?: {
+    id?: string;
+    text: string;
+    operation?: string;
+    config?: Record<string, string | number | boolean | null>;
+  }[];
   output?: string;
   businessLogic?: string;
   summary?: string;
@@ -1351,4 +1594,3 @@ export interface BackendNodeItem {
   type?: string;
   data?: BackendNodeData;
 }
-

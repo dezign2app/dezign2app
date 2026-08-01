@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { Cpu, Wrench, Shield, Database, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Cpu,
+  Wrench,
+  Shield,
+  Database,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import type { LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode } from "../../../types";
+import type {
+  LangGraphLLMNode,
+  ToolNode,
+  MiddlewareNode,
+  MemoryNode,
+} from "../../../types";
 
 interface AgentAttachedComponentsSectionProps {
   availableLLMNodes?: LangGraphLLMNode[];
@@ -35,8 +54,12 @@ export function AgentAttachedComponentsSection({
 }: AgentAttachedComponentsSectionProps) {
   const [isLlmOpen, setIsLlmOpen] = useState(Boolean(connectedLLMId));
   const [isToolsOpen, setIsToolsOpen] = useState(connectedToolIds.length > 0);
-  const [isMiddlewareOpen, setIsMiddlewareOpen] = useState(connectedMiddlewareIds.length > 0);
-  const [isMemoryOpen, setIsMemoryOpen] = useState(connectedMemoryIds.length > 0);
+  const [isMiddlewareOpen, setIsMiddlewareOpen] = useState(
+    connectedMiddlewareIds.length > 0,
+  );
+  const [isMemoryOpen, setIsMemoryOpen] = useState(
+    connectedMemoryIds.length > 0,
+  );
 
   useEffect(() => {
     setIsLlmOpen(Boolean(connectedLLMId));
@@ -68,7 +91,9 @@ export function AgentAttachedComponentsSection({
         >
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">LLM Model</span>
+            <span className="text-xs font-semibold text-foreground">
+              LLM Model
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-mono text-muted-foreground font-bold">
@@ -81,11 +106,13 @@ export function AgentAttachedComponentsSection({
             )}
           </div>
         </div>
-        {isLlmOpen && (
-          availableLLMNodes.length > 0 ? (
+        {isLlmOpen &&
+          (availableLLMNodes.length > 0 ? (
             <Select
               value={connectedLLMId || "none"}
-              onValueChange={(val) => onSelectLLM?.(val === "none" ? null : val)}
+              onValueChange={(val) =>
+                onSelectLLM?.(val === "none" ? null : val)
+              }
             >
               <SelectTrigger className="h-7 text-xs bg-background font-mono">
                 <SelectValue placeholder="Select LLM..." />
@@ -110,8 +137,7 @@ export function AgentAttachedComponentsSection({
             <p className="text-[10px] text-muted-foreground italic">
               No LLMs on canvas. Add an LLM from toolbar to connect.
             </p>
-          )
-        )}
+          ))}
       </div>
 
       {/* Tools Multi-Selection */}
@@ -122,7 +148,9 @@ export function AgentAttachedComponentsSection({
         >
           <div className="flex items-center gap-2">
             <Wrench className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">Attach Tools</span>
+            <span className="text-xs font-semibold text-foreground">
+              Attach Tools
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-mono text-muted-foreground font-bold">
@@ -135,8 +163,8 @@ export function AgentAttachedComponentsSection({
             )}
           </div>
         </div>
-        {isToolsOpen && (
-          availableToolNodes.length > 0 ? (
+        {isToolsOpen &&
+          (availableToolNodes.length > 0 ? (
             <div className="flex flex-col gap-1.5 mt-1 max-h-[160px] overflow-y-auto pr-1">
               {availableToolNodes.map((tool) => {
                 const isConnected = connectedToolIds.includes(tool.id);
@@ -166,8 +194,7 @@ export function AgentAttachedComponentsSection({
             <p className="text-[10px] text-muted-foreground italic">
               No Tool Nodes on canvas. Add a Tool node from toolbar to attach.
             </p>
-          )
-        )}
+          ))}
       </div>
 
       {/* Middleware Multi-Selection */}
@@ -178,7 +205,9 @@ export function AgentAttachedComponentsSection({
         >
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">Attach Middleware</span>
+            <span className="text-xs font-semibold text-foreground">
+              Attach Middleware
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-mono text-muted-foreground font-bold">
@@ -191,8 +220,8 @@ export function AgentAttachedComponentsSection({
             )}
           </div>
         </div>
-        {isMiddlewareOpen && (
-          availableMiddlewareNodes.length > 0 ? (
+        {isMiddlewareOpen &&
+          (availableMiddlewareNodes.length > 0 ? (
             <div className="flex flex-col gap-1.5 mt-1 max-h-[160px] overflow-y-auto pr-1">
               {availableMiddlewareNodes.map((mw) => {
                 const isConnected = connectedMiddlewareIds.includes(mw.id);
@@ -222,8 +251,7 @@ export function AgentAttachedComponentsSection({
             <p className="text-[10px] text-muted-foreground italic">
               No Middlewares on canvas. Add a Middleware from toolbar to attach.
             </p>
-          )
-        )}
+          ))}
       </div>
 
       {/* Memory / DB Nodes Multi-Selection */}
@@ -234,7 +262,9 @@ export function AgentAttachedComponentsSection({
         >
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-semibold text-foreground">Attach Memory / DB Nodes</span>
+            <span className="text-xs font-semibold text-foreground">
+              Attach Memory / DB Nodes
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-mono text-muted-foreground font-bold">
@@ -247,8 +277,8 @@ export function AgentAttachedComponentsSection({
             )}
           </div>
         </div>
-        {isMemoryOpen && (
-          availableMemoryNodes.length > 0 ? (
+        {isMemoryOpen &&
+          (availableMemoryNodes.length > 0 ? (
             <div className="flex flex-col gap-1.5 mt-1 max-h-[160px] overflow-y-auto pr-1">
               {availableMemoryNodes.map((mem) => {
                 const isConnected = connectedMemoryIds.includes(mem.id);
@@ -262,7 +292,8 @@ export function AgentAttachedComponentsSection({
                         {mem.data.name || mem.data.label}
                       </span>
                       <span className="text-[9px] text-muted-foreground font-mono">
-                        checkpointer: {mem.data.checkpointer || "convex"} ({mem.data.threadIdKey || "thread_id"})
+                        checkpointer: {mem.data.checkpointer || "convex"} (
+                        {mem.data.threadIdKey || "thread_id"})
                       </span>
                     </div>
                     <Switch
@@ -276,16 +307,18 @@ export function AgentAttachedComponentsSection({
             </div>
           ) : (
             <p className="text-[10px] text-muted-foreground italic">
-              No Memory Nodes on canvas. Add a Memory node from toolbar to connect.
+              No Memory Nodes on canvas. Add a Memory node from toolbar to
+              connect.
             </p>
-          )
-        )}
+          ))}
       </div>
 
       <div className="flex gap-2 p-2 rounded bg-secondary/20 border border-border/50 items-start text-[10px] text-muted-foreground leading-tight">
         <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
         <p>
-          Selecting nodes or toggling switches automatically draws and updates canvas edges to <code>llm_in</code>, <code>tool_in</code>, <code>middleware_in</code>, and <code>memory_in</code>.
+          Selecting nodes or toggling switches automatically draws and updates
+          canvas edges to <code>llm_in</code>, <code>tool_in</code>,{" "}
+          <code>middleware_in</code>, and <code>memory_in</code>.
         </p>
       </div>
     </div>

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Send, Loader2, Trash, ChevronRight, FlaskConical, Route } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  Trash,
+  ChevronRight,
+  FlaskConical,
+  Route,
+} from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Label } from "@workspace/ui/components/label";
 import {
@@ -22,8 +29,11 @@ export type SimulateTabContentProps = {
   graphTestCases: SimulationTestCase[];
   orderedRoutes: ConnectedRouteInfo[];
   onRunTestCase?: (
-    testCase: SimulationTestCase
-  ) => Promise<SimulationTestCaseResult | void> | SimulationTestCaseResult | void;
+    testCase: SimulationTestCase,
+  ) =>
+    | Promise<SimulationTestCaseResult | void>
+    | SimulationTestCaseResult
+    | void;
 };
 
 export const SimulateTabContent = ({
@@ -33,7 +43,9 @@ export const SimulateTabContent = ({
 }: SimulateTabContentProps) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [response, setResponse] = useState<SimulationTestCaseResult | null>(null);
+  const [response, setResponse] = useState<SimulationTestCaseResult | null>(
+    null,
+  );
 
   // Auto-select first test case when available
   useEffect(() => {
@@ -44,7 +56,7 @@ export const SimulateTabContent = ({
 
   const selectedCase = graphTestCases.find((tc) => tc.id === selectedCaseId);
   const selectedRoute = orderedRoutes.find(
-    (r) => r.edgeId === selectedCase?.targetRouteId
+    (r) => r.edgeId === selectedCase?.targetRouteId,
   );
 
   const handleSendSimulate = async () => {
@@ -69,9 +81,12 @@ export const SimulateTabContent = ({
     return (
       <div className="flex flex-col items-center justify-center p-6 text-center border rounded-xl bg-card/40 gap-2 font-sans">
         <FlaskConical className="w-8 h-8 text-muted-foreground/60" />
-        <div className="text-xs font-semibold text-foreground">No Test Cases Saved</div>
+        <div className="text-xs font-semibold text-foreground">
+          No Test Cases Saved
+        </div>
         <div className="text-xs text-muted-foreground max-w-xs">
-          Create and configure test cases in the <strong>Test Cases</strong> tab to simulate graph runs.
+          Create and configure test cases in the <strong>Test Cases</strong> tab
+          to simulate graph runs.
         </div>
       </div>
     );
@@ -121,11 +136,19 @@ export const SimulateTabContent = ({
 
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1 border-t border-border/40">
               <span>
-                Initial State: {selectedCase.initialState ? Object.keys(selectedCase.initialState).length : 0} keys
+                Initial State:{" "}
+                {selectedCase.initialState
+                  ? Object.keys(selectedCase.initialState).length
+                  : 0}{" "}
+                keys
               </span>
               <span>•</span>
               <span>
-                Mock Outputs: {selectedCase.mocks ? Object.keys(selectedCase.mocks).length : 0} nodes
+                Mock Outputs:{" "}
+                {selectedCase.mocks
+                  ? Object.keys(selectedCase.mocks).length
+                  : 0}{" "}
+                nodes
               </span>
             </div>
           </div>
@@ -166,11 +189,12 @@ export const SimulateTabContent = ({
                   "px-2 py-1 rounded text-[11px] font-bold font-mono border shadow-sm transition-all",
                   response.status && is2xxStatus(response.status)
                     ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                    : "bg-destructive/10 text-destructive border-destructive/20"
+                    : "bg-destructive/10 text-destructive border-destructive/20",
                 )}
               >
                 {response.status}{" "}
-                {response.statusText || (is2xxStatus(response.status) ? "OK" : "Error")}
+                {response.statusText ||
+                  (is2xxStatus(response.status) ? "OK" : "Error")}
               </span>
               <Button
                 variant="ghost"
@@ -212,7 +236,8 @@ export const SimulateTabContent = ({
                       {entry.detail ? ` — ${entry.detail}` : ""}
                     </span>
                   </div>
-                  {(entry.input !== undefined || entry.output !== undefined) && (
+                  {(entry.input !== undefined ||
+                    entry.output !== undefined) && (
                     <div className="pl-5 flex flex-col gap-1.5">
                       {entry.input !== undefined && (
                         <details className="group">

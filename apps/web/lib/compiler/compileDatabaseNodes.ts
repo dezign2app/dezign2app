@@ -7,9 +7,11 @@ import { compileSqliteDrizzleDatabase } from "./databases/sqlite/drizzle";
  */
 export function compileDatabaseNodes(
   allNodes: BackendNode[],
-  allEdges: BackendEdge[]
+  allEdges: BackendEdge[],
 ): CompiledDatabaseResult {
-  const firstDbNode = allNodes.find((n) => n.type === "entity" || n.type === "db_ref");
+  const firstDbNode = allNodes.find(
+    (n) => n.type === "entity" || n.type === "db_ref",
+  );
   const dbEngine = firstDbNode?.data.dbEngine || "sqlite";
   const orm = firstDbNode?.data.orm || "drizzle";
 

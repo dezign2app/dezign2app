@@ -9,7 +9,7 @@ import { Metadata } from "next";
 
 import { PaywallModal } from "@/components/paywall-modal";
 
-import './global.css'
+import "./global.css";
 
 const ubuntu = Ubuntu({ variable: "--font-sans", weight: ["300", "400"] });
 
@@ -34,14 +34,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${ubuntu.variable} scroll-smooth`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${ubuntu.variable} scroll-smooth`}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <PaywallModal>
-            {children}
-          </PaywallModal>
+          <PaywallModal>{children}</PaywallModal>
         </Providers>
         <Analytics />
         <SpeedInsights />

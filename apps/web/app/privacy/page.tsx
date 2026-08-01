@@ -6,7 +6,8 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | dezign2app",
-  description: "Privacy Policy for dezign2app - Learn how we collect, use, process AI inputs, and protect your data.",
+  description:
+    "Privacy Policy for dezign2app - Learn how we collect, use, process AI inputs, and protect your data.",
 };
 
 export default function PrivacyPage() {
@@ -26,7 +27,11 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl">
-            At dezign2app, we respect your privacy and are committed to safeguarding your personal data and intellectual property. This Privacy Policy details how we collect, use, process, and protect information when you interact with our website, application, and AI design tools.
+            At dezign2app, we respect your privacy and are committed to
+            safeguarding your personal data and intellectual property. This
+            Privacy Policy details how we collect, use, process, and protect
+            information when you interact with our website, application, and AI
+            design tools.
           </p>
         </div>
 
@@ -38,23 +43,50 @@ export default function PrivacyPage() {
               1. Information We Collect
             </h2>
             <p>
-              We collect information necessary to provide and continuously improve our visual diagramming and system design generation platform. The types of data we collect include:
+              We collect information necessary to provide and continuously
+              improve our visual diagramming and system design generation
+              platform. The types of data we collect include:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
               <li>
-                <strong className="text-gray-900">Account Credentials:</strong> Name, email address, profile picture, authentication tokens, and account preferences when registering via email or single sign-on (SSO) providers.
+                <strong className="text-gray-900">Account Credentials:</strong>{" "}
+                Name, email address, profile picture, authentication tokens, and
+                account preferences when registering via email or single sign-on
+                (SSO) providers.
               </li>
               <li>
-                <strong className="text-gray-900">Project & Prompt Inputs:</strong> System design requirements, text prompts, visual specs, node configurations, and workspace canvas data generated during design sessions.
+                <strong className="text-gray-900">
+                  Project & Prompt Inputs:
+                </strong>{" "}
+                System design requirements, text prompts, visual specs, node
+                configurations, and workspace canvas data generated during
+                design sessions.
               </li>
               <li>
-                <strong className="text-gray-900">Payment & Transaction Data:</strong> Subscription tier, order histories, billing address, and transaction metadata. <em>Note: All payment processing and financial data are securely managed by our Merchant of Record, Creem.io. We do not store raw credit card numbers on our servers.</em>
+                <strong className="text-gray-900">
+                  Payment & Transaction Data:
+                </strong>{" "}
+                Subscription tier, order histories, billing address, and
+                transaction metadata.{" "}
+                <em>
+                  Note: All payment processing and financial data are securely
+                  managed by our Merchant of Record, Creem.io. We do not store
+                  raw credit card numbers on our servers.
+                </em>
               </li>
               <li>
-                <strong className="text-gray-900">Technical & Usage Telemetry:</strong> IP address, browser type, device descriptors, operating system, session duration, and feature performance metrics.
+                <strong className="text-gray-900">
+                  Technical & Usage Telemetry:
+                </strong>{" "}
+                IP address, browser type, device descriptors, operating system,
+                session duration, and feature performance metrics.
               </li>
               <li>
-                <strong className="text-gray-900">Cookies & Local Storage:</strong> Essential session cookies and local storage tokens to preserve user preferences and workspace states.
+                <strong className="text-gray-900">
+                  Cookies & Local Storage:
+                </strong>{" "}
+                Essential session cookies and local storage tokens to preserve
+                user preferences and workspace states.
               </li>
             </ul>
           </section>
@@ -65,14 +97,29 @@ export default function PrivacyPage() {
               2. How We Use Your Information
             </h2>
             <p>
-              We process personal data only for legitimate business and operational purposes, including:
+              We process personal data only for legitimate business and
+              operational purposes, including:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
-              <li>Generating and rendering architectural diagrams, visual workflows, and code artifacts requested by users.</li>
-              <li>Authenticating account access and securing user workspaces.</li>
-              <li>Managing billing subscriptions, processing order renewals, and issuing transactional notifications via Creem.io.</li>
-              <li>Monitoring platform stability, performance optimizations, and preventing unauthorized access or API abuse.</li>
-              <li>Providing responsive customer support and addressing technical inquiries within 3 business days.</li>
+              <li>
+                Generating and rendering architectural diagrams, visual
+                workflows, and code artifacts requested by users.
+              </li>
+              <li>
+                Authenticating account access and securing user workspaces.
+              </li>
+              <li>
+                Managing billing subscriptions, processing order renewals, and
+                issuing transactional notifications via Creem.io.
+              </li>
+              <li>
+                Monitoring platform stability, performance optimizations, and
+                preventing unauthorized access or API abuse.
+              </li>
+              <li>
+                Providing responsive customer support and addressing technical
+                inquiries within 3 business days.
+              </li>
             </ul>
           </section>
 
@@ -82,17 +129,34 @@ export default function PrivacyPage() {
               3. AI Model Data Privacy & Processing
             </h2>
             <p>
-              dezign2app utilizes state-of-the-art Artificial Intelligence (AI) foundation models to transform user descriptions into system diagrams and functional application blueprints. Regarding AI data handling:
+              dezign2app utilizes state-of-the-art Artificial Intelligence (AI)
+              foundation models to transform user descriptions into system
+              diagrams and functional application blueprints. Regarding AI data
+              handling:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
               <li>
-                <strong className="text-gray-900">API Processing:</strong> User prompts and architectural specifications are transmitted securely via API connections to LLM providers (such as OpenAI, Anthropic, or Google) solely to generate requested visual and code outputs.
+                <strong className="text-gray-900">API Processing:</strong> User
+                prompts and architectural specifications are transmitted
+                securely via API connections to LLM providers (such as OpenAI,
+                Anthropic, or Google) solely to generate requested visual and
+                code outputs.
               </li>
               <li>
-                <strong className="text-gray-900">No Model Training:</strong> Your private prompts, proprietary architecture specs, and generated design assets are <strong>NOT</strong> used to train public foundation AI models.
+                <strong className="text-gray-900">No Model Training:</strong>{" "}
+                Your private prompts, proprietary architecture specs, and
+                generated design assets are <strong>NOT</strong> used to train
+                public foundation AI models.
               </li>
               <li>
-                <strong className="text-gray-900">Independent Branding Disclaimer:</strong> dezign2app is an independent application platform and interface. dezign2app is not affiliated with, sponsored by, or endorsed by Google, OpenAI, Anthropic, or any third-party AI model creators. Third-party model names referenced in documentation denote functional API integrations only.
+                <strong className="text-gray-900">
+                  Independent Branding Disclaimer:
+                </strong>{" "}
+                dezign2app is an independent application platform and interface.
+                dezign2app is not affiliated with, sponsored by, or endorsed by
+                Google, OpenAI, Anthropic, or any third-party AI model creators.
+                Third-party model names referenced in documentation denote
+                functional API integrations only.
               </li>
             </ul>
           </section>
@@ -103,17 +167,28 @@ export default function PrivacyPage() {
               4. Third-Party Service Providers & Merchant of Record
             </h2>
             <p>
-              We share data with trusted third-party vendors under strict data protection agreements:
+              We share data with trusted third-party vendors under strict data
+              protection agreements:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
               <li>
-                <strong className="text-gray-900">Creem.io (Merchant of Record):</strong> Creem.io is our Merchant of Record and reseller. Creem processes payments, manages billing subscriptions, calculates applicable taxes, and sends official receipts.
+                <strong className="text-gray-900">
+                  Creem.io (Merchant of Record):
+                </strong>{" "}
+                Creem.io is our Merchant of Record and reseller. Creem processes
+                payments, manages billing subscriptions, calculates applicable
+                taxes, and sends official receipts.
               </li>
               <li>
-                <strong className="text-gray-900">Clerk:</strong> Provides secure user authentication and session token management.
+                <strong className="text-gray-900">Clerk:</strong> Provides
+                secure user authentication and session token management.
               </li>
               <li>
-                <strong className="text-gray-900">Cloud Infrastructure Providers:</strong> Hosting, serverless computing, and database services provided by Vercel and cloud database partners using encrypted channels.
+                <strong className="text-gray-900">
+                  Cloud Infrastructure Providers:
+                </strong>{" "}
+                Hosting, serverless computing, and database services provided by
+                Vercel and cloud database partners using encrypted channels.
               </li>
             </ul>
           </section>
@@ -124,11 +199,19 @@ export default function PrivacyPage() {
               5. Data Security & Storage Controls
             </h2>
             <p>
-              We enforce robust technical and organizational security controls to protect user data from unauthorized access, loss, or disclosure:
+              We enforce robust technical and organizational security controls
+              to protect user data from unauthorized access, loss, or
+              disclosure:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
-              <li>Encryption in transit using TLS 1.3 protocols and encryption at rest (AES-256) for stored data.</li>
-              <li>Strict role-based access control (RBAC) restricting server access exclusively to authorized personnel.</li>
+              <li>
+                Encryption in transit using TLS 1.3 protocols and encryption at
+                rest (AES-256) for stored data.
+              </li>
+              <li>
+                Strict role-based access control (RBAC) restricting server
+                access exclusively to authorized personnel.
+              </li>
               <li>Automated system monitoring and periodic security audits.</li>
             </ul>
           </section>
@@ -139,16 +222,37 @@ export default function PrivacyPage() {
               6. Your Data Rights (GDPR & CCPA)
             </h2>
             <p>
-              Depending on your jurisdiction, you possess the following rights regarding your personal data:
+              Depending on your jurisdiction, you possess the following rights
+              regarding your personal data:
             </p>
             <ul className="list-disc pl-6 flex flex-col gap-2 text-gray-600">
-              <li><strong className="text-gray-900">Access & Export:</strong> Request a full copy of your personal data and project records.</li>
-              <li><strong className="text-gray-900">Rectification:</strong> Correct inaccurate or incomplete account details.</li>
-              <li><strong className="text-gray-900">Erasure & Deletion:</strong> Request permanent deletion of your account, workspace assets, and telemetry records.</li>
-              <li><strong className="text-gray-900">Opt-Out:</strong> Opt out of non-essential product update communications.</li>
+              <li>
+                <strong className="text-gray-900">Access & Export:</strong>{" "}
+                Request a full copy of your personal data and project records.
+              </li>
+              <li>
+                <strong className="text-gray-900">Rectification:</strong>{" "}
+                Correct inaccurate or incomplete account details.
+              </li>
+              <li>
+                <strong className="text-gray-900">Erasure & Deletion:</strong>{" "}
+                Request permanent deletion of your account, workspace assets,
+                and telemetry records.
+              </li>
+              <li>
+                <strong className="text-gray-900">Opt-Out:</strong> Opt out of
+                non-essential product update communications.
+              </li>
             </ul>
             <p className="mt-1">
-              To exercise any of these rights, email us at <a href="mailto:founder@dezign2app.com" className="text-black font-bold hover:underline">founder@dezign2app.com</a>.
+              To exercise any of these rights, email us at{" "}
+              <a
+                href="mailto:founder@dezign2app.com"
+                className="text-black font-bold hover:underline"
+              >
+                founder@dezign2app.com
+              </a>
+              .
             </p>
           </section>
 
@@ -158,7 +262,11 @@ export default function PrivacyPage() {
               7. Children's Privacy
             </h2>
             <p>
-              dezign2app is not directed at or intended for use by children under the age of 16 (or 13 in certain jurisdictions). We do not knowingly collect personal data from children. If we discover a minor has registered without verifiable parental consent, we will promptly purge the account.
+              dezign2app is not directed at or intended for use by children
+              under the age of 16 (or 13 in certain jurisdictions). We do not
+              knowingly collect personal data from children. If we discover a
+              minor has registered without verifiable parental consent, we will
+              promptly purge the account.
             </p>
           </section>
 
@@ -168,11 +276,22 @@ export default function PrivacyPage() {
               8. Contact Us
             </h2>
             <p>
-              If you have questions, concerns, or data privacy requests regarding this Privacy Policy, please contact our support team:
+              If you have questions, concerns, or data privacy requests
+              regarding this Privacy Policy, please contact our support team:
             </p>
             <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl text-gray-800 font-medium flex flex-col gap-1">
-              <div>Email: <a href="mailto:founder@dezign2app.com" className="text-black font-bold hover:underline">founder@dezign2app.com</a></div>
-              <div className="text-xs text-gray-500">Customer Support & Privacy Compliance Team</div>
+              <div>
+                Email:{" "}
+                <a
+                  href="mailto:founder@dezign2app.com"
+                  className="text-black font-bold hover:underline"
+                >
+                  founder@dezign2app.com
+                </a>
+              </div>
+              <div className="text-xs text-gray-500">
+                Customer Support & Privacy Compliance Team
+              </div>
             </div>
           </section>
         </div>

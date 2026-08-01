@@ -3,12 +3,12 @@
 import { PlusIcon, Loader2Icon, FolderIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@workspace/ui/components/card";
 import {
   Select,
@@ -33,16 +33,15 @@ interface CreateKeyCardProps {
   setSelectedProjectId: (id: string) => void;
 }
 
-export function CreateKeyCard({ 
-  newKeyName, 
-  setNewKeyName, 
-  isGenerating, 
+export function CreateKeyCard({
+  newKeyName,
+  setNewKeyName,
+  isGenerating,
   handleGenerate,
   projects,
   selectedProjectId,
   setSelectedProjectId,
 }: CreateKeyCardProps) {
-
   return (
     <Card className="border-primary/20 shadow-xl overflow-hidden relative">
       <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
@@ -51,7 +50,8 @@ export function CreateKeyCard({
       <CardHeader>
         <CardTitle className="text-lg">Create New Key</CardTitle>
         <CardDescription>
-          Each key is scoped to a single project — the MCP client will only access that project's architecture context.
+          Each key is scoped to a single project — the MCP client will only
+          access that project's architecture context.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
@@ -95,13 +95,14 @@ export function CreateKeyCard({
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            The MCP client using this key will only be able to access context from this project.
+            The MCP client using this key will only be able to access context
+            from this project.
           </p>
         </div>
 
-        <Button 
-          className="w-full shadow-lg shadow-primary/20" 
-          onClick={handleGenerate} 
+        <Button
+          className="w-full shadow-lg shadow-primary/20"
+          onClick={handleGenerate}
           disabled={isGenerating || !newKeyName.trim() || !selectedProjectId}
         >
           {isGenerating ? (

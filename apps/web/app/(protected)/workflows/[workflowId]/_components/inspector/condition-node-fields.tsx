@@ -30,7 +30,9 @@ export const ConditionNodeFields = ({
         <Input
           value={config.leftOperand ?? ""}
           disabled={isReadOnly}
-          onChange={(event) => updateConfig({ leftOperand: event.target.value })}
+          onChange={(event) =>
+            updateConfig({ leftOperand: event.target.value })
+          }
         />
       </Field>
 
@@ -61,7 +63,9 @@ export const ConditionNodeFields = ({
         <Input
           value={config.rightOperand ?? ""}
           disabled={isReadOnly}
-          onChange={(event) => updateConfig({ rightOperand: event.target.value })}
+          onChange={(event) =>
+            updateConfig({ rightOperand: event.target.value })
+          }
         />
       </Field>
     </div>

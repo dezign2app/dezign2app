@@ -9,11 +9,15 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
     <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-emerald-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Summarization Config</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Summarization Config
+        </h3>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Summarization Model</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Summarization Model
+        </Label>
         <LocalInput
           value={data.summarizationConfig?.model || "gpt-5.4-mini"}
           onChange={(e) =>
@@ -31,7 +35,9 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Trigger Tokens</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Trigger Tokens
+          </Label>
           <LocalInput
             type="number"
             value={data.summarizationConfig?.triggerTokens ?? 4000}
@@ -47,7 +53,9 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Messages to Keep</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Messages to Keep
+          </Label>
           <LocalInput
             type="number"
             value={data.summarizationConfig?.keepMessages ?? 20}
@@ -65,7 +73,9 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Trim Tokens To Summarize</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Trim Tokens To Summarize
+        </Label>
         <LocalInput
           type="number"
           value={data.summarizationConfig?.trimTokensToSummarize ?? 4000}
@@ -82,9 +92,14 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Summary Prefix</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Summary Prefix
+        </Label>
         <LocalInput
-          value={data.summarizationConfig?.summaryPrefix ?? "Summary of previous conversation:"}
+          value={
+            data.summarizationConfig?.summaryPrefix ??
+            "Summary of previous conversation:"
+          }
           onChange={(e) =>
             onUpdate({
               summarizationConfig: {
@@ -98,7 +113,9 @@ export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Custom Summary Prompt</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Custom Summary Prompt
+        </Label>
         <LocalTextarea
           value={data.summarizationConfig?.summaryPrompt || ""}
           onChange={(e) =>

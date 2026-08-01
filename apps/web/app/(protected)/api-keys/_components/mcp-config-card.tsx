@@ -4,7 +4,13 @@ import { useState } from "react";
 import { CopyIcon, CheckIcon, ServerIcon, TerminalIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 
 export function McpConfigCard() {
@@ -26,7 +32,7 @@ export function McpConfigCard() {
       },
     },
     null,
-    2
+    2,
   );
 
   const copyToClipboard = (text: string, label: string) => {
@@ -49,7 +55,8 @@ export function McpConfigCard() {
           </Badge>
         </div>
         <CardDescription className="text-xs">
-          Connect Cursor, Claude Desktop, or Windsurf to access project context via Model Context Protocol.
+          Connect Cursor, Claude Desktop, or Windsurf to access project context
+          via Model Context Protocol.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
@@ -89,7 +96,12 @@ export function McpConfigCard() {
               size="icon"
               variant="ghost"
               className="h-7 w-7 shrink-0"
-              onClick={() => copyToClipboard(`${authHeaderKey}: ${authHeaderValue}`, "Header")}
+              onClick={() =>
+                copyToClipboard(
+                  `${authHeaderKey}: ${authHeaderValue}`,
+                  "Header",
+                )
+              }
               title="Copy Header"
             >
               {copiedField === "Header" ? (

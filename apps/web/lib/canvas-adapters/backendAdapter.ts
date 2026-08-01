@@ -1,4 +1,10 @@
-import { CanvasAdapter, CanvasOperation, BackendDesignDoc, BackendNode, BackendEdge } from "@/types/canvas";
+import {
+  CanvasAdapter,
+  CanvasOperation,
+  BackendDesignDoc,
+  BackendNode,
+  BackendEdge,
+} from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 
 export interface BackendStoreActions {
@@ -60,7 +66,7 @@ export class BackendCanvasAdapter implements CanvasAdapter<BackendDesignDoc> {
           this.actions.deleteEdge(op.id);
           break;
         case "run_auto_layout":
-          // Layout will be handled in the component that watches for this signal, 
+          // Layout will be handled in the component that watches for this signal,
           // or we can implement elkjs directly here if we pass it down
           break;
       }
@@ -69,7 +75,7 @@ export class BackendCanvasAdapter implements CanvasAdapter<BackendDesignDoc> {
 
   serialize(): string {
     const { nodes, edges } = this.getStateFn();
-    
+
     if (nodes.length === 0) return "Backend Canvas is empty.";
 
     let output = "Backend Canvas Nodes:\n";
@@ -78,27 +84,41 @@ export class BackendCanvasAdapter implements CanvasAdapter<BackendDesignDoc> {
       if (n.type === "entity" && n.data.columns) {
         extra = ` (Columns: ${n.data.columns.map((c) => c.name).join(", ")})`;
       } else if (n.type === "service") {
-        const eps = n.data.endpoints?.map((ep) => `${ep.type} ${ep.name} (id: ${ep.id})`).join(", ");
-        const pub = n.data.publishedEvents?.map((pe) => `${pe.name} (id: ${pe.id})`).join(", ");
-        const sub = n.data.consumedEvents?.map((ce) => `${ce.name} (id: ${ce.id})`).join(", ");
-        
+        const eps = n.data.endpoints
+          ?.map((ep) => `${ep.type} ${ep.name} (id: ${ep.id})`)
+          .join(", ");
+        const pub = n.data.publishedEvents
+          ?.map((pe) => `${pe.name} (id: ${pe.id})`)
+          .join(", ");
+        const sub = n.data.consumedEvents
+          ?.map((ce) => `${ce.name} (id: ${ce.id})`)
+          .join(", ");
+
         const details = [];
         if (eps) details.push(`Endpoints: ${eps}`);
         if (pub) details.push(`Publishes: ${pub}`);
         if (sub) details.push(`Consumes: ${sub}`);
         if (details.length > 0) extra = `\n  ${details.join("\n  ")}`;
       } else if (n.type === "webClient") {
-        const evs = n.data.events?.map((ev) => `${ev.name} (id: ${ev.id})`).join(", ");
+        const evs = n.data.events
+          ?.map((ev) => `${ev.name} (id: ${ev.id})`)
+          .join(", ");
         if (evs) extra = `\n  Events: ${evs}`;
       } else if (n.type === "api_gateway") {
-        const rules = n.data.authRules?.map((rule) => {
-          const details = rule.description ? ` — ${rule.description}` : "";
-          return `${rule.name || "Unnamed"} [${rule.type}]${details} (id: ${rule.id})`;
-        }).join(", ");
-        const routes = n.data.routes?.map((route) => {
-          const authRule = n.data.authRules?.find((rule) => rule.id === route.authRuleId)?.name || "No auth rule";
-          return `${route.method || "GET"} ${route.name}${route.service ? ` → ${route.service}` : ""} → ${authRule}`;
-        }).join(", ");
+        const rules = n.data.authRules
+          ?.map((rule) => {
+            const details = rule.description ? ` — ${rule.description}` : "";
+            return `${rule.name || "Unnamed"} [${rule.type}]${details} (id: ${rule.id})`;
+          })
+          .join(", ");
+        const routes = n.data.routes
+          ?.map((route) => {
+            const authRule =
+              n.data.authRules?.find((rule) => rule.id === route.authRuleId)
+                ?.name || "No auth rule";
+            return `${route.method || "GET"} ${route.name}${route.service ? ` → ${route.service}` : ""} → ${authRule}`;
+          })
+          .join(", ");
         const details = [];
         if (rules) details.push(`Auth rules: ${rules}`);
         if (routes) details.push(`Endpoints: ${routes}`);
@@ -110,8 +130,10 @@ export class BackendCanvasAdapter implements CanvasAdapter<BackendDesignDoc> {
     if (edges.length > 0) {
       output += "\nConnections:\n";
       edges.forEach((e) => {
-        const sourceNode = nodes.find(n => n.id === e.source)?.data.label || e.source;
-        const targetNode = nodes.find(n => n.id === e.target)?.data.label || e.target;
+        const sourceNode =
+          nodes.find((n) => n.id === e.source)?.data.label || e.source;
+        const targetNode =
+          nodes.find((n) => n.id === e.target)?.data.label || e.target;
         const label = e.data?.label ? ` (label: ${e.data.label})` : "";
         output += `- ${sourceNode} -> ${targetNode} [${e.type}]${label}\n`;
       });

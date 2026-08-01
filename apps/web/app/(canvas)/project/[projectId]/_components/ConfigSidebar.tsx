@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@workspace/ui/components/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@workspace/ui/components/sheet";
 import { ChevronLeft } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { EndpointConfig } from "./config-sidebar/EndpointConfig";
@@ -14,8 +20,10 @@ import { EventTestingConfig } from "./config-sidebar/EventTestingConfig";
 import { LangGraphRouteConfig } from "./config-sidebar/LangGraphRouteConfig";
 
 export const ConfigSidebar = () => {
-  const activeConfigItem = useBackendCanvasStore(s => s.activeConfigItem);
-  const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
+  const activeConfigItem = useBackendCanvasStore((s) => s.activeConfigItem);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
 
   const [width, setWidth] = useState(540);
   const isDragging = useRef(false);
@@ -29,17 +37,28 @@ export const ConfigSidebar = () => {
       return;
     }
 
-    setHistory(prev => {
-      if (prev.length > 1 && prev[prev.length - 2]?.id === activeConfigItem.id && prev[prev.length - 2]?.type === activeConfigItem.type) {
+    setHistory((prev) => {
+      if (
+        prev.length > 1 &&
+        prev[prev.length - 2]?.id === activeConfigItem.id &&
+        prev[prev.length - 2]?.type === activeConfigItem.type
+      ) {
         return prev.slice(0, prev.length - 1);
       }
-      
-      if (prev.length > 0 && prev[prev.length - 1]?.id === activeConfigItem.id && prev[prev.length - 1]?.type === activeConfigItem.type) {
+
+      if (
+        prev.length > 0 &&
+        prev[prev.length - 1]?.id === activeConfigItem.id &&
+        prev[prev.length - 1]?.type === activeConfigItem.type
+      ) {
         return prev;
       }
-      
-      if (prev.length > 0 && prev[prev.length - 1]?.nodeId !== activeConfigItem.nodeId) {
-         return [activeConfigItem];
+
+      if (
+        prev.length > 0 &&
+        prev[prev.length - 1]?.nodeId !== activeConfigItem.nodeId
+      ) {
+        return [activeConfigItem];
       }
 
       return [...prev, activeConfigItem];
@@ -72,7 +91,7 @@ export const ConfigSidebar = () => {
   }, []);
 
   const open = activeConfigItem !== null;
-  
+
   if (!open) return null;
 
   const type = activeConfigItem.type;
@@ -80,16 +99,20 @@ export const ConfigSidebar = () => {
   const nodeId = activeConfigItem.nodeId || "";
 
   return (
-    <Sheet modal={false} open={open} onOpenChange={(isOpen) => !isOpen && setActiveConfigItem(null)}>
-      <SheetContent 
-        hideOverlay 
+    <Sheet
+      modal={false}
+      open={open}
+      onOpenChange={(isOpen) => !isOpen && setActiveConfigItem(null)}
+    >
+      <SheetContent
+        hideOverlay
         onInteractOutside={(e) => {
-          if (type === 'eventTesting') {
+          if (type === "eventTesting") {
             e.preventDefault();
           }
         }}
         className="overflow-y-auto bg-background/80 backdrop-blur-xl border-l border-border/50 shadow-2xl p-6 sm:p-8 transition-none"
-        style={{ maxWidth: '100vw', width: width }}
+        style={{ maxWidth: "100vw", width: width }}
       >
         <div
           className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-primary/20 z-50 transition-colors"
@@ -100,17 +123,22 @@ export const ConfigSidebar = () => {
         <SheetHeader className="hidden">
           <SheetTitle>Configuration</SheetTitle>
           <SheetDescription>
-            {type === 'endpoint' ? "Configure endpoint properties." : 
-             type === 'task' ? "Configure task properties." :
-             type === 'searchIndex' ? "Configure search index properties." :
-             type === 'authRule' ? "Configure reusable authentication policy." :
-             type === 'identityProvider' ? "Configure identity provider." :
-             "Configure event and messaging properties."}
+            {type === "endpoint"
+              ? "Configure endpoint properties."
+              : type === "task"
+                ? "Configure task properties."
+                : type === "searchIndex"
+                  ? "Configure search index properties."
+                  : type === "authRule"
+                    ? "Configure reusable authentication policy."
+                    : type === "identityProvider"
+                      ? "Configure identity provider."
+                      : "Configure event and messaging properties."}
           </SheetDescription>
         </SheetHeader>
 
         {history.length > 1 && (
-          <div 
+          <div
             onClick={handleBack}
             className="flex items-center text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6 transition-colors"
           >
@@ -119,15 +147,35 @@ export const ConfigSidebar = () => {
           </div>
         )}
 
-        {type === 'endpoint' ? <EndpointConfig id={id} nodeId={nodeId} /> : 
-         type === 'task' ? <TaskConfig id={id} nodeId={nodeId} /> : 
-         type === 'searchIndex' ? <SearchIndexConfig id={id} nodeId={nodeId} sourceId={activeConfigItem.sourceId} /> :
-         type === 'authRule' ? <AuthRuleConfig id={id} nodeId={nodeId} /> :
-         type === 'identityProvider' ? <IdentityProviderConfig id={id} nodeId={nodeId} /> :
-         type === 'clientEvent' ? <ClientEventConfig id={id} nodeId={nodeId} /> :
-         type === 'eventTesting' ? <EventTestingConfig id={id} nodeId={nodeId} targetNodeId={activeConfigItem.targetNodeId!} endpointId={activeConfigItem.endpointId!} initialTab={activeConfigItem.initialTab} /> :
-         type === 'langgraphRoute' ? <LangGraphRouteConfig id={id} nodeId={nodeId} /> :
-         <EventConfig id={id} nodeId={nodeId} />}
+        {type === "endpoint" ? (
+          <EndpointConfig id={id} nodeId={nodeId} />
+        ) : type === "task" ? (
+          <TaskConfig id={id} nodeId={nodeId} />
+        ) : type === "searchIndex" ? (
+          <SearchIndexConfig
+            id={id}
+            nodeId={nodeId}
+            sourceId={activeConfigItem.sourceId}
+          />
+        ) : type === "authRule" ? (
+          <AuthRuleConfig id={id} nodeId={nodeId} />
+        ) : type === "identityProvider" ? (
+          <IdentityProviderConfig id={id} nodeId={nodeId} />
+        ) : type === "clientEvent" ? (
+          <ClientEventConfig id={id} nodeId={nodeId} />
+        ) : type === "eventTesting" ? (
+          <EventTestingConfig
+            id={id}
+            nodeId={nodeId}
+            targetNodeId={activeConfigItem.targetNodeId!}
+            endpointId={activeConfigItem.endpointId!}
+            initialTab={activeConfigItem.initialTab}
+          />
+        ) : type === "langgraphRoute" ? (
+          <LangGraphRouteConfig id={id} nodeId={nodeId} />
+        ) : (
+          <EventConfig id={id} nodeId={nodeId} />
+        )}
       </SheetContent>
     </Sheet>
   );

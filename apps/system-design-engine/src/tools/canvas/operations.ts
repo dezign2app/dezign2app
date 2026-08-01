@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const CreateServiceSchema = z.object({
   projectId: z.string(),
@@ -19,17 +19,17 @@ export class CanvasOperations {
   static async createService(params: z.infer<typeof CreateServiceSchema>) {
     // Generate operation to create a service node
     return {
-      type: 'CREATE_NODE',
-      nodeType: 'Service',
-      ...params
+      type: "CREATE_NODE",
+      nodeType: "Service",
+      ...params,
     };
   }
 
   static async connectNodes(params: z.infer<typeof ConnectNodesSchema>) {
     // Generate operation to connect two nodes
     return {
-      type: 'CREATE_EDGE',
-      ...params
+      type: "CREATE_EDGE",
+      ...params,
     };
   }
 }

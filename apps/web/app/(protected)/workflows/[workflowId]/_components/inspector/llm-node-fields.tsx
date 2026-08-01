@@ -75,9 +75,7 @@ export const LlmNodeFields = ({
           value={config.model ?? ""}
           disabled={isReadOnly}
           placeholder="gpt-4.1-mini"
-          onChange={(event) =>
-            updateConfig({ model: event.target.value })
-          }
+          onChange={(event) => updateConfig({ model: event.target.value })}
         />
       </Field>
 
@@ -148,9 +146,7 @@ export const LlmNodeFields = ({
           className="min-h-32"
           value={config.prompt}
           disabled={isReadOnly}
-          onChange={(event) =>
-            updateConfig({ prompt: event.target.value })
-          }
+          onChange={(event) => updateConfig({ prompt: event.target.value })}
         />
       </Field>
     </div>

@@ -21,10 +21,18 @@ const frontendTools = [
       parameters: {
         type: "object",
         properties: {
-          type: { type: "string", description: "Shape type, e.g., 'rectangle', 'ellipse', 'text', 'arrow', 'frame'" },
+          type: {
+            type: "string",
+            description:
+              "Shape type, e.g., 'rectangle', 'ellipse', 'text', 'arrow', 'frame'",
+          },
           x: { type: "number", description: "X coordinate" },
           y: { type: "number", description: "Y coordinate" },
-          props: { type: "object", description: "Additional properties for the shape, such as w, h, text, color, etc." },
+          props: {
+            type: "object",
+            description:
+              "Additional properties for the shape, such as w, h, text, color, etc.",
+          },
         },
         required: ["type", "x", "y"],
       },
@@ -80,9 +88,27 @@ const backendTools = [
       parameters: {
         type: "object",
         properties: {
-          type: { type: "string", enum: ["service", "database", "sqs", "redis-pubsub", "kafka", "redis-streams", "entity", "group", "webClient", "external"] },
+          type: {
+            type: "string",
+            enum: [
+              "service",
+              "database",
+              "sqs",
+              "redis-pubsub",
+              "kafka",
+              "redis-streams",
+              "entity",
+              "group",
+              "webClient",
+              "external",
+            ],
+          },
           label: { type: "string", description: "Name of the node" },
-          data: { type: "object", description: "Additional data for the node. For 'sqs': { queues: [{ id, name, description, schema, version, kind: 'queue' }], sqsBroker: { visibilityTimeout, delay, fifo: boolean }, delivery, failureHandling }. For 'redis-pubsub': { channels: [{ id, name, description, schema, version, kind: 'channel' }], redisPubSubBroker: {}, delivery }. For 'kafka': { topics: [{ id, name, description, schema, version, kind: 'topic' }], kafkaBroker: { partitions, replication, compression, ttl, batchSize }, delivery, ordering, retention }. For 'redis-streams': { streams: [{ id, name, description, schema, version, kind: 'stream' }], redisBroker: { consumerGroup }, delivery, ordering, retention }. For 'entity': { columns: [{ name, type, isPrimaryKey, isForeignKey, isNotNull, isUnique }] }." },
+          data: {
+            type: "object",
+            description:
+              "Additional data for the node. For 'sqs': { queues: [{ id, name, description, schema, version, kind: 'queue' }], sqsBroker: { visibilityTimeout, delay, fifo: boolean }, delivery, failureHandling }. For 'redis-pubsub': { channels: [{ id, name, description, schema, version, kind: 'channel' }], redisPubSubBroker: {}, delivery }. For 'kafka': { topics: [{ id, name, description, schema, version, kind: 'topic' }], kafkaBroker: { partitions, replication, compression, ttl, batchSize }, delivery, ordering, retention }. For 'redis-streams': { streams: [{ id, name, description, schema, version, kind: 'stream' }], redisBroker: { consumerGroup }, delivery, ordering, retention }. For 'entity': { columns: [{ name, type, isPrimaryKey, isForeignKey, isNotNull, isUnique }] }.",
+          },
         },
         required: ["type", "label"],
       },
@@ -127,8 +153,14 @@ const backendTools = [
         properties: {
           source: { type: "string", description: "Source node ID" },
           target: { type: "string", description: "Target node ID" },
-          type: { type: "string", enum: ["connection", "foreign-key", "message"] },
-          data: { type: "object", description: "Optional data like label or sequenceOrder" },
+          type: {
+            type: "string",
+            enum: ["connection", "foreign-key", "message"],
+          },
+          data: {
+            type: "object",
+            description: "Optional data like label or sequenceOrder",
+          },
         },
         required: ["source", "target", "type"],
       },
@@ -149,7 +181,7 @@ const backendTools = [
 
 export async function* streamCanvasAI(
   messages: any[],
-  canvasStateContext: string
+  canvasStateContext: string,
 ) {
   const tools = backendTools;
   const systemPrompt = `You are an expert AI software architect and UI designer. 
@@ -181,7 +213,7 @@ Be concise in your textual responses. Prefer using tools to update the canvas to
 
   let functionCallName = "";
   let functionCallArguments = "";
-  
+
   for await (const chunk of response) {
     const delta = chunk.choices[0]?.delta;
     if (!delta) continue;
@@ -200,27 +232,44 @@ Be concise in your textual responses. Prefer using tools to update the canvas to
         }
       }
     }
-    
+
     // When the stream finishes a tool call
     if (chunk.choices[0]?.finish_reason === "tool_calls") {
       try {
         const args = JSON.parse(functionCallArguments);
         let op: CanvasOperation | null = null;
-        
+
         if (functionCallName === "add_shape") {
-          op = { op: "add_shape", type: args.type, x: args.x, y: args.y, props: args.props };
+          op = {
+            op: "add_shape",
+            type: args.type,
+            x: args.x,
+            y: args.y,
+            props: args.props,
+          };
         } else if (functionCallName === "update_shape") {
           op = { op: "update_shape", id: args.id, props: args.props };
         } else if (functionCallName === "delete_shape") {
           op = { op: "delete_shape", id: args.id };
         } else if (functionCallName === "add_node") {
-          op = { op: "add_node", type: args.type, label: args.label, data: args.data };
+          op = {
+            op: "add_node",
+            type: args.type,
+            label: args.label,
+            data: args.data,
+          };
         } else if (functionCallName === "update_node") {
           op = { op: "update_node", id: args.id, changes: args.changes };
         } else if (functionCallName === "delete_node") {
           op = { op: "delete_node", id: args.id };
         } else if (functionCallName === "add_edge") {
-          op = { op: "add_edge", source: args.source, target: args.target, type: args.type, data: args.data };
+          op = {
+            op: "add_edge",
+            source: args.source,
+            target: args.target,
+            type: args.type,
+            data: args.data,
+          };
         } else if (functionCallName === "run_auto_layout") {
           op = { op: "run_auto_layout" };
         }
@@ -228,7 +277,6 @@ Be concise in your textual responses. Prefer using tools to update the canvas to
         if (op) {
           yield { type: "tool_call", op, name: functionCallName };
         }
-        
       } catch (err) {
         console.error("Failed to parse tool call arguments", err);
       }

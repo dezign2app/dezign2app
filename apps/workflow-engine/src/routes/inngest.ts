@@ -9,6 +9,6 @@ export const inngestRouter = serve({
   functions: [
     handleKanbanAction,
     executeWorkflowRunFunction,
-    handleWorkflowAction
+    handleWorkflowAction,
   ],
 });

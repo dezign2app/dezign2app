@@ -23,5 +23,5 @@ export const tools = [
   addKafkaNodeTool,
   addClientNodeTool,
   addSchemaTool,
-  addDbRefNodeTool
+  addDbRefNodeTool,
 ];

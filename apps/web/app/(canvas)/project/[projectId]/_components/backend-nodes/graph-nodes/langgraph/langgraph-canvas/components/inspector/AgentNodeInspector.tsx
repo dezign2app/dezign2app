@@ -7,7 +7,10 @@ import type {
   MemoryNode,
   LangGraphAgentResponseFormatConfig,
 } from "../../types";
-import type { LangGraphAgentMemoryConfig, LangGraphStateChannel } from "@/types/canvas";
+import type {
+  LangGraphAgentMemoryConfig,
+  LangGraphStateChannel,
+} from "@/types/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -56,17 +59,22 @@ export function AgentNodeInspector({
   stateChannels = [],
 }: AgentNodeInspectorProps) {
   const entities = useBackendCanvasStore(
-    useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector"))
+    useShallow((s) =>
+      s.nodes.filter(
+        (n) => n?.type === "entity" && n.data?.dbType !== "vector",
+      ),
+    ),
   );
 
-  const memConfig: LangGraphAgentMemoryConfig = selectedAgentData.memoryConfig || {
-    enabled: true,
-    checkpointer: "memory",
-    threadIdKey: "thread_id",
-    threadScope: "session",
-    autoSummarize: true,
-    saveMessages: true,
-  };
+  const memConfig: LangGraphAgentMemoryConfig =
+    selectedAgentData.memoryConfig || {
+      enabled: true,
+      checkpointer: "memory",
+      threadIdKey: "thread_id",
+      threadScope: "session",
+      autoSummarize: true,
+      saveMessages: true,
+    };
 
   const updateMemoryConfig = (changes: Partial<LangGraphAgentMemoryConfig>) => {
     onUpdateAgent({
@@ -77,15 +85,18 @@ export function AgentNodeInspector({
     });
   };
 
-  const rfConfig: LangGraphAgentResponseFormatConfig = selectedAgentData.responseFormat || {
-    enabled: false,
-    strategy: "auto",
-    schemaType: "json_schema",
-    schemaJson: "",
-    handleErrorMode: "default",
-  };
+  const rfConfig: LangGraphAgentResponseFormatConfig =
+    selectedAgentData.responseFormat || {
+      enabled: false,
+      strategy: "auto",
+      schemaType: "json_schema",
+      schemaJson: "",
+      handleErrorMode: "default",
+    };
 
-  const updateResponseFormat = (changes: Partial<LangGraphAgentResponseFormatConfig>) => {
+  const updateResponseFormat = (
+    changes: Partial<LangGraphAgentResponseFormatConfig>,
+  ) => {
     onUpdateAgent({
       responseFormat: {
         ...rfConfig,

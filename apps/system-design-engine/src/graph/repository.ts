@@ -1,4 +1,4 @@
-import { NodeMemory } from '../knowledge/documents.js';
+import { NodeMemory } from "../knowledge/documents.js";
 
 /**
  * Abstract interface to isolate the engine from the underlying persistence layer.

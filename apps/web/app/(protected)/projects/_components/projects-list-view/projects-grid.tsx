@@ -7,10 +7,14 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Sparkles } from "lucide-react";
 
 export const ProjectsGrid = () => {
-  const { results: projects, status, loadMore } = usePaginatedQuery(
+  const {
+    results: projects,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
     api.projects.getProjectsByOrganization,
     {},
-    { initialNumItems: 16 }
+    { initialNumItems: 16 },
   );
 
   const sentinelRef = React.useRef<HTMLDivElement>(null);
@@ -24,7 +28,7 @@ export const ProjectsGrid = () => {
           loadMore(8);
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     );
 
     if (sentinelRef.current) {
@@ -41,19 +45,17 @@ export const ProjectsGrid = () => {
           <ProjectCard key={project._id} project={project} />
         ))}
       </div>
-      
+
       {/* Sentinel for Infinite Scroll */}
       {(status === "CanLoadMore" || status === "LoadingMore") && (
-        <div 
-          ref={sentinelRef} 
+        <div
+          ref={sentinelRef}
           className="flex justify-center mt-4 min-h-[40px]"
         >
-          {status === "LoadingMore" && (
-            <Spinner className="h-6 w-6" />
-          )}
+          {status === "LoadingMore" && <Spinner className="h-6 w-6" />}
         </div>
       )}
-      
+
       {projects.length === 0 && status === "Exhausted" && (
         <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border-2 border-dashed bg-muted/30 text-center animate-in fade-in zoom-in duration-300 mx-auto w-[95%]">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-lg bg-background shadow-sm">
@@ -68,6 +70,3 @@ export const ProjectsGrid = () => {
     </div>
   );
 };
-
-
-            

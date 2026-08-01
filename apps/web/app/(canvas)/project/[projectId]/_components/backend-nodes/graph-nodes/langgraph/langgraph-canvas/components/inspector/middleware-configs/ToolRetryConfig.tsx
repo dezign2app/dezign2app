@@ -2,7 +2,13 @@ import React from "react";
 import { RotateCcw } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { LocalInput } from "../../../../../common/shared";
 import type { MiddlewareConfigProps } from "./types";
 
@@ -11,12 +17,16 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
     <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
       <div className="flex items-center gap-2">
         <RotateCcw className="w-4 h-4 text-yellow-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tool Retry Config</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Tool Retry Config
+        </h3>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Max Retries</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Max Retries
+          </Label>
           <LocalInput
             type="number"
             min="0"
@@ -33,7 +43,9 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Backoff Factor</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Backoff Factor
+          </Label>
           <LocalInput
             type="number"
             step="0.1"
@@ -53,7 +65,9 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Initial Delay (ms)</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Initial Delay (ms)
+          </Label>
           <LocalInput
             type="number"
             value={data.toolRetryConfig?.initialDelayMs ?? 1000}
@@ -69,7 +83,9 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-[11px] font-semibold text-foreground">Max Delay (ms)</Label>
+          <Label className="text-[11px] font-semibold text-foreground">
+            Max Delay (ms)
+          </Label>
           <LocalInput
             type="number"
             value={data.toolRetryConfig?.maxDelayMs ?? 60000}
@@ -87,7 +103,9 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex items-center justify-between text-xs">
-        <Label htmlFor="retry-jitter" className="text-xs cursor-pointer">Add Jitter (±25%)</Label>
+        <Label htmlFor="retry-jitter" className="text-xs cursor-pointer">
+          Add Jitter (±25%)
+        </Label>
         <Switch
           id="retry-jitter"
           checked={data.toolRetryConfig?.jitter ?? true}
@@ -101,7 +119,9 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">On Exhausted Retries</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          On Exhausted Retries
+        </Label>
         <Select
           value={data.toolRetryConfig?.onFailure || "continue"}
           onValueChange={(val: any) =>
@@ -117,21 +137,28 @@ export function ToolRetryConfig({ data, onUpdate }: MiddlewareConfigProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="continue">continue (Return error ToolMessage)</SelectItem>
+            <SelectItem value="continue">
+              continue (Return error ToolMessage)
+            </SelectItem>
             <SelectItem value="error">error (Throw exception)</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Apply to Specific Tools</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Apply to Specific Tools
+        </Label>
         <LocalInput
           value={data.toolRetryConfig?.tools?.join(", ") || ""}
           onChange={(e) =>
             onUpdate({
               toolRetryConfig: {
                 ...data.toolRetryConfig,
-                tools: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                tools: e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean),
               },
             })
           }

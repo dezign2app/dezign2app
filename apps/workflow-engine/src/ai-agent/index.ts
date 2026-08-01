@@ -20,7 +20,7 @@ export interface ChatMessage {
 }
 
 interface EditOperation {
-  type: 'chat_response';
+  type: "chat_response";
   content: string;
 }
 
@@ -30,12 +30,12 @@ export const AgentStateAnnotation = Annotation.Root({
   userMessage: Annotation<string>,
   conversationId: Annotation<string | undefined>,
   sessionToken: Annotation<string>,
-  
+
   // Processing
-  intent: Annotation<'kanban' | 'workflow' | 'general' | null>,
+  intent: Annotation<"kanban" | "workflow" | "general" | null>,
   intentReasoning: Annotation<string | undefined>,
   chatHistory: Annotation<ChatHistoryItem[]>,
-  
+
   // Output
   operations: Annotation<EditOperation[]>,
   error: Annotation<string | undefined>,
@@ -44,28 +44,37 @@ export const AgentStateAnnotation = Annotation.Root({
 // ============= AI CLIENT =============
 const aiModel = getAIModel();
 
-export async function callAI(messages: ChatMessage[], options: {
-  returnJson?: boolean;
-  temperature?: number;
-  tags?: string[];
-  config?: RunnableConfig;
-} = {}) {
+export async function callAI(
+  messages: ChatMessage[],
+  options: {
+    returnJson?: boolean;
+    temperature?: number;
+    tags?: string[];
+    config?: RunnableConfig;
+  } = {},
+) {
   const tags = [...(options.tags || []), ...(options.config?.tags || [])];
-  const stream = await aiModel.stream(messages as BaseLanguageModelInput, { ...options.config, tags });
+  const stream = await aiModel.stream(messages as BaseLanguageModelInput, {
+    ...options.config,
+    tags,
+  });
 
   let text = "";
   for await (const chunk of stream) {
-    if (typeof chunk.content === 'string') text += chunk.content;
+    if (typeof chunk.content === "string") text += chunk.content;
     else if (Array.isArray(chunk.content)) {
       for (const part of chunk.content) {
-        if (typeof part === 'string') text += part;
-        else if (part?.type === 'text') text += part.text ?? '';
+        if (typeof part === "string") text += part;
+        else if (part?.type === "text") text += part.text ?? "";
       }
     }
   }
 
   if (options.returnJson) {
-    let cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    let cleaned = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
     return JSON.parse(cleaned);
   }
   return text;
@@ -73,16 +82,19 @@ export async function callAI(messages: ChatMessage[], options: {
 
 // ============= NODES =============
 
-async function initialize(state: typeof AgentStateAnnotation.State, config: RunnableConfig) {
+async function initialize(
+  state: typeof AgentStateAnnotation.State,
+  config: RunnableConfig,
+) {
   console.log("🚀 Initializing AI Agent...");
-  
+
   let chatHistory: ChatHistoryItem[] = [];
   if (state.conversationId) {
     try {
       const client = getConvexClient(config?.configurable?.token);
       const messages = await client.query(api.ai.messages.getLastNMessages, {
         conversationId: state.conversationId as Id<"conversations">,
-        n: 20
+        n: 20,
       });
       chatHistory = (messages || []).map((m) => ({
         ...m,
@@ -97,38 +109,47 @@ async function initialize(state: typeof AgentStateAnnotation.State, config: Runn
   return { chatHistory };
 }
 
-async function handleGeneral(state: typeof AgentStateAnnotation.State, config: RunnableConfig) {
+async function handleGeneral(
+  state: typeof AgentStateAnnotation.State,
+  config: RunnableConfig,
+) {
   console.log("💬 Handling general chat");
-  const response = await callAI([
-    ...state.chatHistory.map(m => ({ role: m.role.toLowerCase() as "user" | "assistant" | "system", content: m.content })),
-    { role: "user", content: state.userMessage }
-  ], { tags: ["chat_stream"], config });
+  const response = await callAI(
+    [
+      ...state.chatHistory.map((m) => ({
+        role: m.role.toLowerCase() as "user" | "assistant" | "system",
+        content: m.content,
+      })),
+      { role: "user", content: state.userMessage },
+    ],
+    { tags: ["chat_stream"], config },
+  );
 
   return {
     operations: [
       {
         type: "chat_response",
-        content: response
-      }
-    ]
+        content: response,
+      },
+    ],
   };
 }
 
 // ============= ROUTING LOGIC =============
 function routeByIntent(state: typeof AgentStateAnnotation.State): string {
-  if (state.intent === 'kanban' || state.intent === 'workflow') return END; // Handled by handler.ts -> Inngest
-  return 'handleGeneral';
+  if (state.intent === "kanban" || state.intent === "workflow") return END; // Handled by handler.ts -> Inngest
+  return "handleGeneral";
 }
 
 // ============= BUILD THE GRAPH =============
 const workflow = new StateGraph(AgentStateAnnotation)
-  .addNode('initialize', initialize)
-  .addNode('classifyIntent', classifyIntent)
-  .addNode('handleGeneral', handleGeneral)
+  .addNode("initialize", initialize)
+  .addNode("classifyIntent", classifyIntent)
+  .addNode("handleGeneral", handleGeneral)
 
-  .addEdge(START, 'initialize')
-  .addEdge('initialize', 'classifyIntent')
-  .addConditionalEdges('classifyIntent', routeByIntent)
-  .addEdge('handleGeneral', END);
+  .addEdge(START, "initialize")
+  .addEdge("initialize", "classifyIntent")
+  .addConditionalEdges("classifyIntent", routeByIntent)
+  .addEdge("handleGeneral", END);
 
 export const aiAgent = workflow.compile();

@@ -38,7 +38,9 @@ export function extractAuthToken(req: Request): string | null {
   }
 
   if (!rawHeader.startsWith("Bearer ")) {
-    console.warn(`[AUTH] Authorization header does not start with 'Bearer '. Got: "${rawHeader.substring(0, 20)}..."`);
+    console.warn(
+      `[AUTH] Authorization header does not start with 'Bearer '. Got: "${rawHeader.substring(0, 20)}..."`,
+    );
     return null;
   }
 
@@ -48,11 +50,16 @@ export function extractAuthToken(req: Request): string | null {
   return token;
 }
 
-async function validateConvexApiKey(
-  key: string,
-): Promise<{ userId: string; orgId?: string; keyId: string; projectId?: string } | null> {
+async function validateConvexApiKey(key: string): Promise<{
+  userId: string;
+  orgId?: string;
+  keyId: string;
+  projectId?: string;
+} | null> {
   const preview = key.substring(0, 16) + "...";
-  console.log(`[AUTH] Validating API key: "${preview}" against Convex at ${CONVEX_URL}`);
+  console.log(
+    `[AUTH] Validating API key: "${preview}" against Convex at ${CONVEX_URL}`,
+  );
   console.log(`[AUTH] Key starts with sk_live_: ${key.startsWith("sk_live_")}`);
 
   if (!CONVEX_URL) {
@@ -74,7 +81,9 @@ async function validateConvexApiKey(
     console.log(`[AUTH] Convex response status: ${response.status}`);
 
     if (!response.ok) {
-      console.error(`[AUTH] Convex query failed with status ${response.status}`);
+      console.error(
+        `[AUTH] Convex query failed with status ${response.status}`,
+      );
       return null;
     }
 
@@ -83,11 +92,15 @@ async function validateConvexApiKey(
     console.log(`[AUTH] Convex response value:`, JSON.stringify(data.value));
 
     if (data.status === "success" && data.value) {
-      console.log(`[AUTH] API key valid — userId=${data.value.userId}, projectId=${data.value.projectId ?? "NONE"}, keyId=${data.value.keyId}`);
+      console.log(
+        `[AUTH] API key valid — userId=${data.value.userId}, projectId=${data.value.projectId ?? "NONE"}, keyId=${data.value.keyId}`,
+      );
       return data.value;
     }
 
-    console.warn("[AUTH] API key not found in Convex (value was null/undefined)");
+    console.warn(
+      "[AUTH] API key not found in Convex (value was null/undefined)",
+    );
     return null;
   } catch (err) {
     console.error("[AUTH] Error validating API key:", err);
@@ -96,16 +109,24 @@ async function validateConvexApiKey(
 }
 
 export async function resolveAuth(token: string): Promise<AuthContext | null> {
-  console.log(`[AUTH] resolveAuth called — token type: ${
-    token.startsWith("sk_live_") ? "sk_live API key" :
-    token.startsWith("sk_test_") ? "sk_test API key" :
-    token.includes(".") ? "JWT" : "unknown"
-  }`);
+  console.log(
+    `[AUTH] resolveAuth called — token type: ${
+      token.startsWith("sk_live_")
+        ? "sk_live API key"
+        : token.startsWith("sk_test_")
+          ? "sk_test API key"
+          : token.includes(".")
+            ? "JWT"
+            : "unknown"
+    }`,
+  );
 
   if (token.startsWith("sk_live_") || token.startsWith("sk_test_")) {
     const validationResult = await validateConvexApiKey(token);
     if (validationResult) {
-      console.log(`[AUTH] Resolved API key auth — user=${validationResult.userId}, project=${validationResult.projectId ?? "NONE"}`);
+      console.log(
+        `[AUTH] Resolved API key auth — user=${validationResult.userId}, project=${validationResult.projectId ?? "NONE"}`,
+      );
       return {
         userId: validationResult.userId,
         token: token,
@@ -120,7 +141,9 @@ export async function resolveAuth(token: string): Promise<AuthContext | null> {
 
   const payload = verifyClerkJWT(token);
   if (payload && payload.sub) {
-    console.log(`[AUTH] Resolved JWT auth — user=${payload.sub} (no projectId from JWT)`);
+    console.log(
+      `[AUTH] Resolved JWT auth — user=${payload.sub} (no projectId from JWT)`,
+    );
     return {
       userId: payload.sub,
       token: token,

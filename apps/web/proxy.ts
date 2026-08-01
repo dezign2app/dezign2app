@@ -21,10 +21,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/public(.*)",
 ]);
 
-const isAuthRoute = createRouteMatcher([
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-]);
+const isAuthRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
 const isIgnoredRoute = createRouteMatcher([
   "/api/inngest(.*)",

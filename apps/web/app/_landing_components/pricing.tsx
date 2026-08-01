@@ -24,7 +24,9 @@ interface CreemProductItem {
   metadata?: Record<string, string | undefined>;
 }
 
-function normalizeBillingPeriod(item: CreemProductItem): "every-month" | "every-year" {
+function normalizeBillingPeriod(
+  item: CreemProductItem,
+): "every-month" | "every-year" {
   const period = String(
     item.billing_period ||
       item.billingPeriod ||
@@ -34,7 +36,7 @@ function normalizeBillingPeriod(item: CreemProductItem): "every-month" | "every-
       item.period ||
       item.metadata?.billing_period ||
       item.metadata?.billingPeriod ||
-      ""
+      "",
   ).toLowerCase();
 
   if (
@@ -48,8 +50,13 @@ function normalizeBillingPeriod(item: CreemProductItem): "every-month" | "every-
   return "every-month";
 }
 
-const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: PricingProps) => {
-  const [internalBilling, setInternalBilling] = useState<BillingCycle>("monthly");
+const Pricing = ({
+  hideHeader = false,
+  hideToggle = false,
+  externalBilling,
+}: PricingProps) => {
+  const [internalBilling, setInternalBilling] =
+    useState<BillingCycle>("monthly");
   const billing = externalBilling || internalBilling;
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,15 +91,21 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
           price: item.price ? item.price / 100 : 0,
           billingPeriod: normalizeBillingPeriod(item),
           featured: item.metadata?.featured === "true",
-          features: item.metadata?.features ? item.metadata.features.split(",") : [],
+          features: item.metadata?.features
+            ? item.metadata.features.split(",")
+            : [],
         }));
 
-        const hasAnnual = mappedPlans.some((p) => p.billingPeriod === "every-year");
+        const hasAnnual = mappedPlans.some(
+          (p) => p.billingPeriod === "every-year",
+        );
         if (!hasAnnual) {
           const generatedAnnualPlans: Plan[] = mappedPlans.map((plan) => ({
             ...plan,
             id: `${plan.id}-annual`,
-            name: plan.name.includes("Annual") ? plan.name : `${plan.name} Annual`,
+            name: plan.name.includes("Annual")
+              ? plan.name
+              : `${plan.name} Annual`,
             price: plan.price ? Math.round(plan.price * 10) : 0,
             billingPeriod: "every-year",
             features: plan.features.includes("2 Months Free")
@@ -122,7 +135,8 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
       <div
         className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] z-0"
         style={{
-          background: "radial-gradient(ellipse, rgba(0,0,0,0.04) 0%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse, rgba(0,0,0,0.04) 0%, transparent 70%)",
         }}
       />
 
@@ -168,7 +182,7 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
               .filter(
                 (plan) =>
                   plan.billingPeriod ===
-                  (billing === "monthly" ? "every-month" : "every-year")
+                  (billing === "monthly" ? "every-month" : "every-year"),
               )
               .map((plan) => (
                 <PlanCard key={plan.id} plan={plan} billing={billing} />

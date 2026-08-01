@@ -15,7 +15,15 @@ interface KanbanColumnProps {
   isPending: boolean;
 }
 
-const KanbanColumn = ({ id, title, tasks, onAddTask, onDeleteTask, color, isPending }: KanbanColumnProps) => {
+const KanbanColumn = ({
+  id,
+  title,
+  tasks,
+  onAddTask,
+  onDeleteTask,
+  color,
+  isPending,
+}: KanbanColumnProps) => {
   return (
     <div className="flex flex-col w-[350px] min-h-[500px] rounded-2xl bg-muted/30 border border-border p-4">
       <div className="flex items-center justify-between mb-4 px-2">
@@ -47,11 +55,11 @@ const KanbanColumn = ({ id, title, tasks, onAddTask, onDeleteTask, color, isPend
             }`}
           >
             {tasks.map((task, index) => (
-              <KanbanCard 
-                key={task._id} 
-                task={task} 
-                index={index} 
-                onDelete={onDeleteTask} 
+              <KanbanCard
+                key={task._id}
+                task={task}
+                index={index}
+                onDelete={onDeleteTask}
                 isPending={isPending}
               />
             ))}

@@ -59,8 +59,11 @@ type Props = {
   graphNodeLabels: Record<string, string>;
   connectedRoutes: ConnectedRouteInfo[];
   onRunTestCase?: (
-    testCase: SimulationTestCase
-  ) => Promise<SimulationTestCaseResult | void> | SimulationTestCaseResult | void;
+    testCase: SimulationTestCase,
+  ) =>
+    | Promise<SimulationTestCaseResult | void>
+    | SimulationTestCaseResult
+    | void;
 };
 
 export function LangGraphTestCasesInspector({
@@ -93,9 +96,9 @@ export function LangGraphTestCasesInspector({
         .sort(
           (left, right) =>
             compareText(left.name, right.name) ||
-            compareText(left.id, right.id)
+            compareText(left.id, right.id),
         ),
-    [testCases, graphNodeId]
+    [testCases, graphNodeId],
   );
 
   const orderedRoutes = useMemo(
@@ -105,9 +108,9 @@ export function LangGraphTestCasesInspector({
           compareText(left.method, right.method) ||
           compareText(left.label, right.label) ||
           compareText(left.sourceNodeLabel, right.sourceNodeLabel) ||
-          compareText(left.edgeId, right.edgeId)
+          compareText(left.edgeId, right.edgeId),
       ),
-    [connectedRoutes]
+    [connectedRoutes],
   );
 
   const defaultBody = useMemo(
@@ -117,15 +120,15 @@ export function LangGraphTestCasesInspector({
           channel.type === "number"
             ? 0
             : channel.type === "boolean"
-            ? false
-            : channel.type === "array" || channel.type === "messages"
-            ? []
-            : channel.type === "object" || channel.type === "json"
-            ? {}
-            : "";
+              ? false
+              : channel.type === "array" || channel.type === "messages"
+                ? []
+                : channel.type === "object" || channel.type === "json"
+                  ? {}
+                  : "";
         return body;
       }, {}),
-    [inputChannels]
+    [inputChannels],
   );
 
   const defaultState = useMemo(
@@ -134,7 +137,7 @@ export function LangGraphTestCasesInspector({
         state[channel.key] = channelDefault(channel);
         return state;
       }, {}),
-    [stateChannels]
+    [stateChannels],
   );
 
   const handleCreateNew = (caseName: string) => {
@@ -289,7 +292,8 @@ export function LangGraphTestCasesInspector({
                 className="h-6 text-xs px-2 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
                 onClick={handleAutoGenerate}
               >
-                <Sparkles className="h-3 w-3 mr-1 text-indigo-500" /> Auto-Generate
+                <Sparkles className="h-3 w-3 mr-1 text-indigo-500" />{" "}
+                Auto-Generate
               </Button>
 
               <Dialog open={newTcOpen} onOpenChange={setNewTcOpen}>
@@ -388,7 +392,8 @@ export function LangGraphTestCasesInspector({
             </Accordion>
           ) : (
             <div className="text-xs text-muted-foreground p-4 text-center border rounded-lg border-dashed">
-              No test cases saved for this graph yet. Click New or Auto-Generate to create one.
+              No test cases saved for this graph yet. Click New or Auto-Generate
+              to create one.
             </div>
           )}
         </TabsContent>

@@ -1,6 +1,13 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Brain, Trash2, Wrench, Code2, Database, GitBranch } from "lucide-react";
+import {
+  Brain,
+  Trash2,
+  Wrench,
+  Code2,
+  Database,
+  GitBranch,
+} from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
@@ -53,14 +60,22 @@ export const LangGraphStepHeader: React.FC<LangGraphStepHeaderProps> = ({
             "p-1 rounded border shrink-0",
             stepType === STEP_TYPE_ROUTER
               ? "bg-sky-500/20 text-sky-400 border-sky-500/30"
-              : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+              : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
           )}
         >
           {stepType === STEP_TYPE_LLM_CALL && <Brain className="w-3.5 h-3.5" />}
-          {stepType === STEP_TYPE_TOOL_NODE && <Wrench className="w-3.5 h-3.5" />}
-          {stepType === STEP_TYPE_CUSTOM_CODE && <Code2 className="w-3.5 h-3.5" />}
-          {stepType === STEP_TYPE_VECTOR_SEARCH && <Database className="w-3.5 h-3.5" />}
-          {stepType === STEP_TYPE_ROUTER && <GitBranch className="w-3.5 h-3.5" />}
+          {stepType === STEP_TYPE_TOOL_NODE && (
+            <Wrench className="w-3.5 h-3.5" />
+          )}
+          {stepType === STEP_TYPE_CUSTOM_CODE && (
+            <Code2 className="w-3.5 h-3.5" />
+          )}
+          {stepType === STEP_TYPE_VECTOR_SEARCH && (
+            <Database className="w-3.5 h-3.5" />
+          )}
+          {stepType === STEP_TYPE_ROUTER && (
+            <GitBranch className="w-3.5 h-3.5" />
+          )}
           {stepType !== STEP_TYPE_LLM_CALL &&
             stepType !== STEP_TYPE_TOOL_NODE &&
             stepType !== STEP_TYPE_CUSTOM_CODE &&

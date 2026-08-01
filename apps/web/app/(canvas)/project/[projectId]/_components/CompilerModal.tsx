@@ -128,10 +128,14 @@ function FileTreeItem({
   };
 
   const getFileIcon = (name: string) => {
-    if (name === "package.json") return <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
-    if (name.endsWith(".ts") || name.endsWith(".tsx")) return <FileCode className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
-    if (name.endsWith(".json") || name.endsWith(".yaml")) return <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-    if (name.endsWith(".md")) return <FileCode className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+    if (name === "package.json")
+      return <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+    if (name.endsWith(".ts") || name.endsWith(".tsx"))
+      return <FileCode className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
+    if (name.endsWith(".json") || name.endsWith(".yaml"))
+      return <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+    if (name.endsWith(".md"))
+      return <FileCode className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
     return <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
   };
 
@@ -187,7 +191,14 @@ function FileTreeItem({
   );
 }
 
-export function CompilerModal({ open, onOpenChange, projectName, projectId, overrideFiles, overrideTitle }: CompilerModalProps) {
+export function CompilerModal({
+  open,
+  onOpenChange,
+  projectName,
+  projectId,
+  overrideFiles,
+  overrideTitle,
+}: CompilerModalProps) {
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
@@ -195,7 +206,9 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
   const testCases = useSimulationStore((s) => s.testCases);
 
   const serviceNodes = nodes.filter((n) => n.type === "service");
-  const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
+  const entityNodes = nodes.filter(
+    (n) => n.type === "entity" || n.type === "db_ref",
+  );
 
   const [selectedFilename, setSelectedFilename] = useState<string>("README.md");
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -218,20 +231,26 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
         events,
         edges,
         testCases,
-        formattedProjectName
+        formattedProjectName,
       ),
-    [nodes, endpoints, events, edges, testCases, formattedProjectName]
+    [nodes, endpoints, events, edges, testCases, formattedProjectName],
   );
 
   const files = overrideFiles || monorepoResult.files;
-  const displayTitle = overrideTitle || (overrideFiles ? (projectName || "Compiled Code Workspace") : "Monorepo Compiler Engine");
+  const displayTitle =
+    overrideTitle ||
+    (overrideFiles
+      ? projectName || "Compiled Code Workspace"
+      : "Monorepo Compiler Engine");
 
   const fileTree = useMemo(() => buildFileTree(files), [files]);
 
   // Restore last opened file and expanded folder structure when modal opens
   React.useEffect(() => {
     if (!open) return;
-    const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+    const storageKey = projectId
+      ? `compiler_modal_state_${projectId}`
+      : "compiler_modal_state";
     let restoredFile: string | null = null;
     let restoredExpanded: string[] = [];
 
@@ -239,7 +258,10 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.selectedFilename && typeof parsed.selectedFilename === "string") {
+        if (
+          parsed.selectedFilename &&
+          typeof parsed.selectedFilename === "string"
+        ) {
           restoredFile = parsed.selectedFilename;
         }
         if (Array.isArray(parsed.expandedPaths)) {
@@ -250,11 +272,14 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
       console.error("Failed to restore compiler modal state", e);
     }
 
-    const fileExists = restoredFile && files.some((f) => f.filename === restoredFile);
+    const fileExists =
+      restoredFile && files.some((f) => f.filename === restoredFile);
     let targetFile = fileExists ? restoredFile! : "";
 
     if (!targetFile) {
-      const readme = files.find((f) => f.filename.toLowerCase() === "readme.md");
+      const readme = files.find(
+        (f) => f.filename.toLowerCase() === "readme.md",
+      );
       targetFile = readme ? readme.filename : files[0]?.filename || "README.md";
     }
 
@@ -272,13 +297,15 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
       const next = new Set(prev);
       parents.forEach((p) => next.add(p));
       try {
-        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        const storageKey = projectId
+          ? `compiler_modal_state_${projectId}`
+          : "compiler_modal_state";
         localStorage.setItem(
           storageKey,
           JSON.stringify({
             selectedFilename: filename,
             expandedPaths: Array.from(next),
-          })
+          }),
         );
       } catch (e) {
         console.error("Failed to save compiler modal state", e);
@@ -296,13 +323,15 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
         next.add(path);
       }
       try {
-        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        const storageKey = projectId
+          ? `compiler_modal_state_${projectId}`
+          : "compiler_modal_state";
         localStorage.setItem(
           storageKey,
           JSON.stringify({
             selectedFilename,
             expandedPaths: Array.from(next),
-          })
+          }),
         );
       } catch (e) {
         console.error("Failed to save compiler modal state", e);
@@ -311,7 +340,8 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
     });
   };
 
-  const activeFile = files.find((f) => f.filename === selectedFilename) || files[0];
+  const activeFile =
+    files.find((f) => f.filename === selectedFilename) || files[0];
 
   const handleCopy = () => {
     if (!activeFile) return;
@@ -323,7 +353,9 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
 
   const handleDownload = () => {
     if (!activeFile) return;
-    const blob = new Blob([activeFile.content], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([activeFile.content], {
+      type: "text/plain;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -371,7 +403,10 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
     });
 
     const defaultOpenFile =
-      files.find((f) => f.filename.endsWith("index.ts") || f.filename.endsWith("index.js"))?.filename ||
+      files.find(
+        (f) =>
+          f.filename.endsWith("index.ts") || f.filename.endsWith("index.js"),
+      )?.filename ||
       files[0]?.filename ||
       "README.md";
 
@@ -391,7 +426,7 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
       {
         newWindow: true,
         openFile: defaultOpenFile,
-      }
+      },
     );
     toast.success(`Opening project workspace live in StackBlitz Cloud IDE!`);
   };
@@ -410,19 +445,34 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
                   {displayTitle}
                 </DialogTitle>
                 <DialogDescription className="text-xs mt-0.5 text-orange-500">
-                  NOTICE: 🚧 Automated AI Business logic implementation,Testing & Deployment is under construction🚧
-                  <span className="block text-yellow-500"> Now download the repo and continue with your AI Coding Agents..!</span>
+                  NOTICE: 🚧 Automated AI Business logic implementation,Testing
+                  & Deployment is under construction🚧
+                  <span className="block text-yellow-500">
+                    {" "}
+                    Now download the repo and continue with your AI Coding
+                    Agents..!
+                  </span>
                 </DialogDescription>
               </div>
             </div>
 
             {files.length > 0 && (
               <div className="flex items-center gap-2">
-                <Button onClick={handleDownloadZip} disabled={downloadingZip} variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Button
+                  onClick={handleDownloadZip}
+                  disabled={downloadingZip}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                >
                   <Archive className="w-4 h-4 text-primary" />
                   {downloadingZip ? "Zipping..." : "Download ZIP"}
                 </Button>
-                <Button onClick={handleRunInCloud} size="sm" className="gap-1.5 text-xs">
+                <Button
+                  onClick={handleRunInCloud}
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                >
                   <Code className="w-4 h-4" />
                   Open IDE
                   <ExternalLink className="w-3 h-3 opacity-80" />
@@ -435,9 +485,12 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
         {files.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
             <Server className="w-12 h-12 text-muted-foreground/40" />
-            <p className="text-sm font-medium text-muted-foreground">No Nodes Found</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              No Nodes Found
+            </p>
             <p className="text-xs text-muted-foreground/70 max-w-sm">
-              Add Service, Database Entity, or LangGraph nodes on the canvas to generate backend code templates.
+              Add Service, Database Entity, or LangGraph nodes on the canvas to
+              generate backend code templates.
             </p>
           </div>
         ) : (
@@ -474,11 +527,25 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white">
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white"
+                  >
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
                     {copied ? "Copied" : "Copy"}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleDownload} className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownload}
+                    className="h-7 px-2 text-xs gap-1.5 text-slate-300 hover:text-white"
+                  >
                     <Download className="w-3.5 h-3.5" />
                     Download
                   </Button>
@@ -500,5 +567,3 @@ export function CompilerModal({ open, onOpenChange, projectName, projectId, over
     </Dialog>
   );
 }
-
-

@@ -54,7 +54,9 @@ export function AgentIdentitySection({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label className="text-xs font-semibold text-foreground">Agent Name</Label>
+          <Label className="text-xs font-semibold text-foreground">
+            Agent Name
+          </Label>
           <LocalInput
             value={selectedAgentData.name || ""}
             onChange={(e) => onUpdateAgent({ name: e.target.value })}
@@ -64,7 +66,9 @@ export function AgentIdentitySection({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label className="text-xs font-semibold text-foreground">System Prompt</Label>
+          <Label className="text-xs font-semibold text-foreground">
+            System Prompt
+          </Label>
           <LocalTextarea
             value={selectedAgentData.systemPrompt || ""}
             onChange={(e) => onUpdateAgent({ systemPrompt: e.target.value })}

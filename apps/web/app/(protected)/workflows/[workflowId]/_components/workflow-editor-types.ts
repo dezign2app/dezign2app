@@ -6,12 +6,7 @@ import type { Id } from "@workspace/backend/_generated/dataModel";
 
 export const WORKFLOW_NODE_MIME_TYPE = "application/x-workflow-node";
 
-export type WorkflowNodeKind =
-  | "start"
-  | "condition"
-  | "api"
-  | "llm"
-  | "end";
+export type WorkflowNodeKind = "start" | "condition" | "api" | "llm" | "end";
 
 export type WorkflowEdgeKind = "default" | "true" | "false";
 export type WorkflowCompileStatus = "valid" | "invalid";

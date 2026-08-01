@@ -2,9 +2,20 @@ import { ChatGroq } from "@langchain/groq";
 import { RunnableConfig } from "@langchain/core/runnables";
 import { StateGraph } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { SystemMessage, AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
+import {
+  SystemMessage,
+  AIMessage,
+  BaseMessage,
+  HumanMessage,
+} from "@langchain/core/messages";
 
-import { GraphAnnotation, DEFAULT_REQUIREMENTS, DEFAULT_PLAN, requirementsSchema, ImplementationPlanState } from "./state";
+import {
+  GraphAnnotation,
+  DEFAULT_REQUIREMENTS,
+  DEFAULT_PLAN,
+  requirementsSchema,
+  ImplementationPlanState,
+} from "./state";
 import { tools } from "./tools";
 import { systemPromptTemplate } from "./prompts";
 import { getConvexClient, formatCanvasState } from "./utils";
@@ -20,14 +31,19 @@ export function createGraph() {
   const apiKeyStr = process.env.GROQ_API_KEY;
   const model = process.env.GROQ_LLM_MODEL;
   if (!apiKeyStr || !model) {
-    throw new Error("Missing environment variables: GROQ_API_KEY or GROQ_LLM_MODEL");
+    throw new Error(
+      "Missing environment variables: GROQ_API_KEY or GROQ_LLM_MODEL",
+    );
   }
 
-  const apiKeys = apiKeyStr.split(',').map(k => k.trim()).filter(k => k.length > 0);
+  const apiKeys = apiKeyStr
+    .split(",")
+    .map((k) => k.trim())
+    .filter((k) => k.length > 0);
   if (apiKeys.length === 0) {
     throw new Error("GROQ_API_KEY is empty or invalid");
   }
-  
+
   const apiKey = apiKeys[apiKeyIndex];
   apiKeyIndex = (apiKeyIndex + 1) % apiKeys.length;
 
@@ -51,7 +67,7 @@ export function createGraph() {
     const toolNode = new ToolNode(tools);
     const result = await toolNode.invoke(
       { messages: [lastMessage] },
-      { configurable: { state } }
+      { configurable: { state } },
     );
     return { ...result, toolCallCount: numCalls };
   };
@@ -65,13 +81,19 @@ export function createGraph() {
   //    (relevant only while requirements.status === "pending").
   // 3. planDecision — did the user approve or ask to revise the proposed plan (relevant
   //    only while implementationPlan.status === "proposed").
-  const intentIdentifier = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const intentIdentifier = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const lastMessage = state.messages[state.messages.length - 1];
     if (!lastMessage || lastMessage.type !== "human") return {};
 
     const conversationContext = state.messages
       .slice(-6)
-      .map((m: BaseMessage) => `${m.type.toUpperCase()}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`)
+      .map(
+        (m: BaseMessage) =>
+          `${m.type.toUpperCase()}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`,
+      )
       .join("\n\n");
 
     const existing = state.requirements ?? DEFAULT_REQUIREMENTS;
@@ -83,12 +105,14 @@ export function createGraph() {
 questions. Determine "readyForRequirementsSync": true if the user's latest message
 sufficiently answers those questions, or explicitly says to proceed / use assumptions.
 Otherwise false.`
-        : (plan.status === "proposed" || plan.status === "schema_built" || plan.status === "nodes_built")
-        ? `The assistant just proposed an architecture stage (plan, schema, or nodes) and is awaiting approval.
+        : plan.status === "proposed" ||
+            plan.status === "schema_built" ||
+            plan.status === "nodes_built"
+          ? `The assistant just proposed an architecture stage (plan, schema, or nodes) and is awaiting approval.
 Determine "planDecision": "approve" if the user accepts it (e.g. "looks good", "proceed",
 "build it"), "revise" if they want changes to the plan, or "not_applicable" if their message
 doesn't address the approval at all.`
-        : "";
+          : "";
 
     const intentPrompt = new SystemMessage(
       `Analyze the user's latest message in the context of the recent conversation and determine the intent.
@@ -117,7 +141,7 @@ Return ONLY JSON, no prose, no markdown fences:
 }
 
 Recent Conversation Context:
-${conversationContext}`
+${conversationContext}`,
     );
 
     console.log("[DEBUG] Node: intentIdentifier invoking LLM");
@@ -126,14 +150,21 @@ ${conversationContext}`
     let intent = "CHAT";
     let affectsRequirements = false;
     let readyForRequirementsSync = false;
-    let planDecision: "approve" | "revise" | "not_applicable" = "not_applicable";
+    let planDecision: "approve" | "revise" | "not_applicable" =
+      "not_applicable";
     try {
-      const cleaned = response.content.toString().replace(/```json|```/g, "").trim();
+      const cleaned = response.content
+        .toString()
+        .replace(/```json|```/g, "")
+        .trim();
       const parsed = JSON.parse(cleaned);
       intent = parsed.intent ?? "CHAT";
       affectsRequirements = Boolean(parsed.affectsRequirements);
       readyForRequirementsSync = Boolean(parsed.readyForRequirementsSync);
-      if (parsed.planDecision === "approve" || parsed.planDecision === "revise") {
+      if (
+        parsed.planDecision === "approve" ||
+        parsed.planDecision === "revise"
+      ) {
         planDecision = parsed.planDecision;
       }
     } catch {
@@ -167,7 +198,11 @@ ${conversationContext}`
     return messages
       .filter((m) => m.type !== "tool")
       .map((m) => {
-        if (m.type === "ai" && (m as AIMessage).tool_calls && (m as AIMessage).tool_calls!.length > 0) {
+        if (
+          m.type === "ai" &&
+          (m as AIMessage).tool_calls &&
+          (m as AIMessage).tool_calls!.length > 0
+        ) {
           return new AIMessage(m.content || "(System design updated)");
         }
         return m;
@@ -175,31 +210,52 @@ ${conversationContext}`
   };
 
   // Node: Chat Agent (No Tools)
-  const chatAgent = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const chatAgent = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const systemMsg = new SystemMessage(
-      `You are a concise system architecture assistant. The user is asking a quick question — answer in 1-3 sentences max. Do NOT write essays, lists, bullet points, code snippets, or long explanations. Do NOT use tools. Base your answers on the current canvas state: ${state.canvasStateContext ?? "Canvas is empty."}`
+      `You are a concise system architecture assistant. The user is asking a quick question — answer in 1-3 sentences max. Do NOT write essays, lists, bullet points, code snippets, or long explanations. Do NOT use tools. Base your answers on the current canvas state: ${state.canvasStateContext ?? "Canvas is empty."}`,
     );
     console.log("[DEBUG] Node: chatAgent invoking LLM");
-    const response = await llm.invoke([systemMsg, ...sanitizeMessages(state.messages)], config);
+    const response = await llm.invoke(
+      [systemMsg, ...sanitizeMessages(state.messages)],
+      config,
+    );
     return { messages: [response] };
   };
 
   // Node: System Creator / Editor (With Tools)
-  const canvasAgent = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const canvasAgent = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const systemMsg = new SystemMessage(
-      systemPromptTemplate(state.canvasStateContext ?? "", state.requirements, state.implementationPlan)
+      systemPromptTemplate(
+        state.canvasStateContext ?? "",
+        state.requirements,
+        state.implementationPlan,
+      ),
     );
     console.log("[DEBUG] Node: canvasAgent invoking modelWithTools");
-    const response = await modelWithTools.invoke([systemMsg, ...state.messages], config);
+    const response = await modelWithTools.invoke(
+      [systemMsg, ...state.messages],
+      config,
+    );
     return { messages: [response] };
   };
 
   // Node: Reflect — reviews the outcome of tool calls and either retries
   // (emits new tool_calls) or wraps up with a summary.
-  const reflectAgent = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
-    const recentToolMsgs = state.messages.slice(-10).filter((m) => m.type === "tool");
+  const reflectAgent = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
+    const recentToolMsgs = state.messages
+      .slice(-10)
+      .filter((m) => m.type === "tool");
     const hasFailure = recentToolMsgs.some(
-      (m) => typeof m.content === "string" && m.content.startsWith("Failed to")
+      (m) => typeof m.content === "string" && m.content.startsWith("Failed to"),
     );
 
     const plan = state.implementationPlan ?? DEFAULT_PLAN;
@@ -218,10 +274,10 @@ ${conversationContext}`
       plan.status === "approved"
         ? `\n\nSTAGE CLOSING: If everything for the schema stage is complete (no more tool calls needed), end your response with a short, friendly question asking the user to approve the schema or request any changes before you proceed to building the service nodes and graph. Example: "Does the schema look good to you, or would you like any changes before I proceed to building the service nodes?"`
         : plan.status === "schema_approved"
-        ? `\n\nSTAGE CLOSING: If everything for the nodes stage is complete (no more tool calls needed), end your response with a short, friendly question asking the user to approve the nodes or request any changes before you proceed to connecting them. Example: "Do the service nodes look correct, or would you like any adjustments before I proceed to wiring up the connections?"`
-        : plan.status === "nodes_approved"
-        ? `\n\nSTAGE CLOSING: If all edges have been added and everything looks connected, end your response with a short summary confirming the architecture is complete and ask if there is anything the user would like to adjust.`
-        : "";
+          ? `\n\nSTAGE CLOSING: If everything for the nodes stage is complete (no more tool calls needed), end your response with a short, friendly question asking the user to approve the nodes or request any changes before you proceed to connecting them. Example: "Do the service nodes look correct, or would you like any adjustments before I proceed to wiring up the connections?"`
+          : plan.status === "nodes_approved"
+            ? `\n\nSTAGE CLOSING: If all edges have been added and everything looks connected, end your response with a short summary confirming the architecture is complete and ask if there is anything the user would like to adjust.`
+            : "";
 
     const reflectionPrompt = new HumanMessage(
       hasFailure
@@ -251,26 +307,41 @@ Approved Implementation Plan:
 ${plan.content || "none"}
 
 Recent tool results:
-${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`
+${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`,
     );
 
     const systemMsg = new SystemMessage(
-      systemPromptTemplate(state.canvasStateContext ?? "", state.requirements, state.implementationPlan)
+      systemPromptTemplate(
+        state.canvasStateContext ?? "",
+        state.requirements,
+        state.implementationPlan,
+      ),
     );
 
     console.log("[DEBUG] Node: reflectAgent invoking modelWithTools");
-    const response = await modelWithTools.invoke([systemMsg, ...state.messages, reflectionPrompt], config);
+    const response = await modelWithTools.invoke(
+      [systemMsg, ...state.messages, reflectionPrompt],
+      config,
+    );
     type AgentUpdate = {
       messages: BaseMessage[];
       implementationPlan?: ImplementationPlanState;
     };
     const update: AgentUpdate = { messages: [response] };
-    
-    const hasNewToolCalls = response.tool_calls && response.tool_calls.length > 0;
+
+    const hasNewToolCalls =
+      response.tool_calls && response.tool_calls.length > 0;
     if (!hasNewToolCalls) {
-      type ValidStatus = "proposed" | "approved" | "schema_built" | "schema_approved" | "nodes_built" | "nodes_approved" | "edges_built";
+      type ValidStatus =
+        | "proposed"
+        | "approved"
+        | "schema_built"
+        | "schema_approved"
+        | "nodes_built"
+        | "nodes_approved"
+        | "edges_built";
       let nextStatus: ValidStatus | "none" = plan.status;
-      
+
       if (plan.status === "approved") {
         nextStatus = "schema_built";
       } else if (plan.status === "schema_approved") {
@@ -280,9 +351,12 @@ ${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`
       }
 
       if (nextStatus !== plan.status && nextStatus !== "none") {
-        const nextPlan: ImplementationPlanState = { ...plan, status: nextStatus };
+        const nextPlan: ImplementationPlanState = {
+          ...plan,
+          status: nextStatus,
+        };
         update.implementationPlan = nextPlan;
-        
+
         if (state.projectId && state.convexUrl) {
           try {
             const convex = getConvexClient(state);
@@ -292,27 +366,42 @@ ${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`
               status: nextStatus,
             });
           } catch (error) {
-            console.error(`[DEBUG] Error upserting plan (${nextStatus}):`, error);
+            console.error(
+              `[DEBUG] Error upserting plan (${nextStatus}):`,
+              error,
+            );
           }
         }
       }
     }
-    
+
     return update;
   };
 
   // Helper: ask the LLM for requirements JSON, retrying once on malformed output
   // before giving up (never throws — caller decides the fallback).
-  const parseRequirementsWithRetry = async (prompt: string, config: RunnableConfig, maxAttempts = 2) => {
+  const parseRequirementsWithRetry = async (
+    prompt: string,
+    config: RunnableConfig,
+    maxAttempts = 2,
+  ) => {
     let lastError = "";
     for (let i = 0; i < maxAttempts; i++) {
       const suffix = lastError
         ? `\n\nYour previous output was invalid: ${lastError}. Return valid JSON only, no prose, no markdown fences.`
         : "";
-      console.log(`[DEBUG] Helper: parseRequirementsWithRetry invoking LLM (attempt ${i})`);
-      const response = await llm.invoke([new SystemMessage(prompt + suffix)], config);
+      console.log(
+        `[DEBUG] Helper: parseRequirementsWithRetry invoking LLM (attempt ${i})`,
+      );
+      const response = await llm.invoke(
+        [new SystemMessage(prompt + suffix)],
+        config,
+      );
       try {
-        const cleaned = response.content.toString().replace(/```json|```/g, "").trim();
+        const cleaned = response.content
+          .toString()
+          .replace(/```json|```/g, "")
+          .trim();
         return requirementsSchema.parse(JSON.parse(cleaned));
       } catch (error: unknown) {
         lastError = error instanceof Error ? error.message : String(error);
@@ -328,7 +417,10 @@ ${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`
   // same merge-style prompt, so nothing already confirmed gets silently dropped.
   // Always hands off to planAgent next — a confirmed requirement always needs an
   // approved plan before anything gets built.
-  const syncRequirements = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const syncRequirements = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const existing = state.requirements ?? {
       functional: [],
       nonFunctional: [],
@@ -338,7 +430,10 @@ ${recentToolMsgs.map((m) => m.content).join("\n")}${stageClosingInstruction}`
 
     const conversation = state.messages
       .slice(-12)
-      .map((m: BaseMessage) => `${m.type}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`)
+      .map(
+        (m: BaseMessage) =>
+          `${m.type}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`,
+      )
       .join("\n");
 
     const prompt = `Existing confirmed requirements (may be empty on a first-time build):
@@ -392,9 +487,15 @@ These are ops concerns, not architecture requirements.`;
   // Node: requirementsAgent — no tools bound. Runs while requirements are not yet
   // confirmed. Purely asks clarifying questions; structurally cannot call tools,
   // so there's no risk of it building prematurely regardless of what it's told.
-  const requirementsAgent = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const requirementsAgent = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const req = state.requirements ?? DEFAULT_REQUIREMENTS;
-    const hasBaseline = req.functional.length > 0 || req.nonFunctional.length > 0 || req.assumptions.length > 0;
+    const hasBaseline =
+      req.functional.length > 0 ||
+      req.nonFunctional.length > 0 ||
+      req.assumptions.length > 0;
 
     const prompt = new SystemMessage(
       hasBaseline
@@ -413,11 +514,14 @@ this. Be concise.`
 - What core features/actions users can perform
 - Approximate number of users or expected traffic scale
 - Any hard constraints (e.g. must use a specific database, real-time updates needed)
-Do NOT ask about read/write ratio, ops, deployment, or infrastructure. Do not propose an implementation plan yet; that happens after this. Be concise.`
+Do NOT ask about read/write ratio, ops, deployment, or infrastructure. Do not propose an implementation plan yet; that happens after this. Be concise.`,
     );
 
     console.log("[DEBUG] Node: requirementsAgent invoking LLM");
-    const response = await llm.invoke([prompt, ...sanitizeMessages(state.messages)], config);
+    const response = await llm.invoke(
+      [prompt, ...sanitizeMessages(state.messages)],
+      config,
+    );
     return { messages: [response] };
   };
 
@@ -425,10 +529,14 @@ Do NOT ask about read/write ratio, ops, deployment, or infrastructure. Do not pr
   // plan has been approved yet. Proposes (or revises, given feedback) a detailed
   // technology/architecture plan as plain text and asks for approval. Cannot call
   // tools, so the canvas can't be touched until a human explicitly approves.
-  const planAgent = async (state: typeof GraphAnnotation.State, config: RunnableConfig) => {
+  const planAgent = async (
+    state: typeof GraphAnnotation.State,
+    config: RunnableConfig,
+  ) => {
     const req = state.requirements ?? DEFAULT_REQUIREMENTS;
     const priorPlan = state.implementationPlan ?? DEFAULT_PLAN;
-    const isRevision = priorPlan.status === "proposed" && priorPlan.content.length > 0;
+    const isRevision =
+      priorPlan.status === "proposed" && priorPlan.content.length > 0;
 
     const prompt = new SystemMessage(
       `You are a senior software architect. ${
@@ -487,13 +595,19 @@ CONTENT — cover only what applies, each as terse bullets:
 CRITICAL: Do NOT include a deployment plan, hosting details, or infrastructure operations in the architecture plan. Focus strictly on software architecture (services, schemas, APIs, brokers).
 
 End with a single short line asking the user to approve or say what to change. Do not
-restate the requirements back to them.`
+restate the requirements back to them.`,
     );
 
     console.log("[DEBUG] Node: planAgent invoking LLM");
-    const response = await llm.invoke([prompt, ...sanitizeMessages(state.messages.slice(-8))], config);
+    const response = await llm.invoke(
+      [prompt, ...sanitizeMessages(state.messages.slice(-8))],
+      config,
+    );
     const content = response.content.toString();
-    const implementationPlan: ImplementationPlanState = { content, status: "proposed" };
+    const implementationPlan: ImplementationPlanState = {
+      content,
+      status: "proposed",
+    };
 
     if (state.projectId && state.convexUrl) {
       try {
@@ -537,7 +651,10 @@ restate the requirements back to them.`
 
   const approveSchema = async (state: typeof GraphAnnotation.State) => {
     const plan = state.implementationPlan ?? DEFAULT_PLAN;
-    const approved: ImplementationPlanState = { ...plan, status: "schema_approved" };
+    const approved: ImplementationPlanState = {
+      ...plan,
+      status: "schema_approved",
+    };
 
     if (state.projectId && state.convexUrl) {
       try {
@@ -557,7 +674,10 @@ restate the requirements back to them.`
 
   const approveNodes = async (state: typeof GraphAnnotation.State) => {
     const plan = state.implementationPlan ?? DEFAULT_PLAN;
-    const approved: ImplementationPlanState = { ...plan, status: "nodes_approved" };
+    const approved: ImplementationPlanState = {
+      ...plan,
+      status: "nodes_approved",
+    };
 
     if (state.projectId && state.convexUrl) {
       try {
@@ -580,16 +700,18 @@ restate the requirements back to them.`
   const routeAfterIntent = (state: typeof GraphAnnotation.State) => {
     const req = state.requirements ?? DEFAULT_REQUIREMENTS;
     if (req.status !== "confirmed") {
-      return state.readyForRequirementsSync ? "syncRequirements" : "requirementsAgent";
+      return state.readyForRequirementsSync
+        ? "syncRequirements"
+        : "requirementsAgent";
     }
 
     const plan = state.implementationPlan ?? DEFAULT_PLAN;
-    const isBuildingPhase = 
-      plan.status === "approved" || 
-      plan.status === "schema_built" || 
-      plan.status === "schema_approved" || 
-      plan.status === "nodes_built" || 
-      plan.status === "nodes_approved" || 
+    const isBuildingPhase =
+      plan.status === "approved" ||
+      plan.status === "schema_built" ||
+      plan.status === "schema_approved" ||
+      plan.status === "nodes_built" ||
+      plan.status === "nodes_approved" ||
       plan.status === "edges_built";
 
     if (!isBuildingPhase) {
@@ -658,7 +780,12 @@ restate the requirements back to them.`
   // Router: after reflectAgent decides whether to retry or stop
   const shouldContinueReflect = (state: typeof GraphAnnotation.State) => {
     const lastMessage = state.messages[state.messages.length - 1];
-    if (lastMessage && "tool_calls" in lastMessage && Array.isArray((lastMessage as AIMessage).tool_calls) && (lastMessage as AIMessage).tool_calls!.length > 0) {
+    if (
+      lastMessage &&
+      "tool_calls" in lastMessage &&
+      Array.isArray((lastMessage as AIMessage).tool_calls) &&
+      (lastMessage as AIMessage).tool_calls!.length > 0
+    ) {
       return "tools";
     }
     return "__end__";

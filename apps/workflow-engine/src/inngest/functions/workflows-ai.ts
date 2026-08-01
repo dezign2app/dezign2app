@@ -43,10 +43,32 @@ interface ExistingWorkflowData {
 // ─── Targeted action types ────────────────────────────────────────────────────
 
 type TargetedAction =
-  | { op: "update_node"; nodeKey: string; config?: Record<string, unknown>; label?: string; type?: string }
-  | { op: "add_node"; nodeKey: string; type: string; label?: string; config?: Record<string, unknown>; positionX?: number; positionY?: number }
+  | {
+      op: "update_node";
+      nodeKey: string;
+      config?: Record<string, unknown>;
+      label?: string;
+      type?: string;
+    }
+  | {
+      op: "add_node";
+      nodeKey: string;
+      type: string;
+      label?: string;
+      config?: Record<string, unknown>;
+      positionX?: number;
+      positionY?: number;
+    }
   | { op: "remove_node"; nodeKey: string }
-  | { op: "upsert_edge"; edgeKey: string; source: string; target: string; kind?: "default" | "true" | "false"; sourceHandle?: string; targetHandle?: string }
+  | {
+      op: "upsert_edge";
+      edgeKey: string;
+      source: string;
+      target: string;
+      kind?: "default" | "true" | "false";
+      sourceHandle?: string;
+      targetHandle?: string;
+    }
   | { op: "remove_edge"; edgeKey: string };
 
 interface TargetedEditResponse {
@@ -75,7 +97,10 @@ function computeNewNodePosition(
     return { positionX: 300, positionY: 250 };
   }
   const maxX = Math.max(...existingNodes.map((n) => n.positionX));
-  return { positionX: maxX + 280, positionY: 250 + (index % 2 === 0 ? 0 : -120) };
+  return {
+    positionX: maxX + 280,
+    positionY: 250 + (index % 2 === 0 ? 0 : -120),
+  };
 }
 
 // ─── Inngest function ─────────────────────────────────────────────────────────
@@ -109,42 +134,50 @@ export const handleWorkflowAction = inngest.createFunction(
     // ── 1. Fetch existing workflow data ───────────────────────────────────────
     let existingWorkflowData: ExistingWorkflowData | null = null;
     if (workflowId) {
-      existingWorkflowData = await step.run("get-existing-workflow", async () => {
-        try {
-          return await client.query(api.workflows.crud.getWorkflowEditorData, {
-            workflowId: workflowId as Id<"workflows">,
-          }) as unknown as ExistingWorkflowData;
-        } catch (e) {
-          console.error("Failed to fetch existing workflow:", e);
-          return null;
-        }
-      });
+      existingWorkflowData = await step.run(
+        "get-existing-workflow",
+        async () => {
+          try {
+            return (await client.query(
+              api.workflows.crud.getWorkflowEditorData,
+              {
+                workflowId: workflowId as Id<"workflows">,
+              },
+            )) as unknown as ExistingWorkflowData;
+          } catch (e) {
+            console.error("Failed to fetch existing workflow:", e);
+            return null;
+          }
+        },
+      );
     }
 
     // ── 2. Ask the LLM what kind of edit this is ─────────────────────────────
-    const editPlan = await step.run("plan-workflow-edit", async (): Promise<AIEditResponse> => {
-      const existingContext = existingWorkflowData
-        ? `
+    const editPlan = await step.run(
+      "plan-workflow-edit",
+      async (): Promise<AIEditResponse> => {
+        const existingContext = existingWorkflowData
+          ? `
 CURRENT WORKFLOW STATE:
 - Nodes: ${JSON.stringify(
-            existingWorkflowData.nodes.map((n) => ({
-              nodeKey: n.nodeKey,
-              type: n.type,
-              label: n.label,
-              config: n.config,
-            })),
-          )}
+              existingWorkflowData.nodes.map((n) => ({
+                nodeKey: n.nodeKey,
+                type: n.type,
+                label: n.label,
+                config: n.config,
+              })),
+            )}
 - Edges: ${JSON.stringify(
-            existingWorkflowData.edges.map((e) => ({
-              edgeKey: e.edgeKey,
-              source: e.sourceNodeKey,
-              target: e.targetNodeKey,
-              kind: e.kind,
-            })),
-          )}`
-        : "";
+              existingWorkflowData.edges.map((e) => ({
+                edgeKey: e.edgeKey,
+                source: e.sourceNodeKey,
+                target: e.targetNodeKey,
+                kind: e.kind,
+              })),
+            )}`
+          : "";
 
-      const prompt = `You are an expert workflow designer.
+        const prompt = `You are an expert workflow designer.
 
 Available Node Types:
 - start: Config: { triggerType: "manual" | "cron", cronExpression?, timezone? }
@@ -200,11 +233,17 @@ FULL FORMAT:
   "confirmationText": "Brief description of the workflow"
 }`;
 
-      const response = await aiModel.invoke([{ role: "user", content: prompt }]);
-      const text = response.content as string;
-      const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-      return JSON.parse(cleaned) as AIEditResponse;
-    });
+        const response = await aiModel.invoke([
+          { role: "user", content: prompt },
+        ]);
+        const text = response.content as string;
+        const cleaned = text
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim();
+        return JSON.parse(cleaned) as AIEditResponse;
+      },
+    );
 
     // ── 3. Stream a thinking message ──────────────────────────────────────────
     const appendedThinking = await step.run("stream-thinking", async () => {
@@ -213,26 +252,33 @@ FULL FORMAT:
         const opSummary = editPlan.actions
           .map((a) => {
             if (a.op === "update_node") return `updating \`${a.nodeKey}\``;
-            if (a.op === "add_node") return `adding \`${a.nodeKey}\` (${a.type})`;
+            if (a.op === "add_node")
+              return `adding \`${a.nodeKey}\` (${a.type})`;
             if (a.op === "remove_node") return `removing \`${a.nodeKey}\``;
-            if (a.op === "upsert_edge") return `connecting \`${a.source}\` → \`${a.target}\``;
+            if (a.op === "upsert_edge")
+              return `connecting \`${a.source}\` → \`${a.target}\``;
             return `removing edge \`${a.edgeKey}\``;
-
           })
           .join(", ");
         msg = `🎯 **Targeted edit:** ${opSummary}\n\n`;
       } else {
-        const dynamicFlow = editPlan.nodes.map((n) => `\`${n.type}\``).join(" ➔ ");
+        const dynamicFlow = editPlan.nodes
+          .map((n) => `\`${n.type}\``)
+          .join(" ➔ ");
         msg = `⚡ **Proposed Flow:** ${dynamicFlow}\n\n`;
       }
 
       if (streamKey) {
-        await redis.rpush(streamKey, JSON.stringify({ type: "thinking", content: msg }));
+        await redis.rpush(
+          streamKey,
+          JSON.stringify({ type: "thinking", content: msg }),
+        );
       }
       return msg;
     });
 
-    const finalThinkingContent = (thinkingContent ? thinkingContent + "\n\n" : "") + appendedThinking;
+    const finalThinkingContent =
+      (thinkingContent ? thinkingContent + "\n\n" : "") + appendedThinking;
 
     // ── 4. Apply the changes ──────────────────────────────────────────────────
     const result = await step.run("apply-workflow-changes", async () => {
@@ -240,7 +286,10 @@ FULL FORMAT:
         if (editPlan.editType === "targeted") {
           // ── Targeted path: surgical per-document mutations ─────────────────
           if (!workflowId) {
-            return { success: false as const, error: "Targeted edits require an existing workflow ID." };
+            return {
+              success: false as const,
+              error: "Targeted edits require an existing workflow ID.",
+            };
           }
 
           let addNodeIndex = 0;
@@ -273,7 +322,10 @@ FULL FORMAT:
                 nodeKey: action.nodeKey,
               });
             } else if (action.op === "upsert_edge") {
-              const kind = (action.kind ?? "default") as "default" | "true" | "false";
+              const kind = (action.kind ?? "default") as
+                | "default"
+                | "true"
+                | "false";
               const sourceHandle =
                 action.sourceHandle ??
                 (kind === "true" ? "true" : kind === "false" ? "false" : "out");
@@ -294,21 +346,27 @@ FULL FORMAT:
             }
           }
 
-          return { success: true as const, workflowId: workflowId as Id<"workflows"> };
+          return {
+            success: true as const,
+            workflowId: workflowId as Id<"workflows">,
+          };
         } else {
           // ── Full path: wipe-and-replace (existing behaviour) ───────────────
           let finalWorkflowId = workflowId as Id<"workflows">;
 
           if (!finalWorkflowId) {
-            finalWorkflowId = await client.mutation(api.workflows.crud.createWorkflow, {
-              name: editPlan.title || "AI Generated Workflow",
-            });
+            finalWorkflowId = await client.mutation(
+              api.workflows.crud.createWorkflow,
+              {
+                name: editPlan.title || "AI Generated Workflow",
+              },
+            );
           }
 
           const allNodes = editPlan.nodes.map((n, i) => ({
             nodeKey: n.id,
             type: n.type,
-            label: n.label || (n.type.charAt(0).toUpperCase() + n.type.slice(1)),
+            label: n.label || n.type.charAt(0).toUpperCase() + n.type.slice(1),
             positionX: 50 + i * 280,
             positionY: 250 + (i % 2 === 0 ? 0 : -120),
             config: n.config || {},
@@ -334,7 +392,9 @@ FULL FORMAT:
           if (isBuildMode) {
             for (let i = 0; i < allNodes.length; i++) {
               const currentNodes = allNodes.slice(0, i + 1);
-              const currentNodeKeys = new Set(currentNodes.map((node) => node.nodeKey));
+              const currentNodeKeys = new Set(
+                currentNodes.map((node) => node.nodeKey),
+              );
               const currentEdges = allEdges.filter(
                 (edge) =>
                   currentNodeKeys.has(edge.sourceNodeKey) &&
@@ -373,13 +433,21 @@ FULL FORMAT:
     const feedbackContent = result.success
       ? `✅ **Workflow ${isUpdate ? "Updated" : "Created"}!**\n\n${
           editPlan.confirmationText ||
-          (isUpdate ? "I've updated your workflow on the canvas." : "I've created a new workflow for you.")
+          (isUpdate
+            ? "I've updated your workflow on the canvas."
+            : "I've created a new workflow for you.")
         }`
       : `❌ Failed to ${isUpdate ? "update" : "create"} workflow: ${result.error || "Unknown error"}`;
 
     await step.run("send-feedback", async () => {
       if (streamKey) {
-        await redis.rpush(streamKey, JSON.stringify({ type: "chat_token", content: `\n\n${feedbackContent}` }));
+        await redis.rpush(
+          streamKey,
+          JSON.stringify({
+            type: "chat_token",
+            content: `\n\n${feedbackContent}`,
+          }),
+        );
         await redis.rpush(streamKey, JSON.stringify({ type: "done" }));
       }
 

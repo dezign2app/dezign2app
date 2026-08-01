@@ -6,7 +6,8 @@ import { WorkflowEdgeDoc } from "./types";
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export const getStreamKey = (runId: Id<"workflow_runs">) => `workflow:stream:${runId}`;
+export const getStreamKey = (runId: Id<"workflow_runs">) =>
+  `workflow:stream:${runId}`;
 export const getRealtimeChannel = (runId: Id<"workflow_runs">) =>
   `workflow:realtime:${runId}`;
 
@@ -171,6 +172,8 @@ export const evaluateCondition = (
     case "lt":
       return Number(leftValue) < Number(rightValue);
     default:
-      throw new WorkflowExecutionError(`Unsupported condition operator "${operator}".`);
+      throw new WorkflowExecutionError(
+        `Unsupported condition operator "${operator}".`,
+      );
   }
 };

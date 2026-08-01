@@ -4,16 +4,23 @@ import { Label } from "@workspace/ui/components/label";
 import { LocalInput, LocalTextarea } from "../../../../../common/shared";
 import type { MiddlewareConfigProps } from "./types";
 
-export function LlmToolSelectorConfig({ data, onUpdate }: MiddlewareConfigProps) {
+export function LlmToolSelectorConfig({
+  data,
+  onUpdate,
+}: MiddlewareConfigProps) {
   return (
     <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
       <div className="flex items-center gap-2">
         <Filter className="w-4 h-4 text-indigo-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">LLM Tool Selector Config</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          LLM Tool Selector Config
+        </h3>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Selector Model</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Selector Model
+        </Label>
         <LocalInput
           value={data.llmToolSelectorConfig?.model || "gpt-5.4-mini"}
           onChange={(e) =>
@@ -30,7 +37,9 @@ export function LlmToolSelectorConfig({ data, onUpdate }: MiddlewareConfigProps)
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <Label className="text-xs font-semibold text-foreground">Max Tools to Select</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Max Tools to Select
+        </Label>
         <LocalInput
           type="number"
           min="1"
@@ -48,14 +57,19 @@ export function LlmToolSelectorConfig({ data, onUpdate }: MiddlewareConfigProps)
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Always Include Tools</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Always Include Tools
+        </Label>
         <LocalInput
           value={data.llmToolSelectorConfig?.alwaysInclude?.join(", ") || ""}
           onChange={(e) =>
             onUpdate({
               llmToolSelectorConfig: {
                 ...data.llmToolSelectorConfig,
-                alwaysInclude: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                alwaysInclude: e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean),
               },
             })
           }
@@ -65,7 +79,9 @@ export function LlmToolSelectorConfig({ data, onUpdate }: MiddlewareConfigProps)
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Selector Prompt Override</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Selector Prompt Override
+        </Label>
         <LocalTextarea
           value={data.llmToolSelectorConfig?.systemPrompt || ""}
           onChange={(e) =>

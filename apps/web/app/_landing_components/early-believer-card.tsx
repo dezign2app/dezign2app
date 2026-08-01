@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useUser, SignInButton } from '@clerk/nextjs';
-import { toast } from 'sonner';
-import { Minus, Plus } from 'lucide-react';
+import { useState } from "react";
+import { useUser, SignInButton } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { Minus, Plus } from "lucide-react";
 
 function CheckCircle() {
   return (
@@ -56,9 +56,9 @@ export function EarlyBelieverCard() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/checkout/early-believer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/checkout/early-believer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier, seats }),
       });
 
@@ -66,20 +66,23 @@ export function EarlyBelieverCard() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          toast.error('Please sign in to continue.');
+          toast.error("Please sign in to continue.");
           return;
         }
-        throw new Error(data.error || 'Checkout failed');
+        throw new Error(data.error || "Checkout failed");
       }
 
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error("No checkout URL received");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
-      console.error('Early believer checkout error:', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.";
+      console.error("Early believer checkout error:", error);
       toast.error(message);
     } finally {
       setLoading(false);
@@ -92,9 +95,7 @@ export function EarlyBelieverCard() {
   `;
 
   return (
-    <div
-      className="relative border border-gray-200 flex flex-col w-[450px] translate-y-0 rounded-2xl p-7 transition-transform duration-300 hover:-translate-y-1 shadow-lg bg-white/50"
-    >
+    <div className="relative border border-gray-200 flex flex-col w-[450px] translate-y-0 rounded-2xl p-7 transition-transform duration-300 hover:-translate-y-1 shadow-lg bg-white/50">
       <PlanIconBadge />
 
       {/* Plan name + desc */}
@@ -127,8 +128,8 @@ export function EarlyBelieverCard() {
             onClick={() => setTier(500)}
             className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
               tier === 500
-                ? 'border-black bg-black text-white shadow-sm'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                ? "border-black bg-black text-white shadow-sm"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
             }`}
           >
             $500 <span className="text-[10px] opacity-80">(5% off)</span>
@@ -138,8 +139,8 @@ export function EarlyBelieverCard() {
             onClick={() => setTier(1000)}
             className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
               tier === 1000
-                ? 'border-black bg-black text-white shadow-sm'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                ? "border-black bg-black text-white shadow-sm"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
             }`}
           >
             $1,000 <span className="text-[10px] opacity-80">(10% off)</span>
@@ -151,7 +152,9 @@ export function EarlyBelieverCard() {
       <div className="mb-4">
         <div className="text-[11px] font-semibold uppercase tracking-wider mb-1.5 flex justify-between items-center">
           <span>Seats Quantity</span>
-          <span className="text-black font-bold">{seats} {seats === 1 ? 'Seat' : 'Seats'}</span>
+          <span className="text-black font-bold">
+            {seats} {seats === 1 ? "Seat" : "Seats"}
+          </span>
         </div>
         <div className="flex items-center justify-between border border-gray-200 rounded-xl p-1 bg-gray-50">
           <button
@@ -195,12 +198,19 @@ export function EarlyBelieverCard() {
 
       {/* CTA Button */}
       {!isLoaded ? (
-        <button disabled className={buttonStyle} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <button
+          disabled
+          className={buttonStyle}
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
           Loading...
         </button>
       ) : !isSignedIn ? (
         <SignInButton mode="modal" forceRedirectUrl="/#pricing">
-          <button className={buttonStyle} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <button
+            className={buttonStyle}
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
             Get Started
           </button>
         </SignInButton>
@@ -211,7 +221,7 @@ export function EarlyBelieverCard() {
           className={buttonStyle}
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
-          {loading ? 'Processing...' : 'Get Started'}
+          {loading ? "Processing..." : "Get Started"}
         </button>
       )}
 
@@ -220,14 +230,17 @@ export function EarlyBelieverCard() {
         <li className="flex items-center gap-2">
           <CheckCircle />
           <span className="font-semibold">
-            Includes {tier === 1000 ? '1 Year (Annual)' : '6 Months'} subscription pack
+            Includes {tier === 1000 ? "1 Year (Annual)" : "6 Months"}{" "}
+            subscription pack
           </span>
         </li>
 
         <li>
           <div className="flex items-center gap-2 font-semibold">
             <CheckCircle />
-            <span>{discountPercent}% OFF on all future product bills forever</span>
+            <span>
+              {discountPercent}% OFF on all future product bills forever
+            </span>
           </div>
           <ul className="pl-6 pt-1.5 flex flex-col gap-1.5 text-[11px] text-gray-600">
             <li className="flex items-start gap-2">

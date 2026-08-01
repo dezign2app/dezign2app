@@ -77,10 +77,7 @@ export function setPath(
   cursor[last] = clone(value);
 }
 
-export function resolveValue(
-  value: unknown,
-  context: RuntimeContext,
-): unknown {
+export function resolveValue(value: unknown, context: RuntimeContext): unknown {
   if (typeof value !== "string") return clone(value);
   if (!value.startsWith("$")) return value;
   if (value === "$data") return context.data;

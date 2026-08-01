@@ -43,7 +43,9 @@ import {
   TARGET_KIND_END,
 } from "../../constants";
 
-export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNode[] {
+export function buildInitialNodes(
+  data: BackendNode["data"],
+): LangGraphCanvasNode[] {
   const steps: LangGraphStepConfig[] = data.graphSteps || [];
 
   const result: LangGraphCanvasNode[] = [
@@ -54,7 +56,12 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
       data: {
         label: "Global Graph State",
         stateChannels: data.stateChannels || [
-          { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          {
+            key: "messages",
+            type: "messages",
+            reducer: "add_messages",
+            defaultValue: [],
+          },
         ],
       },
       deletable: false,
@@ -78,7 +85,10 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
         label: cLLM.label,
         llmId: cLLM.id,
         provider: cLLM.provider || "custom",
-        url: cLLM.url || cLLM.baseUrl || "http://localhost:11434/v1/chat/completions",
+        url:
+          cLLM.url ||
+          cLLM.baseUrl ||
+          "http://localhost:11434/v1/chat/completions",
         baseUrl: cLLM.baseUrl || cLLM.url || "http://localhost:11434/v1",
         method: cLLM.method || "POST",
         headersJson: cLLM.headersJson,
@@ -181,7 +191,12 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
         memoryConfig: agDef.memoryConfig,
         stateUpdates: agDef.stateUpdates || [],
         availableStateChannels: data.stateChannels || [
-          { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          {
+            key: "messages",
+            type: "messages",
+            reducer: "add_messages",
+            defaultValue: [],
+          },
         ],
         tools: agDef.tools || [],
         middleware: agDef.middleware || [],
@@ -195,7 +210,10 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
     const stepNode: StepNode = {
       id: step.id,
       type: LANGGRAPH_CANVAS_NODE_STEP,
-      position: step.position || { x: 420 + idx * 280, y: 190 + (idx % 2 === 0 ? 0 : 60) },
+      position: step.position || {
+        x: 420 + idx * 280,
+        y: 190 + (idx % 2 === 0 ? 0 : 60),
+      },
       data: {
         label: step.name,
         stepId: step.id,
@@ -206,7 +224,12 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
         routerConfig: step.routerConfig,
         stateUpdates: step.stateUpdates || [],
         availableStateChannels: data.stateChannels || [
-          { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          {
+            key: "messages",
+            type: "messages",
+            reducer: "add_messages",
+            defaultValue: [],
+          },
         ],
       },
     };
@@ -219,14 +242,15 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
       result.push({
         id: endNode.id,
         type: LANGGRAPH_CANVAS_NODE_END,
-        position: endNode.position || data.endNodePosition || { x: 750, y: 320 },
+        position: endNode.position ||
+          data.endNodePosition || { x: 750, y: 320 },
         data: { label: endNode.label || "END State" },
       });
     }
   });
 
   const hasEndTarget = (data.graphEdges || []).some((e) =>
-    e.targets?.some((t) => t.kind === TARGET_KIND_END || t.id === "END")
+    e.targets?.some((t) => t.kind === TARGET_KIND_END || t.id === "END"),
   );
   if (
     (hasEndTarget || data.endNodePosition) &&
@@ -242,8 +266,18 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
 
   const savedOutputs = data.outputChannels || [];
   savedOutputs.forEach((outDef, idx) => {
-    const outNodeId = outDef.id ? (outDef.id.startsWith("output_") || outDef.id.startsWith("out_") ? outDef.id : `output_${outDef.id}`) : `output_${Date.now()}_${idx}`;
-    if (!result.some((n) => n.id === outNodeId || (n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && n.data.id === outDef.id))) {
+    const outNodeId = outDef.id
+      ? outDef.id.startsWith("output_") || outDef.id.startsWith("out_")
+        ? outDef.id
+        : `output_${outDef.id}`
+      : `output_${Date.now()}_${idx}`;
+    if (
+      !result.some(
+        (n) =>
+          n.id === outNodeId ||
+          (n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && n.data.id === outDef.id),
+      )
+    ) {
       const outputNode: OutputNode = {
         id: outNodeId,
         type: LANGGRAPH_CANVAS_NODE_OUTPUT,
@@ -272,7 +306,7 @@ export function buildInitialNodes(data: BackendNode["data"]): LangGraphCanvasNod
 
 export function buildInitialEdges(
   data: BackendNode["data"],
-  initialNodes: LangGraphCanvasNode[]
+  initialNodes: LangGraphCanvasNode[],
 ): LangGraphCanvasEdge[] {
   const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || [];
   const steps: LangGraphStepConfig[] = data.graphSteps || [];
@@ -281,42 +315,99 @@ export function buildInitialEdges(
   const mainEdges = graphEdges
     .filter((e) => !e.id.startsWith("auto_edge_"))
     .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
-    .flatMap(
-      (e) => (e.targets || []).map((t) => {
-        const isLLMSource = e.sourceHandle === HANDLE_LLM_OUT || e.source.startsWith("llm_") || (data.customLlmNodes || []).some((c) => c.id === e.source);
-        const isToolSource = e.sourceHandle === HANDLE_TOOL_OUT || e.source.startsWith("tool_") || (data.toolDefinitions || []).some((t) => t.id === e.source);
-        const isMiddlewareSource = e.sourceHandle === HANDLE_MIDDLEWARE_OUT || e.source.startsWith("mw_") || (data.middlewareDefinitions || []).some((m) => m.id === e.source);
-        const isMemorySource = e.sourceHandle === HANDLE_MEMORY_OUT || e.source.startsWith("mem_") || e.source.startsWith("db_") || (data.memoryDefinitions || []).some((m) => m.id === e.source);
+    .flatMap((e) =>
+      (e.targets || []).map((t) => {
+        const isLLMSource =
+          e.sourceHandle === HANDLE_LLM_OUT ||
+          e.source.startsWith("llm_") ||
+          (data.customLlmNodes || []).some((c) => c.id === e.source);
+        const isToolSource =
+          e.sourceHandle === HANDLE_TOOL_OUT ||
+          e.source.startsWith("tool_") ||
+          (data.toolDefinitions || []).some((t) => t.id === e.source);
+        const isMiddlewareSource =
+          e.sourceHandle === HANDLE_MIDDLEWARE_OUT ||
+          e.source.startsWith("mw_") ||
+          (data.middlewareDefinitions || []).some((m) => m.id === e.source);
+        const isMemorySource =
+          e.sourceHandle === HANDLE_MEMORY_OUT ||
+          e.source.startsWith("mem_") ||
+          e.source.startsWith("db_") ||
+          (data.memoryDefinitions || []).some((m) => m.id === e.source);
 
         const sourceStep = steps.find((s) => s.id === e.source);
-        const routerBranch = sourceStep?.routerConfig?.branches?.find((b) => b.id === e.sourceHandle);
+        const routerBranch = sourceStep?.routerConfig?.branches?.find(
+          (b) => b.id === e.sourceHandle,
+        );
 
-        const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : isToolSource ? HANDLE_TOOL_OUT : isMiddlewareSource ? HANDLE_MIDDLEWARE_OUT : isMemorySource ? HANDLE_MEMORY_OUT : undefined);
-        const targetHandle = e.targetHandle || t.targetHandle || (isLLMSource ? HANDLE_LLM_IN : isToolSource ? HANDLE_TOOL_IN : isMiddlewareSource ? HANDLE_MIDDLEWARE_IN : isMemorySource ? HANDLE_MEMORY_IN : "in");
+        const sourceHandle =
+          e.sourceHandle ||
+          (isLLMSource
+            ? HANDLE_LLM_OUT
+            : isToolSource
+              ? HANDLE_TOOL_OUT
+              : isMiddlewareSource
+                ? HANDLE_MIDDLEWARE_OUT
+                : isMemorySource
+                  ? HANDLE_MEMORY_OUT
+                  : undefined);
+        const targetHandle =
+          e.targetHandle ||
+          t.targetHandle ||
+          (isLLMSource
+            ? HANDLE_LLM_IN
+            : isToolSource
+              ? HANDLE_TOOL_IN
+              : isMiddlewareSource
+                ? HANDLE_MIDDLEWARE_IN
+                : isMemorySource
+                  ? HANDLE_MEMORY_IN
+                  : "in");
 
-        const isLLM = isLLMSource || sourceHandle === HANDLE_LLM_OUT || targetHandle === HANDLE_LLM_IN;
-        const isTool = isToolSource || sourceHandle === HANDLE_TOOL_OUT || targetHandle === HANDLE_TOOL_IN;
-        const isMiddleware = isMiddlewareSource || sourceHandle === HANDLE_MIDDLEWARE_OUT || targetHandle === HANDLE_MIDDLEWARE_IN;
-        const isMemory = isMemorySource || sourceHandle === HANDLE_MEMORY_OUT || targetHandle === HANDLE_MEMORY_IN;
+        const isLLM =
+          isLLMSource ||
+          sourceHandle === HANDLE_LLM_OUT ||
+          targetHandle === HANDLE_LLM_IN;
+        const isTool =
+          isToolSource ||
+          sourceHandle === HANDLE_TOOL_OUT ||
+          targetHandle === HANDLE_TOOL_IN;
+        const isMiddleware =
+          isMiddlewareSource ||
+          sourceHandle === HANDLE_MIDDLEWARE_OUT ||
+          targetHandle === HANDLE_MIDDLEWARE_IN;
+        const isMemory =
+          isMemorySource ||
+          sourceHandle === HANDLE_MEMORY_OUT ||
+          targetHandle === HANDLE_MEMORY_IN;
 
         let resolvedTargetId = t.id;
         if (t.kind === TARGET_KIND_END || t.id === "END") {
-          const endNode = initialNodes.find((n) => n.type === LANGGRAPH_CANVAS_NODE_END);
+          const endNode = initialNodes.find(
+            (n) => n.type === LANGGRAPH_CANVAS_NODE_END,
+          );
           resolvedTargetId = endNode ? endNode.id : NODE_ID_END;
         } else if (t.kind === TARGET_KIND_PORT) {
           resolvedTargetId = makePortNodeId(t.id);
         }
 
-        const fieldStr = routerBranch?.field ? (routerBranch.field.startsWith("state.") ? routerBranch.field : `state.${routerBranch.field}`) : "state";
+        const fieldStr = routerBranch?.field
+          ? routerBranch.field.startsWith("state.")
+            ? routerBranch.field
+            : `state.${routerBranch.field}`
+          : "state";
         const routerLabel = routerBranch
-          ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${fieldStr} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
+          ? routerBranch.label ||
+            (routerBranch.isDefault
+              ? "Default"
+              : `${fieldStr} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
           : undefined;
 
         const edgeLabel = routerBranch
           ? routerLabel
           : e.condition
-          ? `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`
-          : undefined;
+            ? `${e.condition.field ?? ""} ${e.condition.operator ?? ""}`
+            : undefined;
 
         return {
           id: `${e.id}_${t.id}`,
@@ -325,28 +416,36 @@ export function buildInitialEdges(
           ...(sourceHandle ? { sourceHandle } : {}),
           targetHandle: targetHandle || "in",
           animated: true,
-          style: isLLM 
-            ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" } 
+          style: isLLM
+            ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" }
             : isTool
-            ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
-            : isMiddleware
-            ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
-            : isMemory
-            ? { stroke: "#f59e0b", strokeWidth: 2, strokeDasharray: "4 4" }
-            : routerBranch
-            ? { stroke: "#38bdf8", strokeWidth: 2 }
-            : { stroke: "#a1a1aa", strokeWidth: 2 },
+              ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
+              : isMiddleware
+                ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
+                : isMemory
+                  ? {
+                      stroke: "#f59e0b",
+                      strokeWidth: 2,
+                      strokeDasharray: "4 4",
+                    }
+                  : routerBranch
+                    ? { stroke: "#38bdf8", strokeWidth: 2 }
+                    : { stroke: "#a1a1aa", strokeWidth: 2 },
           ...(edgeLabel ? { label: edgeLabel } : {}),
           ...(routerBranch
             ? {
-                labelStyle: { fill: "#bae6fd", fontSize: 10, fontWeight: "bold" },
+                labelStyle: {
+                  fill: "#bae6fd",
+                  fontSize: 10,
+                  fontWeight: "bold",
+                },
                 labelBgStyle: { fill: "#0c4a6e", rx: 4, ry: 4 },
               }
             : e.condition
-            ? { labelStyle: { fill: "#a1a1aa", fontSize: 10 } }
-            : {}),
+              ? { labelStyle: { fill: "#a1a1aa", fontSize: 10 } }
+              : {}),
         };
-      })
+      }),
     );
 
   const resourceEdges: LangGraphCanvasEdge[] = [];
@@ -391,7 +490,10 @@ export function buildInitialEdges(
     });
 
     const connectedLlmId = ag.llmNodeId;
-    if (connectedLlmId && (data.customLlmNodes || []).some((llm) => llm.id === connectedLlmId)) {
+    if (
+      connectedLlmId &&
+      (data.customLlmNodes || []).some((llm) => llm.id === connectedLlmId)
+    ) {
       resourceEdges.push({
         id: `edge_${connectedLlmId}_${agId}`,
         source: connectedLlmId,
@@ -421,7 +523,11 @@ export function buildInitialEdges(
   const outputChannelEdges: LangGraphCanvasEdge[] = (data.outputChannels || [])
     .filter((ch) => Boolean(ch.sourceStepId))
     .map((ch) => {
-      const outNodeId = ch.id ? (ch.id.startsWith("output_") || ch.id.startsWith("out_") ? ch.id : `output_${ch.id}`) : `output_${ch.id}`;
+      const outNodeId = ch.id
+        ? ch.id.startsWith("output_") || ch.id.startsWith("out_")
+          ? ch.id
+          : `output_${ch.id}`
+        : `output_${ch.id}`;
       return {
         id: `edge_${ch.sourceStepId}_${outNodeId}`,
         source: ch.sourceStepId!,

@@ -55,16 +55,21 @@ export const DATABASE_ORM_OPTIONS = [
 
 // Derived TypeScript Types (inferred directly from the single source of truth!)
 export type ServiceTechStack = (typeof SERVICE_TECH_OPTIONS)[number]["value"];
-export type ServiceTechVersion = (typeof SERVICE_TECH_OPTIONS)[number]["versions"][number]["value"];
+export type ServiceTechVersion =
+  (typeof SERVICE_TECH_OPTIONS)[number]["versions"][number]["value"];
 
-export type WebClientTechStack = (typeof WEB_CLIENT_TECH_OPTIONS)[number]["value"];
-export type WebClientTechVersion = (typeof WEB_CLIENT_TECH_OPTIONS)[number]["versions"][number]["value"];
+export type WebClientTechStack =
+  (typeof WEB_CLIENT_TECH_OPTIONS)[number]["value"];
+export type WebClientTechVersion =
+  (typeof WEB_CLIENT_TECH_OPTIONS)[number]["versions"][number]["value"];
 
 export type DatabaseEngine = (typeof DATABASE_ENGINE_OPTIONS)[number]["value"];
-export type DatabaseEngineVersion = (typeof DATABASE_ENGINE_OPTIONS)[number]["versions"][number]["value"];
+export type DatabaseEngineVersion =
+  (typeof DATABASE_ENGINE_OPTIONS)[number]["versions"][number]["value"];
 
 export type DatabaseORM = (typeof DATABASE_ORM_OPTIONS)[number]["value"];
-export type DatabaseOrmVersion = (typeof DATABASE_ORM_OPTIONS)[number]["versions"][number]["value"];
+export type DatabaseOrmVersion =
+  (typeof DATABASE_ORM_OPTIONS)[number]["versions"][number]["value"];
 
 // Tuples for Zod z.enum validation (derived directly without re-typing)
 export const ALL_TECH_STACK_VALUES = [

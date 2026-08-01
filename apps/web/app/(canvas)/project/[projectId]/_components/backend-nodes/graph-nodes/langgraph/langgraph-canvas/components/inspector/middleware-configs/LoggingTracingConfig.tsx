@@ -1,19 +1,32 @@
 import React from "react";
 import { Activity } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import type { MiddlewareConfigProps } from "./types";
 
-export function LoggingTracingConfig({ data, onUpdate }: MiddlewareConfigProps) {
+export function LoggingTracingConfig({
+  data,
+  onUpdate,
+}: MiddlewareConfigProps) {
   return (
     <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
       <div className="flex items-center gap-2">
         <Activity className="w-4 h-4 text-sky-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Logging & Tracing</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Logging & Tracing
+        </h3>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Log Level</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Log Level
+        </Label>
         <Select
           value={data.loggingConfig?.logLevel || "info"}
           onValueChange={(val: any) =>
@@ -38,7 +51,9 @@ export function LoggingTracingConfig({ data, onUpdate }: MiddlewareConfigProps) 
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Tracing Target</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Tracing Target
+        </Label>
         <Select
           value={data.loggingConfig?.tracingTarget || "langsmith"}
           onValueChange={(val: any) =>

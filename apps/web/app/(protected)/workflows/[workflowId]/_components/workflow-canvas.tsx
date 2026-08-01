@@ -159,7 +159,9 @@ export const WorkflowCanvas = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Unpublishing will immediately stop all automated triggers and scheduled runs for this workflow. You will need to republish it to take it back online.
+                    Unpublishing will immediately stop all automated triggers
+                    and scheduled runs for this workflow. You will need to
+                    republish it to take it back online.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -194,7 +196,8 @@ export const WorkflowCanvas = () => {
               <DialogHeader>
                 <DialogTitle>Publish Workflow</DialogTitle>
                 <DialogDescription>
-                  Give this version a name or description to help you identify it in the future.
+                  Give this version a name or description to help you identify
+                  it in the future.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -293,7 +296,7 @@ export const WorkflowCanvas = () => {
           nodeBorderRadius={10}
           nodeStrokeWidth={2}
         />
-       <Controls
+        <Controls
           className="!border !rounded-lg !shadow-none overflow-hidden bg-accent hover:bg-accent/80"
           style={{
             backdropFilter: "blur(8px)",
@@ -305,7 +308,6 @@ export const WorkflowCanvas = () => {
             "--xy-controls-button-color-hover": "hsl(var(--foreground))",
             "--xy-controls-button-border-color": "hsl(var(--border))",
           }}
-          
         />
       </ReactFlow>
     </div>

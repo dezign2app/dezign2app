@@ -1,6 +1,5 @@
 export const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
-
 export const CONVEX_URL =
   process.env.CONVEX_URL || "https://scintillating-corgi-821.convex.cloud";
 
@@ -14,7 +13,7 @@ export const CORS_ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "https://ai-figma-web.vercel.app",
-  "*"
+  "*",
 ]);
 
 export const SESSION_CLEANUP_INTERVAL = 1000 * 60 * 10; // 10 minutes

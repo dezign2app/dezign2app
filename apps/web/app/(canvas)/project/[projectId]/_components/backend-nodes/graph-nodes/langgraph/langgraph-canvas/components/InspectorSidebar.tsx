@@ -37,7 +37,11 @@ export interface InspectorSidebarProps {
   selectedStartData?: { inputChannels?: LangGraphInputChannel[] } | null;
   graphNodeId?: string;
   graphSteps?: LangGraphStepConfig[];
-  graphEdges?: Array<{ source: string; sourceHandle?: string | null; target: string }>;
+  graphEdges?: Array<{
+    source: string;
+    sourceHandle?: string | null;
+    target: string;
+  }>;
   graphNodeLabels?: Record<string, string>;
   onRunTestCase?: (testCase: SimulationTestCase) => void;
   connectedToolsCount?: number;
@@ -64,9 +68,13 @@ export interface InspectorSidebarProps {
   onUpdateMemory?: (changes: Partial<MemoryNodeData>) => void;
   onUpdateOutput?: (changes: Partial<OutputNodeData>) => void;
   inputChannels?: LangGraphInputChannel[];
-  setInputChannels?: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
+  setInputChannels?: React.Dispatch<
+    React.SetStateAction<LangGraphInputChannel[]>
+  >;
   stateChannels: LangGraphStateChannel[];
-  setStateChannels?: React.Dispatch<React.SetStateAction<LangGraphStateChannel[]>>;
+  setStateChannels?: React.Dispatch<
+    React.SetStateAction<LangGraphStateChannel[]>
+  >;
   memoryConfig?: LangGraphMemoryConfig;
   setMemoryConfig?: React.Dispatch<React.SetStateAction<LangGraphMemoryConfig>>;
 }
@@ -138,18 +146,18 @@ export function InspectorSidebar({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [width]
+    [width],
   );
 
   const hasSelectedNode = Boolean(
     selectedStepData ||
-      selectedLLMData ||
-      selectedToolData ||
-      selectedMiddlewareData ||
-      selectedAgentData ||
-      selectedMemoryData ||
-      selectedOutputData ||
-      selectedStartData
+    selectedLLMData ||
+    selectedToolData ||
+    selectedMiddlewareData ||
+    selectedAgentData ||
+    selectedMemoryData ||
+    selectedOutputData ||
+    selectedStartData,
   );
 
   if (!hasSelectedNode) return null;

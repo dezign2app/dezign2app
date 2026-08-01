@@ -56,35 +56,35 @@ import {
 import { LLM_PROVIDER_PRESETS } from "./components/inspector/constants";
 
 // ─── LangGraph Canvas React Flow Node Types ──────────────────────────────────────────
-export const LANGGRAPH_CANVAS_NODE_STEP         = "step" as const;
-export const LANGGRAPH_CANVAS_NODE_START        = "start" as const;
-export const LANGGRAPH_CANVAS_NODE_END          = "end" as const;
-export const LANGGRAPH_CANVAS_NODE_PORT         = "port" as const;
+export const LANGGRAPH_CANVAS_NODE_STEP = "step" as const;
+export const LANGGRAPH_CANVAS_NODE_START = "start" as const;
+export const LANGGRAPH_CANVAS_NODE_END = "end" as const;
+export const LANGGRAPH_CANVAS_NODE_PORT = "port" as const;
 export const LANGGRAPH_CANVAS_NODE_STATE_GLOBAL = "state_global" as const;
-export const LANGGRAPH_CANVAS_NODE_LLM          = "langgraph_llm" as const;
-export const LANGGRAPH_CANVAS_NODE_TOOL         = "langgraph_tool" as const;
-export const LANGGRAPH_CANVAS_NODE_MIDDLEWARE   = "langgraph_middleware" as const;
-export const LANGGRAPH_CANVAS_NODE_NODE         = "langgraph_node" as const;
-export const LANGGRAPH_CANVAS_NODE_AGENT        = "langgraph_agent" as const;
-export const LANGGRAPH_CANVAS_NODE_MEMORY       = "langgraph_memory" as const;
-export const LANGGRAPH_CANVAS_NODE_OUTPUT       = "langgraph_output" as const;
+export const LANGGRAPH_CANVAS_NODE_LLM = "langgraph_llm" as const;
+export const LANGGRAPH_CANVAS_NODE_TOOL = "langgraph_tool" as const;
+export const LANGGRAPH_CANVAS_NODE_MIDDLEWARE = "langgraph_middleware" as const;
+export const LANGGRAPH_CANVAS_NODE_NODE = "langgraph_node" as const;
+export const LANGGRAPH_CANVAS_NODE_AGENT = "langgraph_agent" as const;
+export const LANGGRAPH_CANVAS_NODE_MEMORY = "langgraph_memory" as const;
+export const LANGGRAPH_CANVAS_NODE_OUTPUT = "langgraph_output" as const;
 
-export const HANDLE_MIDDLEWARE_IN  = "middleware_in" as const;
+export const HANDLE_MIDDLEWARE_IN = "middleware_in" as const;
 export const HANDLE_MIDDLEWARE_OUT = "middleware_out" as const;
 
-export const HANDLE_MEMORY_IN      = "memory_in" as const;
-export const HANDLE_MEMORY_OUT     = "memory_out" as const;
+export const HANDLE_MEMORY_IN = "memory_in" as const;
+export const HANDLE_MEMORY_OUT = "memory_out" as const;
 
-export const HANDLE_OUTPUT_IN  = "output_in" as const;
+export const HANDLE_OUTPUT_IN = "output_in" as const;
 export const HANDLE_OUTPUT_OUT = "output_out" as const;
 
 // ─── Reserved LangGraph Canvas Node IDs ─────────────────────────────────────────────
-export const NODE_ID_START        = "START" as const;
-export const NODE_ID_END          = "END" as const;
+export const NODE_ID_START = "START" as const;
+export const NODE_ID_END = "END" as const;
 export const NODE_ID_STATE_GLOBAL = "STATE_GLOBAL" as const;
 
 // ─── ID Prefixes ──────────────────────────────────────────────────────────────
-export const NODE_ID_PREFIX_PORT  = "port_" as const;
+export const NODE_ID_PREFIX_PORT = "port_" as const;
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 export function isReservedNodeId(id: string | null | undefined): boolean {
@@ -101,7 +101,9 @@ export function makePortNodeId(portId: string): string {
 }
 
 export function stripPortPrefix(id: string): string {
-  return id.startsWith(NODE_ID_PREFIX_PORT) ? id.replace(NODE_ID_PREFIX_PORT, "") : id;
+  return id.startsWith(NODE_ID_PREFIX_PORT)
+    ? id.replace(NODE_ID_PREFIX_PORT, "")
+    : id;
 }
 
 export {
@@ -173,11 +175,11 @@ export const DEFAULT_EVENT_STREAM_SIGNATURE = JSON.stringify(
       tool: "{{tool_name}}",
       inputs: "{{inputs}}",
       output: "{{output}}",
-      usage: "{{usage}}"
-    }
+      usage: "{{usage}}",
+    },
   },
   null,
-  2
+  2,
 );
 
 export const DEFAULT_STREAM_TRANSFORMERS = `// LangChain streamEvents (version: "v3") transformer configuration
@@ -197,56 +199,56 @@ export const STREAM_EVENT_TYPES = [
     id: "stream.messages",
     label: "stream.messages",
     description: "LLM Model message streams (one stream per LLM call)",
-    badge: "LLM Streams"
+    badge: "LLM Streams",
   },
   {
     id: "message.text",
     label: "message.text",
     description: "Text token deltas & final message text chunks",
-    badge: "Text Deltas"
+    badge: "Text Deltas",
   },
   {
     id: "message.reasoning",
     label: "message.reasoning",
     description: "Reasoning / thinking deltas for CoT models",
-    badge: "Reasoning"
+    badge: "Reasoning",
   },
   {
     id: "message.toolCalls",
     label: "message.toolCalls",
     description: "Live tool-call argument deltas while model streams",
-    badge: "Tool Call Chunks"
+    badge: "Tool Call Chunks",
   },
   {
     id: "stream.toolCalls",
     label: "stream.toolCalls",
     description: "Tool execution lifecycle (start, inputs, outputs, errors)",
-    badge: "Tool Execution"
+    badge: "Tool Execution",
   },
   {
     id: "stream.values",
     label: "stream.values",
     description: "Agent state snapshots emitted after graph node steps",
-    badge: "State Snapshots"
+    badge: "State Snapshots",
   },
   {
     id: "stream.output",
     label: "stream.output",
     description: "Final agent state output once graph run completes",
-    badge: "Final Output"
+    badge: "Final Output",
   },
   {
     id: "stream.subagents",
     label: "stream.subagents",
     description: "Nested sub-agent event streams & execution",
-    badge: "Sub-Agents"
+    badge: "Sub-Agents",
   },
   {
     id: "stream.extensions",
     label: "stream.extensions",
     description: "Custom stream transformer projections & custom updates",
-    badge: "Custom Extensions"
-  }
+    badge: "Custom Extensions",
+  },
 ];
 
 export const DEFAULT_SELECTED_STREAM_EVENTS = [
@@ -256,7 +258,7 @@ export const DEFAULT_SELECTED_STREAM_EVENTS = [
   "message.toolCalls",
   "stream.toolCalls",
   "stream.values",
-  "stream.output"
+  "stream.output",
 ];
 
 // ─── Response Format / Structured Output Presets & Defaults ─────────────────────
@@ -267,23 +269,23 @@ export const DEFAULT_RESPONSE_FORMAT_JSON_SCHEMA = JSON.stringify(
     properties: {
       summary: {
         type: "string",
-        description: "Concise summary of findings or result"
+        description: "Concise summary of findings or result",
       },
       sentiment: {
         type: "string",
         enum: ["positive", "neutral", "negative"],
-        description: "Overall sentiment classification"
+        description: "Overall sentiment classification",
       },
       keyPoints: {
         type: "array",
         items: { type: "string" },
-        description: "Key bullet points extracted from analysis"
-      }
+        description: "Key bullet points extracted from analysis",
+      },
     },
-    required: ["summary", "sentiment", "keyPoints"]
+    required: ["summary", "sentiment", "keyPoints"],
   },
   null,
-  2
+  2,
 );
 
 export const DEFAULT_RESPONSE_FORMAT_ZOD_SCHEMA = `import { z } from "zod";
@@ -306,12 +308,12 @@ export const RESPONSE_FORMAT_PRESETS = [
         properties: {
           name: { type: "string", description: "Full name of person" },
           email: { type: "string", description: "Email address" },
-          phone: { type: "string", description: "Phone number" }
+          phone: { type: "string", description: "Phone number" },
         },
-        required: ["name", "email", "phone"]
+        required: ["name", "email", "phone"],
       },
       null,
-      2
+      2,
     ),
     zodSchema: `import { z } from "zod";
 
@@ -319,7 +321,7 @@ export const ContactInfo = z.object({
   name: z.string().describe("Full name of person"),
   email: z.string().describe("Email address"),
   phone: z.string().describe("Phone number")
-});`
+});`,
   },
   {
     id: "product_review",
@@ -330,14 +332,27 @@ export const ContactInfo = z.object({
         type: "object",
         description: "Analysis of product review",
         properties: {
-          rating: { type: "number", minimum: 1, maximum: 5, description: "Rating from 1-5" },
-          sentiment: { type: "string", enum: ["positive", "negative"], description: "Overall sentiment" },
-          keyPoints: { type: "array", items: { type: "string" }, description: "Key points extracted" }
+          rating: {
+            type: "number",
+            minimum: 1,
+            maximum: 5,
+            description: "Rating from 1-5",
+          },
+          sentiment: {
+            type: "string",
+            enum: ["positive", "negative"],
+            description: "Overall sentiment",
+          },
+          keyPoints: {
+            type: "array",
+            items: { type: "string" },
+            description: "Key points extracted",
+          },
         },
-        required: ["sentiment", "keyPoints"]
+        required: ["sentiment", "keyPoints"],
       },
       null,
-      2
+      2,
     ),
     zodSchema: `import { z } from "zod";
 
@@ -345,7 +360,7 @@ export const ProductReview = z.object({
   rating: z.number().min(1).max(5).optional(),
   sentiment: z.enum(["positive", "negative"]),
   keyPoints: z.array(z.string()).describe("Key points extracted")
-});`
+});`,
   },
   {
     id: "meeting_action",
@@ -358,12 +373,16 @@ export const ProductReview = z.object({
         properties: {
           task: { type: "string", description: "Specific task description" },
           assignee: { type: "string", description: "Person assigned to task" },
-          priority: { type: "string", enum: ["low", "medium", "high"], description: "Task priority level" }
+          priority: {
+            type: "string",
+            enum: ["low", "medium", "high"],
+            description: "Task priority level",
+          },
         },
-        required: ["task", "assignee", "priority"]
+        required: ["task", "assignee", "priority"],
       },
       null,
-      2
+      2,
     ),
     zodSchema: `import { z } from "zod";
 
@@ -371,9 +390,6 @@ export const MeetingAction = z.object({
   task: z.string().describe("Specific task description"),
   assignee: z.string().describe("Person assigned to task"),
   priority: z.enum(["low", "medium", "high"]).describe("Task priority level")
-});`
-  }
+});`,
+  },
 ];
-
-
-

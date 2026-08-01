@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
-import { History, RotateCcw, Clock, Trash2, MessageCircle, Pencil } from "lucide-react";
+import {
+  History,
+  RotateCcw,
+  Clock,
+  Trash2,
+  MessageCircle,
+  Pencil,
+} from "lucide-react";
 import { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
@@ -45,8 +52,10 @@ export const VersionsTab = () => {
     handleUpdateVersionMessage: onUpdateMessage,
     isReadOnly,
   } = useWorkflowEditorContext();
-  const [isRestoring, setIsRestoring] = useState<Id<"workflow_versions"> | null>(null);
-  const [editingVersion, setEditingVersion] = useState<Doc<"workflow_versions"> | null>(null);
+  const [isRestoring, setIsRestoring] =
+    useState<Id<"workflow_versions"> | null>(null);
+  const [editingVersion, setEditingVersion] =
+    useState<Doc<"workflow_versions"> | null>(null);
   const [editMessage, setEditMessage] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -95,7 +104,9 @@ export const VersionsTab = () => {
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex size-10 flex-col items-center justify-center rounded-md border border-sidebar-border bg-sidebar shadow-sm capitalize">
-                      <span className="text-sm font-bold leading-none">{version.versionNumber}</span>
+                      <span className="text-sm font-bold leading-none">
+                        {version.versionNumber}
+                      </span>
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -129,16 +140,20 @@ export const VersionsTab = () => {
                           {formatTimestamp(version.createdAt)}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-start gap-1.5 group/msg">
                         <div className="mt-0.5 shrink-0">
                           <MessageCircle className="size-3 text-sidebar-foreground/40" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className={cn(
-                            "text-xs leading-relaxed",
-                            version.message ? "text-sidebar-foreground/80" : "text-sidebar-foreground/40 italic"
-                          )}>
+                          <span
+                            className={cn(
+                              "text-xs leading-relaxed",
+                              version.message
+                                ? "text-sidebar-foreground/80"
+                                : "text-sidebar-foreground/40 italic",
+                            )}
+                          >
                             {version.message || "No message provided"}
                           </span>
                           {!isReadOnly && version.kind !== "draft" && (
@@ -160,18 +175,31 @@ export const VersionsTab = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={isReadOnly || version.kind === "draft" || isRestoring === version._id}
+                          disabled={
+                            isReadOnly ||
+                            version.kind === "draft" ||
+                            isRestoring === version._id
+                          }
                           className="h-8 border-sidebar-border bg-sidebar text-[11px] uppercase tracking-wider hover:bg-sidebar-accent"
                         >
-                          <RotateCcw className={cn("mr-1.5 size-3", isRestoring === version._id && "animate-spin")} />
+                          <RotateCcw
+                            className={cn(
+                              "mr-1.5 size-3",
+                              isRestoring === version._id && "animate-spin",
+                            )}
+                          />
                           Restore
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Restore Version {version.versionNumber}</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            Restore Version {version.versionNumber}
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to restore this version? This will overwrite your current unsaved draft with the configuration from this snapshot.
+                            Are you sure you want to restore this version? This
+                            will overwrite your current unsaved draft with the
+                            configuration from this snapshot.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -234,12 +262,16 @@ export const VersionsTab = () => {
         </div>
       </ScrollArea>
 
-      <Dialog open={!!editingVersion} onOpenChange={(open) => !open && setEditingVersion(null)}>
+      <Dialog
+        open={!!editingVersion}
+        onOpenChange={(open) => !open && setEditingVersion(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Version Message</DialogTitle>
             <DialogDescription>
-              Update the description for version {editingVersion?.versionNumber}.
+              Update the description for version {editingVersion?.versionNumber}
+              .
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -262,10 +294,7 @@ export const VersionsTab = () => {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleSaveMessage}
-              disabled={isUpdating}
-            >
+            <Button onClick={handleSaveMessage} disabled={isUpdating}>
               {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

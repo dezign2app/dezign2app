@@ -27,15 +27,17 @@ export const publishedEventSchema = z.object({
   metadata: architectureMetadataSchema.optional(),
 });
 
-export const publishedEventInputSchema: z.ZodType<PublishedEventInputType> = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  kind: z.string().optional(),
-  schema: z.string().optional(),
-  targetNodeId: z.string().optional(),
-  targetResourceId: z.string().optional(),
-  brokerNodeId: z.string().optional(),
-}).passthrough();
+export const publishedEventInputSchema: z.ZodType<PublishedEventInputType> = z
+  .object({
+    id: z.string().optional(),
+    name: z.string(),
+    kind: z.string().optional(),
+    schema: z.string().optional(),
+    targetNodeId: z.string().optional(),
+    targetResourceId: z.string().optional(),
+    brokerNodeId: z.string().optional(),
+  })
+  .passthrough();
 
 export const consumedEventSchema = z.object({
   id: z.string(),
@@ -59,17 +61,19 @@ export const consumedEventSchema = z.object({
   metadata: architectureMetadataSchema.optional(),
 });
 
-export const consumedEventInputSchema: z.ZodType<ConsumedEventInputType> = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  kind: z.string().optional(),
-  schema: z.string().optional(),
-  handlerLogic: z.string().optional(),
-  body: z.string().optional(),
-  code: z.string().optional(),
-  prompt: z.string().optional(),
-  functionBody: z.string().optional(),
-  targetNodeId: z.string().optional(),
-  targetResourceId: z.string().optional(),
-  brokerNodeId: z.string().optional(),
-}).passthrough();
+export const consumedEventInputSchema: z.ZodType<ConsumedEventInputType> = z
+  .object({
+    id: z.string().optional(),
+    name: z.string(),
+    kind: z.string().optional(),
+    schema: z.string().optional(),
+    handlerLogic: z.string().optional(),
+    body: z.string().optional(),
+    code: z.string().optional(),
+    prompt: z.string().optional(),
+    functionBody: z.string().optional(),
+    targetNodeId: z.string().optional(),
+    targetResourceId: z.string().optional(),
+    brokerNodeId: z.string().optional(),
+  })
+  .passthrough();

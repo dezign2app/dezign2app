@@ -20,7 +20,7 @@ export const ProjectListHeader = () => {
           <HugeiconsIcon icon={Add01Icon} />
         </Button>
       ) : (
-        <ProjectDialog 
+        <ProjectDialog
           trigger={
             <Button variant="outline">
               New Project
@@ -31,4 +31,4 @@ export const ProjectListHeader = () => {
       )}
     </div>
   );
-}; 
+};

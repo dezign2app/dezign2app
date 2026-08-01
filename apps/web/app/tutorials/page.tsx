@@ -3,11 +3,19 @@ import Link from "next/link";
 import { Header } from "../_landing_components/header";
 import { Footer } from "../_landing_components/footer";
 import { Metadata } from "next";
-import { PlayCircle, BookOpen, Sparkles, ArrowRight, Code2, Workflow } from "lucide-react";
+import {
+  PlayCircle,
+  BookOpen,
+  Sparkles,
+  ArrowRight,
+  Code2,
+  Workflow,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Tutorials & Video Walkthroughs | dezign2app",
-  description: "Step-by-step guides and video tutorials on turning system designs into web apps with dezign2app.",
+  description:
+    "Step-by-step guides and video tutorials on turning system designs into web apps with dezign2app.",
 };
 
 const tutorials = [
@@ -46,7 +54,8 @@ export default function TutorialsPage() {
             Learn how to build faster with dezign2app
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-xl">
-            Step-by-step guides and walkthroughs to help you master visual design and workflow automation.
+            Step-by-step guides and walkthroughs to help you master visual
+            design and workflow automation.
           </p>
         </div>
 
@@ -58,12 +67,18 @@ export default function TutorialsPage() {
             >
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="px-2 py-0.5 rounded bg-gray-100 font-bold text-gray-700">{tut.category}</span>
+                  <span className="px-2 py-0.5 rounded bg-gray-100 font-bold text-gray-700">
+                    {tut.category}
+                  </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-500">{tut.time}</span>
                 </div>
-                <h3 className="text-base font-bold text-gray-900">{tut.title}</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">{tut.desc}</p>
+                <h3 className="text-base font-bold text-gray-900">
+                  {tut.title}
+                </h3>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  {tut.desc}
+                </p>
               </div>
               <Link
                 href="/docs"
@@ -78,8 +93,12 @@ export default function TutorialsPage() {
         {/* Support Section */}
         <div className="p-8 bg-gray-50 border border-gray-200 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-bold text-gray-900">Need a custom tutorial for your team?</h3>
-            <p className="text-xs text-gray-600">Contact our support engineering team.</p>
+            <h3 className="text-base font-bold text-gray-900">
+              Need a custom tutorial for your team?
+            </h3>
+            <p className="text-xs text-gray-600">
+              Contact our support engineering team.
+            </p>
           </div>
           <a
             href="mailto:founder@dezign2app.com"

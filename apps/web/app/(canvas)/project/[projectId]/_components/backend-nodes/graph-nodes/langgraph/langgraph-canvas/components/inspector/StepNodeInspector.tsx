@@ -3,7 +3,13 @@ import { Brain, Plus, Zap, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import { LocalTextarea } from "../../../../common/shared";
 import type { LangGraphStateChannel } from "@/types/canvas";
@@ -65,7 +71,8 @@ export function StepNodeInspector({
               onUpdateStep({
                 modelConfig: {
                   ...selectedStepData.modelConfig,
-                  systemPrompt: selectedStepData.modelConfig?.systemPrompt || "",
+                  systemPrompt:
+                    selectedStepData.modelConfig?.systemPrompt || "",
                 },
               });
             }
@@ -93,7 +100,7 @@ export function StepNodeInspector({
           onGenerateCode={() => {
             const prompt = selectedStepData.modelConfig?.systemPrompt;
             if (prompt && !selectedStepData.customCode?.body) {
-              const generatedCode = `// System Prompt: ${prompt.split('\n').join('\n// ')}\nreturn { ...state, updated: true };`;
+              const generatedCode = `// System Prompt: ${prompt.split("\n").join("\n// ")}\nreturn { ...state, updated: true };`;
               onUpdateStep({
                 customCode: {
                   body: generatedCode,
@@ -118,7 +125,8 @@ export function StepNodeInspector({
         <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-muted-foreground" /> State Channel Updates
+              <Zap className="w-3.5 h-3.5 text-muted-foreground" /> State
+              Channel Updates
             </span>
             <Button
               size="sm"
@@ -128,7 +136,10 @@ export function StepNodeInspector({
                 const current = selectedStepData.stateUpdates || [];
                 const defaultKey = stateChannels[0]?.key || "summary";
                 onUpdateStep({
-                  stateUpdates: [...current, { channelKey: defaultKey, mode: "set", value: "" }],
+                  stateUpdates: [
+                    ...current,
+                    { channelKey: defaultKey, mode: "set", value: "" },
+                  ],
                 });
               }}
             >
@@ -137,7 +148,10 @@ export function StepNodeInspector({
           </div>
 
           {(selectedStepData.stateUpdates || []).map((su, sIdx) => (
-            <div key={sIdx} className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs">
+            <div
+              key={sIdx}
+              className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 text-xs"
+            >
               <div className="flex items-center justify-between gap-1.5">
                 <Select
                   value={su.channelKey}
@@ -159,9 +173,12 @@ export function StepNodeInspector({
                         {ch.key} ({ch.type})
                       </SelectItem>
                     ))}
-                    {!stateChannels.some((c) => c.key === su.channelKey) && su.channelKey && (
-                      <SelectItem value={su.channelKey}>{su.channelKey}</SelectItem>
-                    )}
+                    {!stateChannels.some((c) => c.key === su.channelKey) &&
+                      su.channelKey && (
+                        <SelectItem value={su.channelKey}>
+                          {su.channelKey}
+                        </SelectItem>
+                      )}
                   </SelectContent>
                 </Select>
 
@@ -191,7 +208,9 @@ export function StepNodeInspector({
                   size="icon"
                   className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
                   onClick={() => {
-                    const updated = (selectedStepData.stateUpdates || []).filter((_, i) => i !== sIdx);
+                    const updated = (
+                      selectedStepData.stateUpdates || []
+                    ).filter((_, i) => i !== sIdx);
                     onUpdateStep({ stateUpdates: updated });
                   }}
                 >
@@ -215,7 +234,8 @@ export function StepNodeInspector({
             </div>
           ))}
 
-          {(!selectedStepData.stateUpdates || selectedStepData.stateUpdates.length === 0) && (
+          {(!selectedStepData.stateUpdates ||
+            selectedStepData.stateUpdates.length === 0) && (
             <span className="text-xs text-muted-foreground italic text-center py-1">
               No state updates configured for this step node.
             </span>

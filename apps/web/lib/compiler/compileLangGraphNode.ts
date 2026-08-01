@@ -16,7 +16,11 @@ import {
   SimulationTestCase,
 } from "@/types/canvas";
 import { CompiledServiceResult } from "./types";
-import { compileLangGraph, CompileLangGraphInput, RouteEndpoint } from "./langgraph/typescript/v1";
+import {
+  compileLangGraph,
+  CompileLangGraphInput,
+  RouteEndpoint,
+} from "./langgraph/typescript/v1";
 import type {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
@@ -62,9 +66,7 @@ export function resolveRouteEndpoints(
   endpoints: Endpoint[],
   events: Array<{ id: string; name?: string; variant?: string }>,
 ): RouteEndpoint[] {
-  const incoming = edges.filter(
-    (e) => e.target === nodeId
-  );
+  const incoming = edges.filter((e) => e.target === nodeId);
 
   return incoming.map((edge): RouteEndpoint => {
     const sourceNode = allNodes.find((n) => n.id === edge.source);
@@ -86,7 +88,13 @@ export function resolveRouteEndpoints(
       if (ep) {
         let epMethod: RouteEndpoint["method"] = "POST";
         const rawType = ep.type;
-        if (rawType === "GET" || rawType === "POST" || rawType === "PUT" || rawType === "PATCH" || rawType === "DELETE") {
+        if (
+          rawType === "GET" ||
+          rawType === "POST" ||
+          rawType === "PUT" ||
+          rawType === "PATCH" ||
+          rawType === "DELETE"
+        ) {
           epMethod = rawType;
         }
         const epRoute: RouteEndpoint = {
@@ -151,12 +159,19 @@ export function resolveRouteEndpoints(
   });
 }
 
-export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput {
+export function extractLangGraphInput(
+  node: BackendNode,
+): CompileLangGraphInput {
   const data: CanvasLangGraphNodeData = node.data || {};
   const graphLabel = data.label || "LangGraph Agent";
 
   const stateChannels: LangGraphStateChannel[] = data.stateChannels || [
-    { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+    {
+      key: "messages",
+      type: "messages",
+      reducer: "add_messages",
+      defaultValue: [],
+    },
   ];
   const inputChannels: LangGraphInputChannel[] = data.inputChannels || [];
   const memoryConfig: LangGraphMemoryConfig | undefined = data.memoryConfig;
@@ -211,7 +226,10 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
         label: cLLM.label || "Custom LLM",
         llmId: cLLM.id,
         provider: cLLM.provider || "custom",
-        url: cLLM.url || cLLM.baseUrl || "http://localhost:11434/v1/chat/completions",
+        url:
+          cLLM.url ||
+          cLLM.baseUrl ||
+          "http://localhost:11434/v1/chat/completions",
         baseUrl: cLLM.baseUrl || cLLM.url || "http://localhost:11434/v1",
         method: cLLM.method || "POST",
         headersJson: cLLM.headersJson,
@@ -258,7 +276,8 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
     reconstructedNodes.push(toolNode);
   });
 
-  const middlewareDefs: LangGraphMiddlewareDefinition[] = data.middlewareDefinitions || [];
+  const middlewareDefs: LangGraphMiddlewareDefinition[] =
+    data.middlewareDefinitions || [];
   middlewareDefs.forEach((mwDef) => {
     const mwId = mwDef.id || mwDef.middlewareId || `mw_${Date.now()}`;
     const mwNode: MiddlewareNode = {
@@ -330,7 +349,10 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
     const stepNode: StepNode = {
       id: step.id,
       type: LANGGRAPH_CANVAS_NODE_STEP,
-      position: step.position || { x: 420 + idx * 280, y: 190 + (idx % 2 === 0 ? 0 : 60) },
+      position: step.position || {
+        x: 420 + idx * 280,
+        y: 190 + (idx % 2 === 0 ? 0 : 60),
+      },
       data: {
         label: step.name || "Step",
         stepId: step.id,
@@ -352,7 +374,8 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
       reconstructedNodes.push({
         id: endNode.id,
         type: LANGGRAPH_CANVAS_NODE_END,
-        position: endNode.position || data.endNodePosition || { x: 750, y: 320 },
+        position: endNode.position ||
+          data.endNodePosition || { x: 750, y: 320 },
         data: { label: endNode.label || "END State" },
       });
     }
@@ -382,7 +405,7 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
 
   const graphEdges: LangGraphEdgeConfig[] = data.graphEdges || [];
   const hasEndTarget = graphEdges.some((e) =>
-    e.targets?.some((t) => t.kind === TARGET_KIND_END || t.id === "END")
+    e.targets?.some((t) => t.kind === TARGET_KIND_END || t.id === "END"),
   );
   if (
     (hasEndTarget || data.endNodePosition) &&
@@ -401,17 +424,53 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
     .filter((e) => !e.targets?.some((t) => t.kind === TARGET_KIND_PORT))
     .flatMap((e) =>
       (e.targets || []).map((t) => {
-        const isLLMSource = e.sourceHandle === HANDLE_LLM_OUT || e.source.startsWith("llm_") || customLLMs.some((c) => c.id === e.source);
-        const isToolSource = e.sourceHandle === HANDLE_TOOL_OUT || e.source.startsWith("tool_") || toolDefs.some((td) => (td.id || td.toolId) === e.source);
-        const isMiddlewareSource = e.sourceHandle === HANDLE_MIDDLEWARE_OUT || e.source.startsWith("mw_") || middlewareDefs.some((m) => (m.id || m.middlewareId) === e.source);
-        const isMemorySource = e.sourceHandle === HANDLE_MEMORY_OUT || e.source.startsWith("mem_") || e.source.startsWith("db_") || memoryDefs.some((m) => (m.id || m.memoryId) === e.source);
+        const isLLMSource =
+          e.sourceHandle === HANDLE_LLM_OUT ||
+          e.source.startsWith("llm_") ||
+          customLLMs.some((c) => c.id === e.source);
+        const isToolSource =
+          e.sourceHandle === HANDLE_TOOL_OUT ||
+          e.source.startsWith("tool_") ||
+          toolDefs.some((td) => (td.id || td.toolId) === e.source);
+        const isMiddlewareSource =
+          e.sourceHandle === HANDLE_MIDDLEWARE_OUT ||
+          e.source.startsWith("mw_") ||
+          middlewareDefs.some((m) => (m.id || m.middlewareId) === e.source);
+        const isMemorySource =
+          e.sourceHandle === HANDLE_MEMORY_OUT ||
+          e.source.startsWith("mem_") ||
+          e.source.startsWith("db_") ||
+          memoryDefs.some((m) => (m.id || m.memoryId) === e.source);
 
-        const sourceHandle = e.sourceHandle || (isLLMSource ? HANDLE_LLM_OUT : isToolSource ? HANDLE_TOOL_OUT : isMiddlewareSource ? HANDLE_MIDDLEWARE_OUT : isMemorySource ? HANDLE_MEMORY_OUT : undefined);
-        const targetHandle = e.targetHandle || t.targetHandle || (isLLMSource ? HANDLE_LLM_IN : isToolSource ? HANDLE_TOOL_IN : isMiddlewareSource ? HANDLE_MIDDLEWARE_IN : isMemorySource ? HANDLE_MEMORY_IN : "in");
+        const sourceHandle =
+          e.sourceHandle ||
+          (isLLMSource
+            ? HANDLE_LLM_OUT
+            : isToolSource
+              ? HANDLE_TOOL_OUT
+              : isMiddlewareSource
+                ? HANDLE_MIDDLEWARE_OUT
+                : isMemorySource
+                  ? HANDLE_MEMORY_OUT
+                  : undefined);
+        const targetHandle =
+          e.targetHandle ||
+          t.targetHandle ||
+          (isLLMSource
+            ? HANDLE_LLM_IN
+            : isToolSource
+              ? HANDLE_TOOL_IN
+              : isMiddlewareSource
+                ? HANDLE_MIDDLEWARE_IN
+                : isMemorySource
+                  ? HANDLE_MEMORY_IN
+                  : "in");
 
         let resolvedTargetId = t.id;
         if (t.kind === TARGET_KIND_END || t.id === "END") {
-          const endNode = reconstructedNodes.find((n) => n.type === LANGGRAPH_CANVAS_NODE_END);
+          const endNode = reconstructedNodes.find(
+            (n) => n.type === LANGGRAPH_CANVAS_NODE_END,
+          );
           resolvedTargetId = endNode ? endNode.id : NODE_ID_END;
         }
 
@@ -423,7 +482,7 @@ export function extractLangGraphInput(node: BackendNode): CompileLangGraphInput 
           targetHandle: targetHandle || "in",
           animated: true,
         };
-      })
+      }),
     );
 
   return {
@@ -459,7 +518,9 @@ export function compileLangGraphNode(
       context.events ?? [],
     );
     input.routeEndpoints = routeEndpoints;
-    input.testCases = context.testCases?.filter((testCase) => testCase.targetNodeId === node.id);
+    input.testCases = context.testCases?.filter(
+      (testCase) => testCase.targetNodeId === node.id,
+    );
   }
 
   const files = compileLangGraph(input);

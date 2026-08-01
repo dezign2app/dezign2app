@@ -20,7 +20,11 @@ import {
 
 const DEFAULT_STEP_LABEL = "Graph Step";
 
-export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+export const LangGraphStepNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -76,7 +80,12 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
   };
 
   const handleTypeChange = (newType: string) => {
-    updateNode(id, { data: { ...data, stepType: newType as NonNullable<BackendNode["data"]["stepType"]> } });
+    updateNode(id, {
+      data: {
+        ...data,
+        stepType: newType as NonNullable<BackendNode["data"]["stepType"]>,
+      },
+    });
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -105,7 +114,7 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
 
   const handleDeleteRoute = (routeId: string) => {
     const updated = (data.routerConfig?.branches || []).filter(
-      (b, idx) => (b.id || `b_${idx}`) !== routeId
+      (b, idx) => (b.id || `b_${idx}`) !== routeId,
     );
     updateNode(id, { data: { ...data, routerConfig: { branches: updated } } });
   };
@@ -117,8 +126,8 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         selected
           ? "border-emerald-400 ring-2 ring-emerald-400/20 shadow-emerald-500/10"
           : stepType === STEP_TYPE_ROUTER
-          ? "border-sky-500/40 shadow-sky-500/10"
-          : "border-emerald-500/30 hover:border-emerald-400/70"
+            ? "border-sky-500/40 shadow-sky-500/10"
+            : "border-emerald-500/30 hover:border-emerald-400/70",
       )}
     >
       <LangGraphStepHeader
@@ -133,7 +142,10 @@ export const LangGraphStepNode = ({ id, data, selected }: NodeProps<BackendNode>
         onDelete={handleDelete}
       />
 
-      <LangGraphStepTypeSelector stepType={stepType} onTypeChange={handleTypeChange} />
+      <LangGraphStepTypeSelector
+        stepType={stepType}
+        onTypeChange={handleTypeChange}
+      />
 
       {stepType !== STEP_TYPE_ROUTER && (
         <LangGraphStepLLMConfig

@@ -113,7 +113,7 @@ function valToTsAndZod(val: unknown): { ts: string; zod: string } {
 export function parametersToTsInterface(
   interfaceName: string,
   params?: ParameterItem[],
-  defaultRequired = true
+  defaultRequired = true,
 ): { code: string; hasContent: boolean } {
   if (!params || params.length === 0) {
     return {
@@ -150,7 +150,7 @@ export function parametersToTsInterface(
 export function parametersToZodSchema(
   schemaName: string,
   params?: ParameterItem[],
-  defaultRequired = true
+  defaultRequired = true,
 ): { code: string; hasContent: boolean } {
   if (!params || params.length === 0) {
     return {
@@ -186,7 +186,7 @@ export function parametersToZodSchema(
 
 export function schemaToTsInterface(
   interfaceName: string,
-  schema?: SchemaItem
+  schema?: SchemaItem,
 ): { code: string; hasContent: boolean } {
   if (!schema) {
     return {
@@ -228,7 +228,7 @@ export function schemaToTsInterface(
 
 export function schemaToZodSchema(
   schemaName: string,
-  schema?: SchemaItem
+  schema?: SchemaItem,
 ): { code: string; hasContent: boolean } {
   if (!schema) {
     return {

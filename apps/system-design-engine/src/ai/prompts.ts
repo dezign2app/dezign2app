@@ -1,9 +1,14 @@
-import { RequirementsState, ImplementationPlanState, DEFAULT_REQUIREMENTS, DEFAULT_PLAN } from "./state";
+import {
+  RequirementsState,
+  ImplementationPlanState,
+  DEFAULT_REQUIREMENTS,
+  DEFAULT_PLAN,
+} from "./state";
 
 export const systemPromptTemplate = (
   canvasStateContext: string,
   requirements?: RequirementsState,
-  implementationPlan?: ImplementationPlanState
+  implementationPlan?: ImplementationPlanState,
 ) => {
   const req = requirements ?? DEFAULT_REQUIREMENTS;
   const plan = implementationPlan ?? DEFAULT_PLAN;
@@ -17,7 +22,12 @@ export const systemPromptTemplate = (
   // is approved (see routeAfterIntent), so this "else" is just defensive —
   // it shouldn't be reachable in practice.
   const planBlock =
-    plan.status === "approved" || plan.status === "schema_built" || plan.status === "schema_approved" || plan.status === "nodes_built" || plan.status === "nodes_approved" || plan.status === "edges_built"
+    plan.status === "approved" ||
+    plan.status === "schema_built" ||
+    plan.status === "schema_approved" ||
+    plan.status === "nodes_built" ||
+    plan.status === "nodes_approved" ||
+    plan.status === "edges_built"
       ? `Approved Implementation Plan — build the canvas to match this EXACTLY, including the
     specific technologies, services/endpoints, storage engine, and messaging infra it names.
     If you need to deviate from it (e.g. a detail turns out infeasible on the canvas), briefly

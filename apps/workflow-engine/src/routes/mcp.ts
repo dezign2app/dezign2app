@@ -23,14 +23,17 @@ mcpRouter.options("/", (_, res) => {
 
 mcpRouter.all("/", async (req: Request, res: Response) => {
   try {
-    const existingSessionId = req.headers["mcp-session-id"] as string | undefined;
-    
+    const existingSessionId = req.headers["mcp-session-id"] as
+      | string
+      | undefined;
+
     console.log(`\n[DEBUG] ${req.method} ${req.originalUrl}`);
-    
+
     const authToken = extractAuthToken(req);
 
     // Detect if this is an initialize request
-    const isInitialize = req.method === "POST" && req.body?.method === "initialize";
+    const isInitialize =
+      req.method === "POST" && req.body?.method === "initialize";
 
     let sessionId: string;
 
@@ -39,7 +42,9 @@ mcpRouter.all("/", async (req: Request, res: Response) => {
       const authContext = authToken ? await resolveAuth(authToken) : null;
 
       if (!authContext) {
-        console.warn(`[AUTH] Refusing session initialization: No valid auth token provided`);
+        console.warn(
+          `[AUTH] Refusing session initialization: No valid auth token provided`,
+        );
         res.status(401).json({ error: "Authentication required" });
         return;
       }
@@ -64,7 +69,6 @@ mcpRouter.all("/", async (req: Request, res: Response) => {
         await session.transport.handleRequest(req, res, req.body);
       }
     } else {
-
       sessionId = existingSessionId;
       const session = sessions.get(sessionId);
 
@@ -83,11 +87,13 @@ mcpRouter.all("/", async (req: Request, res: Response) => {
       if (authToken) {
         const auth = await resolveAuth(authToken);
         if (auth && (!session.userId || session.userId !== auth.userId)) {
-           console.log(`[AUTH] Updating session ${sessionId} context for user ${auth.userId}`);
-           session.userId = auth.userId;
-           session.orgId = auth.orgId;
-           session.keyId = auth.keyId;
-           session.clerkToken = auth.token;
+          console.log(
+            `[AUTH] Updating session ${sessionId} context for user ${auth.userId}`,
+          );
+          session.userId = auth.userId;
+          session.orgId = auth.orgId;
+          session.keyId = auth.keyId;
+          session.clerkToken = auth.token;
         }
       }
 

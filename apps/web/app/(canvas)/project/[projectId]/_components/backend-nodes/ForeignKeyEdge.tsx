@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  EdgeProps,
-  getSmoothStepPath,
-  BaseEdge,
-} from "@xyflow/react";
+import { EdgeProps, getSmoothStepPath, BaseEdge } from "@xyflow/react";
 import { BackendEdge } from "@/types/canvas";
 
 export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
@@ -30,9 +26,11 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
   // Interpret crow's foot markers based on cardinality
   const sourceCard = data?.sourceCardinality || "1";
   const targetCard = data?.targetCardinality || "N";
-  
-  const sourceMarkerId = sourceCard === "1" ? "crows-foot-one" : "crows-foot-many";
-  const targetMarkerId = targetCard === "1" ? "crows-foot-one" : "crows-foot-many";
+
+  const sourceMarkerId =
+    sourceCard === "1" ? "crows-foot-one" : "crows-foot-many";
+  const targetMarkerId =
+    targetCard === "1" ? "crows-foot-one" : "crows-foot-many";
 
   return (
     <>
@@ -47,8 +45,22 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
             refY="6"
             orient="auto-start-reverse"
           >
-            <line x1="6" y1="2" x2="6" y2="10" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" />
+            <line
+              x1="6"
+              y1="2"
+              x2="6"
+              y2="10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <line
+              x1="10"
+              y1="2"
+              x2="10"
+              y2="10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
           </marker>
           <marker
             id="crows-foot-many"
@@ -58,13 +70,34 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
             refY="6"
             orient="auto-start-reverse"
           >
-            <line x1="0" y1="0" x2="10" y2="6" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="0" y1="12" x2="10" y2="6" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="10" y1="2" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" />
+            <line
+              x1="0"
+              y1="0"
+              x2="10"
+              y2="6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <line
+              x1="0"
+              y1="12"
+              x2="10"
+              y2="6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <line
+              x1="10"
+              y1="2"
+              x2="10"
+              y2="10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
           </marker>
         </defs>
       </svg>
-      
+
       <BaseEdge
         path={edgePath}
         markerEnd={`url(#${targetMarkerId})`}

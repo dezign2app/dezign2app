@@ -1,5 +1,9 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource, UIEventItem } from "@workspace/canvas/types";
+import {
+  Endpoint,
+  AnyMessagingResource,
+  UIEventItem,
+} from "@workspace/canvas/types";
 
 export interface NodeConnectionDetail {
   nodeId: string;
@@ -22,7 +26,9 @@ export interface EventTraceResult {
 /**
  * Deduplicates trace items based on nodeId, nodeName, and detail
  */
-function deduplicateTraces(traces: NodeConnectionDetail[]): NodeConnectionDetail[] {
+function deduplicateTraces(
+  traces: NodeConnectionDetail[],
+): NodeConnectionDetail[] {
   const seen = new Set<string>();
   return traces.filter((item) => {
     const key = `${item.nodeId}:${item.nodeName}:${item.detail}`;
@@ -43,25 +49,32 @@ function cleanPath(pathStr: string): string {
 /**
  * Formats configured database columns into a human-readable dataContext string
  */
-export function formatDatabaseColumnsContext(node: BackendNode, allNodes: BackendNode[] = []): string {
+export function formatDatabaseColumnsContext(
+  node: BackendNode,
+  allNodes: BackendNode[] = [],
+): string {
   let targetNode = node;
 
   // If this is a Table Ref node, resolve the target Entity node
   if (node.type === "db_ref" && (node.data as any)?.tableRef) {
-    const refEntity = allNodes.find((n) => n.id === (node.data as any).tableRef);
+    const refEntity = allNodes.find(
+      (n) => n.id === (node.data as any).tableRef,
+    );
     if (refEntity) {
       targetNode = refEntity;
     }
   }
 
-  const columns = (targetNode.data as any)?.columns as Array<{
-    name: string;
-    type?: string;
-    isPrimaryKey?: boolean;
-    isNotNull?: boolean;
-    isUnique?: boolean;
-    isForeignKey?: boolean;
-  }> | undefined;
+  const columns = (targetNode.data as any)?.columns as
+    | Array<{
+        name: string;
+        type?: string;
+        isPrimaryKey?: boolean;
+        isNotNull?: boolean;
+        isUnique?: boolean;
+        isForeignKey?: boolean;
+      }>
+    | undefined;
 
   if (!columns || !Array.isArray(columns) || columns.length === 0) {
     return "Schema Fields: (No columns configured)";
@@ -99,10 +112,17 @@ export function formatEndpointPayloadContext(endpoint: Endpoint): string {
     if (Array.isArray(reqBody.fields) && reqBody.fields.length > 0) {
       const fieldsStr = reqBody.fields
         .filter((f: any) => f && f.name)
-        .map((f: any) => `${f.name}${f.type ? `: ${f.type}` : ""}${f.required ? "!" : ""}`)
+        .map(
+          (f: any) =>
+            `${f.name}${f.type ? `: ${f.type}` : ""}${f.required ? "!" : ""}`,
+        )
         .join(", ");
       if (fieldsStr) parts.push(`Body: { ${fieldsStr} }`);
-    } else if (reqBody.rawJson && typeof reqBody.rawJson === "string" && reqBody.rawJson.trim()) {
+    } else if (
+      reqBody.rawJson &&
+      typeof reqBody.rawJson === "string" &&
+      reqBody.rawJson.trim()
+    ) {
       parts.push(`Body: ${reqBody.rawJson.replace(/\s+/g, " ").trim()}`);
     }
   }
@@ -145,7 +165,7 @@ export function resolveEndpointTrace(
   endpoint: Endpoint,
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  allEndpoints: (Endpoint & { nodeId: string })[] = []
+  allEndpoints: (Endpoint & { nodeId: string })[] = [],
 ): EndpointTraceResult {
   const incoming: NodeConnectionDetail[] = [];
   const outgoing: NodeConnectionDetail[] = [];
@@ -188,9 +208,12 @@ export function resolveEndpointTrace(
     // A. WebClient Node
     if (srcNode.type === "webClient" || (srcNode.data as any)?.isWebClient) {
       let eventDetail = "UI Action / Link";
-      const srcEvents: UIEventItem[] = (srcNode.data?.events as UIEventItem[]) || [];
+      const srcEvents: UIEventItem[] =
+        (srcNode.data?.events as UIEventItem[]) || [];
       const sh = edge.sourceHandle || "";
-      const matchedEvt = srcEvents.find((evt) => sh.includes(evt.id) || (evt.name && sh.includes(evt.name)));
+      const matchedEvt = srcEvents.find(
+        (evt) => sh.includes(evt.id) || (evt.name && sh.includes(evt.name)),
+      );
       if (matchedEvt) {
         eventDetail = `Trigger Event "${matchedEvt.name || "Action"}" (${matchedEvt.event || "click"})`;
       }
@@ -204,8 +227,15 @@ export function resolveEndpointTrace(
       });
     }
     // B. Database / Entity Node
-    else if (srcNode.type === "entity" || srcNode.type === "db_ref" || srcTypeStr === "db" || srcTypeStr === "database") {
-      const tableName = (srcNode.data as any)?.tableName || srcName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    else if (
+      srcNode.type === "entity" ||
+      srcNode.type === "db_ref" ||
+      srcTypeStr === "db" ||
+      srcTypeStr === "database"
+    ) {
+      const tableName =
+        (srcNode.data as any)?.tableName ||
+        srcName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
@@ -225,11 +255,15 @@ export function resolveEndpointTrace(
       });
     }
     // D. API Gateway / Load Balancer
-    else if (srcNode.type === "api_gateway" || srcNode.type === "load_balancer") {
+    else if (
+      srcNode.type === "api_gateway" ||
+      srcNode.type === "load_balancer"
+    ) {
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: srcNode.type === "api_gateway" ? "API Gateway" : "Load Balancer",
+        nodeType:
+          srcNode.type === "api_gateway" ? "API Gateway" : "Load Balancer",
         detail: `Routed through gateway endpoint (Port ${(srcNode.data as any)?.port || "8000"})`,
         dataContext: `Routes to ${epMethod} ${epPath}`,
       });
@@ -279,8 +313,15 @@ export function resolveEndpointTrace(
     const nodeTypeStr = tgtNode.type as string;
 
     // A. Database / Entity Node
-    if (tgtNode.type === "entity" || tgtNode.type === "db_ref" || nodeTypeStr === "db" || nodeTypeStr === "database") {
-      const tableName = nodeData?.tableName || tgtName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    if (
+      tgtNode.type === "entity" ||
+      tgtNode.type === "db_ref" ||
+      nodeTypeStr === "db" ||
+      nodeTypeStr === "database"
+    ) {
+      const tableName =
+        nodeData?.tableName ||
+        tgtName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
@@ -308,7 +349,15 @@ export function resolveEndpointTrace(
     }
     // C. Messaging Broker Node
     else if (
-      ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"].includes(nodeTypeStr)
+      [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ].includes(nodeTypeStr)
     ) {
       outgoing.push({
         nodeId: tgtNode.id,
@@ -340,9 +389,12 @@ export function resolveEndpointTrace(
  */
 export function resolveConsumerTrace(
   serviceNode: BackendNode,
-  consumedEvent: AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" },
+  consumedEvent: AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  },
   allNodes: BackendNode[] = [],
-  allEdges: BackendEdge[] = []
+  allEdges: BackendEdge[] = [],
 ): EventTraceResult {
   const incoming: NodeConnectionDetail[] = [];
   const outgoing: NodeConnectionDetail[] = [];
@@ -354,7 +406,12 @@ export function resolveConsumerTrace(
   const incomingEdges = allEdges.filter((e) => {
     if (e.target !== serviceNode.id) return false;
     const th = e.targetHandle || "";
-    return th.includes(evtId) || th.includes(evtName) || th.startsWith("consumed-events") || th.startsWith("events-in");
+    return (
+      th.includes(evtId) ||
+      th.includes(evtName) ||
+      th.startsWith("consumed-events") ||
+      th.startsWith("events-in")
+    );
   });
 
   incomingEdges.forEach((edge) => {
@@ -374,7 +431,15 @@ export function resolveConsumerTrace(
           : "Event Payload object",
       });
     } else if (
-      ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"].includes(srcTypeStr)
+      [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ].includes(srcTypeStr)
     ) {
       incoming.push({
         nodeId: srcNode.id,
@@ -416,8 +481,15 @@ export function resolveConsumerTrace(
     const nodeData = tgtNode.data as any;
     const tgtTypeStr = tgtNode.type as string;
 
-    if (tgtNode.type === "entity" || tgtNode.type === "db_ref" || tgtTypeStr === "db" || tgtTypeStr === "database") {
-      const tableName = nodeData?.tableName || tgtName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    if (
+      tgtNode.type === "entity" ||
+      tgtNode.type === "db_ref" ||
+      tgtTypeStr === "db" ||
+      tgtTypeStr === "database"
+    ) {
+      const tableName =
+        nodeData?.tableName ||
+        tgtName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
@@ -445,9 +517,12 @@ export function resolveConsumerTrace(
  */
 export function resolveProducerTrace(
   serviceNode: BackendNode,
-  publishedEvent: AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" },
+  publishedEvent: AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  },
   allNodes: BackendNode[] = [],
-  allEdges: BackendEdge[] = []
+  allEdges: BackendEdge[] = [],
 ): EventTraceResult {
   const incoming: NodeConnectionDetail[] = [];
   const outgoing: NodeConnectionDetail[] = [];
@@ -467,7 +542,12 @@ export function resolveProducerTrace(
   const outgoingEdges = allEdges.filter((e) => {
     if (e.source !== serviceNode.id) return false;
     const sh = e.sourceHandle || "";
-    return sh.includes(evtId) || sh.includes(evtName) || sh.startsWith("published-events") || sh.startsWith("events-out");
+    return (
+      sh.includes(evtId) ||
+      sh.includes(evtName) ||
+      sh.startsWith("published-events") ||
+      sh.startsWith("events-out")
+    );
   });
 
   outgoingEdges.forEach((edge) => {
@@ -477,7 +557,15 @@ export function resolveProducerTrace(
     const tgtTypeStr = tgtNode.type as string;
 
     if (
-      ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"].includes(tgtTypeStr)
+      [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ].includes(tgtTypeStr)
     ) {
       // Find downstream consumers of this broker
       const brokerEdges = allEdges.filter((be) => be.source === tgtNode.id);

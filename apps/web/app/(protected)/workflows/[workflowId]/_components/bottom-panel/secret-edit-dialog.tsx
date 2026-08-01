@@ -20,7 +20,12 @@ interface SecretEditDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   editingSecret: WorkflowSecret | null;
-  onSave: (name: string, value: string | undefined, description?: string, secretId?: Id<"workflow_secrets">) => Promise<void>;
+  onSave: (
+    name: string,
+    value: string | undefined,
+    description?: string,
+    secretId?: Id<"workflow_secrets">,
+  ) => Promise<void>;
 }
 
 export const SecretEditDialog = ({
@@ -63,7 +68,8 @@ export const SecretEditDialog = ({
         <DialogHeader>
           <DialogTitle>Edit Secret</DialogTitle>
           <DialogDescription>
-            Update the secret name or its value. Leave the value blank to keep the existing secret key.
+            Update the secret name or its value. Leave the value blank to keep
+            the existing secret key.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

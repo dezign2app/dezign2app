@@ -1,8 +1,23 @@
 import React, { useState } from "react";
-import { Sparkles, Code2, FileText, Loader2, Info, Database, Plus, Trash2 } from "lucide-react";
+import {
+  Sparkles,
+  Code2,
+  FileText,
+  Loader2,
+  Info,
+  Database,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { LocalTextarea } from "../backend-nodes/graph-nodes/shared";
 
 export type LogicMode = "natural_language" | "code";
@@ -70,7 +85,9 @@ export function BusinessLogicBlock({
   };
 
   return (
-    <div className={`flex flex-col gap-3 p-3.5 bg-secondary/10 rounded-xl border border-border/60 shadow-sm ${className}`}>
+    <div
+      className={`flex flex-col gap-3 p-3.5 bg-secondary/10 rounded-xl border border-border/60 shadow-sm ${className}`}
+    >
       {/* Top Header Toolbar */}
       <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2.5">
         <div className="flex items-center gap-2">
@@ -80,7 +97,9 @@ export function BusinessLogicBlock({
               {title}
             </span>
             {description && (
-              <span className="text-[10px] text-muted-foreground">{description}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {description}
+              </span>
             )}
           </div>
         </div>
@@ -164,7 +183,9 @@ export function BusinessLogicBlock({
           <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-tight bg-secondary/20 p-2 rounded border border-border/40">
             <Info className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
             <span>
-              Write instructions in plain language. The AI compiler will automatically convert this into production code when generating the microservice.
+              Write instructions in plain language. The AI compiler will
+              automatically convert this into production code when generating
+              the microservice.
             </span>
           </div>
         </div>
@@ -189,7 +210,9 @@ export function BusinessLogicBlock({
           <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-tight bg-secondary/20 p-2 rounded border border-border/40 font-mono">
             <Info className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
             <span>
-              Write ONLY inner function body statements. Do not include outer function signatures or declarations (e.g. <code>async function...</code>).
+              Write ONLY inner function body statements. Do not include outer
+              function signatures or declarations (e.g.{" "}
+              <code>async function...</code>).
             </span>
           </div>
         </div>
@@ -225,7 +248,10 @@ export function BusinessLogicBlock({
 
           <div className="flex flex-col gap-2">
             {crudConfig.map((configItem, idx) => (
-              <div key={idx} className="flex flex-col gap-3 p-2.5 bg-background/60 rounded-lg border border-border/50 shadow-sm">
+              <div
+                key={idx}
+                className="flex flex-col gap-3 p-2.5 bg-background/60 rounded-lg border border-border/50 shadow-sm"
+              >
                 <div className="flex items-center justify-between gap-2 text-xs">
                   {/* Table Node Selector */}
                   <Select
@@ -233,7 +259,10 @@ export function BusinessLogicBlock({
                     onValueChange={(tableId) => {
                       const next = [...crudConfig];
                       if (next[idx]) {
-                        next[idx] = { ...next[idx], tableNodeId: tableId === "__none__" ? "" : tableId };
+                        next[idx] = {
+                          ...next[idx],
+                          tableNodeId: tableId === "__none__" ? "" : tableId,
+                        };
                         onCrudConfigChange(next);
                       }
                     }}
@@ -242,11 +271,18 @@ export function BusinessLogicBlock({
                       <SelectValue placeholder="Select a Table Ref Node..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__" className="text-xs font-mono text-muted-foreground">
+                      <SelectItem
+                        value="__none__"
+                        className="text-xs font-mono text-muted-foreground"
+                      >
                         Select a Table...
                       </SelectItem>
                       {availableTableNodes.map((t) => (
-                        <SelectItem key={t.id} value={t.id} className="text-xs font-mono">
+                        <SelectItem
+                          key={t.id}
+                          value={t.id}
+                          className="text-xs font-mono"
+                        >
                           {t.label}
                         </SelectItem>
                       ))}
@@ -256,7 +292,14 @@ export function BusinessLogicBlock({
                   {/* CRUD Operation Toggle Pills */}
                   <div className="flex items-center gap-1">
                     {ALL_CRUD_OPS.map((op) => {
-                      const label = op === "create" ? "C" : op === "read" ? "R" : op === "update" ? "U" : "D";
+                      const label =
+                        op === "create"
+                          ? "C"
+                          : op === "read"
+                            ? "R"
+                            : op === "update"
+                              ? "U"
+                              : "D";
                       const isSelected = configItem.operations.includes(op);
                       return (
                         <button
@@ -265,7 +308,9 @@ export function BusinessLogicBlock({
                           title={op.toUpperCase()}
                           onClick={() => {
                             const curr = configItem.operations || [];
-                            const nextOps = isSelected ? curr.filter((o) => o !== op) : [...curr, op];
+                            const nextOps = isSelected
+                              ? curr.filter((o) => o !== op)
+                              : [...curr, op];
                             const next = [...crudConfig];
                             if (next[idx]) {
                               next[idx] = { ...next[idx], operations: nextOps };
@@ -297,38 +342,48 @@ export function BusinessLogicBlock({
                     </button>
                   </div>
                 </div>
-              
-              {/* Operation Explanations */}
-              {configItem.operations.length > 0 && configItem.tableNodeId && (
-                <div className="flex flex-col gap-2 mt-1 px-1">
-                  {configItem.operations.map(op => (
-                    <div key={op} className="flex flex-col gap-1.5">
-                      <Label className="text-[10px] font-semibold text-muted-foreground uppercase">
-                        {op} Explanation
-                      </Label>
-                      <LocalTextarea
-                        value={configItem.explanations?.[op] || ""}
-                        onChange={(e) => {
-                          const next = [...crudConfig];
-                          if (next[idx]) {
-                            const newExplanations = { ...(next[idx].explanations || {}), [op]: e.target.value };
-                            next[idx] = { ...next[idx], explanations: newExplanations as Record<CrudOperation, string> };
-                            onCrudConfigChange(next);
-                          }
-                        }}
-                        placeholder={`Explain why and how the data is ${op === 'read' ? 'fetched from' : op === 'create' ? 'inserted into' : op === 'update' ? 'updated in' : 'deleted from'} this table...`}
-                        className="text-[11px] min-h-[60px] resize-y bg-background leading-relaxed placeholder:text-muted-foreground/40 border-border/50 focus-visible:ring-1 focus-visible:ring-ring"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                {/* Operation Explanations */}
+                {configItem.operations.length > 0 && configItem.tableNodeId && (
+                  <div className="flex flex-col gap-2 mt-1 px-1">
+                    {configItem.operations.map((op) => (
+                      <div key={op} className="flex flex-col gap-1.5">
+                        <Label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                          {op} Explanation
+                        </Label>
+                        <LocalTextarea
+                          value={configItem.explanations?.[op] || ""}
+                          onChange={(e) => {
+                            const next = [...crudConfig];
+                            if (next[idx]) {
+                              const newExplanations = {
+                                ...(next[idx].explanations || {}),
+                                [op]: e.target.value,
+                              };
+                              next[idx] = {
+                                ...next[idx],
+                                explanations: newExplanations as Record<
+                                  CrudOperation,
+                                  string
+                                >,
+                              };
+                              onCrudConfigChange(next);
+                            }
+                          }}
+                          placeholder={`Explain why and how the data is ${op === "read" ? "fetched from" : op === "create" ? "inserted into" : op === "update" ? "updated in" : "deleted from"} this table...`}
+                          className="text-[11px] min-h-[60px] resize-y bg-background leading-relaxed placeholder:text-muted-foreground/40 border-border/50 focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
 
             {crudConfig.length === 0 && (
               <span className="text-[10px] text-muted-foreground italic px-1">
-                No database table operations configured. Click "+ Add Table Ref" to link database access.
+                No database table operations configured. Click "+ Add Table Ref"
+                to link database access.
               </span>
             )}
           </div>

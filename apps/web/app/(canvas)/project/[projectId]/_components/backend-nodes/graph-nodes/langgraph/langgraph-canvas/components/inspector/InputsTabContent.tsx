@@ -3,13 +3,21 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import type { LangGraphInputChannel } from "@/types/canvas";
 
 interface InputsTabContentProps {
   inputChannels: LangGraphInputChannel[];
-  setInputChannels: React.Dispatch<React.SetStateAction<LangGraphInputChannel[]>>;
+  setInputChannels: React.Dispatch<
+    React.SetStateAction<LangGraphInputChannel[]>
+  >;
 }
 
 export function InputsTabContent({
@@ -56,15 +64,22 @@ export function InputsTabContent({
               value={input.key}
               onChange={(e) => {
                 const updated = { ...input, key: e.target.value };
-                setInputChannels(inputChannels.map((c, i) => (i === idx ? updated : c)));
+                setInputChannels(
+                  inputChannels.map((c, i) => (i === idx ? updated : c)),
+                );
               }}
               placeholder="field_key"
             />
             <Select
               value={input.type}
               onValueChange={(v: string) => {
-                const updated = { ...input, type: v as LangGraphInputChannel["type"] };
-                setInputChannels(inputChannels.map((c, i) => (i === idx ? updated : c)));
+                const updated = {
+                  ...input,
+                  type: v as LangGraphInputChannel["type"],
+                };
+                setInputChannels(
+                  inputChannels.map((c, i) => (i === idx ? updated : c)),
+                );
               }}
             >
               <SelectTrigger className="h-7 text-xs w-28 bg-background font-mono">
@@ -84,7 +99,9 @@ export function InputsTabContent({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-              onClick={() => setInputChannels(inputChannels.filter((_, i) => i !== idx))}
+              onClick={() =>
+                setInputChannels(inputChannels.filter((_, i) => i !== idx))
+              }
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
@@ -96,7 +113,9 @@ export function InputsTabContent({
               value={input.description || ""}
               onChange={(e) => {
                 const updated = { ...input, description: e.target.value };
-                setInputChannels(inputChannels.map((c, i) => (i === idx ? updated : c)));
+                setInputChannels(
+                  inputChannels.map((c, i) => (i === idx ? updated : c)),
+                );
               }}
               placeholder="Description (optional)"
             />
@@ -106,7 +125,9 @@ export function InputsTabContent({
                 checked={input.required ?? true}
                 onCheckedChange={(c) => {
                   const updated = { ...input, required: c };
-                  setInputChannels(inputChannels.map((c, i) => (i === idx ? updated : c)));
+                  setInputChannels(
+                    inputChannels.map((c, i) => (i === idx ? updated : c)),
+                  );
                 }}
               />
             </div>

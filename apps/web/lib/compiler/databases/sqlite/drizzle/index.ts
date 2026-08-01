@@ -5,9 +5,11 @@ import { toTableName, toVarName, mapToDrizzleSqliteType } from "../../../utils";
 function enrichEntitiesWithForeignKeys(
   tables: BackendNode[],
   allNodes: BackendNode[],
-  allEdges: BackendEdge[]
+  allEdges: BackendEdge[],
 ): BackendNode[] {
-  const enrichedTables = tables.map((t) => JSON.parse(JSON.stringify(t)) as BackendNode);
+  const enrichedTables = tables.map(
+    (t) => JSON.parse(JSON.stringify(t)) as BackendNode,
+  );
   const tableByLabel = new Map<string, BackendNode>();
   const tableById = new Map<string, BackendNode>();
 
@@ -21,12 +23,25 @@ function enrichEntitiesWithForeignKeys(
     (e) =>
       e.type === "foreign-key" ||
       e.data?.label === "foreign-key" ||
-      (e.sourceHandle && (e.sourceHandle.includes("entity") || e.sourceHandle.includes("target") || e.sourceHandle.includes("source")))
+      (e.sourceHandle &&
+        (e.sourceHandle.includes("entity") ||
+          e.sourceHandle.includes("target") ||
+          e.sourceHandle.includes("source"))),
   );
 
   fkEdges.forEach((edge) => {
-    const srcNode = tableById.get(edge.source) || allNodes.find((n) => n.id === edge.source && (n.type === "entity" || n.type === "db_ref"));
-    const tgtNode = tableById.get(edge.target) || allNodes.find((n) => n.id === edge.target && (n.type === "entity" || n.type === "db_ref"));
+    const srcNode =
+      tableById.get(edge.source) ||
+      allNodes.find(
+        (n) =>
+          n.id === edge.source && (n.type === "entity" || n.type === "db_ref"),
+      );
+    const tgtNode =
+      tableById.get(edge.target) ||
+      allNodes.find(
+        (n) =>
+          n.id === edge.target && (n.type === "entity" || n.type === "db_ref"),
+      );
 
     if (!srcNode || !tgtNode) return;
 
@@ -64,7 +79,7 @@ function enrichEntitiesWithForeignKeys(
         (c) =>
           c.isForeignKey ||
           c.name.toLowerCase() === `${tgtTableLabel}_id` ||
-          c.name.toLowerCase() === `${tgtTableLabel.slice(0, -1)}_id`
+          c.name.toLowerCase() === `${tgtTableLabel.slice(0, -1)}_id`,
       );
       if (matchingCol) {
         matchingCol.isForeignKey = true;
@@ -82,7 +97,9 @@ function enrichEntitiesWithForeignKeys(
 
       const cName = col.name.toLowerCase();
       if (col.isForeignKey || cName.endsWith("_id")) {
-        const potentialTargetLabel = cName.endsWith("_id") ? cName.slice(0, -3) : "";
+        const potentialTargetLabel = cName.endsWith("_id")
+          ? cName.slice(0, -3)
+          : "";
         if (potentialTargetLabel) {
           const matchedTarget =
             tableByLabel.get(potentialTargetLabel) ||
@@ -90,7 +107,9 @@ function enrichEntitiesWithForeignKeys(
             tableByLabel.get(`${potentialTargetLabel}es`);
 
           if (matchedTarget) {
-            const targetLabel = toTableName(matchedTarget.data.label || "table");
+            const targetLabel = toTableName(
+              matchedTarget.data.label || "table",
+            );
             col.isForeignKey = true;
             col.references = {
               table: targetLabel,
@@ -105,7 +124,10 @@ function enrichEntitiesWithForeignKeys(
   return enrichedTables;
 }
 
-function generateDrizzleTableSchema(tableNode: BackendNode, allTables: BackendNode[]): string {
+function generateDrizzleTableSchema(
+  tableNode: BackendNode,
+  allTables: BackendNode[],
+): string {
   const tableName = toTableName(tableNode.data.label || "table");
   const tableVarName = toVarName(tableName);
   const columns = tableNode.data.columns || [];
@@ -174,10 +196,16 @@ function generateDrizzleTableSchema(tableNode: BackendNode, allTables: BackendNo
  */
 export function compileSqliteDrizzleDatabase(
   allNodes: BackendNode[],
-  allEdges: BackendEdge[]
+  allEdges: BackendEdge[],
 ): CompiledDatabaseResult {
-  const entityNodes = allNodes.filter((n) => n.type === "entity" || n.type === "db_ref");
-  const enrichedTables = enrichEntitiesWithForeignKeys(entityNodes, allNodes, allEdges);
+  const entityNodes = allNodes.filter(
+    (n) => n.type === "entity" || n.type === "db_ref",
+  );
+  const enrichedTables = enrichEntitiesWithForeignKeys(
+    entityNodes,
+    allNodes,
+    allEdges,
+  );
 
   const files: CompiledFile[] = [];
   const schemaExports: string[] = [];
@@ -269,7 +297,7 @@ export { schema };
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "package.json",
@@ -286,7 +314,7 @@ export { schema };
       include: ["src/**/*", "index.ts", "schema/**/*"],
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "tsconfig.json",

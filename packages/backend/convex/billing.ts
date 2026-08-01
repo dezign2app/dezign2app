@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const handleCheckoutCompleted = mutation({
   args: { 
@@ -22,6 +22,63 @@ export const handleCheckoutCompleted = mutation({
     }
 
     await ctx.db.patch(userId, { creemCustomerId: data.customer?.id });
+
+    // Handle Early Believer checkout metadata
+    if (data.metadata?.type === "early_believer" || data.metadata?.tier) {
+      const tier: 500 | 1000 = Number(data.metadata.tier) === 1000 ? 1000 : 500;
+      const seats = Math.max(1, Number(data.metadata.seats) || Number(data.units) || 1);
+      const discountPercent = tier === 1000 ? 10 : 5;
+      const totalPaid = tier * seats;
+
+      const subscriptionMonths = tier === 1000 ? 12 : 6;
+      const investmentPerSeat = tier === 1000 ? 900 : 450;
+      const investmentAmount = investmentPerSeat * seats;
+
+      const periodDays = tier === 1000 ? 365 : 182;
+      const now = Date.now();
+      const periodEnd = now + periodDays * 24 * 60 * 60 * 1000;
+
+      await ctx.db.insert("early_believers", {
+        userId,
+        tier,
+        seats,
+        discountPercent,
+        investmentAmount,
+        subscriptionMonths,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        totalPaid,
+        status: "active",
+        creemCheckoutId: data.id,
+        creemCustomerId: data.customer?.id,
+        purchasedAt: now,
+      });
+
+      // Grant/extend user's active subscription in Convex DB
+      const existingSub = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+
+      if (existingSub) {
+        const newEnd = Math.max(existingSub.currentPeriodEnd, periodEnd);
+        await ctx.db.patch(existingSub._id, {
+          status: "active",
+          planId: `early_believer_${tier}`,
+          currentPeriodStart: now,
+          currentPeriodEnd: newEnd,
+        });
+      } else {
+        await ctx.db.insert("subscriptions", {
+          userId,
+          planId: `early_believer_${tier}`,
+          status: "active",
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          creemSubscriptionId: `eb_${data.id || now}`,
+        });
+      }
+    }
 
     if (data.subscription) {
       const productId = typeof data.subscription.product === 'string' ? data.subscription.product : data.subscription.product?.id;
@@ -48,6 +105,40 @@ export const handleCheckoutCompleted = mutation({
       }
     }
     return { success: true };
+  },
+});
+
+export const getUserEarlyBeliever = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+
+    if (!user) return null;
+
+    const ebPurchases = await ctx.db
+      .query("early_believers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    if (ebPurchases.length === 0) return null;
+
+    const totalSeats = ebPurchases.reduce((acc, item) => acc + item.seats, 0);
+    const maxDiscountPercent = Math.max(...ebPurchases.map((item) => item.discountPercent));
+    const totalPaid = ebPurchases.reduce((acc, item) => acc + item.totalPaid, 0);
+    const totalInvestment = ebPurchases.reduce((acc, item) => acc + (item.investmentAmount || (item.tier === 1000 ? 900 : 450) * item.seats), 0);
+    const maxSubscriptionEnd = Math.max(...ebPurchases.map((item) => item.currentPeriodEnd || (item.purchasedAt + (item.tier === 1000 ? 365 : 182) * 24 * 60 * 60 * 1000)));
+
+    return {
+      purchases: ebPurchases,
+      totalSeats,
+      discountPercent: maxDiscountPercent,
+      totalPaid,
+      totalInvestment,
+      maxSubscriptionEnd,
+    };
   },
 });
 

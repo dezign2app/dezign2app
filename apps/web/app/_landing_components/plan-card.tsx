@@ -60,12 +60,8 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
   const displayPrice = price;
 
   return (
-    <div
-      className={`
-        relative border border-gray-200 flex flex-col w-[300px] translate-y-0 rounded-2xl p-7 transition-transform duration-300
-        hover:-translate-y-1 shadow-lg "
-      `}
-    >
+    <div className={`relative border border-gray-200 flex flex-col w-[300px] translate-y-0 rounded-2xl p-7 transition-transform duration-300
+      hover:-translate-y-1 shadow-lg bg-white/60`}>
       <PlanIconBadge featured={featured} />
 
       {/* Plan name + desc */}

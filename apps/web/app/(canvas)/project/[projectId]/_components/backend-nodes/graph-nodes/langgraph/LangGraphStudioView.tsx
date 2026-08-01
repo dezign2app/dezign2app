@@ -6,6 +6,7 @@ import {
   MiniMap,
   BackgroundVariant,
   Panel,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Layout } from "lucide-react";
@@ -160,15 +161,21 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     return edges.map((edge) => {
       const isCurrent = currentEdgeId === edge.id;
       const isActive = activeEdgeIds.includes(edge.id);
-      if (!isCurrent && !isActive) return edge;
+      const strokeColor = isCurrent ? "#38bdf8" : isActive ? "#818cf8" : edge.style?.stroke || "#a1a1aa";
 
       return {
         ...edge,
-        animated: true,
+        animated: edge.animated !== undefined ? edge.animated : true,
         style: {
           ...edge.style,
-          stroke: isCurrent ? "#38bdf8" : "#818cf8",
-          strokeWidth: isCurrent ? 3.5 : 2.5,
+          stroke: strokeColor,
+          strokeWidth: isCurrent ? 3.5 : isActive ? 2.5 : edge.style?.strokeWidth || 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 14,
+          height: 14,
+          color: strokeColor,
         },
       };
     });
@@ -178,12 +185,19 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     return nodes.map((n) => {
       const isCurrent = currentNodeId === n.id;
       const isActive = activeNodeIds.includes(n.id);
-      if (!isCurrent && !isActive) return n;
+      const isPill = n.id === "START" || n.type === "end" || n.id.startsWith("end_");
+      const baseRounded = isPill ? "rounded-full" : "rounded-2xl";
+      if (!isCurrent && !isActive) {
+        return {
+          ...n,
+          className: `${n.className || ""} ${baseRounded}`,
+        };
+      }
 
       const existingClass = n.className || "";
       return {
         ...n,
-        className: `${existingClass} ${
+        className: `${existingClass} ${baseRounded} ${
           isCurrent
             ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-background transition-all duration-300"
             : "ring-2 ring-sky-500/60 transition-all duration-300"
@@ -241,6 +255,18 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
 
         {/* Center Canvas */}
         <div className="flex-1 relative">
+          <style>{`
+            .react-flow__node {
+              border-radius: 1rem !important;
+            }
+            .react-flow__node.type-start,
+            .react-flow__node.type-end {
+              border-radius: 9999px !important;
+            }
+            .react-flow__node.selected {
+              border-radius: 1rem !important;
+            }
+          `}</style>
           <ReactFlow
             nodes={displayNodes}
             edges={displayEdges}
@@ -271,6 +297,12 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             defaultEdgeOptions={{
               animated: true,
               style: { stroke: "#a1a1aa", strokeWidth: 2 },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 14,
+                height: 14,
+                color: "#a1a1aa",
+              },
               interactionWidth: 20,
             }}
           >

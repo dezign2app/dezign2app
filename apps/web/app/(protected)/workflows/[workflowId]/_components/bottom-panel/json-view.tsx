@@ -4,7 +4,9 @@ import React from "react";
 
 // ─── JSON beautification helpers ─────────────────────────────────────────────
 
-export const tryParseJson = (value: unknown): { isJson: boolean; parsed: unknown } => {
+export const tryParseJson = (
+  value: unknown,
+): { isJson: boolean; parsed: unknown } => {
   if (typeof value === "object" && value !== null) {
     return { isJson: true, parsed: value };
   }
@@ -36,19 +38,32 @@ type JsonToken =
 const tokenizeJsonValue = (value: string): JsonToken[] => {
   const trimmed = value.trim();
   const isBracket =
-    trimmed === "{" || trimmed === "}" || trimmed === "[" || trimmed === "]" ||
-    trimmed === "{}," || trimmed === "}," || trimmed === "]," || trimmed === "[]," ||
-    trimmed === "{}" || trimmed === "[]";
+    trimmed === "{" ||
+    trimmed === "}" ||
+    trimmed === "[" ||
+    trimmed === "]" ||
+    trimmed === "{}," ||
+    trimmed === "}," ||
+    trimmed === "]," ||
+    trimmed === "[]," ||
+    trimmed === "{}" ||
+    trimmed === "[]";
   if (isBracket) return [{ type: "punctuation", value }];
 
   const trailing = value.endsWith(",") ? "," : "";
   const core = trailing ? value.slice(0, -1) : value;
-  const trailingToken: JsonToken[] = trailing ? [{ type: "punctuation", value: trailing }] : [];
+  const trailingToken: JsonToken[] = trailing
+    ? [{ type: "punctuation", value: trailing }]
+    : [];
 
-  if (core.trim().startsWith('"')) return [{ type: "string", value: core }, ...trailingToken];
-  if (core.trim() === "true" || core.trim() === "false") return [{ type: "boolean", value: core }, ...trailingToken];
-  if (core.trim() === "null") return [{ type: "null", value: core }, ...trailingToken];
-  if (/^\s*-?\d/.test(core)) return [{ type: "number", value: core }, ...trailingToken];
+  if (core.trim().startsWith('"'))
+    return [{ type: "string", value: core }, ...trailingToken];
+  if (core.trim() === "true" || core.trim() === "false")
+    return [{ type: "boolean", value: core }, ...trailingToken];
+  if (core.trim() === "null")
+    return [{ type: "null", value: core }, ...trailingToken];
+  if (/^\s*-?\d/.test(core))
+    return [{ type: "number", value: core }, ...trailingToken];
 
   return [{ type: "punctuation", value }];
 };

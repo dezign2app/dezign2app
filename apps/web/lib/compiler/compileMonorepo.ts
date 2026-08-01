@@ -16,17 +16,24 @@ import { generateTypesPackage } from "./generators/typesGenerator";
 export function compileMonorepo(
   nodes: BackendNode[],
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   edges: BackendEdge[] = [],
   testCases: SimulationTestCase[] = [],
-  projectName: string = "Blueprint Monorepo"
+  projectName: string = "Blueprint Monorepo",
 ): CompiledMonorepoResult {
   const files: CompiledFile[] = [];
 
   const serviceNodes = nodes.filter((n) => n.type === "service");
   const langGraphNodes = nodes.filter((n) => n.type === "langgraph");
-  const entityNodes = nodes.filter((n) => n.type === "entity" || n.type === "db_ref");
-  const webClientNodes = nodes.filter((n) => n.type === "webClient" || n.data?.isWebClient);
+  const entityNodes = nodes.filter(
+    (n) => n.type === "entity" || n.type === "db_ref",
+  );
+  const webClientNodes = nodes.filter(
+    (n) => n.type === "webClient" || n.data?.isWebClient,
+  );
 
   const servicesInfo: { id: string; name: string; folderName: string }[] = [];
   const webClientsInfo: { id: string; name: string; folderName: string }[] = [];
@@ -58,7 +65,7 @@ export function compileMonorepo(
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "package.json",
@@ -93,7 +100,7 @@ export function compileMonorepo(
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "turbo.json",
@@ -124,7 +131,7 @@ dist
       license: "MIT",
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "packages/typescript-config/package.json",
@@ -154,7 +161,7 @@ dist
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "packages/typescript-config/base.json",
@@ -212,7 +219,14 @@ dist
       folderName,
     });
 
-    const srvResult = compileServiceNode(srvNode, endpoints, events, nodes, edges, testCases);
+    const srvResult = compileServiceNode(
+      srvNode,
+      endpoints,
+      events,
+      nodes,
+      edges,
+      testCases,
+    );
     srvResult.files.forEach((f) => {
       files.push({
         filename: `apps/${folderName}/${f.filename}`,
@@ -225,7 +239,8 @@ dist
   // 5.5. Generate Apps: apps/<sanitizedName> for LangGraph Service Nodes
   langGraphNodes.forEach((lgNode) => {
     const rawName = lgNode.data?.label || "LangGraph Service";
-    let folderName = rawName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "langgraph-service";
+    let folderName =
+      rawName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "langgraph-service";
     if (servicesInfo.some((s) => s.folderName === folderName)) {
       folderName = `${folderName}-agent`;
     }
@@ -235,7 +250,13 @@ dist
       folderName,
     });
 
-    const lgResult = compileLangGraphNode(lgNode, { edges, nodes, endpoints, events, testCases });
+    const lgResult = compileLangGraphNode(lgNode, {
+      edges,
+      nodes,
+      endpoints,
+      events,
+      testCases,
+    });
     lgResult.files.forEach((f) => {
       files.push({
         filename: `apps/${folderName}/${f.filename}`,
@@ -261,7 +282,7 @@ dist
       nodes,
       edges,
       projectName,
-      testCases
+      testCases,
     );
 
     webClientResult.files.forEach((f) => {
@@ -289,7 +310,7 @@ dist
       references: rootReferences,
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "tsconfig.json",

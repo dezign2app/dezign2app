@@ -11,7 +11,10 @@ import { WorkflowBottomPanel } from "./workflow-bottom-panel";
 import { WorkflowCanvas } from "./workflow-canvas";
 import { WorkflowNodeInspector } from "./workflow-node-inspector";
 import { WorkflowNodePalette } from "./workflow-node-palette";
-import { WorkflowEditorProvider, useWorkflowEditorContext } from "./workflow-editor-context";
+import {
+  WorkflowEditorProvider,
+  useWorkflowEditorContext,
+} from "./workflow-editor-context";
 import { WorkflowRunDialog } from "./workflow-run-dialog";
 
 interface WorkflowEditorPlaceholderProps {

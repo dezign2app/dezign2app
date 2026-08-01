@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -52,7 +59,9 @@ const getQuickAddPosition = (
   };
 };
 
-const sanitizeNodeDefinition = (node: WorkflowEditorNode): WorkflowEditorNode => {
+const sanitizeNodeDefinition = (
+  node: WorkflowEditorNode,
+): WorkflowEditorNode => {
   if (node.data.status) {
     const { status: _status, ...cleanData } = node.data;
     return { ...node, data: cleanData };
@@ -74,7 +83,9 @@ export const useWorkflowEditor = (workflowId: string) => {
   });
   const saveDraftGraph = useMutation(api.workflows.crud.saveDraftGraph);
   const publishWorkflow = useMutation(api.workflows.versions.publishWorkflow);
-  const unpublishWorkflow = useMutation(api.workflows.versions.unpublishWorkflow);
+  const unpublishWorkflow = useMutation(
+    api.workflows.versions.unpublishWorkflow,
+  );
   const restoreWorkflowVersion = useMutation(
     api.workflows.versions.restoreWorkflowVersion,
   );
@@ -84,21 +95,27 @@ export const useWorkflowEditor = (workflowId: string) => {
   const updateVersionMessage = useMutation(
     api.workflows.versions.updateVersionMessage,
   );
-  const upsertWorkflowSecret = useMutation(api.workflows.secrets.upsertWorkflowSecret);
-  const deleteWorkflowSecretMutation = useMutation(api.workflows.secrets.deleteWorkflowSecret);
+  const upsertWorkflowSecret = useMutation(
+    api.workflows.secrets.upsertWorkflowSecret,
+  );
+  const deleteWorkflowSecretMutation = useMutation(
+    api.workflows.secrets.deleteWorkflowSecret,
+  );
   const workflowSecrets = useQuery(api.workflows.secrets.listWorkflowSecrets, {
     workflowId: workflowId as Id<"workflows">,
   });
-  const workflowVersions = useQuery(api.workflows.versions.listWorkflowVersions, {
-    workflowId: workflowId as Id<"workflows">,
-  });
+  const workflowVersions = useQuery(
+    api.workflows.versions.listWorkflowVersions,
+    {
+      workflowId: workflowId as Id<"workflows">,
+    },
+  );
 
   const [nodes, setNodes] = useState<WorkflowEditorNode[]>([]);
   const [edges, setEdges] = useState<WorkflowEditorEdge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedRunId, setSelectedRunId] = useState<Id<"workflow_runs"> | null>(
-    null,
-  );
+  const [selectedRunId, setSelectedRunId] =
+    useState<Id<"workflow_runs"> | null>(null);
   const [compileStatus, setCompileStatus] =
     useState<WorkflowCompileStatus>("invalid");
   const [compileErrors, setCompileErrors] = useState<string[]>([]);
@@ -127,7 +144,9 @@ export const useWorkflowEditor = (workflowId: string) => {
   useEffect(() => {
     if (!data) return;
 
-    const nextNodes = data.nodes.map((node) => toWorkflowEditorNodeWithData(node));
+    const nextNodes = data.nodes.map((node) =>
+      toWorkflowEditorNodeWithData(node),
+    );
     const nextEdges = data.edges.map((edge) => toWorkflowEditorEdge(edge));
     const serverSignature = JSON.stringify(
       serializeWorkflowGraph(nextNodes, nextEdges),
@@ -142,7 +161,8 @@ export const useWorkflowEditor = (workflowId: string) => {
       setEdges(nextEdges);
       setSelectedNodeId(nextNodes[0]?.id ?? null);
       setCompileStatus(
-        (data.draftVersion?.compileStatus ?? "invalid") as WorkflowCompileStatus,
+        (data.draftVersion?.compileStatus ??
+          "invalid") as WorkflowCompileStatus,
       );
       setCompileErrors(data.draftVersion?.compileErrors ?? []);
       setSaveState("idle");
@@ -160,7 +180,8 @@ export const useWorkflowEditor = (workflowId: string) => {
       setNodes(nextNodes);
       setEdges(nextEdges);
       setCompileStatus(
-        (data.draftVersion?.compileStatus ?? "invalid") as WorkflowCompileStatus,
+        (data.draftVersion?.compileStatus ??
+          "invalid") as WorkflowCompileStatus,
       );
       setCompileErrors(data.draftVersion?.compileErrors ?? []);
       setSaveState("idle");
@@ -238,7 +259,9 @@ export const useWorkflowEditor = (workflowId: string) => {
 
   useEffect(() => {
     if (!recentRuns || recentRuns.length === 0) return;
-    setSelectedRunId((currentRunId) => currentRunId || (recentRuns[0]?._id ?? null));
+    setSelectedRunId(
+      (currentRunId) => currentRunId || (recentRuns[0]?._id ?? null),
+    );
   }, [recentRuns]);
 
   useEffect(() => {
@@ -268,7 +291,10 @@ export const useWorkflowEditor = (workflowId: string) => {
       return;
     }
 
-    if (nodeType === "start" && nodes.some((node) => node.data.nodeType === "start")) {
+    if (
+      nodeType === "start" &&
+      nodes.some((node) => node.data.nodeType === "start")
+    ) {
       toast.error("Workflow can only contain one start node");
       return;
     }
@@ -290,7 +316,12 @@ export const useWorkflowEditor = (workflowId: string) => {
   };
 
   const handleNodesChange = (changes: NodeChange<WorkflowEditorNode>[]) => {
-    const mutableChangeTypes = new Set(["add", "remove", "position", "replace"]);
+    const mutableChangeTypes = new Set([
+      "add",
+      "remove",
+      "position",
+      "replace",
+    ]);
 
     if (isReadOnly) {
       if (changes.some((change) => mutableChangeTypes.has(change.type))) {
@@ -298,7 +329,10 @@ export const useWorkflowEditor = (workflowId: string) => {
       }
       setNodes((currentNodes) =>
         applyNodeChanges<WorkflowEditorNode>(
-          changes.filter((change) => change.type === "select" || change.type === "dimensions"),
+          changes.filter(
+            (change) =>
+              change.type === "select" || change.type === "dimensions",
+          ),
           currentNodes,
         ),
       );
@@ -308,7 +342,9 @@ export const useWorkflowEditor = (workflowId: string) => {
     const filteredChanges = changes.filter((change) => {
       if (change.type !== "remove") return true;
       const targetNode = nodes.find((node) => node.id === change.id);
-      return targetNode ? WORKFLOW_NODE_REGISTRY[targetNode.data.nodeType].deletable : true;
+      return targetNode
+        ? WORKFLOW_NODE_REGISTRY[targetNode.data.nodeType].deletable
+        : true;
     });
 
     const removedNodeIds = filteredChanges
@@ -330,7 +366,9 @@ export const useWorkflowEditor = (workflowId: string) => {
     if (removedNodeIds.length > 0) {
       setEdges((currentEdges) =>
         currentEdges.filter(
-          (edge) => !removedNodeIds.includes(edge.source) && !removedNodeIds.includes(edge.target),
+          (edge) =>
+            !removedNodeIds.includes(edge.source) &&
+            !removedNodeIds.includes(edge.target),
         ),
       );
 
@@ -425,8 +463,14 @@ export const useWorkflowEditor = (workflowId: string) => {
     if (!node || !WORKFLOW_NODE_REGISTRY[node.data.nodeType].deletable) return;
 
     throttledRecord();
-    setNodes((currentNodes) => currentNodes.filter((entry) => entry.id !== nodeId));
-    setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setNodes((currentNodes) =>
+      currentNodes.filter((entry) => entry.id !== nodeId),
+    );
+    setEdges((currentEdges) =>
+      currentEdges.filter(
+        (edge) => edge.source !== nodeId && edge.target !== nodeId,
+      ),
+    );
     setSelectedNodeId((currentId) => (currentId === nodeId ? null : currentId));
   };
 
@@ -471,11 +515,18 @@ export const useWorkflowEditor = (workflowId: string) => {
         return;
       }
 
-      const response = await fetch(`${WORKFLOW_ENGINE_BASE_URL}/workflows/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflowId, input: parsedInput, sessionToken: token }),
-      });
+      const response = await fetch(
+        `${WORKFLOW_ENGINE_BASE_URL}/workflows/run`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowId,
+            input: parsedInput,
+            sessionToken: token,
+          }),
+        },
+      );
 
       const payload = await response
         .json()
@@ -513,7 +564,9 @@ export const useWorkflowEditor = (workflowId: string) => {
 
       if (!saveResult || saveResult.compileStatus !== "valid") {
         setActiveBottomTab("validation");
-        toast.error("Workflow has validation errors. Fix them before publishing.");
+        toast.error(
+          "Workflow has validation errors. Fix them before publishing.",
+        );
         return;
       }
 
@@ -660,10 +713,15 @@ export const useWorkflowEditor = (workflowId: string) => {
   }, [undo, redo]);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
-  const selectedRun = recentRuns?.find((run) => run._id === selectedRunId) ?? null;
+  const selectedRun =
+    recentRuns?.find((run) => run._id === selectedRunId) ?? null;
 
   const nodesWithExecutionStatus = useMemo(() => {
-    if (!selectedRunId || !selectedRunEvents || selectedRunEvents.length === 0) {
+    if (
+      !selectedRunId ||
+      !selectedRunEvents ||
+      selectedRunEvents.length === 0
+    ) {
       return nodes.map((node) => {
         if (node.data.status) {
           const { status: _status, ...cleanData } = node.data;
@@ -688,7 +746,10 @@ export const useWorkflowEditor = (workflowId: string) => {
     }
 
     // Fallback: If the run itself is finished, no node should be "running"
-    if (selectedRun && (selectedRun.status === "completed" || selectedRun.status === "failed")) {
+    if (
+      selectedRun &&
+      (selectedRun.status === "completed" || selectedRun.status === "failed")
+    ) {
       for (const [nodeKey, status] of statusMap.entries()) {
         if (status === "running") {
           statusMap.set(nodeKey, "completed");
@@ -756,7 +817,9 @@ export const useWorkflowEditor = (workflowId: string) => {
     for (const [nodeId, status] of nodeStatusMap.entries()) {
       if (status === "running") {
         const incomingEdge = edges.find(
-          (e) => e.target === nodeId && (lastCompletedNodeId ? e.source === lastCompletedNodeId : true)
+          (e) =>
+            e.target === nodeId &&
+            (lastCompletedNodeId ? e.source === lastCompletedNodeId : true),
         );
         if (incomingEdge) {
           activeEdgeIds.add(incomingEdge.id);
@@ -779,7 +842,8 @@ export const useWorkflowEditor = (workflowId: string) => {
     }));
   }, [edges, nodes, selectedRunEvents, selectedRunId]);
 
-  const canRunWorkflow = !isReadOnly && compileStatus === "valid" && !isStartingRun;
+  const canRunWorkflow =
+    !isReadOnly && compileStatus === "valid" && !isStartingRun;
 
   return {
     nodes: nodesWithExecutionStatus,
@@ -847,7 +911,10 @@ export const useWorkflowEditor = (workflowId: string) => {
         toast.success(`Secret ${name} saved`);
       }),
     deleteWorkflowSecret: (secretId: Id<"workflow_secrets">) =>
-      deleteWorkflowSecretMutation({ workflowId: workflowId as Id<"workflows">, secretId }).then(() => {
+      deleteWorkflowSecretMutation({
+        workflowId: workflowId as Id<"workflows">,
+        secretId,
+      }).then(() => {
         toast.success("Secret deleted");
       }),
     isLoading: data === undefined,

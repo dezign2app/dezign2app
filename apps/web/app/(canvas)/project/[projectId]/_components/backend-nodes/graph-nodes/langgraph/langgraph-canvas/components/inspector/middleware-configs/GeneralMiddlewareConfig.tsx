@@ -22,7 +22,13 @@ import {
   Users,
 } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import type { MiddlewareNodeData } from "../../../types";
 import { DEFAULT_MIDDLEWARE_TYPE } from "../../../constants";
 import { LocalInput } from "../../../../../common/shared";
@@ -58,7 +64,8 @@ export function GeneralMiddlewareConfig({
                 {selectedMiddlewareData.name || "Middleware"}
               </h2>
               <p className="text-[10px] font-mono text-muted-foreground opacity-70">
-                {selectedMiddlewareData.middlewareId || selectedMiddlewareData.id}
+                {selectedMiddlewareData.middlewareId ||
+                  selectedMiddlewareData.id}
               </p>
             </div>
           </div>
@@ -77,7 +84,9 @@ export function GeneralMiddlewareConfig({
       <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
         <div className="flex items-center gap-2 mb-1">
           <Shield className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Middleware Type</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Middleware Type
+          </h3>
         </div>
 
         <div className="flex flex-col gap-2">

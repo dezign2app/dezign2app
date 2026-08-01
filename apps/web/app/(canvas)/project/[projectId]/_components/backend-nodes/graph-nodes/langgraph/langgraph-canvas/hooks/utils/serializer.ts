@@ -12,7 +12,10 @@ import type {
   LangGraphMemoryConfig,
   LangGraphRouterBranch,
 } from "@/types/canvas";
-import { ensureLangGraphDataReachability, STEP_TYPE_ROUTER } from "@workspace/canvas/constants";
+import {
+  ensureLangGraphDataReachability,
+  STEP_TYPE_ROUTER,
+} from "@workspace/canvas/constants";
 import {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
@@ -87,7 +90,7 @@ export function buildGraphData({
       maxTokens: n.data.maxTokens,
       position: n.position,
     }));
-    
+
   const toolDefinitions: LangGraphToolDefinition[] = nodes
     .filter((n): n is ToolNode => n.type === LANGGRAPH_CANVAS_NODE_TOOL)
     .map((n) => ({
@@ -116,7 +119,9 @@ export function buildGraphData({
     }));
 
   const middlewareDefinitions: LangGraphMiddlewareDefinition[] = nodes
-    .filter((n): n is MiddlewareNode => n.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE)
+    .filter(
+      (n): n is MiddlewareNode => n.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+    )
     .map((n) => ({
       id: n.data.middlewareId || n.id,
       middlewareId: n.data.middlewareId || n.id,
@@ -144,9 +149,15 @@ export function buildGraphData({
     }));
 
   const agentDefinitions: LangGraphAgentDefinition[] = nodes
-    .filter((n): n is AgentNode => n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT)
+    .filter(
+      (n): n is AgentNode =>
+        n.type === LANGGRAPH_CANVAS_NODE_NODE ||
+        n.type === LANGGRAPH_CANVAS_NODE_AGENT,
+    )
     .map((n) => {
-      const llmNodeId = edges.find((e) => e.target === n.id && e.targetHandle === HANDLE_LLM_IN)?.source;
+      const llmNodeId = edges.find(
+        (e) => e.target === n.id && e.targetHandle === HANDLE_LLM_IN,
+      )?.source;
       return {
         id: n.data.agentId || n.id,
         agentId: n.data.agentId || n.id,
@@ -162,10 +173,14 @@ export function buildGraphData({
           .filter((e) => e.target === n.id && e.targetHandle === HANDLE_TOOL_IN)
           .map((e) => e.source),
         middleware: edges
-          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+          .filter(
+            (e) => e.target === n.id && e.targetHandle === HANDLE_MIDDLEWARE_IN,
+          )
           .map((e) => e.source),
         memory: edges
-          .filter((e) => e.target === n.id && e.targetHandle === HANDLE_MEMORY_IN)
+          .filter(
+            (e) => e.target === n.id && e.targetHandle === HANDLE_MEMORY_IN,
+          )
           .map((e) => e.source),
         position: n.position,
       };
@@ -176,22 +191,30 @@ export function buildGraphData({
     .map((n) => {
       let routerConfig = n.data.routerConfig;
       if (n.data.stepType === STEP_TYPE_ROUTER && routerConfig?.branches) {
-        const updatedBranches = routerConfig.branches.map((branch: LangGraphRouterBranch) => {
-          const matchingEdge = edges.find((e) => e.source === n.id && e.sourceHandle === branch.id);
-          let targetId = branch.targetId;
-          if (matchingEdge) {
-            const isEndTarget =
-              matchingEdge.target === NODE_ID_END ||
-              matchingEdge.target === "END" ||
-              matchingEdge.target.startsWith("end_") ||
-              nodes.some((tn) => tn.id === matchingEdge.target && tn.type === LANGGRAPH_CANVAS_NODE_END);
-            targetId = isEndTarget ? "END" : matchingEdge.target;
-          }
-          return {
-            ...branch,
-            ...(targetId ? { targetId } : {}),
-          };
-        });
+        const updatedBranches = routerConfig.branches.map(
+          (branch: LangGraphRouterBranch) => {
+            const matchingEdge = edges.find(
+              (e) => e.source === n.id && e.sourceHandle === branch.id,
+            );
+            let targetId = branch.targetId;
+            if (matchingEdge) {
+              const isEndTarget =
+                matchingEdge.target === NODE_ID_END ||
+                matchingEdge.target === "END" ||
+                matchingEdge.target.startsWith("end_") ||
+                nodes.some(
+                  (tn) =>
+                    tn.id === matchingEdge.target &&
+                    tn.type === LANGGRAPH_CANVAS_NODE_END,
+                );
+              targetId = isEndTarget ? "END" : matchingEdge.target;
+            }
+            return {
+              ...branch,
+              ...(targetId ? { targetId } : {}),
+            };
+          },
+        );
         routerConfig = { ...routerConfig, branches: updatedBranches };
       }
 
@@ -200,7 +223,9 @@ export function buildGraphData({
         name: n.data.label || "Step",
         type: n.data.stepType || STEP_TYPE_LLM_CALL,
         ...(n.data.modelConfig ? { modelConfig: n.data.modelConfig } : {}),
-        ...(n.data.humanGateConfig ? { humanGateConfig: n.data.humanGateConfig } : {}),
+        ...(n.data.humanGateConfig
+          ? { humanGateConfig: n.data.humanGateConfig }
+          : {}),
         ...(n.data.customCode ? { customCode: n.data.customCode } : {}),
         ...(routerConfig ? { routerConfig } : {}),
         ...(n.data.stateUpdates ? { stateUpdates: n.data.stateUpdates } : {}),
@@ -211,12 +236,16 @@ export function buildGraphData({
       };
     });
 
-  const outputNodes = nodes.filter((n): n is OutputNode => n.type === LANGGRAPH_CANVAS_NODE_OUTPUT);
+  const outputNodes = nodes.filter(
+    (n): n is OutputNode => n.type === LANGGRAPH_CANVAS_NODE_OUTPUT,
+  );
   const outputNodeIds = new Set(outputNodes.map((n) => n.id));
 
   const outputChannels: OutputChannelConfig[] = outputNodes.map((n) => {
     const incomingEdge = edges.find((e) => e.target === n.id);
-    const sourceStepId = incomingEdge ? incomingEdge.source : n.data.sourceStepId;
+    const sourceStepId = incomingEdge
+      ? incomingEdge.source
+      : n.data.sourceStepId;
     return {
       id: n.data.id || n.id,
       name: n.data.name || n.data.label || "Output Channel",
@@ -233,13 +262,23 @@ export function buildGraphData({
   });
 
   const graphEdges: LangGraphEdgeConfig[] = edges
-    .filter((e) => e.source !== NODE_ID_STATE_GLOBAL && e.target !== NODE_ID_STATE_GLOBAL)
+    .filter(
+      (e) =>
+        e.source !== NODE_ID_STATE_GLOBAL && e.target !== NODE_ID_STATE_GLOBAL,
+    )
     .filter((e) => {
-      const isTool = e.targetHandle === HANDLE_TOOL_IN || e.source.startsWith("tool_");
-      const isLLM = e.targetHandle === HANDLE_LLM_IN || e.source.startsWith("llm_");
-      const isMiddleware = e.targetHandle === HANDLE_MIDDLEWARE_IN || e.source.startsWith("mw_");
-      const isMemory = e.targetHandle === HANDLE_MEMORY_IN || e.source.startsWith("mem_") || e.source.startsWith("db_");
-      const isOutput = outputNodeIds.has(e.target) || e.target.startsWith("output_");
+      const isTool =
+        e.targetHandle === HANDLE_TOOL_IN || e.source.startsWith("tool_");
+      const isLLM =
+        e.targetHandle === HANDLE_LLM_IN || e.source.startsWith("llm_");
+      const isMiddleware =
+        e.targetHandle === HANDLE_MIDDLEWARE_IN || e.source.startsWith("mw_");
+      const isMemory =
+        e.targetHandle === HANDLE_MEMORY_IN ||
+        e.source.startsWith("mem_") ||
+        e.source.startsWith("db_");
+      const isOutput =
+        outputNodeIds.has(e.target) || e.target.startsWith("output_");
       return !isTool && !isLLM && !isMiddleware && !isMemory && !isOutput;
     })
     .map((e) => {
@@ -247,40 +286,48 @@ export function buildGraphData({
         e.target === NODE_ID_END ||
         e.target === "END" ||
         e.target.startsWith("end_") ||
-        nodes.some((n) => n.id === e.target && n.type === LANGGRAPH_CANVAS_NODE_END);
+        nodes.some(
+          (n) => n.id === e.target && n.type === LANGGRAPH_CANVAS_NODE_END,
+        );
 
       const isPortTarget = e.target.startsWith(NODE_ID_PREFIX_PORT);
 
       const targetKind = isEndTarget
         ? TARGET_KIND_END
         : isPortTarget
-        ? TARGET_KIND_PORT
-        : TARGET_KIND_STEP;
+          ? TARGET_KIND_PORT
+          : TARGET_KIND_STEP;
 
       const targetId = isEndTarget
         ? "END"
         : isPortTarget
-        ? stripPortPrefix(e.target)
-        : e.target;
+          ? stripPortPrefix(e.target)
+          : e.target;
 
       return {
         id: e.id,
         source: e.source,
         sourceHandle: e.sourceHandle || undefined,
         targetHandle: e.targetHandle || undefined,
-        targets: [{
-          id: targetId,
-          kind: targetKind,
-          targetHandle: e.targetHandle || undefined,
-        }],
+        targets: [
+          {
+            id: targetId,
+            kind: targetKind,
+            targetHandle: e.targetHandle || undefined,
+          },
+        ],
       };
     });
 
   const startNode = nodes.find((n) => n.id === NODE_ID_START);
-  const startNodePosition = startNode ? startNode.position : data.startNodePosition;
+  const startNodePosition = startNode
+    ? startNode.position
+    : data.startNodePosition;
 
   const stateNode = nodes.find((n) => n.id === NODE_ID_STATE_GLOBAL);
-  const stateNodePosition = stateNode ? stateNode.position : data.stateNodePosition;
+  const stateNodePosition = stateNode
+    ? stateNode.position
+    : data.stateNodePosition;
 
   const endNodes = nodes
     .filter((n): n is EndNode => n.type === LANGGRAPH_CANVAS_NODE_END)
@@ -290,12 +337,14 @@ export function buildGraphData({
       position: n.position,
     }));
 
-  const defaultEndNode = nodes.find((n) => n.id === NODE_ID_END && n.type === LANGGRAPH_CANVAS_NODE_END);
+  const defaultEndNode = nodes.find(
+    (n) => n.id === NODE_ID_END && n.type === LANGGRAPH_CANVAS_NODE_END,
+  );
   const endNodePosition = defaultEndNode
     ? defaultEndNode.position
     : endNodes.length > 0
-    ? endNodes[0]?.position
-    : data.endNodePosition;
+      ? endNodes[0]?.position
+      : data.endNodePosition;
 
   return ensureLangGraphDataReachability({
     ...data,

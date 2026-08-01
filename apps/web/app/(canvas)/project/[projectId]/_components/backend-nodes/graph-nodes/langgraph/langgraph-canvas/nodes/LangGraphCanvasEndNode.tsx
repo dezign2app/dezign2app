@@ -3,11 +3,16 @@ import { NodeProps, Handle, Position } from "@xyflow/react";
 import { CheckCircle2 } from "lucide-react";
 import type { EndNode } from "../types";
 
-export const LangGraphCanvasEndNode = ({ data, selected }: NodeProps<EndNode>) => {
+export const LangGraphCanvasEndNode = ({
+  data,
+  selected,
+}: NodeProps<EndNode>) => {
   return (
     <div
       className={`px-4 py-2.5 rounded-xl bg-card border-2 border-emerald-500 text-emerald-500 font-bold text-xs flex items-center gap-2.5 shadow-lg shadow-emerald-500/10 transition-all cursor-pointer ${
-        selected ? "ring-4 ring-emerald-500/20 scale-105" : "hover:border-emerald-500/80"
+        selected
+          ? "ring-4 ring-emerald-500/20 scale-105"
+          : "hover:border-emerald-500/80"
       }`}
     >
       <Handle

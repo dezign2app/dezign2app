@@ -10,11 +10,15 @@ export function TodoListConfig({ data, onUpdate }: MiddlewareConfigProps) {
     <div className="flex flex-col gap-4 p-3 bg-secondary/10 rounded-xl border border-border/50">
       <div className="flex items-center gap-2">
         <ListTodo className="w-4 h-4 text-teal-400" />
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">To-do List Planner</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          To-do List Planner
+        </h3>
       </div>
 
       <div className="flex items-center justify-between text-xs">
-        <Label htmlFor="todo-write" className="text-xs cursor-pointer">Enable write_todos Tool</Label>
+        <Label htmlFor="todo-write" className="text-xs cursor-pointer">
+          Enable write_todos Tool
+        </Label>
         <Switch
           id="todo-write"
           checked={data.todoListConfig?.enableWriteTodos ?? true}
@@ -28,7 +32,9 @@ export function TodoListConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex items-center justify-between text-xs">
-        <Label htmlFor="todo-prompt" className="text-xs cursor-pointer">Auto-Inject Planning System Prompt</Label>
+        <Label htmlFor="todo-prompt" className="text-xs cursor-pointer">
+          Auto-Inject Planning System Prompt
+        </Label>
         <Switch
           id="todo-prompt"
           checked={data.todoListConfig?.autoInjectPrompt ?? true}
@@ -42,7 +48,9 @@ export function TodoListConfig({ data, onUpdate }: MiddlewareConfigProps) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label className="text-xs font-semibold text-foreground">Initial Tasks / Instructions</Label>
+        <Label className="text-xs font-semibold text-foreground">
+          Initial Tasks / Instructions
+        </Label>
         <LocalTextarea
           value={data.todoListConfig?.initialTasks || ""}
           onChange={(e) =>

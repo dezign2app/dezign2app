@@ -1,15 +1,8 @@
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { WorkflowNodeConfig, WorkflowNodeExecutionArgs } from "./types";
 import { WorkflowExecutionError } from "./errors";
-import {
-  isRecord,
-  tryParseLiteral,
-  redactSensitiveValue,
-} from "./utils";
-import {
-  resolveTemplateValue,
-  parseTemplatedValue,
-} from "./template-resolver";
+import { isRecord, tryParseLiteral, redactSensitiveValue } from "./utils";
+import { resolveTemplateValue, parseTemplatedValue } from "./template-resolver";
 import {
   resolveSecretValueById,
   resolveSecretValueByName,
@@ -21,18 +14,39 @@ export const buildApiRequest = async (
 ) => {
   const runtimeState = args.runtimeState;
   const method = String(config.method ?? "GET").toUpperCase();
-  const url = String(resolveTemplateValue(String(config.url ?? ""), runtimeState, args.onFailure) ?? "");
+  const url = String(
+    resolveTemplateValue(
+      String(config.url ?? ""),
+      runtimeState,
+      args.onFailure,
+    ) ?? "",
+  );
 
   if (!url.trim()) {
     throw new WorkflowExecutionError("API node requires a URL.");
   }
 
-  const headersValue = parseTemplatedValue(config.headers, runtimeState, args.onFailure);
-  const queryValue = parseTemplatedValue(config.query, runtimeState, args.onFailure);
-  const bodyValue = parseTemplatedValue(config.body, runtimeState, args.onFailure);
+  const headersValue = parseTemplatedValue(
+    config.headers,
+    runtimeState,
+    args.onFailure,
+  );
+  const queryValue = parseTemplatedValue(
+    config.query,
+    runtimeState,
+    args.onFailure,
+  );
+  const bodyValue = parseTemplatedValue(
+    config.body,
+    runtimeState,
+    args.onFailure,
+  );
   const headers = isRecord(headersValue)
     ? Object.fromEntries(
-        Object.entries(headersValue).map(([key, value]) => [key, String(value)]),
+        Object.entries(headersValue).map(([key, value]) => [
+          key,
+          String(value),
+        ]),
       )
     : {};
   const query = isRecord(queryValue)
@@ -42,17 +56,31 @@ export const buildApiRequest = async (
     : {};
 
   const authType = String(config.authType ?? "none");
-  const authSecretId = config.authSecretId as Id<"workflow_secrets"> | undefined;
+  const authSecretId = config.authSecretId as
+    | Id<"workflow_secrets">
+    | undefined;
   const authSecretName = String(config.authSecretName ?? "").trim();
 
   const authHeaderName = String(
-    resolveTemplateValue(String(config.authHeaderName || "x-api-key"), runtimeState, args.onFailure) ?? "x-api-key",
+    resolveTemplateValue(
+      String(config.authHeaderName || "x-api-key"),
+      runtimeState,
+      args.onFailure,
+    ) ?? "x-api-key",
   );
   const authQueryName = String(
-    resolveTemplateValue(String(config.authQueryName || "api_key"), runtimeState, args.onFailure) ?? "api_key",
+    resolveTemplateValue(
+      String(config.authQueryName || "api_key"),
+      runtimeState,
+      args.onFailure,
+    ) ?? "api_key",
   );
   const authUsername = String(
-    resolveTemplateValue(String(config.authUsername || ""), runtimeState, args.onFailure) ?? "",
+    resolveTemplateValue(
+      String(config.authUsername || ""),
+      runtimeState,
+      args.onFailure,
+    ) ?? "",
   );
 
   if (authType !== "none") {
@@ -120,12 +148,22 @@ export const buildApiRequest = async (
     }
   }
 
-  const redactedHeaders = redactSensitiveValue(headers) as Record<string, string>;
+  const redactedHeaders = redactSensitiveValue(headers) as Record<
+    string,
+    string
+  >;
   const redactedQuery = redactSensitiveValue(query) as Record<string, string>;
 
   if (authType !== "none") {
-    if (authType === "api_key_header" || authType === "bearer" || authType === "basic") {
-      const headerToRedact = authType === "bearer" || authType === "basic" ? "Authorization" : authHeaderName;
+    if (
+      authType === "api_key_header" ||
+      authType === "bearer" ||
+      authType === "basic"
+    ) {
+      const headerToRedact =
+        authType === "bearer" || authType === "basic"
+          ? "Authorization"
+          : authHeaderName;
       if (redactedHeaders[headerToRedact]) {
         redactedHeaders[headerToRedact] = "[REDACTED]";
       }

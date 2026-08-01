@@ -126,7 +126,9 @@ export const upsertWorkflowSecret = mutation({
       });
     }
 
-    const encryptedValue = args.value ? await encryptSecret(args.value) : undefined;
+    const encryptedValue = args.value
+      ? await encryptSecret(args.value)
+      : undefined;
     const now = Date.now();
 
     if (args.secretId) {
@@ -200,7 +202,7 @@ export const deleteWorkflowSecret = mutation({
 
     const workflow = await ctx.db.get(args.workflowId);
     if (secret.organizationId !== workflow?.organizationId) {
-        throw new ConvexError({ code: "FORBIDDEN", message: "Unauthorized" });
+      throw new ConvexError({ code: "FORBIDDEN", message: "Unauthorized" });
     }
 
     await ctx.db.delete(args.secretId);

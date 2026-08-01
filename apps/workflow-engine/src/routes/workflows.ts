@@ -45,7 +45,10 @@ workflowsRouter.post("/run", async (req: any, res: any) => {
         },
       });
     } catch (error) {
-      console.warn("Failed to enqueue workflow run with Inngest. Falling back to direct execution.", error);
+      console.warn(
+        "Failed to enqueue workflow run with Inngest. Falling back to direct execution.",
+        error,
+      );
       void executeWorkflowRun({
         runId: run.runId,
         sessionToken,

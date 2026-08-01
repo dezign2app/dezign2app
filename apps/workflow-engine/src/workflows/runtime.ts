@@ -41,7 +41,10 @@ export * from "./errors";
 const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
   start: {
     execute({ node, outgoingEdgesByNodeKey, runtimeState }) {
-      const nextEdge = getSingleOutgoingEdge(outgoingEdgesByNodeKey, node.nodeKey);
+      const nextEdge = getSingleOutgoingEdge(
+        outgoingEdgesByNodeKey,
+        node.nodeKey,
+      );
 
       return {
         output: runtimeState.input ?? null,
@@ -75,7 +78,6 @@ const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
         node.nodeKey,
         result,
       );
-
 
       if (!nextEdge) {
         throw new WorkflowExecutionError(
@@ -145,10 +147,7 @@ const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
           nextNodeKey: nextEdge?.targetNodeKey,
         };
       } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError"
-        ) {
+        if (error instanceof DOMException && error.name === "AbortError") {
           throw new WorkflowExecutionError(
             `API request timed out after ${timeoutMs}ms.`,
           );
@@ -172,14 +171,24 @@ const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
         provider: String(config.provider ?? "openai"),
         model: String(config.model ?? ""),
         systemPrompt: String(
-          resolveTemplateValue(String(config.systemPrompt ?? ""), args.runtimeState, args.onFailure) ?? "",
+          resolveTemplateValue(
+            String(config.systemPrompt ?? ""),
+            args.runtimeState,
+            args.onFailure,
+          ) ?? "",
         ),
         prompt: String(
-          resolveTemplateValue(String(config.prompt ?? ""), args.runtimeState, args.onFailure) ?? "",
+          resolveTemplateValue(
+            String(config.prompt ?? ""),
+            args.runtimeState,
+            args.onFailure,
+          ) ?? "",
         ),
         outputMode: String(config.outputMode ?? "text"),
         temperature: Number(config.temperature ?? 0.2),
-        apiKeySecretId: config.apiKeySecretId as Id<"workflow_secrets"> | undefined,
+        apiKeySecretId: config.apiKeySecretId as
+          | Id<"workflow_secrets">
+          | undefined,
       });
       const nextEdge = getSingleOutgoingEdge(
         args.outgoingEdgesByNodeKey,
@@ -196,8 +205,16 @@ const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
       return {
         provider: config.provider ?? "openai",
         model: config.model,
-        systemPrompt: resolveTemplateValue(String(config.systemPrompt ?? ""), runtimeState, onFailure),
-        prompt: resolveTemplateValue(String(config.prompt ?? ""), runtimeState, onFailure),
+        systemPrompt: resolveTemplateValue(
+          String(config.systemPrompt ?? ""),
+          runtimeState,
+          onFailure,
+        ),
+        prompt: resolveTemplateValue(
+          String(config.prompt ?? ""),
+          runtimeState,
+          onFailure,
+        ),
         outputMode: config.outputMode ?? "text",
         temperature: config.temperature ?? 0.2,
       };
@@ -221,7 +238,11 @@ const workflowNodeExecutors: Record<string, WorkflowNodeExecutor> = {
       const config = node.config as WorkflowNodeConfig;
       return {
         resultExpression: config.resultExpression,
-        resolvedResult: resolveTemplateValue(String(config.resultExpression ?? ""), runtimeState, onFailure),
+        resolvedResult: resolveTemplateValue(
+          String(config.resultExpression ?? ""),
+          runtimeState,
+          onFailure,
+        ),
       };
     },
   },
@@ -257,10 +278,13 @@ export const executeWorkflowRun = async (args: {
   sessionToken: string;
 }) => {
   const client = getConvexClient(args.sessionToken);
-  const context = (await client.query(api.workflows.runs.getRunExecutionContext, {
-    runId: args.runId,
-    systemToken: args.sessionToken,
-  })) as WorkflowRunContext;
+  const context = (await client.query(
+    api.workflows.runs.getRunExecutionContext,
+    {
+      runId: args.runId,
+      systemToken: args.sessionToken,
+    },
+  )) as WorkflowRunContext;
   const { nodesByKey, outgoingEdgesByNodeKey } = getWorkflowMaps(context);
   const startNode = context.nodes.find((node) => node.type === "start");
 
@@ -301,7 +325,9 @@ export const executeWorkflowRun = async (args: {
       const executor = workflowNodeExecutors[node.type];
       resolvedInputs = null;
       const onFailure = (expr: string) => {
-        throw new WorkflowExecutionError(`Failed to resolve template expression: {{${expr}}}`);
+        throw new WorkflowExecutionError(
+          `Failed to resolve template expression: {{${expr}}}`,
+        );
       };
 
       if (executor?.resolveInputs) {
@@ -322,23 +348,31 @@ export const executeWorkflowRun = async (args: {
             !(error instanceof WorkflowExecutionError) &&
             (error as any)?.name !== "WorkflowExecutionError"
           ) {
-            console.error(`Failed to resolve inputs for node ${node.nodeKey}:`, error);
+            console.error(
+              `Failed to resolve inputs for node ${node.nodeKey}:`,
+              error,
+            );
           }
           throw error;
         }
       }
 
-      await appendWorkflowEvent(client, context.run._id, {
-        type: "node_started",
-        level: "info",
-        nodeKey: node.nodeKey,
-        payload: {
-          message: `Running ${node.type} node "${node.label ?? node.nodeKey}".`,
-          nodeType: node.type,
-          label: node.label,
-          input: redactSensitiveValue(resolvedInputs),
+      await appendWorkflowEvent(
+        client,
+        context.run._id,
+        {
+          type: "node_started",
+          level: "info",
+          nodeKey: node.nodeKey,
+          payload: {
+            message: `Running ${node.type} node "${node.label ?? node.nodeKey}".`,
+            nodeType: node.type,
+            label: node.label,
+            input: redactSensitiveValue(resolvedInputs),
+          },
         },
-      }, args.sessionToken);
+        args.sessionToken,
+      );
 
       const result = await executeNode({
         client,
@@ -358,18 +392,28 @@ export const executeWorkflowRun = async (args: {
         label: node.label,
       };
 
-      await appendWorkflowEvent(client, context.run._id, {
-        type: "node_completed",
-        level: "info",
-        nodeKey: node.nodeKey,
-        payload: {
-          message: `Completed ${node.type} node "${node.label ?? node.nodeKey}".`,
-          output: redactSensitiveValue(result.output),
+      await appendWorkflowEvent(
+        client,
+        context.run._id,
+        {
+          type: "node_completed",
+          level: "info",
+          nodeKey: node.nodeKey,
+          payload: {
+            message: `Completed ${node.type} node "${node.label ?? node.nodeKey}".`,
+            output: redactSensitiveValue(result.output),
+          },
         },
-      }, args.sessionToken);
+        args.sessionToken,
+      );
 
       if (result.completed) {
-      await markWorkflowRunCompleted(client, context.run._id, result.output, args.sessionToken);
+        await markWorkflowRunCompleted(
+          client,
+          context.run._id,
+          result.output,
+          args.sessionToken,
+        );
         return {
           status: "completed" as const,
           output: result.output,
@@ -384,10 +428,15 @@ export const executeWorkflowRun = async (args: {
     );
   } catch (error) {
     const failedNodeKey =
-      currentNodeKey && nodesByKey.has(currentNodeKey) ? currentNodeKey : undefined;
+      currentNodeKey && nodesByKey.has(currentNodeKey)
+        ? currentNodeKey
+        : undefined;
 
-      if (failedNodeKey) {
-        await appendWorkflowEvent(client, context.run._id, {
+    if (failedNodeKey) {
+      await appendWorkflowEvent(
+        client,
+        context.run._id,
+        {
           type: "node_failed",
           level: "error",
           nodeKey: failedNodeKey,
@@ -395,10 +444,18 @@ export const executeWorkflowRun = async (args: {
             message: `Node "${failedNodeKey}" failed.`,
             error: toErrorPayload(error),
           },
-        }, args.sessionToken);
-      }
+        },
+        args.sessionToken,
+      );
+    }
 
-    await markWorkflowRunFailed(client, context.run._id, error, failedNodeKey, args.sessionToken);
+    await markWorkflowRunFailed(
+      client,
+      context.run._id,
+      error,
+      failedNodeKey,
+      args.sessionToken,
+    );
 
     if (
       error instanceof WorkflowExecutionError ||

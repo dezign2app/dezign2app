@@ -3,13 +3,21 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphStateChannel } from "@/types/canvas";
 
 interface StateTabContentProps {
   stateChannels: LangGraphStateChannel[];
-  setStateChannels: React.Dispatch<React.SetStateAction<LangGraphStateChannel[]>>;
+  setStateChannels: React.Dispatch<
+    React.SetStateAction<LangGraphStateChannel[]>
+  >;
 }
 
 export function StateTabContent({
@@ -61,7 +69,9 @@ export function StateTabContent({
               value={ch.key}
               onChange={(e) => {
                 const key = e.target.value;
-                setStateChannels(stateChannels.map((c, i) => (i === idx ? { ...c, key } : c)));
+                setStateChannels(
+                  stateChannels.map((c, i) => (i === idx ? { ...c, key } : c)),
+                );
               }}
               onBlur={() => {
                 if (!ch.key || !ch.key.trim()) {
@@ -78,7 +88,9 @@ export function StateTabContent({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-              onClick={() => setStateChannels(stateChannels.filter((_, i) => i !== idx))}
+              onClick={() =>
+                setStateChannels(stateChannels.filter((_, i) => i !== idx))
+              }
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
@@ -101,8 +113,8 @@ export function StateTabContent({
                           : "replace";
                   setStateChannels(
                     stateChannels.map((c, i) =>
-                      i === idx ? { ...c, type, reducer: defaultReducer } : c
-                    )
+                      i === idx ? { ...c, type, reducer: defaultReducer } : c,
+                    ),
                   );
                 }}
               >
@@ -128,7 +140,9 @@ export function StateTabContent({
                 onValueChange={(v) => {
                   const reducer = v as LangGraphStateChannel["reducer"];
                   setStateChannels(
-                    stateChannels.map((c, i) => (i === idx ? { ...c, reducer } : c))
+                    stateChannels.map((c, i) =>
+                      i === idx ? { ...c, reducer } : c,
+                    ),
                   );
                 }}
               >

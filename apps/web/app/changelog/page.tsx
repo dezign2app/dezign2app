@@ -7,7 +7,8 @@ import { History, Sparkles, CheckCircle2, Zap, Github } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Changelog | dezign2app",
-  description: "Recent product updates, new features, and improvements in dezign2app.",
+  description:
+    "Recent product updates, new features, and improvements in dezign2app.",
 };
 
 const releases = [
@@ -49,7 +50,8 @@ export default function ChangelogPage() {
             Changelog & Release Notes
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-xl">
-            Stay up to date with new features, bug fixes, and performance improvements.
+            Stay up to date with new features, bug fixes, and performance
+            improvements.
           </p>
         </div>
 
@@ -64,9 +66,13 @@ export default function ChangelogPage() {
                   <span className="px-3 py-1 bg-black text-white text-xs font-bold rounded-lg font-mono">
                     {rel.version}
                   </span>
-                  <h2 className="text-lg font-bold text-gray-900">{rel.title}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {rel.title}
+                  </h2>
                 </div>
-                <span className="text-xs text-gray-500 font-medium">{rel.date}</span>
+                <span className="text-xs text-gray-500 font-medium">
+                  {rel.date}
+                </span>
               </div>
 
               <ul className="flex flex-col gap-2.5 text-xs md:text-sm text-gray-700">
@@ -84,8 +90,12 @@ export default function ChangelogPage() {
         {/* Support Section */}
         <div className="p-8 bg-gray-50 border border-gray-200 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-bold text-gray-900">Have a feature request or feedback?</h3>
-            <p className="text-xs text-gray-600">Email our engineering team directly.</p>
+            <h3 className="text-base font-bold text-gray-900">
+              Have a feature request or feedback?
+            </h3>
+            <p className="text-xs text-gray-600">
+              Email our engineering team directly.
+            </p>
           </div>
           <a
             href="https://github.com/dezign2app/dezign2app/issues"

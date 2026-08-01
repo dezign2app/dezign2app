@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { WorkflowEditorEdge, WorkflowEditorNode } from "../_components/workflow-editor-types";
+import type {
+  WorkflowEditorEdge,
+  WorkflowEditorNode,
+} from "../_components/workflow-editor-types";
 
 export interface WorkflowState {
   nodes: WorkflowEditorNode[];
@@ -24,29 +27,35 @@ export const useHistory = (initialState: WorkflowState) => {
     setFuture([]);
   }, []);
 
-  const undo = useCallback((currentState: WorkflowState) => {
-    if (past.length === 0) return null;
+  const undo = useCallback(
+    (currentState: WorkflowState) => {
+      if (past.length === 0) return null;
 
-    const previous = past[past.length - 1];
-    const newPast = past.slice(0, past.length - 1);
+      const previous = past[past.length - 1];
+      const newPast = past.slice(0, past.length - 1);
 
-    setPast(newPast);
-    setFuture((prev) => [currentState, ...prev]);
+      setPast(newPast);
+      setFuture((prev) => [currentState, ...prev]);
 
-    return previous;
-  }, [past]);
+      return previous;
+    },
+    [past],
+  );
 
-  const redo = useCallback((currentState: WorkflowState) => {
-    if (future.length === 0) return null;
+  const redo = useCallback(
+    (currentState: WorkflowState) => {
+      if (future.length === 0) return null;
 
-    const next = future[0];
-    const newFuture = future.slice(1);
+      const next = future[0];
+      const newFuture = future.slice(1);
 
-    setFuture(newFuture);
-    setPast((prev) => [...prev, currentState]);
+      setFuture(newFuture);
+      setPast((prev) => [...prev, currentState]);
 
-    return next;
-  }, [future]);
+      return next;
+    },
+    [future],
+  );
 
   const clear = useCallback(() => {
     setPast([]);

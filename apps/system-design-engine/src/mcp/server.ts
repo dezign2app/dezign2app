@@ -17,7 +17,12 @@ import {
   extractTestCaseSummaries,
   generateSystemOverview,
 } from "../graph/engine.js";
-import type { CanvasElements, GraphNode, RawNodeRecord, RawEdgeRecord } from "../graph/types.js";
+import type {
+  CanvasElements,
+  GraphNode,
+  RawNodeRecord,
+  RawEdgeRecord,
+} from "../graph/types.js";
 
 export function createMcpServer() {
   const server = new McpServer({
@@ -30,27 +35,40 @@ export function createMcpServer() {
   server.registerTool(
     "get_system_design_context",
     {
-      description: "PRIMARY TOOL FOR AI CODING AGENTS. Call this tool FIRST to retrieve structured architectural context (database entity schemas/relations, services, web clients, endpoints, data schemas, and test cases) directly from the project database.",
+      description:
+        "PRIMARY TOOL FOR AI CODING AGENTS. Call this tool FIRST to retrieve structured architectural context (database entity schemas/relations, services, web clients, endpoints, data schemas, and test cases) directly from the project database.",
       inputSchema: {
-        projectId: z.string().describe("The ID of the project to retrieve context for"),
-        query: z.string().optional().describe("Optional specific query or topic to filter the system design context (e.g., 'auth', 'user', 'kafka')")
-      }
+        projectId: z
+          .string()
+          .describe("The ID of the project to retrieve context for"),
+        query: z
+          .string()
+          .optional()
+          .describe(
+            "Optional specific query or topic to filter the system design context (e.g., 'auth', 'user', 'kafka')",
+          ),
+      },
     },
     async ({ projectId, query }) => {
       try {
         const elements = await fetchElements(projectId);
         const text = generateSystemOverview(elements, query);
         return {
-          content: [{ type: "text" as const, text }]
+          content: [{ type: "text" as const, text }],
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text" as const, text: `Error retrieving context: ${message}` }],
-          isError: true
+          content: [
+            {
+              type: "text" as const,
+              text: `Error retrieving context: ${message}`,
+            },
+          ],
+          isError: true,
         };
       }
-    }
+    },
   );
 
   // ── Graph-Native Tools (new, no LLM, no Supermemory) ───────────────────────
@@ -58,7 +76,8 @@ export function createMcpServer() {
   /** Fetch canvas elements from Convex for a given projectId. */
   async function fetchElements(projectId: string): Promise<CanvasElements> {
     const convexUrl = process.env.CONVEX_URL;
-    if (!convexUrl) throw new Error("CONVEX_URL environment variable is not set.");
+    if (!convexUrl)
+      throw new Error("CONVEX_URL environment variable is not set.");
 
     const client = new ConvexHttpClient(convexUrl);
 
@@ -76,12 +95,33 @@ export function createMcpServer() {
   }
 
   const nodeTypeEnum = z.enum([
-    "service", "database", "queue", "pubsub", "eventstream", "kafka",
-    "redis-streams", "sqs", "redis-pubsub", "redis-cache",
-    "entity", "webClient", "external", "group", "db_ref", "storage",
-    "worker", "serverless", "search_index", "api_gateway",
-    "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref",
-    "identity_provider", "all",
+    "service",
+    "database",
+    "queue",
+    "pubsub",
+    "eventstream",
+    "kafka",
+    "redis-streams",
+    "sqs",
+    "redis-pubsub",
+    "redis-cache",
+    "entity",
+    "webClient",
+    "external",
+    "group",
+    "db_ref",
+    "storage",
+    "worker",
+    "serverless",
+    "search_index",
+    "api_gateway",
+    "load_balancer",
+    "webhook",
+    "llm",
+    "mcp_server",
+    "vector_db_ref",
+    "identity_provider",
+    "all",
   ]);
 
   server.registerTool(
@@ -99,7 +139,7 @@ export function createMcpServer() {
           .string()
           .describe(
             "Topic to search for — matched case-insensitively against node labels, descriptions, " +
-            "and types. E.g. 'payment service', 'user auth', 'kafka', 'redis'.",
+              "and types. E.g. 'payment service', 'user auth', 'kafka', 'redis'.",
           ),
         depth: z
           .number()
@@ -107,11 +147,15 @@ export function createMcpServer() {
           .min(1)
           .max(4)
           .optional()
-          .describe("BFS traversal depth — how many hops from matching nodes to include. Default: 2."),
+          .describe(
+            "BFS traversal depth — how many hops from matching nodes to include. Default: 2.",
+          ),
       },
     },
     async ({ projectId, topic, depth }) => {
-      console.log(`[TOOL] traverse_architecture_graph — project=${projectId}, topic="${topic}", depth=${depth ?? 2}`);
+      console.log(
+        `[TOOL] traverse_architecture_graph — project=${projectId}, topic="${topic}", depth=${depth ?? 2}`,
+      );
 
       try {
         const elements = await fetchElements(projectId);
@@ -133,11 +177,24 @@ export function createMcpServer() {
           }
         }
 
-        const relevantNodes = reachable.length > 0 ? reachable : Array.from(graph.nodes.values());
+        const relevantNodes =
+          reachable.length > 0 ? reachable : Array.from(graph.nodes.values());
         const nodeIdSet = new Set<string>(relevantNodes.map((n) => n.nodeId));
-        const endpointSummaries = extractEndpointSummaries(elements.endpoints, nodeIdSet);
-        const testCaseSummaries = extractTestCaseSummaries(elements.testCases, nodeIdSet);
-        const text = serializeSubgraph(graph, relevantNodes, endpointSummaries, testCaseSummaries, elements);
+        const endpointSummaries = extractEndpointSummaries(
+          elements.endpoints,
+          nodeIdSet,
+        );
+        const testCaseSummaries = extractTestCaseSummaries(
+          elements.testCases,
+          nodeIdSet,
+        );
+        const text = serializeSubgraph(
+          graph,
+          relevantNodes,
+          endpointSummaries,
+          testCaseSummaries,
+          elements,
+        );
 
         return { content: [{ type: "text" as const, text }] };
       } catch (err) {
@@ -162,19 +219,27 @@ export function createMcpServer() {
         projectId: z.string().describe("The ID of the project to query"),
         nodeType: nodeTypeEnum
           .optional()
-          .describe("Filter by canvas node type. Omit or use 'all' to include every type."),
+          .describe(
+            "Filter by canvas node type. Omit or use 'all' to include every type.",
+          ),
         keyword: z
           .string()
           .optional()
-          .describe("Additional keyword filter on label/description (case-insensitive substring match)."),
+          .describe(
+            "Additional keyword filter on label/description (case-insensitive substring match).",
+          ),
         includeEdges: z
           .boolean()
           .optional()
-          .describe("Whether to include direct neighbour connections in the output. Default: true."),
+          .describe(
+            "Whether to include direct neighbour connections in the output. Default: true.",
+          ),
       },
     },
     async ({ projectId, nodeType, keyword, includeEdges }) => {
-      console.log(`[TOOL] search_architecture_nodes — project=${projectId}, nodeType=${nodeType ?? "all"}, keyword=${keyword ?? "(none)"}`);
+      console.log(
+        `[TOOL] search_architecture_nodes — project=${projectId}, nodeType=${nodeType ?? "all"}, keyword=${keyword ?? "(none)"}`,
+      );
 
       try {
         const elements = await fetchElements(projectId);

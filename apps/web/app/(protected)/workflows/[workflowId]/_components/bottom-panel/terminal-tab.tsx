@@ -204,9 +204,7 @@ export const TerminalTab = () => {
                 <span className="w-10 shrink-0 text-right text-sidebar-foreground/35">
                   2
                 </span>
-                <span>
-                  {"> manual test execution logs will stream here"}
-                </span>
+                <span>{"> manual test execution logs will stream here"}</span>
               </div>
             </>
           )}

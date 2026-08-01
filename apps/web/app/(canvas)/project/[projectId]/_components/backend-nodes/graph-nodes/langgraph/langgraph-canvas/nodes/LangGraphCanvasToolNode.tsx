@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
-import { Wrench, Trash2, Box, Server, Globe, Zap, Code2, Sparkles, FileText } from "lucide-react";
+import {
+  Wrench,
+  Trash2,
+  Box,
+  Server,
+  Globe,
+  Zap,
+  Code2,
+  Sparkles,
+  FileText,
+} from "lucide-react";
 import type { ToolNode, LangGraphCanvasNode } from "../types";
 import {
   LANGGRAPH_CANVAS_NODE_TOOL,
@@ -11,7 +21,11 @@ import {
 } from "../constants";
 import { LocalInput } from "../../../common/shared";
 
-export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNode>) => {
+export const LangGraphCanvasToolNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<ToolNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.name || "my_tool");
@@ -22,13 +36,20 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
 
   const updateToolData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_TOOL ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) =>
+        n.id === id && n.type === LANGGRAPH_CANVAS_NODE_TOOL
+          ? { ...n, data: { ...n.data, ...changes } }
+          : n,
+      ),
     );
   };
 
   const handleNameSave = () => {
     setIsEditingName(false);
-    let trimmed = nameValue.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    let trimmed = nameValue
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_");
     if (!trimmed) trimmed = "my_tool";
     setNameValue(trimmed);
     if (trimmed !== data.name) {
@@ -50,10 +71,13 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
 
   const getSourceLabel = () => {
     switch (data.source) {
-      case TOOL_SOURCE_MCP_SERVER: return "MCP Server";
-      case TOOL_SOURCE_API_ENDPOINT: return "API Endpoint";
+      case TOOL_SOURCE_MCP_SERVER:
+        return "MCP Server";
+      case TOOL_SOURCE_API_ENDPOINT:
+        return "API Endpoint";
       case TOOL_SOURCE_INLINE:
-      default: return "Inline Code";
+      default:
+        return "Inline Code";
     }
   };
 
@@ -133,7 +157,10 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
 
         <div className="flex items-center gap-1.5 shrink-0">
           {data.returnDirect && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5" title="Return Direct enabled">
+            <span
+              className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-0.5"
+              title="Return Direct enabled"
+            >
               <Zap className="w-2.5 h-2.5" /> Direct
             </span>
           )}
@@ -166,7 +193,13 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
             <FileText className="w-3 h-3 text-emerald-500" /> Description / Spec
           </span>
           <span className="text-[10.5px] text-foreground leading-snug line-clamp-2 italic">
-            {data.description ? `"${data.description}"` : <span className="text-muted-foreground/60 not-italic">No description provided</span>}
+            {data.description ? (
+              `"${data.description}"`
+            ) : (
+              <span className="text-muted-foreground/60 not-italic">
+                No description provided
+              </span>
+            )}
           </span>
         </div>
 
@@ -199,7 +232,9 @@ export const LangGraphCanvasToolNode = ({ id, data, selected }: NodeProps<ToolNo
             )}
           </span>
           {data.functionBody && (
-            <span className="text-emerald-500 font-semibold">{data.functionBody.split('\n').length} lines</span>
+            <span className="text-emerald-500 font-semibold">
+              {data.functionBody.split("\n").length} lines
+            </span>
           )}
         </div>
       </div>

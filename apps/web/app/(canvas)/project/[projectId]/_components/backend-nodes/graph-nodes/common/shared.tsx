@@ -1,15 +1,45 @@
 import React, { useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Plus, X, Trash2, Check, ChevronDown, ChevronUp, Settings } from "lucide-react";
+import {
+  Plus,
+  X,
+  Trash2,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+} from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
-import { BackendNode, Endpoint, Schema, AnyMessagingResource, Parameter, JSONValue, SERVICE_TECH_OPTIONS, WEB_CLIENT_TECH_OPTIONS, DATABASE_ENGINE_OPTIONS, DATABASE_ORM_OPTIONS, TechOption } from "@/types/canvas";
-import { ParameterEditor, SchemaEditor, ProcessingStepsEditor } from "./Editors";
+import {
+  BackendNode,
+  Endpoint,
+  Schema,
+  AnyMessagingResource,
+  Parameter,
+  JSONValue,
+  SERVICE_TECH_OPTIONS,
+  WEB_CLIENT_TECH_OPTIONS,
+  DATABASE_ENGINE_OPTIONS,
+  DATABASE_ORM_OPTIONS,
+  TechOption,
+} from "@/types/canvas";
+import {
+  ParameterEditor,
+  SchemaEditor,
+  ProcessingStepsEditor,
+} from "./Editors";
 
 export const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -24,9 +54,14 @@ export function useSimulationNodeState(nodeId: string) {
   const isVisited = activeNodeIds.includes(nodeId);
   const isCurrent = currentNodeId === nodeId;
 
-  const visitedTrace = trace.slice(0, activeIndex >= 0 ? activeIndex + 1 : trace.length);
+  const visitedTrace = trace.slice(
+    0,
+    activeIndex >= 0 ? activeIndex + 1 : trace.length,
+  );
   const nodeEntries = visitedTrace.filter((t) => t.nodeId === nodeId);
-  const hasFailed = nodeEntries.some((t) => t.status === "failed") || (isCurrent && status === "failed");
+  const hasFailed =
+    nodeEntries.some((t) => t.status === "failed") ||
+    (isCurrent && status === "failed");
 
   return { hasRun, isVisited, isCurrent, hasFailed, overallStatus: status };
 }
@@ -34,7 +69,7 @@ export function useSimulationNodeState(nodeId: string) {
 export function getSimulationNodeBorderClass(
   simulation: ReturnType<typeof useSimulationNodeState>,
   selected: boolean,
-  defaultBorder = "border-border"
+  defaultBorder = "border-border",
 ) {
   if (!simulation.hasRun) {
     return selected ? "border-primary shadow-sm" : defaultBorder;
@@ -46,18 +81,26 @@ export function getSimulationNodeBorderClass(
     return "border-sky-500 ring-2 ring-sky-500 ring-offset-2 ring-offset-background shadow-lg shadow-sky-500/40 animate-pulse";
   }
   if (simulation.isVisited) {
-    return selected ? "border-emerald-500 ring-2 ring-emerald-500/50" : "border-emerald-500/80 shadow-md shadow-emerald-500/20";
+    return selected
+      ? "border-emerald-500 ring-2 ring-emerald-500/50"
+      : "border-emerald-500/80 shadow-md shadow-emerald-500/20";
   }
   return selected ? "border-primary opacity-50" : "border-border/40 opacity-40";
 }
 
 export function endpointInputParams(endpoint: Endpoint): Parameter[] {
-  if (endpoint.params?.length) return endpoint.params.map((param) => ({ ...param, value: param.value ?? param.defaultValue ?? "" }));
-  return [...(endpoint.pathParams ?? []), ...(endpoint.queryParams ?? [])].map((param) => ({
-    ...param,
-    key: param.name,
-    value: param.value ?? param.defaultValue ?? "",
-  }));
+  if (endpoint.params?.length)
+    return endpoint.params.map((param) => ({
+      ...param,
+      value: param.value ?? param.defaultValue ?? "",
+    }));
+  return [...(endpoint.pathParams ?? []), ...(endpoint.queryParams ?? [])].map(
+    (param) => ({
+      ...param,
+      key: param.name,
+      value: param.value ?? param.defaultValue ?? "",
+    }),
+  );
 }
 
 export function endpointBodyTemplate(endpoint: Endpoint): string {
@@ -69,44 +112,64 @@ export function endpointBodyTemplate(endpoint: Endpoint): string {
 export function getInitialBody(endpoint: Endpoint): JSONValue | undefined {
   const template = endpointBodyTemplate(endpoint);
   if (!template) return undefined;
-  try { return JSON.parse(template) as JSONValue; } catch { return undefined; }
+  try {
+    return JSON.parse(template) as JSONValue;
+  } catch {
+    return undefined;
+  }
 }
 
-export const LocalInput = ({ value, onChange, ...props }: React.ComponentProps<typeof Input>) => {
+export const LocalInput = ({
+  value,
+  onChange,
+  ...props
+}: React.ComponentProps<typeof Input>) => {
   const [localValue, setLocalValue] = useState(value);
   React.useEffect(() => {
     if (value !== localValue) setLocalValue(value);
   }, [value]);
-  return <Input {...props} value={localValue as string | undefined} onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(e.target.value);
-    if (onChange) onChange(e);
-  }} />;
+  return (
+    <Input
+      {...props}
+      value={localValue as string | undefined}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+        setLocalValue(e.target.value);
+        if (onChange) onChange(e);
+      }}
+    />
+  );
 };
 
-export const LocalTextarea = ({ value, onChange, onKeyDown, ...props }: React.ComponentProps<typeof Textarea>) => {
+export const LocalTextarea = ({
+  value,
+  onChange,
+  onKeyDown,
+  ...props
+}: React.ComponentProps<typeof Textarea>) => {
   const [localValue, setLocalValue] = useState(value);
   React.useEffect(() => {
     if (value !== localValue) setLocalValue(value);
   }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
+    if (e.key === "Tab") {
       e.preventDefault();
       const target = e.target as HTMLTextAreaElement;
       const start = target.selectionStart;
       const end = target.selectionEnd;
       const currentVal = (localValue as string) || "";
-      const newValue = currentVal.substring(0, start) + "  " + currentVal.substring(end);
-      
+      const newValue =
+        currentVal.substring(0, start) + "  " + currentVal.substring(end);
+
       setLocalValue(newValue);
-      
+
       if (onChange) {
         const syntheticEvent = {
-          target: { value: newValue }
+          target: { value: newValue },
         } as React.ChangeEvent<HTMLTextAreaElement>;
         onChange(syntheticEvent);
       }
-      
+
       setTimeout(() => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
@@ -114,10 +177,17 @@ export const LocalTextarea = ({ value, onChange, onKeyDown, ...props }: React.Co
     if (onKeyDown) onKeyDown(e);
   };
 
-  return <Textarea {...props} value={localValue as string | undefined} onKeyDown={handleKeyDown} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setLocalValue(e.target.value);
-    if (onChange) onChange(e);
-  }} />;
+  return (
+    <Textarea
+      {...props}
+      value={localValue as string | undefined}
+      onKeyDown={handleKeyDown}
+      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setLocalValue(e.target.value);
+        if (onChange) onChange(e);
+      }}
+    />
+  );
 };
 
 export interface BaseItem {
@@ -136,15 +206,15 @@ export interface EditableNodeListProps<T extends BaseItem> {
   data: BackendNode["data"];
 }
 
-export const EditableNodeList = <T extends BaseItem>({ 
-  nodeId, 
-  title, 
-  items = [], 
-  field, 
-  handleType, 
-  handlePosition, 
+export const EditableNodeList = <T extends BaseItem>({
+  nodeId,
+  title,
+  items = [],
+  field,
+  handleType,
+  handlePosition,
   updateNode,
-  data 
+  data,
 }: EditableNodeListProps<T>) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -157,7 +227,9 @@ export const EditableNodeList = <T extends BaseItem>({
   };
 
   const handleUpdate = (id: string, name: string) => {
-    const newItems = items.map((item) => item.id === id ? { ...item, name } : item);
+    const newItems = items.map((item) =>
+      item.id === id ? { ...item, name } : item,
+    );
     updateNode(nodeId, { data: { ...data, [field]: newItems } });
   };
 
@@ -166,13 +238,14 @@ export const EditableNodeList = <T extends BaseItem>({
     updateNode(nodeId, { data: { ...data, [field]: newItems } });
   };
 
-
-
   return (
     <>
       <div className="px-3 py-1 bg-secondary/40 border-t border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex justify-between items-center group">
         {title}
-        <div className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all" onClick={handleAdd}>
+        <div
+          className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all"
+          onClick={handleAdd}
+        >
           <Plus size={12} />
         </div>
       </div>
@@ -180,54 +253,72 @@ export const EditableNodeList = <T extends BaseItem>({
         {items.map((item) => {
           const isEditing = editingId === item.id;
           return (
-            <div key={item.id} className="flex flex-col px-3 py-1.5 border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20">
+            <div
+              key={item.id}
+              className="flex flex-col px-3 py-1.5 border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20"
+            >
               {handleType && handlePosition && (
-                <Handle 
-                  type={handleType} 
-                  position={handlePosition} 
-                  id={`${field}-${item.id}`} 
-                  className={cn("w-2 h-2", handlePosition === Position.Left ? "-left-1" : "-right-1")} 
-                  style={{ top: '50%' }} 
+                <Handle
+                  type={handleType}
+                  position={handlePosition}
+                  id={`${field}-${item.id}`}
+                  className={cn(
+                    "w-2 h-2",
+                    handlePosition === Position.Left ? "-left-1" : "-right-1",
+                  )}
+                  style={{ top: "50%" }}
                 />
               )}
               {isEditing ? (
-                 <LocalInput 
-                    value={editingName} 
-                    onChange={(e) => setEditingName(e.target.value)} 
-                    className="h-6 text-xs"
-                    autoFocus
-                    onKeyDown={(e: React.KeyboardEvent) => {
-                      if (e.key === "Enter") {
-                        if (!editingName.trim()) handleDelete(item.id);
-                        else handleUpdate(item.id, editingName.trim());
-                        setEditingId(null);
-                      }
-                      if (e.key === "Escape") {
-                         if (!item.name) handleDelete(item.id);
-                         setEditingId(null);
-                      }
-                    }}
-                    onBlur={() => {
-                        if (!editingName.trim()) handleDelete(item.id);
-                        else handleUpdate(item.id, editingName.trim());
-                        setEditingId(null);
-                    }}
-                  />
+                <LocalInput
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="h-6 text-xs"
+                  autoFocus
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === "Enter") {
+                      if (!editingName.trim()) handleDelete(item.id);
+                      else handleUpdate(item.id, editingName.trim());
+                      setEditingId(null);
+                    }
+                    if (e.key === "Escape") {
+                      if (!item.name) handleDelete(item.id);
+                      setEditingId(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!editingName.trim()) handleDelete(item.id);
+                    else handleUpdate(item.id, editingName.trim());
+                    setEditingId(null);
+                  }}
+                />
               ) : (
-                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => { setEditingId(item.id); setEditingName(item.name || ""); }}>
-                   <span className="font-medium truncate">{item.name}</span>
-                   <div className="opacity-0 group-hover/row:opacity-100 flex items-center justify-center p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
-                      <X size={12} />
-                   </div>
+                <div
+                  className="flex items-center justify-between w-full cursor-pointer"
+                  onClick={() => {
+                    setEditingId(item.id);
+                    setEditingName(item.name || "");
+                  }}
+                >
+                  <span className="font-medium truncate">{item.name}</span>
+                  <div
+                    className="opacity-0 group-hover/row:opacity-100 flex items-center justify-center p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                  >
+                    <X size={12} />
+                  </div>
                 </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </>
-  )
-}
+  );
+};
 
 export interface EndpointRowProps {
   nodeId: string;
@@ -245,28 +336,53 @@ export interface EndpointRowProps {
   editingType: string;
 }
 
-export const EndpointRow = ({ nodeId, item, isEditing, setEditingId, setEditingName, setEditingType, handleUpdate, handleDelete, handleUpdateItem, handleType, handlePosition, editingName, editingType }: EndpointRowProps) => {
-  const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
+export const EndpointRow = ({
+  nodeId,
+  item,
+  isEditing,
+  setEditingId,
+  setEditingName,
+  setEditingType,
+  handleUpdate,
+  handleDelete,
+  handleUpdateItem,
+  handleType,
+  handlePosition,
+  editingName,
+  editingType,
+}: EndpointRowProps) => {
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
 
   const isEndpointEmpty = () => {
-    const currentName = isEditing ? editingName : (item.name || "");
+    const currentName = isEditing ? editingName : item.name || "";
     const hasName = currentName.trim().length > 0;
-    const hasHeaders = item.headers?.some((h) => (h.key || "").trim() || (h.value || "").trim());
+    const hasHeaders = item.headers?.some(
+      (h) => (h.key || "").trim() || (h.value || "").trim(),
+    );
     const hasParams = item.params?.some((p) => (p.key || "").trim());
     const hasBody = (item.body?.trim().length || 0) > 0;
     const hasBusinessLogic = (item.businessLogic?.trim().length || 0) > 0;
     const hasOutput = (item.output?.trim().length || 0) > 0;
-    return !hasName && !hasHeaders && !hasParams && !hasBody && !hasBusinessLogic && !hasOutput;
+    return (
+      !hasName &&
+      !hasHeaders &&
+      !hasParams &&
+      !hasBody &&
+      !hasBusinessLogic &&
+      !hasOutput
+    );
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag"
       onBlur={(e) => {
         const related = e.relatedTarget as HTMLElement | null;
         if (related?.closest('[role="combobox"]')) return;
         if (related?.closest('[role="listbox"]')) return;
-        if (related?.closest('[data-radix-popper-content-wrapper]')) return;
+        if (related?.closest("[data-radix-popper-content-wrapper]")) return;
 
         if (!e.currentTarget.contains(related)) {
           if (isEndpointEmpty()) {
@@ -276,110 +392,176 @@ export const EndpointRow = ({ nodeId, item, isEditing, setEditingId, setEditingN
             const wasEmpty = !item.name;
             handleUpdate(item.id, editingName.trim(), editingType);
             if (wasEmpty && editingName.trim()) {
-              setActiveConfigItem({ type: 'endpoint', id: item.id, nodeId });
+              setActiveConfigItem({ type: "endpoint", id: item.id, nodeId });
             }
             setEditingId(null);
           }
         }
       }}
     >
-      <Handle 
-        type="target" 
-        position={Position.Left} 
-        id={`endpoint-in-${item.id}`} 
-        className="w-2 h-2 -left-1" 
-        style={{ top: '15px' }} 
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={`endpoint-in-${item.id}`}
+        className="w-2 h-2 -left-1"
+        style={{ top: "15px" }}
       />
-      <Handle 
-        type="source" 
-        position={Position.Right} 
-        id={`endpoint-out-${item.id}`} 
-        className="w-2 h-2 -right-1" 
-        style={{ top: '15px' }} 
+      <Handle
+        type="source"
+        position={Position.Right}
+        id={`endpoint-out-${item.id}`}
+        className="w-2 h-2 -right-1"
+        style={{ top: "15px" }}
       />
       <div className="flex flex-col px-3 py-1.5 nodrag">
         {isEditing ? (
-           <div className="flex items-center gap-1 nodrag">
-             <Select value={editingType} onValueChange={setEditingType}>
-               <SelectTrigger className="h-6 w-[70px] text-[10px] px-1.5 py-0"><SelectValue /></SelectTrigger>
-               <SelectContent>
-                 <SelectItem value="GET" className="text-xs">GET</SelectItem>
-                 <SelectItem value="POST" className="text-xs">POST</SelectItem>
-                 <SelectItem value="PUT" className="text-xs">PUT</SelectItem>
-                 <SelectItem value="PATCH" className="text-xs">PATCH</SelectItem>
-                 <SelectItem value="DELETE" className="text-xs">DELETE</SelectItem>
-                 <SelectItem value="WS" className="text-xs">WS</SelectItem>
-                 <SelectItem value="SSE" className="text-xs">SSE</SelectItem>
-                 <SelectItem value="RTC" className="text-xs">WebRTC</SelectItem>
-               </SelectContent>
-             </Select>
-             <LocalInput 
-                value={editingName} 
-                onChange={(e) => setEditingName(e.target.value)} 
-                className="h-6 text-xs flex-1 nodrag"
-                placeholder="e.g. /users"
-                autoFocus
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === "Enter") {
-                    if (!editingName.trim()) handleDelete(item.id);
-                    else {
-                      const wasEmpty = !item.name;
-                      handleUpdate(item.id, editingName.trim(), editingType);
-                      if (wasEmpty) setActiveConfigItem({ type: 'endpoint', id: item.id, nodeId });
-                    }
-                    setEditingId(null);
-                  }
-                  if (e.key === "Escape") {
-                     if (!item.name) handleDelete(item.id);
-                     setEditingId(null);
-                  }
-                }}
-              />
-              <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => {
-                  if (!(editingName || "").trim()) handleDelete(item.id);
+          <div className="flex items-center gap-1 nodrag">
+            <Select value={editingType} onValueChange={setEditingType}>
+              <SelectTrigger className="h-6 w-[70px] text-[10px] px-1.5 py-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GET" className="text-xs">
+                  GET
+                </SelectItem>
+                <SelectItem value="POST" className="text-xs">
+                  POST
+                </SelectItem>
+                <SelectItem value="PUT" className="text-xs">
+                  PUT
+                </SelectItem>
+                <SelectItem value="PATCH" className="text-xs">
+                  PATCH
+                </SelectItem>
+                <SelectItem value="DELETE" className="text-xs">
+                  DELETE
+                </SelectItem>
+                <SelectItem value="WS" className="text-xs">
+                  WS
+                </SelectItem>
+                <SelectItem value="SSE" className="text-xs">
+                  SSE
+                </SelectItem>
+                <SelectItem value="RTC" className="text-xs">
+                  WebRTC
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <LocalInput
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              className="h-6 text-xs flex-1 nodrag"
+              placeholder="e.g. /users"
+              autoFocus
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === "Enter") {
+                  if (!editingName.trim()) handleDelete(item.id);
                   else {
                     const wasEmpty = !item.name;
-                    handleUpdate(item.id, (editingName || "").trim(), editingType || "GET");
-                    if (wasEmpty) setActiveConfigItem({ type: 'endpoint', id: item.id, nodeId });
+                    handleUpdate(item.id, editingName.trim(), editingType);
+                    if (wasEmpty)
+                      setActiveConfigItem({
+                        type: "endpoint",
+                        id: item.id,
+                        nodeId,
+                      });
                   }
                   setEditingId(null);
-              }}>
-                 <Check size={14} />
-              </Button>
-           </div>
+                }
+                if (e.key === "Escape") {
+                  if (!item.name) handleDelete(item.id);
+                  setEditingId(null);
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                if (!(editingName || "").trim()) handleDelete(item.id);
+                else {
+                  const wasEmpty = !item.name;
+                  handleUpdate(
+                    item.id,
+                    (editingName || "").trim(),
+                    editingType || "GET",
+                  );
+                  if (wasEmpty)
+                    setActiveConfigItem({
+                      type: "endpoint",
+                      id: item.id,
+                      nodeId,
+                    });
+                }
+                setEditingId(null);
+              }}
+            >
+              <Check size={14} />
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col w-full gap-1.5">
-            <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => { setEditingId(item.id); setEditingName(item.name || ""); setEditingType(item.type || "GET"); }}>
-               <div className="flex items-center gap-2 overflow-hidden">
-                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 bg-secondary text-secondary-foreground">
-                   {item.type || "GET"}
-                 </span>
-                 <span className="font-medium truncate">{item.name}</span>
-               </div>
-               <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
-                  <div className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setActiveConfigItem({ type: 'endpoint', id: item.id, nodeId }); }}>
-                     <Settings size={14} />
-                  </div>
-                  <div className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
-                     <X size={14} />
-                  </div>
-               </div>
+            <div
+              className="flex items-center justify-between w-full cursor-pointer"
+              onClick={() => {
+                setEditingId(item.id);
+                setEditingName(item.name || "");
+                setEditingType(item.type || "GET");
+              }}
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 bg-secondary text-secondary-foreground">
+                  {item.type || "GET"}
+                </span>
+                <span className="font-medium truncate">{item.name}</span>
+              </div>
+              <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
+                <div
+                  className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveConfigItem({
+                      type: "endpoint",
+                      id: item.id,
+                      nodeId,
+                    });
+                  }}
+                >
+                  <Settings size={14} />
+                </div>
+                <div
+                  className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item.id);
+                  }}
+                >
+                  <X size={14} />
+                </div>
+              </div>
             </div>
 
             {item.publishedEvents && item.publishedEvents.length > 0 && (
               <div className="flex flex-col gap-1 w-full pl-6 mt-0.5">
-                {item.publishedEvents.map(ev => (
-                  <div key={ev.id} className="relative flex items-center w-full group/pub cursor-default" onClick={(e) => e.stopPropagation()}>
+                {item.publishedEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="relative flex items-center w-full group/pub cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <span className="text-[9px] font-medium text-muted-foreground truncate opacity-70 group-hover/pub:opacity-100 transition-opacity flex items-center gap-1">
-                      <span className="text-[8px] opacity-50">↳</span> 
-                      <span className="px-1 py-0.5 bg-secondary/50 rounded-sm">pub</span>
+                      <span className="text-[8px] opacity-50">↳</span>
+                      <span className="px-1 py-0.5 bg-secondary/50 rounded-sm">
+                        pub
+                      </span>
                       {ev.name}
                     </span>
                     <Handle
                       type="source"
                       position={Position.Right}
                       id={`publishedEvents-out-${ev.id}`}
-                      style={{ top: '50%', right: '-12px' }}
+                      style={{ top: "50%", right: "-12px" }}
                     />
                   </div>
                 ))}
@@ -389,8 +571,8 @@ export const EndpointRow = ({ nodeId, item, isEditing, setEditingId, setEditingN
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export const EndpointList = ({
   nodeId,
@@ -399,11 +581,15 @@ export const EndpointList = ({
   nodeId: string;
   title: string;
 }) => {
-  const items = useBackendCanvasStore(s => s.endpoints).filter(e => e.nodeId === nodeId);
-  const addEndpoint = useBackendCanvasStore(s => s.addEndpoint);
-  const updateEndpoint = useBackendCanvasStore(s => s.updateEndpoint);
-  const deleteEndpoint = useBackendCanvasStore(s => s.deleteEndpoint);
-  const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
+  const items = useBackendCanvasStore((s) => s.endpoints).filter(
+    (e) => e.nodeId === nodeId,
+  );
+  const addEndpoint = useBackendCanvasStore((s) => s.addEndpoint);
+  const updateEndpoint = useBackendCanvasStore((s) => s.updateEndpoint);
+  const deleteEndpoint = useBackendCanvasStore((s) => s.deleteEndpoint);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -429,13 +615,14 @@ export const EndpointList = ({
     updateEndpoint(id, changes);
   };
 
-
-
   return (
     <>
       <div className="px-3 py-1 bg-secondary/40 border-t border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex justify-between items-center group">
         {title}
-        <div className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all" onClick={handleAdd}>
+        <div
+          className="opacity-0 group-hover:opacity-100 cursor-pointer text-muted-foreground hover:text-foreground transition-all"
+          onClick={handleAdd}
+        >
           <Plus size={12} />
         </div>
       </div>
@@ -458,8 +645,8 @@ export const EndpointList = ({
         ))}
       </div>
     </>
-  )
-}
+  );
+};
 
 export interface NodeHeaderProps {
   id: string;
@@ -471,10 +658,20 @@ export interface NodeHeaderProps {
   selected?: boolean;
 }
 
-export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, selected }: NodeHeaderProps) => {
+export const NodeHeader = ({
+  id,
+  data,
+  nodeType,
+  icon: Icon,
+  title,
+  colorClass,
+  selected,
+}: NodeHeaderProps) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
-  const [isEditing, setIsEditing] = useState(data.label === "" || data.label === "Untitled");
+  const [isEditing, setIsEditing] = useState(
+    data.label === "" || data.label === "Untitled",
+  );
   const [name, setName] = useState(data.label);
 
   const handleSave = () => {
@@ -486,33 +683,58 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
   if (nodeType === "service") techOptions = SERVICE_TECH_OPTIONS;
   if (nodeType === "webClient") techOptions = WEB_CLIENT_TECH_OPTIONS;
 
-  const currentTech = data.techStack || (nodeType === "service" ? "express" : nodeType === "webClient" ? "nextjs" : undefined);
-  const currentTechObj = techOptions?.find((t) => t.value === currentTech) || techOptions?.[0];
+  const currentTech =
+    data.techStack ||
+    (nodeType === "service"
+      ? "express"
+      : nodeType === "webClient"
+        ? "nextjs"
+        : undefined);
+  const currentTechObj =
+    techOptions?.find((t) => t.value === currentTech) || techOptions?.[0];
   const versionOptions = currentTechObj?.versions || [];
-  const currentVersion = data.techVersion || currentTechObj?.defaultVersion || versionOptions[0]?.value;
+  const currentVersion =
+    data.techVersion ||
+    currentTechObj?.defaultVersion ||
+    versionOptions[0]?.value;
 
   return (
-    <div className={cn("px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-xl", colorClass)}>
+    <div
+      className={cn(
+        "px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-xl",
+        colorClass,
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center flex-1 min-w-0">
           <Icon size={14} className="mr-2 shrink-0" />
           {isEditing ? (
-            <LocalInput 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              className="h-6 text-xs px-1 bg-background/50" 
-              autoFocus 
-              onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setIsEditing(false); }}
+            <LocalInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-6 text-xs px-1 bg-background/50"
+              autoFocus
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === "Enter") handleSave();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
               onBlur={handleSave}
             />
           ) : (
-            <div className="flex flex-col cursor-pointer flex-1 min-w-0" onClick={() => setIsEditing(true)}>
-               <span className="text-[9px] uppercase font-bold tracking-wider opacity-70 truncate">{title}</span>
-               <span className="font-semibold text-sm truncate">{data.label || "Untitled"}</span>
+            <div
+              className="flex flex-col cursor-pointer flex-1 min-w-0"
+              onClick={() => setIsEditing(true)}
+            >
+              <span className="text-[9px] uppercase font-bold tracking-wider opacity-70 truncate">
+                {title}
+              </span>
+              <span className="font-semibold text-sm truncate">
+                {data.label || "Untitled"}
+              </span>
             </div>
           )}
         </div>
-        <div 
+        <div
           className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-black/10 transition-all cursor-pointer ml-1 shrink-0"
           onClick={(e) => {
             e.stopPropagation();
@@ -533,7 +755,8 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
                 data: {
                   ...data,
                   techStack: val as BackendNode["data"]["techStack"],
-                  techVersion: selectedTech?.defaultVersion as BackendNode["data"]["techVersion"],
+                  techVersion:
+                    selectedTech?.defaultVersion as BackendNode["data"]["techVersion"],
                 },
               });
             }}
@@ -567,7 +790,11 @@ export const NodeHeader = ({ id, data, nodeType, icon: Icon, title, colorClass, 
               </SelectTrigger>
               <SelectContent>
                 {versionOptions.map((v) => (
-                  <SelectItem key={v.value} value={v.value} className="text-xs font-mono">
+                  <SelectItem
+                    key={v.value}
+                    value={v.value}
+                    className="text-xs font-mono"
+                  >
                     {v.label}
                   </SelectItem>
                 ))}
@@ -588,7 +815,10 @@ export interface MessagingResourceRowProps {
   setEditingName: (name: string) => void;
   handleUpdate: (id: string, name: string) => void;
   handleDelete: (id: string) => void;
-  handleUpdateItem: (id: string, changes: Partial<AnyMessagingResource>) => void;
+  handleUpdateItem: (
+    id: string,
+    changes: Partial<AnyMessagingResource>,
+  ) => void;
   field?: string;
   handleType?: "source" | "target";
   handlePosition?: "left" | "right" | "top" | "bottom";
@@ -597,24 +827,55 @@ export interface MessagingResourceRowProps {
   resourceType: string;
 }
 
-export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, setEditingName, handleUpdate, handleDelete, handleUpdateItem, field, handleType, handlePosition, editingName, variant, resourceType }: MessagingResourceRowProps) => {
-  const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
+export const MessagingResourceRow = ({
+  nodeId,
+  item,
+  isEditing,
+  setEditingId,
+  setEditingName,
+  handleUpdate,
+  handleDelete,
+  handleUpdateItem,
+  field,
+  handleType,
+  handlePosition,
+  editingName,
+  variant,
+  resourceType,
+}: MessagingResourceRowProps) => {
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
   const isPublished = field === "publishedEvents" || variant === "publish";
   const isConsumed = field === "consumedEvents" || variant === "consume";
-  const nodes = useBackendCanvasStore(s => s.nodes);
-  const messagingNodes = nodes.filter(n => n.type === "queue" || n.type === "pubsub" || n.type === "eventstream" || n.type === "kafka" || n.type === "redis-streams" || n.type === "sqs" || n.type === "redis-pubsub");
-  
-  const selectedBroker = messagingNodes.find(n => n.id === item.brokerNodeId);
-  const availableResources = selectedBroker ? (
-    selectedBroker.data.topics || 
-    selectedBroker.data.streams || 
-    selectedBroker.data.queues || 
-    selectedBroker.data.channels || []
-  ) : [];
+  const nodes = useBackendCanvasStore((s) => s.nodes);
+  const messagingNodes = nodes.filter(
+    (n) =>
+      n.type === "queue" ||
+      n.type === "pubsub" ||
+      n.type === "eventstream" ||
+      n.type === "kafka" ||
+      n.type === "redis-streams" ||
+      n.type === "sqs" ||
+      n.type === "redis-pubsub",
+  );
 
-  const edges = useBackendCanvasStore(s => s.edges);
-  const publisherCount = edges.filter(e => e.targetResourceId === item.id).length;
-  const consumerCount = edges.filter(e => e.sourceResourceId === item.id).length;
+  const selectedBroker = messagingNodes.find((n) => n.id === item.brokerNodeId);
+  const availableResources = selectedBroker
+    ? selectedBroker.data.topics ||
+      selectedBroker.data.streams ||
+      selectedBroker.data.queues ||
+      selectedBroker.data.channels ||
+      []
+    : [];
+
+  const edges = useBackendCanvasStore((s) => s.edges);
+  const publisherCount = edges.filter(
+    (e) => e.targetResourceId === item.id,
+  ).length;
+  const consumerCount = edges.filter(
+    (e) => e.sourceResourceId === item.id,
+  ).length;
 
   let pubAbbr = "P";
   let subAbbr = "S";
@@ -627,32 +888,35 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
   }
 
   const isChannelEmpty = () => {
-    const currentName = isEditing ? editingName : (item.name || "");
+    const currentName = isEditing ? editingName : item.name || "";
     const hasName = currentName.trim().length > 0;
-    
-    const desc = (item.description as string | undefined) || (item.publishedWhen as string | undefined) || "";
+
+    const desc =
+      (item.description as string | undefined) ||
+      (item.publishedWhen as string | undefined) ||
+      "";
     const hasDesc = desc.trim().length > 0;
-    
+
     const schema = item.payloadSchema as Schema | undefined;
     const rawJson = schema?.rawJson;
     const hasSchema = (rawJson?.trim().length || 0) > 0;
-    
+
     const logic = item.handlerLogic as string | undefined;
     const hasLogic = (logic?.trim().length || 0) > 0;
-    
+
     const hasTarget = item.brokerNodeId && item.brokerNodeId !== "none";
-    
+
     return !hasName && !hasDesc && !hasSchema && !hasLogic && !hasTarget;
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag"
       onBlur={(e) => {
         const related = e.relatedTarget as HTMLElement | null;
         if (related?.closest('[role="combobox"]')) return;
         if (related?.closest('[role="listbox"]')) return;
-        if (related?.closest('[data-radix-popper-content-wrapper]')) return;
+        if (related?.closest("[data-radix-popper-content-wrapper]")) return;
 
         if (!e.currentTarget.contains(related)) {
           if (isChannelEmpty()) {
@@ -662,7 +926,7 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
             const wasEmpty = !item.name;
             handleUpdate(item.id, editingName.trim());
             if (wasEmpty && editingName.trim()) {
-              setActiveConfigItem({ type: 'event', id: item.id, nodeId });
+              setActiveConfigItem({ type: "event", id: item.id, nodeId });
             }
             setEditingId(null);
           }
@@ -675,7 +939,7 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
           position={Position.Right}
           id={`publishedEvents-out-${item.id}`}
           className="w-2 h-2 -right-1"
-          style={{ top: '15px' }}
+          style={{ top: "15px" }}
         />
       )}
       {isConsumed && variant !== "definition" && (
@@ -685,14 +949,14 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
             position={Position.Left}
             id={`consumedEvents-in-${item.id}`}
             className="w-2 h-2 -left-1"
-            style={{ top: '15px' }}
+            style={{ top: "15px" }}
           />
           <Handle
             type="source"
             position={Position.Right}
             id={`consumedEvents-out-${item.id}`}
             className="w-2 h-2 -right-1"
-            style={{ top: '15px' }}
+            style={{ top: "15px" }}
           />
         </>
       )}
@@ -703,84 +967,116 @@ export const MessagingResourceRow = ({ nodeId, item, isEditing, setEditingId, se
             position={Position.Left}
             id={`${resourceType}:in:${item.id}`}
             className="w-2 h-2 -left-1"
-            style={{ top: '15px' }}
+            style={{ top: "15px" }}
           />
           <Handle
             type="source"
             position={Position.Right}
             id={`${resourceType}:out:${item.id}`}
             className="w-2 h-2 -right-1"
-            style={{ top: '15px' }}
+            style={{ top: "15px" }}
           />
         </>
       )}
       <div className="flex flex-col px-3 py-1.5 nodrag">
-
         {isEditing ? (
-           <div className="flex items-center gap-1 nodrag">
-             <LocalInput 
-                value={editingName} 
-                onChange={(e) => setEditingName(e.target.value)} 
-                className="h-6 text-xs flex-1 nodrag"
-                placeholder="e.g. OrderCreated"
-                autoFocus
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === "Enter") {
-                    if (!editingName.trim()) handleDelete(item.id);
-                    else {
-                      const wasEmpty = !item.name;
-                      handleUpdate(item.id, editingName.trim());
-                      if (wasEmpty) setActiveConfigItem({ type: 'event', id: item.id, nodeId });
-                    }
-                    setEditingId(null);
-                  }
-                  if (e.key === "Escape") {
-                     if (!item.name) handleDelete(item.id);
-                     setEditingId(null);
-                  }
-                }}
-              />
-              <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => {
+          <div className="flex items-center gap-1 nodrag">
+            <LocalInput
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              className="h-6 text-xs flex-1 nodrag"
+              placeholder="e.g. OrderCreated"
+              autoFocus
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === "Enter") {
                   if (!editingName.trim()) handleDelete(item.id);
                   else {
                     const wasEmpty = !item.name;
                     handleUpdate(item.id, editingName.trim());
-                    if (wasEmpty) setActiveConfigItem({ type: 'event', id: item.id, nodeId });
+                    if (wasEmpty)
+                      setActiveConfigItem({
+                        type: "event",
+                        id: item.id,
+                        nodeId,
+                      });
                   }
                   setEditingId(null);
-              }}>
-                 <Check size={14} />
-              </Button>
-           </div>
+                }
+                if (e.key === "Escape") {
+                  if (!item.name) handleDelete(item.id);
+                  setEditingId(null);
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                if (!editingName.trim()) handleDelete(item.id);
+                else {
+                  const wasEmpty = !item.name;
+                  handleUpdate(item.id, editingName.trim());
+                  if (wasEmpty)
+                    setActiveConfigItem({ type: "event", id: item.id, nodeId });
+                }
+                setEditingId(null);
+              }}
+            >
+              <Check size={14} />
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col w-full">
-            <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => { setEditingId(item.id); setEditingName(item.name || ""); }}>
-               <div className="flex items-center gap-2 overflow-hidden">
-                 <span className="font-medium truncate">{item.name || (item._legacyName as string | undefined)}</span>
-                 {variant === "definition" && item.name && (
-                   <span className="text-[9px] bg-secondary/80 text-muted-foreground px-1 py-0.5 rounded font-mono shrink-0">
-                     {pubAbbr}: {publisherCount} &nbsp; {subAbbr}: {consumerCount}
-                   </span>
-                 )}
-               </div>
-               <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
-                  <div className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setActiveConfigItem({ type: 'event', id: item.id, nodeId }); }}>
-                     <Settings size={14} />
-                  </div>
-                  <div className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
-                     <X size={14} />
-                  </div>
-               </div>
+            <div
+              className="flex items-center justify-between w-full cursor-pointer"
+              onClick={() => {
+                setEditingId(item.id);
+                setEditingName(item.name || "");
+              }}
+            >
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="font-medium truncate">
+                  {item.name || (item._legacyName as string | undefined)}
+                </span>
+                {variant === "definition" && item.name && (
+                  <span className="text-[9px] bg-secondary/80 text-muted-foreground px-1 py-0.5 rounded font-mono shrink-0">
+                    {pubAbbr}: {publisherCount} &nbsp; {subAbbr}:{" "}
+                    {consumerCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
+                <div
+                  className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveConfigItem({ type: "event", id: item.id, nodeId });
+                  }}
+                >
+                  <Settings size={14} />
+                </div>
+                <div
+                  className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item.id);
+                  }}
+                >
+                  <X size={14} />
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-
-export const MessagingResourceList = <T extends AnyMessagingResource = AnyMessagingResource>({
+export const MessagingResourceList = <
+  T extends AnyMessagingResource = AnyMessagingResource,
+>({
   nodeId,
   title,
   items = [],
@@ -813,7 +1109,9 @@ export const MessagingResourceList = <T extends AnyMessagingResource = AnyMessag
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const setActiveConfigItem = useBackendCanvasStore(s => s.setActiveConfigItem);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
 
   const getKind = () => {
     switch (resourceType) {
@@ -847,7 +1145,9 @@ export const MessagingResourceList = <T extends AnyMessagingResource = AnyMessag
     if (onUpdate) {
       onUpdate(id, name);
     } else if (onChange) {
-      onChange(items.map((item) => (item.id === id ? { ...item, name } : item)) as T[]);
+      onChange(
+        items.map((item) => (item.id === id ? { ...item, name } : item)) as T[],
+      );
     }
   };
 
@@ -859,27 +1159,39 @@ export const MessagingResourceList = <T extends AnyMessagingResource = AnyMessag
     }
   };
 
-  const handleUpdateItem = (id: string, changes: Partial<AnyMessagingResource>) => {
+  const handleUpdateItem = (
+    id: string,
+    changes: Partial<AnyMessagingResource>,
+  ) => {
     if (onUpdateItem) {
       onUpdateItem(id, changes as Partial<T>);
     } else if (onChange) {
-      onChange(items.map((item) =>
-        item.id === id ? { ...item, ...changes } : item
-      ) as T[]);
+      onChange(
+        items.map((item) =>
+          item.id === id ? { ...item, ...changes } : item,
+        ) as T[],
+      );
     }
   };
-
 
   if (asCard) {
     return (
       <div className="flex flex-col gap-3 rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">{title}</span>
-          <Button variant="ghost" size="sm" className="h-7 text-xs bg-secondary/50 hover:bg-secondary border border-border/50" onClick={handleAdd}>
-            <Plus size={14} className="mr-1.5 text-muted-foreground" /> Add Event
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+            {title}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs bg-secondary/50 hover:bg-secondary border border-border/50"
+            onClick={handleAdd}
+          >
+            <Plus size={14} className="mr-1.5 text-muted-foreground" /> Add
+            Event
           </Button>
         </div>
-        
+
         <div className="flex flex-col gap-2">
           {items.map((item, index) => (
             <MessagingResourceRow
@@ -960,13 +1272,17 @@ export const RouteGroupEditor = ({
   const [basePathValue, setBasePathValue] = useState(group.basePath || "");
 
   // Endpoint editing state
-  const [editingEndpointId, setEditingEndpointId] = useState<string | null>(null);
+  const [editingEndpointId, setEditingEndpointId] = useState<string | null>(
+    null,
+  );
   const [editingEndpointName, setEditingEndpointName] = useState("");
   const [editingEndpointType, setEditingEndpointType] = useState("GET");
 
   const routeGroups = data.routeGroups || [];
 
-  const updateGroup = (changes: Partial<NonNullable<BackendNode["data"]["routeGroups"]>[0]>) => {
+  const updateGroup = (
+    changes: Partial<NonNullable<BackendNode["data"]["routeGroups"]>[0]>,
+  ) => {
     const newGroups = [...routeGroups];
     if (!newGroups[groupIndex]) return;
     newGroups[groupIndex] = { ...newGroups[groupIndex]!, ...changes };
@@ -997,9 +1313,9 @@ export const RouteGroupEditor = ({
   const endpoints = group.endpoints || [];
 
   const handleAddEndpoint = () => {
-    const newEndpoint = { 
-      id: generateId(), 
-      name: "", 
+    const newEndpoint = {
+      id: generateId(),
+      name: "",
       type: "GET",
       headers: [],
       pathParams: [],
@@ -1018,7 +1334,7 @@ export const RouteGroupEditor = ({
 
   const handleUpdateEndpoint = (id: string, name: string, type: string) => {
     const newEndpoints = endpoints.map((ep) =>
-      ep.id === id ? { ...ep, name, type } : ep
+      ep.id === id ? { ...ep, name, type } : ep,
     );
     updateGroup({ endpoints: newEndpoints });
   };
@@ -1030,7 +1346,7 @@ export const RouteGroupEditor = ({
 
   const handleUpdateEndpointItem = (id: string, changes: Partial<Endpoint>) => {
     const newEndpoints = endpoints.map((ep) =>
-      ep.id === id ? { ...ep, ...changes } : ep
+      ep.id === id ? { ...ep, ...changes } : ep,
     );
     updateGroup({ endpoints: newEndpoints });
   };
@@ -1043,7 +1359,7 @@ export const RouteGroupEditor = ({
         position={Position.Right}
         id={`routeGroup-${group.id}`}
         className="w-2 h-2 -right-1"
-        style={{ top: 'auto' }}
+        style={{ top: "auto" }}
       />
 
       {/* Group Header */}
@@ -1208,7 +1524,7 @@ export const RouteGroupList = ({
     const newUngrouped = ungroupedEndpoints.filter((e) => e.id !== endpointId);
     const newGroups = [...routeGroups];
     if (!newGroups[groupIndex]) return;
-    
+
     newGroups[groupIndex] = {
       ...newGroups[groupIndex]!,
       endpoints: [...(newGroups[groupIndex]!.endpoints || []), ep],
@@ -1223,10 +1539,7 @@ export const RouteGroupList = ({
     <div className="flex flex-col">
       {/* Ungrouped endpoints (backward compat) */}
       {ungroupedEndpoints.length > 0 && (
-        <EndpointList
-          nodeId={nodeId}
-          title="Routes (ungrouped)"
-        />
+        <EndpointList nodeId={nodeId} title="Routes (ungrouped)" />
       )}
 
       {/* Route Groups */}

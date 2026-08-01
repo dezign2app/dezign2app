@@ -13,7 +13,15 @@ export const requirementsTables = {
   projectPlans: defineTable({
     projectId: v.string(),
     content: v.string(),
-    status: v.union(v.literal("proposed"), v.literal("approved"), v.literal("schema_built"), v.literal("schema_approved"), v.literal("nodes_built"), v.literal("nodes_approved"), v.literal("edges_built")),
+    status: v.union(
+      v.literal("proposed"),
+      v.literal("approved"),
+      v.literal("schema_built"),
+      v.literal("schema_approved"),
+      v.literal("nodes_built"),
+      v.literal("nodes_approved"),
+      v.literal("edges_built"),
+    ),
     updatedAt: v.number(),
   }).index("by_project", ["projectId"]),
 };

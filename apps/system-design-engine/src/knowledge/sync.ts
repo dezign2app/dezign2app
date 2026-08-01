@@ -1,5 +1,5 @@
-import { NodeMemory } from './documents';
-import { Supermemory } from 'supermemory';
+import { NodeMemory } from "./documents";
+import { Supermemory } from "supermemory";
 
 interface SearchResult {
   id?: string;
@@ -19,7 +19,7 @@ interface SearchResult {
 interface ChunkMatch {
   content: string;
   similarity: number;
-  metadata?: SearchResult['metadata'];
+  metadata?: SearchResult["metadata"];
 }
 
 export class SupermemorySync {
@@ -27,12 +27,19 @@ export class SupermemorySync {
 
   constructor() {
     this.client = new Supermemory({
-      apiKey: process.env.SUPERMEMORY_API_KEY || '',
+      apiKey: process.env.SUPERMEMORY_API_KEY || "",
     });
   }
 
-  async syncGraph(projectId: string, syncId: string, nodes: NodeMemory[], architectureContent: string): Promise<void> {
-    console.log(`Syncing graph for ${projectId} (syncId: ${syncId}) to Supermemory...`);
+  async syncGraph(
+    projectId: string,
+    syncId: string,
+    nodes: NodeMemory[],
+    architectureContent: string,
+  ): Promise<void> {
+    console.log(
+      `Syncing graph for ${projectId} (syncId: ${syncId}) to Supermemory...`,
+    );
     try {
       // 1. Clear all previous documents for this project to avoid pagination issues
       console.log(`Cleaning up old documents before inserting new ones...`);
@@ -42,7 +49,7 @@ export class SupermemorySync {
       for (const node of nodes) {
         await this.upsertNode(syncId, node);
       }
-      
+
       // 3. Add architecture document
       if (architectureContent && architectureContent.trim() !== "") {
         console.log(`Syncing Architecture Document to Supermemory...`);
@@ -50,20 +57,23 @@ export class SupermemorySync {
           content: `System Architecture Plan:\n\n${architectureContent}`,
           containerTag: projectId,
           dreaming: "instant",
-          include:{
+          include: {
             relatedMemories: true,
-          },  
+          },
           metadata: {
             projectId,
             syncId,
-            kind: 'architecture'
-          }
-        }as any);
+            kind: "architecture",
+          },
+        } as any);
       }
 
       console.log(`Successfully synced graph for ${projectId} to Supermemory.`);
     } catch (error) {
-      console.error(`Failed to sync graph for ${projectId} to Supermemory:`, error);
+      console.error(
+        `Failed to sync graph for ${projectId} to Supermemory:`,
+        error,
+      );
       throw error;
     }
   }
@@ -102,18 +112,19 @@ export class SupermemorySync {
         nodeId: node.nodeId,
         syncId,
         kind: node.kind,
-      }
+      },
     } as any);
   }
 
-
-
-
   async clearProject(projectId: string): Promise<void> {
-    console.log(`Clearing all documents for project ${projectId} in Supermemory...`);
+    console.log(
+      `Clearing all documents for project ${projectId} in Supermemory...`,
+    );
     try {
       await this.client.documents.deleteBulk({ containerTags: [projectId] });
-      console.log(`Successfully cleared all documents for project ${projectId} from Supermemory.`);
+      console.log(
+        `Successfully cleared all documents for project ${projectId} from Supermemory.`,
+      );
     } catch (error) {
       console.error(`Error during clearProject:`, error);
       throw error;
@@ -121,7 +132,9 @@ export class SupermemorySync {
   }
 
   async buildCodingContext(projectId: string, query: string) {
-    console.log(`Building coding context for ${projectId} with query: ${query}`);
+    console.log(
+      `Building coding context for ${projectId} with query: ${query}`,
+    );
     try {
       const response = await this.client.search.memories({
         q: query,
@@ -136,14 +149,20 @@ export class SupermemorySync {
             {
               key: "projectId",
               value: projectId,
-              filterType: "metadata"
-            }
-          ]
-        }
+              filterType: "metadata",
+            },
+          ],
+        },
       });
-      
+
       if (!response || !response.results) {
-        return { services: [], entities: [], clients: [], architecture: "", resources: [] };
+        return {
+          services: [],
+          entities: [],
+          clients: [],
+          architecture: "",
+          resources: [],
+        };
       }
 
       // 1. Collect all primary results — no relatedMemories traversal
@@ -168,7 +187,7 @@ export class SupermemorySync {
       const architectureChunks: string[] = [];
 
       for (const chunk of strongMatches) {
-        if (chunk.metadata?.kind === 'architecture') {
+        if (chunk.metadata?.kind === "architecture") {
           architectureChunks.push(chunk.content);
         } else {
           const nodeId = chunk.metadata?.nodeId;
@@ -184,23 +203,43 @@ export class SupermemorySync {
       const uniqueNodeChunks = Array.from(dedupedByNode.values());
 
       // 4. Group by kind
-      const testCaseChunks = uniqueNodeChunks.filter(c => c.content.includes("Test Cases:")).map(c => {
-        const lines = c.content.split('\n');
-        const tcIdx = lines.findIndex(l => l.startsWith("Test Cases:"));
-        return tcIdx !== -1 ? `${c.content.split('\n')[0]} - ${lines.slice(tcIdx).join('\n')}` : c.content;
-      });
+      const testCaseChunks = uniqueNodeChunks
+        .filter((c) => c.content.includes("Test Cases:"))
+        .map((c) => {
+          const lines = c.content.split("\n");
+          const tcIdx = lines.findIndex((l) => l.startsWith("Test Cases:"));
+          return tcIdx !== -1
+            ? `${c.content.split("\n")[0]} - ${lines.slice(tcIdx).join("\n")}`
+            : c.content;
+        });
 
       const context = {
-        architecture: architectureChunks.join('\n\n'),
-        services: uniqueNodeChunks.filter(c => c.metadata?.kind === 'service').map(c => c.content).slice(0, 5),
-        entities: uniqueNodeChunks.filter(c => c.metadata?.kind === 'entity' || c.metadata?.kind === 'db_ref').map(c => c.content).slice(0, 10),
-        clients: uniqueNodeChunks.filter(c => c.metadata?.kind === 'webClient').map(c => c.content).slice(0, 5),
-        resources: uniqueNodeChunks.filter(c => c.metadata?.kind === 'kafka' || c.metadata?.kind === 'redis').map(c => c.content).slice(0, 5),
+        architecture: architectureChunks.join("\n\n"),
+        services: uniqueNodeChunks
+          .filter((c) => c.metadata?.kind === "service")
+          .map((c) => c.content)
+          .slice(0, 5),
+        entities: uniqueNodeChunks
+          .filter(
+            (c) =>
+              c.metadata?.kind === "entity" || c.metadata?.kind === "db_ref",
+          )
+          .map((c) => c.content)
+          .slice(0, 10),
+        clients: uniqueNodeChunks
+          .filter((c) => c.metadata?.kind === "webClient")
+          .map((c) => c.content)
+          .slice(0, 5),
+        resources: uniqueNodeChunks
+          .filter(
+            (c) => c.metadata?.kind === "kafka" || c.metadata?.kind === "redis",
+          )
+          .map((c) => c.content)
+          .slice(0, 5),
         testCases: testCaseChunks.slice(0, 10),
       };
 
       return context;
-
     } catch (error) {
       console.error(`Failed to build coding context for ${projectId}:`, error);
       throw error;
@@ -218,10 +257,10 @@ export class SupermemorySync {
             {
               key: "projectId",
               value: projectId,
-              filterType: "metadata"
-            }
-          ]
-        }
+              filterType: "metadata",
+            },
+          ],
+        },
       });
       return response.results || [];
     } catch (error) {
@@ -230,4 +269,3 @@ export class SupermemorySync {
     }
   }
 }
-

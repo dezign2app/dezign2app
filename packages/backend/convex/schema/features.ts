@@ -1,7 +1,14 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { z } from "zod";
-import { backendNodeDataValidator, backendEdgeDataValidator, backendTestCaseDataValidator, backendEndpointDataValidator, backendEventDataValidator, backendIdentityProviderDataValidator } from "./canvasValidators";
+import {
+  backendNodeDataValidator,
+  backendEdgeDataValidator,
+  backendTestCaseDataValidator,
+  backendEndpointDataValidator,
+  backendEventDataValidator,
+  backendIdentityProviderDataValidator,
+} from "./canvasValidators";
 
 export const featureTables = {
   conversations: defineTable({
@@ -62,14 +69,13 @@ export const featureTables = {
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     createdAt: v.number(),
-  })
-    .index("by_chat", ["chatId"]),
+  }).index("by_chat", ["chatId"]),
 
   // Granular tldraw records — one row per shape/asset/camera
   canvas_frontend_records: defineTable({
     projectId: v.id("projects"),
-    recordId: v.string(),    // tldraw native ID e.g. "shape:xyz"
-    typeName: v.string(),    // "shape" | "asset" | "camera" | etc.
+    recordId: v.string(), // tldraw native ID e.g. "shape:xyz"
+    typeName: v.string(), // "shape" | "asset" | "camera" | etc.
     record: v.any(),
     isDeleted: v.boolean(),
   })

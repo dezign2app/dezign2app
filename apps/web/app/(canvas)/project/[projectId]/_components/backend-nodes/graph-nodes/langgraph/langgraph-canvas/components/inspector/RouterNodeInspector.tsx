@@ -3,7 +3,13 @@ import { GitBranch, Variable, Code2, Plus, Trash2 } from "lucide-react";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
 
@@ -20,12 +26,16 @@ export function RouterNodeInspector({
 }: RouterNodeInspectorProps) {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const branches = selectedStepData.routerConfig?.branches || [];
-  const activeBranchIdx = Math.max(0, branches.findIndex((b) => b.id === selectedStepData.activeBranchId));
+  const activeBranchIdx = Math.max(
+    0,
+    branches.findIndex((b) => b.id === selectedStepData.activeBranchId),
+  );
   const activeBranch = branches[activeBranchIdx];
 
-  const availableChannels = (stateChannels && stateChannels.length > 0)
-    ? stateChannels
-    : (selectedStepData.availableStateChannels || []);
+  const availableChannels =
+    stateChannels && stateChannels.length > 0
+      ? stateChannels
+      : selectedStepData.availableStateChannels || [];
 
   const handleAddRoute = () => {
     const newBranchId = `b_${Date.now()}`;
@@ -68,7 +78,9 @@ export function RouterNodeInspector({
     );
   }
 
-  const isMatchedChannel = availableChannels.some((c) => c.key === activeBranch.field);
+  const isMatchedChannel = availableChannels.some(
+    (c) => c.key === activeBranch.field,
+  );
   const currentSelectValue = isMatchedChannel ? activeBranch.field : "custom";
 
   return (
@@ -126,7 +138,10 @@ export function RouterNodeInspector({
             value={activeBranch.label || ""}
             onChange={(e) => {
               const updated = [...branches];
-              updated[activeBranchIdx] = { ...activeBranch, label: e.target.value };
+              updated[activeBranchIdx] = {
+                ...activeBranch,
+                label: e.target.value,
+              };
               onUpdateStep({ routerConfig: { branches: updated } });
             }}
           />
@@ -137,7 +152,8 @@ export function RouterNodeInspector({
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-medium flex items-center gap-1.5 text-foreground">
-                <Variable className="w-3.5 h-3.5 text-sky-400" /> Global State Variable
+                <Variable className="w-3.5 h-3.5 text-sky-400" /> Global State
+                Variable
               </Label>
               <button
                 type="button"
@@ -168,12 +184,18 @@ export function RouterNodeInspector({
                 <SelectContent>
                   {availableChannels.map((ch) => (
                     <SelectItem key={ch.key} value={ch.key}>
-                      <span className="font-mono text-sky-400 font-semibold">state.{ch.key}</span>
-                      <span className="text-[10px] text-muted-foreground ml-2">({ch.type})</span>
+                      <span className="font-mono text-sky-400 font-semibold">
+                        state.{ch.key}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-2">
+                        ({ch.type})
+                      </span>
                     </SelectItem>
                   ))}
                   <SelectItem value="custom">
-                    <span className="italic text-muted-foreground">Custom Property / Expression...</span>
+                    <span className="italic text-muted-foreground">
+                      Custom Property / Expression...
+                    </span>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -186,13 +208,19 @@ export function RouterNodeInspector({
                 value={activeBranch.field || ""}
                 onChange={(e) => {
                   const updated = [...branches];
-                  updated[activeBranchIdx] = { ...activeBranch, field: e.target.value };
+                  updated[activeBranchIdx] = {
+                    ...activeBranch,
+                    field: e.target.value,
+                  };
                   onUpdateStep({ routerConfig: { branches: updated } });
                 }}
               />
             )}
             <span className="text-[10px] text-muted-foreground font-mono">
-              Comparing left side: <code className="text-sky-400">state.{activeBranch.field || "variable"}</code>
+              Comparing left side:{" "}
+              <code className="text-sky-400">
+                state.{activeBranch.field || "variable"}
+              </code>
             </span>
           </div>
 
@@ -213,7 +241,9 @@ export function RouterNodeInspector({
                 <SelectItem value="eq">== (equal)</SelectItem>
                 <SelectItem value="neq">!= (not equal)</SelectItem>
                 <SelectItem value="gt">&gt; (greater than)</SelectItem>
-                <SelectItem value="gte">&gt;= (greater than or equal)</SelectItem>
+                <SelectItem value="gte">
+                  &gt;= (greater than or equal)
+                </SelectItem>
                 <SelectItem value="lt">&lt; (less than)</SelectItem>
                 <SelectItem value="lte">&lt;= (less than or equal)</SelectItem>
                 <SelectItem value="contains">contains</SelectItem>
@@ -231,7 +261,10 @@ export function RouterNodeInspector({
               value={activeBranch.value || ""}
               onChange={(e) => {
                 const updated = [...branches];
-                updated[activeBranchIdx] = { ...activeBranch, value: e.target.value };
+                updated[activeBranchIdx] = {
+                  ...activeBranch,
+                  value: e.target.value,
+                };
                 onUpdateStep({ routerConfig: { branches: updated } });
               }}
             />
@@ -241,4 +274,3 @@ export function RouterNodeInspector({
     </div>
   );
 }
-

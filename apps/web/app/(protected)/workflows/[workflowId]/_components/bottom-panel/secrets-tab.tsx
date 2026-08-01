@@ -1,7 +1,15 @@
 "use client";
 
 import React from "react";
-import { Eye, EyeOff, KeyRound, Plus, ShieldCheck, Trash2, Pencil } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  KeyRound,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  Pencil,
+} from "lucide-react";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
 import {

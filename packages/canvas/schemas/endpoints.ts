@@ -7,7 +7,10 @@ import {
   architectureMetadataSchema,
 } from "./shared";
 import { publishedEventSchema, publishedEventInputSchema } from "./events";
-import { simulationTestCaseSchema, simulationTestCaseInputSchema } from "./simulation";
+import {
+  simulationTestCaseSchema,
+  simulationTestCaseInputSchema,
+} from "./simulation";
 
 export const endpointSchema = z.object({
   id: z.string(),
@@ -37,8 +40,12 @@ export const endpointSchema = z.object({
   requiredRoles: z.array(z.string()).optional(),
   requiredScopes: z.array(z.string()).optional(),
   audience: z.string().optional(),
-  crudOperations: z.record(z.string(), z.array(z.enum(["create", "read", "update", "delete"]))).optional(),
-  crudExplanations: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  crudOperations: z
+    .record(z.string(), z.array(z.enum(["create", "read", "update", "delete"])))
+    .optional(),
+  crudExplanations: z
+    .record(z.string(), z.record(z.string(), z.string()))
+    .optional(),
   output: z.string().optional(),
 });
 export type Endpoint = z.infer<typeof endpointSchema>;
@@ -47,55 +54,162 @@ export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
   id: z.string().optional(),
   name: z.string().describe("Endpoint path (e.g., /api/users)"),
   type: z.string().describe("HTTP method (GET, POST, etc.)"),
-  authRuleId: z.string().optional().describe("Reusable API gateway auth rule ID, when this endpoint is routed through a gateway."),
-  headers: z.array(z.object({
-    id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
-    description: z.string().optional(), defaultValue: z.string().optional(),
-  })).describe("Request headers. Use [] when none are required."),
-  pathParams: z.array(z.object({
-    id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
-    description: z.string().optional(), defaultValue: z.string().optional(),
-  })).describe("Path parameters, such as id in /products/{id}. Use [] when none."),
-  queryParams: z.array(z.object({
-    id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
-    description: z.string().optional(), defaultValue: z.string().optional(),
-  })).describe("Query parameters such as page, limit, or q. Use [] when none."),
-  requestBody: z.object({
-    id: z.string().optional(),
-    fields: z.array(z.object({
-      id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
-      description: z.string().optional(),
-    }).passthrough()),
-    rawJson: z.string().optional(),
-  }).passthrough().describe("Request body schema. Use fields: [] only for endpoints with no body."),
-  responseBody: z.object({
-    id: z.string().optional(),
-    fields: z.array(z.object({
-      id: z.string().optional(), name: z.string(), type: z.string(), required: z.boolean(),
-      description: z.string().optional(),
-    }).passthrough()),
-    rawJson: z.string().optional(),
-  }).passthrough().describe("Response body schema; define the actual returned fields."),
-  simulationOutput: z.unknown().optional().describe("Fixture returned by this endpoint during simulation; passed unchanged to the next connected endpoint."),
-  testCases: z.array(simulationTestCaseInputSchema).optional().describe("Optional list of test cases/scenarios for verifying endpoint implementation."),
-  processingSteps: z.array(z.object({
-    id: z.string().optional(),
-    text: z.string(),
-    operation: z.string().optional(),
-    config: z.record(z.union([z.string(), z.number(), z.boolean(), z.null(), z.record(z.union([z.string(), z.number(), z.boolean(), z.null()]))])).optional(),
-  }).passthrough()).describe("Executable request-processing steps in order."),
-  output: z.string().optional().describe("Short response description; do not use this instead of responseBody."),
-  businessLogic: z.string().optional().describe("Human-readable purpose of the endpoint."),
-  code: z.string().optional().describe("Executable custom code logic for the endpoint."),
+  authRuleId: z
+    .string()
+    .optional()
+    .describe(
+      "Reusable API gateway auth rule ID, when this endpoint is routed through a gateway.",
+    ),
+  headers: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean(),
+        description: z.string().optional(),
+        defaultValue: z.string().optional(),
+      }),
+    )
+    .describe("Request headers. Use [] when none are required."),
+  pathParams: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean(),
+        description: z.string().optional(),
+        defaultValue: z.string().optional(),
+      }),
+    )
+    .describe(
+      "Path parameters, such as id in /products/{id}. Use [] when none.",
+    ),
+  queryParams: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        type: z.string(),
+        required: z.boolean(),
+        description: z.string().optional(),
+        defaultValue: z.string().optional(),
+      }),
+    )
+    .describe("Query parameters such as page, limit, or q. Use [] when none."),
+  requestBody: z
+    .object({
+      id: z.string().optional(),
+      fields: z.array(
+        z
+          .object({
+            id: z.string().optional(),
+            name: z.string(),
+            type: z.string(),
+            required: z.boolean(),
+            description: z.string().optional(),
+          })
+          .passthrough(),
+      ),
+      rawJson: z.string().optional(),
+    })
+    .passthrough()
+    .describe(
+      "Request body schema. Use fields: [] only for endpoints with no body.",
+    ),
+  responseBody: z
+    .object({
+      id: z.string().optional(),
+      fields: z.array(
+        z
+          .object({
+            id: z.string().optional(),
+            name: z.string(),
+            type: z.string(),
+            required: z.boolean(),
+            description: z.string().optional(),
+          })
+          .passthrough(),
+      ),
+      rawJson: z.string().optional(),
+    })
+    .passthrough()
+    .describe("Response body schema; define the actual returned fields."),
+  simulationOutput: z
+    .unknown()
+    .optional()
+    .describe(
+      "Fixture returned by this endpoint during simulation; passed unchanged to the next connected endpoint.",
+    ),
+  testCases: z
+    .array(simulationTestCaseInputSchema)
+    .optional()
+    .describe(
+      "Optional list of test cases/scenarios for verifying endpoint implementation.",
+    ),
+  processingSteps: z
+    .array(
+      z
+        .object({
+          id: z.string().optional(),
+          text: z.string(),
+          operation: z.string().optional(),
+          config: z
+            .record(
+              z.union([
+                z.string(),
+                z.number(),
+                z.boolean(),
+                z.null(),
+                z.record(
+                  z.union([z.string(), z.number(), z.boolean(), z.null()]),
+                ),
+              ]),
+            )
+            .optional(),
+        })
+        .passthrough(),
+    )
+    .describe("Executable request-processing steps in order."),
+  output: z
+    .string()
+    .optional()
+    .describe(
+      "Short response description; do not use this instead of responseBody.",
+    ),
+  businessLogic: z
+    .string()
+    .optional()
+    .describe("Human-readable purpose of the endpoint."),
+  code: z
+    .string()
+    .optional()
+    .describe("Executable custom code logic for the endpoint."),
   summary: z.string().optional().describe("Summary of what the endpoint does."),
-  requiredRoles: z.array(z.string()).optional().describe("List of roles required to access this endpoint."),
-  requiredScopes: z.array(z.string()).optional().describe("List of scopes required to access this endpoint."),
-  audience: z.string().optional().describe("The intended audience for this endpoint."),
-  databaseNodeIds: z.array(z.string()).optional().describe(
-    "IDs of db_ref nodes this endpoint reads from or writes to. REQUIRED whenever this endpoint uses a database; one endpoint may target multiple tables."
-  ),
-  databaseNodeId: z.string().optional().describe(
-    "Single db_ref node ID this endpoint uses; prefer databaseNodeIds when there is more than one."
-  ),
+  requiredRoles: z
+    .array(z.string())
+    .optional()
+    .describe("List of roles required to access this endpoint."),
+  requiredScopes: z
+    .array(z.string())
+    .optional()
+    .describe("List of scopes required to access this endpoint."),
+  audience: z
+    .string()
+    .optional()
+    .describe("The intended audience for this endpoint."),
+  databaseNodeIds: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "IDs of db_ref nodes this endpoint reads from or writes to. REQUIRED whenever this endpoint uses a database; one endpoint may target multiple tables.",
+    ),
+  databaseNodeId: z
+    .string()
+    .optional()
+    .describe(
+      "Single db_ref node ID this endpoint uses; prefer databaseNodeIds when there is more than one.",
+    ),
   publishedEvents: z.array(publishedEventInputSchema).optional(),
 }) as z.ZodType<EndpointInputType>;

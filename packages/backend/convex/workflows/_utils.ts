@@ -64,7 +64,7 @@ export const getMasterKey = async () => {
     hash,
     { name: "AES-GCM" },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 };
 
@@ -77,7 +77,7 @@ export const encryptSecret = async (plainText: string): Promise<string> => {
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    encodedData
+    encodedData,
   );
 
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
@@ -87,11 +87,15 @@ export const encryptSecret = async (plainText: string): Promise<string> => {
   return btoa(String.fromCharCode(...combined));
 };
 
-export const decryptSecret = async (encryptedBase64: string): Promise<string> => {
+export const decryptSecret = async (
+  encryptedBase64: string,
+): Promise<string> => {
   try {
     const key = await getMasterKey();
     const combined = new Uint8Array(
-      atob(encryptedBase64).split("").map((c) => c.charCodeAt(0))
+      atob(encryptedBase64)
+        .split("")
+        .map((c) => c.charCodeAt(0)),
     );
 
     const iv = combined.slice(0, 12);
@@ -100,7 +104,7 @@ export const decryptSecret = async (encryptedBase64: string): Promise<string> =>
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
-      data
+      data,
     );
 
     return new TextDecoder().decode(decrypted);
@@ -208,10 +212,16 @@ export const buildAdjacencyMap = (
   nodeKeys: string[],
   edges: WorkflowEdgeInput[],
 ): Map<string, string[]> => {
-  const adjacency = new Map(nodeKeys.map((nodeKey) => [nodeKey, [] as string[]]));
+  const adjacency = new Map(
+    nodeKeys.map((nodeKey) => [nodeKey, [] as string[]]),
+  );
 
   for (const edge of edges) {
-    if (!adjacency.has(edge.sourceNodeKey) || !adjacency.has(edge.targetNodeKey)) continue;
+    if (
+      !adjacency.has(edge.sourceNodeKey) ||
+      !adjacency.has(edge.targetNodeKey)
+    )
+      continue;
     adjacency.get(edge.sourceNodeKey)?.push(edge.targetNodeKey);
   }
 
@@ -264,10 +274,14 @@ export const validateDraftGraph = (
     edgeMap.add(edge.edgeKey);
 
     if (!nodeMap.has(edge.sourceNodeKey)) {
-      errors.push(`Edge "${edge.edgeKey}" references missing source node "${edge.sourceNodeKey}".`);
+      errors.push(
+        `Edge "${edge.edgeKey}" references missing source node "${edge.sourceNodeKey}".`,
+      );
     }
     if (!nodeMap.has(edge.targetNodeKey)) {
-      errors.push(`Edge "${edge.edgeKey}" references missing target node "${edge.targetNodeKey}".`);
+      errors.push(
+        `Edge "${edge.edgeKey}" references missing target node "${edge.targetNodeKey}".`,
+      );
     }
     if (edge.sourceNodeKey === edge.targetNodeKey) {
       errors.push(`Edge "${edge.edgeKey}" cannot point to the same node.`);
@@ -277,39 +291,67 @@ export const validateDraftGraph = (
   const startNodes = nodes.filter((node) => node.type === "start");
   const endNodes = nodes.filter((node) => node.type === "end");
 
-  if (startNodes.length !== 1) errors.push("Workflow must contain exactly one start node.");
-  if (endNodes.length < 1) errors.push("Workflow must contain at least one end node.");
+  if (startNodes.length !== 1)
+    errors.push("Workflow must contain exactly one start node.");
+  if (endNodes.length < 1)
+    errors.push("Workflow must contain at least one end node.");
 
   for (const node of nodes) {
-    const outgoingEdges = edges.filter((edge) => edge.sourceNodeKey === node.nodeKey);
-    const incomingEdges = edges.filter((edge) => edge.targetNodeKey === node.nodeKey);
+    const outgoingEdges = edges.filter(
+      (edge) => edge.sourceNodeKey === node.nodeKey,
+    );
+    const incomingEdges = edges.filter(
+      (edge) => edge.targetNodeKey === node.nodeKey,
+    );
 
     if (node.type === "start") {
-      if (incomingEdges.length > 0) errors.push(`Start node "${node.nodeKey}" cannot have incoming edges.`);
+      if (incomingEdges.length > 0)
+        errors.push(`Start node "${node.nodeKey}" cannot have incoming edges.`);
       if ((node.config?.triggerType ?? "manual") === "cron") {
-        if (!node.config?.cronExpression?.trim()) errors.push("Cron start nodes require a cron expression.");
-        if (!node.config?.timezone?.trim()) errors.push("Cron start nodes require an explicit timezone.");
+        if (!node.config?.cronExpression?.trim())
+          errors.push("Cron start nodes require a cron expression.");
+        if (!node.config?.timezone?.trim())
+          errors.push("Cron start nodes require an explicit timezone.");
       }
     }
 
     if (node.type === "condition") {
-      const trueBranchCount = outgoingEdges.filter((edge) => edge.sourceHandle === "true").length;
-      const falseBranchCount = outgoingEdges.filter((edge) => edge.sourceHandle === "false").length;
-      if (trueBranchCount !== 1) errors.push(`Condition node "${node.nodeKey}" must have exactly one true branch.`);
-      if (falseBranchCount !== 1) errors.push(`Condition node "${node.nodeKey}" must have exactly one false branch.`);
+      const trueBranchCount = outgoingEdges.filter(
+        (edge) => edge.sourceHandle === "true",
+      ).length;
+      const falseBranchCount = outgoingEdges.filter(
+        (edge) => edge.sourceHandle === "false",
+      ).length;
+      if (trueBranchCount !== 1)
+        errors.push(
+          `Condition node "${node.nodeKey}" must have exactly one true branch.`,
+        );
+      if (falseBranchCount !== 1)
+        errors.push(
+          `Condition node "${node.nodeKey}" must have exactly one false branch.`,
+        );
     }
 
-    if (node.type !== "condition" && node.type !== "end" && outgoingEdges.length > 1) {
+    if (
+      node.type !== "condition" &&
+      node.type !== "end" &&
+      outgoingEdges.length > 1
+    ) {
       errors.push(`Node "${node.nodeKey}" can only have one outgoing edge.`);
     }
 
-    if (node.type === "end" && outgoingEdges.length > 0) errors.push(`End node "${node.nodeKey}" cannot have outgoing edges.`);
-    if (node.type === "api" && !node.config?.url?.trim()) errors.push(`API node "${node.nodeKey}" requires a URL.`);
-    if (node.type === "llm" && !node.config?.model?.trim()) errors.push(`LLM "${node.nodeKey}" requires a model.`);
-    if (node.type === "end" && !node.config?.resultExpression?.trim()) errors.push(`End node "${node.nodeKey}" requires a result expression.`);
+    if (node.type === "end" && outgoingEdges.length > 0)
+      errors.push(`End node "${node.nodeKey}" cannot have outgoing edges.`);
+    if (node.type === "api" && !node.config?.url?.trim())
+      errors.push(`API node "${node.nodeKey}" requires a URL.`);
+    if (node.type === "llm" && !node.config?.model?.trim())
+      errors.push(`LLM "${node.nodeKey}" requires a model.`);
+    if (node.type === "end" && !node.config?.resultExpression?.trim())
+      errors.push(`End node "${node.nodeKey}" requires a result expression.`);
   }
 
-  if (hasCycle([...nodeMap.keys()], edges)) errors.push("Workflow graph cannot contain cycles.");
+  if (hasCycle([...nodeMap.keys()], edges))
+    errors.push("Workflow graph cannot contain cycles.");
 
   return [...new Set(errors)];
 };

@@ -1,5 +1,11 @@
 import React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import {
   STEP_TYPE_LLM_CALL,
   STEP_TYPE_TOOL_NODE,
@@ -16,13 +22,14 @@ interface LangGraphStepTypeSelectorProps {
   onTypeChange: (newType: string) => void;
 }
 
-export const LangGraphStepTypeSelector: React.FC<LangGraphStepTypeSelectorProps> = ({
-  stepType,
-  onTypeChange,
-}) => {
+export const LangGraphStepTypeSelector: React.FC<
+  LangGraphStepTypeSelectorProps
+> = ({ stepType, onTypeChange }) => {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[10px] text-muted-foreground font-medium uppercase">Type</span>
+      <span className="text-[10px] text-muted-foreground font-medium uppercase">
+        Type
+      </span>
       <Select value={stepType} onValueChange={onTypeChange}>
         <SelectTrigger className="h-6 text-[10px] w-28 bg-background/50 border-emerald-500/30">
           <SelectValue />

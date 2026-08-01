@@ -13,16 +13,20 @@ export const identityProviderSchema = z.object({
   audiences: z.array(z.string()).optional(),
   scopes: z.array(z.string()).optional(),
   supportedAlgorithms: z.array(z.string()).optional(),
-  customCapabilities: z.object({
-    authentication: z.boolean().optional(),
-    userManagement: z.boolean().optional(),
-    identity: z.boolean().optional(),
-    authorization: z.boolean().optional(),
-  }).optional(),
-  customOutputs: z.object({
-    user: z.boolean().optional(),
-    tokens: z.boolean().optional(),
-    claims: z.boolean().optional(),
-  }).optional(),
+  customCapabilities: z
+    .object({
+      authentication: z.boolean().optional(),
+      userManagement: z.boolean().optional(),
+      identity: z.boolean().optional(),
+      authorization: z.boolean().optional(),
+    })
+    .optional(),
+  customOutputs: z
+    .object({
+      user: z.boolean().optional(),
+      tokens: z.boolean().optional(),
+      claims: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type IdentityProvider = z.infer<typeof identityProviderSchema>;

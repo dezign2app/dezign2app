@@ -4,12 +4,12 @@ import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import KanbanColumn from "./kanban-column";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@workspace/ui/components/dialog";
 import {
   AlertDialog,
@@ -30,27 +30,43 @@ import { Id } from "@workspace/backend/_generated/dataModel";
 
 const KanbanBoard = () => {
   const tasks = useQuery(api.kanban.listTasks, {});
-  const moveTask = useMutation(api.kanban.moveTask).withOptimisticUpdate((localQueryStore, args) => {
-    const tasks = localQueryStore.getQuery(api.kanban.listTasks, {});
-    if (tasks !== undefined) {
-      const newTasks = tasks.map(t => 
-        t._id === args.id ? { ...t, status: args.status, position: args.position } : t
-      ).sort((a, b) => a.position - b.position);
-      localQueryStore.setQuery(api.kanban.listTasks, {}, newTasks);
-    }
-  });
+  const moveTask = useMutation(api.kanban.moveTask).withOptimisticUpdate(
+    (localQueryStore, args) => {
+      const tasks = localQueryStore.getQuery(api.kanban.listTasks, {});
+      if (tasks !== undefined) {
+        const newTasks = tasks
+          .map((t) =>
+            t._id === args.id
+              ? { ...t, status: args.status, position: args.position }
+              : t,
+          )
+          .sort((a, b) => a.position - b.position);
+        localQueryStore.setQuery(api.kanban.listTasks, {}, newTasks);
+      }
+    },
+  );
 
   const createTask = useMutation(api.kanban.createTask);
 
-  const deleteTask = useMutation(api.kanban.deleteTask).withOptimisticUpdate((localQueryStore, args) => {
-    const tasks = localQueryStore.getQuery(api.kanban.listTasks, {});
-    if (tasks !== undefined) {
-      localQueryStore.setQuery(api.kanban.listTasks, {}, tasks.filter(t => t._id !== args.id));
-    }
-  });
+  const deleteTask = useMutation(api.kanban.deleteTask).withOptimisticUpdate(
+    (localQueryStore, args) => {
+      const tasks = localQueryStore.getQuery(api.kanban.listTasks, {});
+      if (tasks !== undefined) {
+        localQueryStore.setQuery(
+          api.kanban.listTasks,
+          {},
+          tasks.filter((t) => t._id !== args.id),
+        );
+      }
+    },
+  );
 
-  const [addTaskStatus, setAddTaskStatus] = useState<"todo" | "in-progress" | "done" | null>(null);
-  const [taskToDelete, setTaskToDelete] = useState<Id<"kanban_tasks"> | null>(null);
+  const [addTaskStatus, setAddTaskStatus] = useState<
+    "todo" | "in-progress" | "done" | null
+  >(null);
+  const [taskToDelete, setTaskToDelete] = useState<Id<"kanban_tasks"> | null>(
+    null,
+  );
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isPending, setIsPending] = useState(false);
   const { setShowAIPopup } = useChatStore();
@@ -63,7 +79,11 @@ const KanbanBoard = () => {
     );
   }
 
-  const columns: { id: "todo" | "in-progress" | "done"; title: string; color: string }[] = [
+  const columns: {
+    id: "todo" | "in-progress" | "done";
+    title: string;
+    color: string;
+  }[] = [
     { id: "todo", title: "Todo", color: "bg-amber-400" },
     { id: "in-progress", title: "In Progress", color: "bg-sky-400" },
     { id: "done", title: "Done", color: "bg-emerald-400" },
@@ -85,8 +105,8 @@ const KanbanBoard = () => {
       .sort((a, b) => a.position - b.position);
 
     // Filter out the dragged task if it's already in the destination column
-    const otherTasks = columnTasks.filter(t => t._id !== draggableId);
-    
+    const otherTasks = columnTasks.filter((t) => t._id !== draggableId);
+
     // The position should be calculated based on the item's position in the list
     // after it has been removed from its source.
     const prevTask = otherTasks[destination.index - 1];
@@ -163,11 +183,13 @@ const KanbanBoard = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Project Board</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your tasks and workflow</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your tasks and workflow
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="default"
             onClick={() => setShowAIPopup(TOGGLE_POPUP)}
             title="Toggle AI Chat"
@@ -194,41 +216,57 @@ const KanbanBoard = () => {
         </div>
       </DragDropContext>
 
-      <Dialog open={!!addTaskStatus} onOpenChange={(open) => !open && setAddTaskStatus(null)}>
+      <Dialog
+        open={!!addTaskStatus}
+        onOpenChange={(open) => !open && setAddTaskStatus(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-             <Input 
-               placeholder="Task title..." 
-               value={newTaskTitle} 
-               onChange={(e) => setNewTaskTitle(e.target.value)}
-               onKeyDown={(e) => e.key === "Enter" && confirmAddTask()}
-               autoFocus
-             />
+            <Input
+              placeholder="Task title..."
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmAddTask()}
+              autoFocus
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddTaskStatus(null)} disabled={isPending}>Cancel</Button>
-            <Button onClick={confirmAddTask} disabled={!newTaskTitle.trim() || isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setAddTaskStatus(null)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmAddTask}
+              disabled={!newTaskTitle.trim() || isPending}
+            >
               {isPending ? "Adding..." : "Add Task"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+      <AlertDialog
+        open={!!taskToDelete}
+        onOpenChange={(open) => !open && setTaskToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the task.
+              This action cannot be undone. This will permanently delete the
+              task.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteTask} 
+            <AlertDialogAction
+              onClick={confirmDeleteTask}
               variant="destructive"
               disabled={isPending}
             >

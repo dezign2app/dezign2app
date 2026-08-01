@@ -21,16 +21,56 @@ import {
 } from "../schemas";
 
 export const addNodeSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("service"), label: z.string(), data: serviceDataSchema.optional() }),
-  z.object({ type: z.literal("db_ref"), label: z.string(), data: dbRefDataSchema.optional() }),
-  z.object({ type: z.literal("webClient"), label: z.string(), data: webClientDataSchema.optional() }),
-  z.object({ type: z.literal("external"), label: z.string(), data: externalDataSchema.optional() }),
-  z.object({ type: z.literal("group"), label: z.string(), data: simpleDataSchema.optional() }),
-  z.object({ type: z.literal("entity"), label: z.string(), data: entityDataSchema }),
-  z.object({ type: z.literal("kafka"), label: z.string(), data: kafkaDataSchema.optional() }),
-  z.object({ type: z.literal("sqs"), label: z.string(), data: sqsDataSchema.optional() }),
-  z.object({ type: z.literal("redis-pubsub"), label: z.string(), data: redisPubSubDataSchema.optional() }),
-  z.object({ type: z.literal("redis-streams"), label: z.string(), data: redisStreamsDataSchema.optional() }),
+  z.object({
+    type: z.literal("service"),
+    label: z.string(),
+    data: serviceDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("db_ref"),
+    label: z.string(),
+    data: dbRefDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("webClient"),
+    label: z.string(),
+    data: webClientDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("external"),
+    label: z.string(),
+    data: externalDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("group"),
+    label: z.string(),
+    data: simpleDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("entity"),
+    label: z.string(),
+    data: entityDataSchema,
+  }),
+  z.object({
+    type: z.literal("kafka"),
+    label: z.string(),
+    data: kafkaDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("sqs"),
+    label: z.string(),
+    data: sqsDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("redis-pubsub"),
+    label: z.string(),
+    data: redisPubSubDataSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("redis-streams"),
+    label: z.string(),
+    data: redisStreamsDataSchema.optional(),
+  }),
 ]);
 
 export const addNodeTool = tool(
@@ -45,10 +85,14 @@ export const addNodeTool = tool(
     const offsetX = Math.floor(Math.random() * 600) - 300;
     const offsetY = Math.floor(Math.random() * 600) - 300;
     const position = state.viewportCenter
-      ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
+      ? {
+          x: state.viewportCenter.x + offsetX,
+          y: state.viewportCenter.y + offsetY,
+        }
       : { x: 100 + offsetX, y: 100 + offsetY };
 
-    const fractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+    const fractionalIndex =
+      "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
 
     const processedData = assignResourceIds({ label, ...(data ?? {}) });
 
@@ -62,17 +106,61 @@ export const addNodeTool = tool(
         fractionalIndex,
       });
       let resultStr = `Added node ${label} of type ${type} with ID ${nodeId}`;
-      if (type === "kafka" && "topics" in processedData && Array.isArray(processedData.topics)) {
-         resultStr += `\nTopics:\n` + processedData.topics.map((t: {name?: string; id?: string}) => `- ${t.name || 'Untitled'}: targetHandle="topics:in:${t.id}", sourceHandle="topics:out:${t.id}"`).join("\n");
+      if (
+        type === "kafka" &&
+        "topics" in processedData &&
+        Array.isArray(processedData.topics)
+      ) {
+        resultStr +=
+          `\nTopics:\n` +
+          processedData.topics
+            .map(
+              (t: { name?: string; id?: string }) =>
+                `- ${t.name || "Untitled"}: targetHandle="topics:in:${t.id}", sourceHandle="topics:out:${t.id}"`,
+            )
+            .join("\n");
       }
-      if (type === "sqs" && "queues" in processedData && Array.isArray(processedData.queues)) {
-         resultStr += `\nQueues:\n` + processedData.queues.map((t: {name?: string; id?: string}) => `- ${t.name || 'Untitled'}: targetHandle="queues:in:${t.id}", sourceHandle="queues:out:${t.id}"`).join("\n");
+      if (
+        type === "sqs" &&
+        "queues" in processedData &&
+        Array.isArray(processedData.queues)
+      ) {
+        resultStr +=
+          `\nQueues:\n` +
+          processedData.queues
+            .map(
+              (t: { name?: string; id?: string }) =>
+                `- ${t.name || "Untitled"}: targetHandle="queues:in:${t.id}", sourceHandle="queues:out:${t.id}"`,
+            )
+            .join("\n");
       }
-      if (type === "redis-pubsub" && "channels" in processedData && Array.isArray(processedData.channels)) {
-         resultStr += `\nChannels:\n` + processedData.channels.map((t: {name?: string; id?: string}) => `- ${t.name || 'Untitled'}: targetHandle="channels:in:${t.id}", sourceHandle="channels:out:${t.id}"`).join("\n");
+      if (
+        type === "redis-pubsub" &&
+        "channels" in processedData &&
+        Array.isArray(processedData.channels)
+      ) {
+        resultStr +=
+          `\nChannels:\n` +
+          processedData.channels
+            .map(
+              (t: { name?: string; id?: string }) =>
+                `- ${t.name || "Untitled"}: targetHandle="channels:in:${t.id}", sourceHandle="channels:out:${t.id}"`,
+            )
+            .join("\n");
       }
-      if (type === "redis-streams" && "streams" in processedData && Array.isArray(processedData.streams)) {
-         resultStr += `\nStreams:\n` + processedData.streams.map((t: {name?: string; id?: string}) => `- ${t.name || 'Untitled'}: targetHandle="streams:in:${t.id}", sourceHandle="streams:out:${t.id}"`).join("\n");
+      if (
+        type === "redis-streams" &&
+        "streams" in processedData &&
+        Array.isArray(processedData.streams)
+      ) {
+        resultStr +=
+          `\nStreams:\n` +
+          processedData.streams
+            .map(
+              (t: { name?: string; id?: string }) =>
+                `- ${t.name || "Untitled"}: targetHandle="streams:in:${t.id}", sourceHandle="streams:out:${t.id}"`,
+            )
+            .join("\n");
       }
       return resultStr;
     } catch (error: unknown) {
@@ -96,7 +184,7 @@ export const addNodeTool = tool(
 
 Each type only accepts its own data fields. Passing fields from another node type (e.g. sqsBroker on a kafka node) will be rejected.`,
     schema: addNodeSchema,
-  }
+  },
 );
 
 export const updateNodeTool = tool(
@@ -113,7 +201,8 @@ export const updateNodeTool = tool(
       if (!node) return `Error: Node ${id} not found`;
 
       let schema = nodeDataSchemas[node.type];
-      if (!schema) return `Error: Unknown node type '${node.type}' for node ${id}`;
+      if (!schema)
+        return `Error: Unknown node type '${node.type}' for node ${id}`;
 
       // Validate only the fields being changed, merged onto existing data,
       // so we catch cross-type field leakage at update time too.
@@ -150,9 +239,13 @@ export const updateNodeTool = tool(
       "Update an existing node on the backend canvas. Only specify the fields you want to change. Changes are validated against the node's existing type — fields belonging to other node types will be rejected.",
     schema: z.object({
       id: z.string(),
-      changes: z.record(z.unknown()).describe("Partial data fields to change, matching the node's existing type schema."),
+      changes: z
+        .record(z.unknown())
+        .describe(
+          "Partial data fields to change, matching the node's existing type schema.",
+        ),
     }),
-  }
+  },
 );
 
 export const deleteNodeTool = tool(
@@ -176,5 +269,5 @@ export const deleteNodeTool = tool(
     name: "delete_node",
     description: "Delete a node from the backend canvas.",
     schema: z.object({ id: z.string() }),
-  }
+  },
 );

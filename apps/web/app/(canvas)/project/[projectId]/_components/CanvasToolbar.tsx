@@ -2,10 +2,24 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Network, Workflow, Sparkles, Database, RefreshCw, Trash2, Hammer, Router } from "lucide-react";
+import {
+  ArrowLeft,
+  Network,
+  Workflow,
+  Sparkles,
+  Database,
+  RefreshCw,
+  Trash2,
+  Hammer,
+  Router,
+} from "lucide-react";
 import { BackendCanvasView } from "@/types/canvas";
 import { Button } from "@workspace/ui/components/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/nextjs";
@@ -40,11 +54,14 @@ export function CanvasToolbar({
     setIsSyncing(true);
     try {
       const token = await getToken({ template: "convex" });
-      const res = await fetch(`${window.location.origin}/api/sync-supermemory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, token }),
-      });
+      const res = await fetch(
+        `${window.location.origin}/api/sync-supermemory`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId, token }),
+        },
+      );
 
       if (!res.ok) {
         throw new Error("Failed to sync");
@@ -90,16 +107,28 @@ export function CanvasToolbar({
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div className="font-medium text-sm truncate max-w-[200px]">{projectName}</div>
+        <div className="font-medium text-sm truncate max-w-[200px]">
+          {projectName}
+        </div>
       </div>
       <div className="flex items-center justify-center flex-1">
-        <Tabs value={view} onValueChange={(v) => setView(v as BackendCanvasView)} className="w-[300px]">
+        <Tabs
+          value={view}
+          onValueChange={(v) => setView(v as BackendCanvasView)}
+          className="w-[300px]"
+        >
           <TabsList className="grid w-fit grid-cols-2 h-9">
-            <TabsTrigger value="graph" className={`${view === "graph" ? "text-foreground!" : ""}`}>
+            <TabsTrigger
+              value="graph"
+              className={`${view === "graph" ? "text-foreground!" : ""}`}
+            >
               <Network className="w-3 h-3 mr-1.5" />
               Graph
             </TabsTrigger>
-            <TabsTrigger value="schema" className={`${view === "schema" ? "text-foreground!" : ""}`}>
+            <TabsTrigger
+              value="schema"
+              className={`${view === "schema" ? "text-foreground!" : ""}`}
+            >
               <Database className="w-3 h-3 mr-1.5" />
               Schema
             </TabsTrigger>
@@ -138,12 +167,18 @@ export function CanvasToolbar({
                 <span>Monorepo Code Generator</span>
               </div>
               <p className="text-[11px] text-background/80 leading-relaxed">
-                Generates complete monorepo boilerplate & services architecture. Full AI business logic generation is under active development.
+                Generates complete monorepo boilerplate & services architecture.
+                Full AI business logic generation is under active development.
               </p>
             </div>
           </TooltipContent>
         </Tooltip>
-        <CompilerModal open={compilerOpen} onOpenChange={setCompilerOpen} projectName={projectName} projectId={projectId} />
+        <CompilerModal
+          open={compilerOpen}
+          onOpenChange={setCompilerOpen}
+          projectName={projectName}
+          projectId={projectId}
+        />
 
         <Button
           variant={"secondary"}

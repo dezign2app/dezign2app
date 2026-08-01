@@ -7,9 +7,11 @@ interface SubscriptionAccessContextType {
   showPaywall: (dismissible?: boolean) => void;
 }
 
-export const SubscriptionAccessContext = createContext<SubscriptionAccessContextType>({
-  isReadOnly: false,
-  showPaywall: () => {},
-});
+export const SubscriptionAccessContext =
+  createContext<SubscriptionAccessContextType>({
+    isReadOnly: false,
+    showPaywall: () => {},
+  });
 
-export const useSubscriptionAccess = () => useContext(SubscriptionAccessContext);
+export const useSubscriptionAccess = () =>
+  useContext(SubscriptionAccessContext);

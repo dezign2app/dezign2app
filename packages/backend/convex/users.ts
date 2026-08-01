@@ -1,7 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-
 export const getSubscriptionStatus = query({
   args: {},
   handler: async (ctx) => {
@@ -30,7 +29,9 @@ export const getSubscriptionStatus = query({
     }
 
     // Find if there is any active subscription
-    const activeSub = subscriptions.find((sub) => sub.status === "active" || sub.status === "trialing");
+    const activeSub = subscriptions.find(
+      (sub) => sub.status === "active" || sub.status === "trialing",
+    );
 
     if (activeSub) {
       return {

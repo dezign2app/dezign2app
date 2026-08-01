@@ -15,13 +15,16 @@ import { nodeTypes } from "./backend-nodes/Nodes";
 import { ForeignKeyEdge } from "./backend-nodes/ForeignKeyEdge";
 import { HTTPConnectionEdge, MessagingEdge } from "./backend-nodes/CustomEdges";
 import { isValidConnection } from "@workspace/canvas";
-import { getOffsetPosition, useCanvasHandlers } from "./hooks/useCanvasHandlers";
+import {
+  getOffsetPosition,
+  useCanvasHandlers,
+} from "./hooks/useCanvasHandlers";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 
 const edgeTypes = {
   "foreign-key": ForeignKeyEdge,
-  "connection": HTTPConnectionEdge,
-  "message": MessagingEdge,
+  connection: HTTPConnectionEdge,
+  message: MessagingEdge,
 };
 
 interface SchemaViewProps {
@@ -29,16 +32,13 @@ interface SchemaViewProps {
 }
 
 export function SchemaView({ projectId }: SchemaViewProps) {
-  const {
-    nodes,
-    edges,
-    onEdgesChange,
-    onConnect,
-    addTableNode,
-    addNode,
-  } = useBackendCanvasStore();
-  
-  const { handleNodesChange, handleMoveEnd } = useCanvasHandlers(projectId, "schema");
+  const { nodes, edges, onEdgesChange, onConnect, addTableNode, addNode } =
+    useBackendCanvasStore();
+
+  const { handleNodesChange, handleMoveEnd } = useCanvasHandlers(
+    projectId,
+    "schema",
+  );
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { handleLayout } = useAutoLayout();
 
@@ -79,10 +79,8 @@ export function SchemaView({ projectId }: SchemaViewProps) {
       data: {
         label: "Vector Collection",
         dbType: "vector",
-        columns: [
-          { name: "_id", type: "UUID", isPrimaryKey: true }
-        ],
-      }
+        columns: [{ name: "_id", type: "UUID", isPrimaryKey: true }],
+      },
     });
   };
 
@@ -96,10 +94,15 @@ export function SchemaView({ projectId }: SchemaViewProps) {
         deleteKeyCode={["Backspace", "Delete"]}
         onConnect={onConnect}
         isValidConnection={(connection: Connection) => {
-          const src = nodes.find(n => n.id === connection.source);
-          const tgt = nodes.find(n => n.id === connection.target);
+          const src = nodes.find((n) => n.id === connection.source);
+          const tgt = nodes.find((n) => n.id === connection.target);
           if (!src || !tgt) return false;
-          return isValidConnection(src.type, connection.sourceHandle, tgt.type, connection.targetHandle).valid;
+          return isValidConnection(
+            src.type,
+            connection.sourceHandle,
+            tgt.type,
+            connection.targetHandle,
+          ).valid;
         }}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -110,15 +113,30 @@ export function SchemaView({ projectId }: SchemaViewProps) {
         <Controls />
         <MiniMap />
         <Panel position="top-right" className="flex gap-2 flex-col">
-          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={handleAddTable}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start"
+            onClick={handleAddTable}
+          >
             <PlusSquare className="w-3.5 h-3.5 mr-2" />
             Table
           </Button>
-          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={handleAddVectorDb}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start"
+            onClick={handleAddVectorDb}
+          >
             <Database className="w-3.5 h-3.5 mr-2 text-violet-500" />
             Vector Collection
           </Button>
-          <Button variant="outline" size="sm" className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start" onClick={() => handleLayout("LR")}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start"
+            onClick={() => handleLayout("LR")}
+          >
             <LayoutTemplate className="w-3.5 h-3.5 mr-2" />
             Auto-layout
           </Button>

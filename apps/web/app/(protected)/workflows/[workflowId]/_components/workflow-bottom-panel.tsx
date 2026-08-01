@@ -35,7 +35,10 @@ import { SecretsTab } from "./bottom-panel/secrets-tab";
 import { VersionsTab } from "./bottom-panel/versions-tab";
 import { SecretEditDialog } from "./bottom-panel/secret-edit-dialog";
 import { useWorkflowEditorContext } from "./workflow-editor-context";
-import { useChatStore, TOGGLE_POPUP } from "@/app/(protected)/_components/chat/chat-store";
+import {
+  useChatStore,
+  TOGGLE_POPUP,
+} from "@/app/(protected)/_components/chat/chat-store";
 
 interface WorkflowBottomPanelProps {
   isCollapsed: boolean;
@@ -100,9 +103,8 @@ export const WorkflowBottomPanel = ({
   const onOpenRunDialog = () => setIsRunDialogOpen(true);
   // Edit Dialog State
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-  const [editingSecret, setEditingSecret] = React.useState<WorkflowSecret | null>(
-    null,
-  );
+  const [editingSecret, setEditingSecret] =
+    React.useState<WorkflowSecret | null>(null);
 
   const handleStartEdit = (secret: WorkflowSecret) => {
     setEditingSecret(secret);
@@ -124,9 +126,7 @@ export const WorkflowBottomPanel = ({
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(value) =>
-        onActiveTabChange(value as WorkflowBottomTab)
-      }
+      onValueChange={(value) => onActiveTabChange(value as WorkflowBottomTab)}
       className="flex h-full flex-col gap-0 bg-sidebar text-sidebar-foreground"
     >
       <div className="flex items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar-accent/70 px-4 py-2.5">
@@ -170,11 +170,11 @@ export const WorkflowBottomPanel = ({
 
         <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-sidebar-foreground/60">
           <Button
-              variant="outline"
-              size="sm"
-              className="h-7 rounded border-sidebar-border bg-sidebar px-3 text-xs uppercase tracking-[0.14em]"
-              onClick={() => setShowAIPopup(TOGGLE_POPUP)}
-            >
+            variant="outline"
+            size="sm"
+            className="h-7 rounded border-sidebar-border bg-sidebar px-3 text-xs uppercase tracking-[0.14em]"
+            onClick={() => setShowAIPopup(TOGGLE_POPUP)}
+          >
             <Sparkles className="mr-1.5 size-3" />
             Ask AI
           </Button>
@@ -240,7 +240,10 @@ export const WorkflowBottomPanel = ({
               <TerminalTab />
             </TabsContent>
 
-            <TabsContent value="secrets" className="min-h-0 flex-1 outline-none">
+            <TabsContent
+              value="secrets"
+              className="min-h-0 flex-1 outline-none"
+            >
               <SecretsTab onStartEdit={handleStartEdit} />
             </TabsContent>
 

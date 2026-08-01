@@ -60,16 +60,25 @@ interface UseLangGraphCanvasStateProps {
   onClose: () => void;
 }
 
-export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGraphCanvasStateProps) {
+export function useLangGraphCanvasState({
+  node,
+  updateNode,
+  onClose,
+}: UseLangGraphCanvasStateProps) {
   const data = node.data;
 
   const [inputChannels, setInputChannels] = useState<LangGraphInputChannel[]>(
-    data.inputChannels || []
+    data.inputChannels || [],
   );
   const [stateChannels, setStateChannels] = useState<LangGraphStateChannel[]>(
     data.stateChannels || [
-      { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
-    ]
+      {
+        key: "messages",
+        type: "messages",
+        reducer: "add_messages",
+        defaultValue: [],
+      },
+    ],
   );
   const [memoryConfig, setMemoryConfig] = useState<LangGraphMemoryConfig>(
     data.memoryConfig || {
@@ -77,10 +86,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       threadScope: "session",
       autoSummarize: true,
       maxWindowMessages: 10,
-    }
+    },
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [activeSideTab, setActiveSideTab] = useState<"inspector" | "inputs" | "state" | "memory">("inspector");
+  const [activeSideTab, setActiveSideTab] = useState<
+    "inspector" | "inputs" | "state" | "memory"
+  >("inspector");
   const [showCompileModal, setShowCompileModal] = useState(false);
 
   const { fitView: triggerFitView } = useReactFlow();
@@ -119,7 +130,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         if (n.id === NODE_ID_START && n.type === LANGGRAPH_CANVAS_NODE_START) {
           return { ...n, data: { ...n.data, inputChannels } };
         }
-        if (n.id === NODE_ID_STATE_GLOBAL && n.type === LANGGRAPH_CANVAS_NODE_STATE_GLOBAL) {
+        if (
+          n.id === NODE_ID_STATE_GLOBAL &&
+          n.type === LANGGRAPH_CANVAS_NODE_STATE_GLOBAL
+        ) {
           return {
             ...n,
             data: {
@@ -137,7 +151,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
               ...n.data,
               onDeleteLLM: () => {
                 setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
-                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setEdges((edges) =>
+                  edges.filter(
+                    (edge) => edge.source !== n.id && edge.target !== n.id,
+                  ),
+                );
                 setSelectedNodeId((curr) => (curr === n.id ? null : curr));
               },
             },
@@ -150,7 +168,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
               ...n.data,
               onDeleteTool: () => {
                 setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
-                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setEdges((edges) =>
+                  edges.filter(
+                    (edge) => edge.source !== n.id && edge.target !== n.id,
+                  ),
+                );
                 setSelectedNodeId((curr) => (curr === n.id ? null : curr));
               },
               onOpenInspector: () => {
@@ -163,7 +185,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             },
           };
         }
-        if (n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT) {
+        if (
+          n.type === LANGGRAPH_CANVAS_NODE_NODE ||
+          n.type === LANGGRAPH_CANVAS_NODE_AGENT
+        ) {
           return {
             ...n,
             data: {
@@ -194,9 +219,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
                 setNodes((nds) =>
                   nds.map((node) =>
                     node.id === n.id && node.type === LANGGRAPH_CANVAS_NODE_STEP
-                      ? { ...node, data: { ...node.data, activeBranchId: branchId } }
-                      : node
-                  )
+                      ? {
+                          ...node,
+                          data: { ...node.data, activeBranchId: branchId },
+                        }
+                      : node,
+                  ),
                 );
                 setActiveSideTab("inspector");
               },
@@ -205,7 +233,11 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
               },
               onDeleteStep: () => {
                 setNodes((nodes) => nodes.filter((node) => node.id !== n.id));
-                setEdges((edges) => edges.filter((edge) => edge.source !== n.id && edge.target !== n.id));
+                setEdges((edges) =>
+                  edges.filter(
+                    (edge) => edge.source !== n.id && edge.target !== n.id,
+                  ),
+                );
                 setSelectedNodeId((curr) => (curr === n.id ? null : curr));
               },
             },
@@ -235,13 +267,15 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   }, [inputChannels, stateChannels, handleAddChannel]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<LangGraphCanvasNode>[]) => setNodes((nds) => applyNodeChanges<LangGraphCanvasNode>(changes, nds)),
-    []
+    (changes: NodeChange<LangGraphCanvasNode>[]) =>
+      setNodes((nds) => applyNodeChanges<LangGraphCanvasNode>(changes, nds)),
+    [],
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes: EdgeChange[]) =>
+      setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [],
   );
 
   const isValidConnection = useCallback(
@@ -250,21 +284,35 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       if (connection.source === connection.target) return false;
 
       const sourceNode = nodes.find((n) => n.id === connection.source);
-      const isLLMSource = connection.sourceHandle === HANDLE_LLM_OUT || sourceNode?.type === LANGGRAPH_CANVAS_NODE_LLM || connection.source?.startsWith("llm_");
+      const isLLMSource =
+        connection.sourceHandle === HANDLE_LLM_OUT ||
+        sourceNode?.type === LANGGRAPH_CANVAS_NODE_LLM ||
+        connection.source?.startsWith("llm_");
       const isLLMTarget = connection.targetHandle === HANDLE_LLM_IN;
-      
-      const isToolSource = connection.sourceHandle === HANDLE_TOOL_OUT || sourceNode?.type === LANGGRAPH_CANVAS_NODE_TOOL || connection.source?.startsWith("tool_");
+
+      const isToolSource =
+        connection.sourceHandle === HANDLE_TOOL_OUT ||
+        sourceNode?.type === LANGGRAPH_CANVAS_NODE_TOOL ||
+        connection.source?.startsWith("tool_");
       const isToolTarget = connection.targetHandle === HANDLE_TOOL_IN;
 
-      const isMiddlewareSource = connection.sourceHandle === HANDLE_MIDDLEWARE_OUT || sourceNode?.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE || connection.source?.startsWith("mw_");
-      const isMiddlewareTarget = connection.targetHandle === HANDLE_MIDDLEWARE_IN;
+      const isMiddlewareSource =
+        connection.sourceHandle === HANDLE_MIDDLEWARE_OUT ||
+        sourceNode?.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE ||
+        connection.source?.startsWith("mw_");
+      const isMiddlewareTarget =
+        connection.targetHandle === HANDLE_MIDDLEWARE_IN;
 
-      const isMemorySource = connection.sourceHandle === HANDLE_MEMORY_OUT || sourceNode?.type === LANGGRAPH_CANVAS_NODE_MEMORY || connection.source?.startsWith("mem_") || connection.source?.startsWith("db_");
+      const isMemorySource =
+        connection.sourceHandle === HANDLE_MEMORY_OUT ||
+        sourceNode?.type === LANGGRAPH_CANVAS_NODE_MEMORY ||
+        connection.source?.startsWith("mem_") ||
+        connection.source?.startsWith("db_");
       const isMemoryTarget = connection.targetHandle === HANDLE_MEMORY_IN;
 
       if (isLLMSource && !isLLMTarget) return false;
       if (isLLMTarget && !isLLMSource) return false;
-      
+
       if (isToolSource && !isToolTarget) return false;
       if (isToolTarget && !isToolSource) return false;
 
@@ -276,7 +324,7 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
 
       return true;
     },
-    [nodes]
+    [nodes],
   );
 
   const onConnect = useCallback(
@@ -284,33 +332,76 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
       setEdges((eds) => {
         if (!isValidConnection(params)) return eds;
 
-        const isLLM = params.sourceHandle === HANDLE_LLM_OUT || params.targetHandle === HANDLE_LLM_IN || Boolean(params.source?.startsWith("llm_"));
-        const isTool = params.sourceHandle === HANDLE_TOOL_OUT || params.targetHandle === HANDLE_TOOL_IN || Boolean(params.source?.startsWith("tool_"));
-        const isMiddleware = params.sourceHandle === HANDLE_MIDDLEWARE_OUT || params.targetHandle === HANDLE_MIDDLEWARE_IN || Boolean(params.source?.startsWith("mw_"));
-        const isMemory = params.sourceHandle === HANDLE_MEMORY_OUT || params.targetHandle === HANDLE_MEMORY_IN || Boolean(params.source?.startsWith("mem_") || params.source?.startsWith("db_"));
-        
-        const sourceNode = nodes.find((n): n is StepNode => n.id === params.source && n.type === LANGGRAPH_CANVAS_NODE_STEP);
-        const routerBranch = sourceNode?.data?.routerConfig?.branches?.find((b: LangGraphRouterBranch) => b.id === params.sourceHandle);
+        const isLLM =
+          params.sourceHandle === HANDLE_LLM_OUT ||
+          params.targetHandle === HANDLE_LLM_IN ||
+          Boolean(params.source?.startsWith("llm_"));
+        const isTool =
+          params.sourceHandle === HANDLE_TOOL_OUT ||
+          params.targetHandle === HANDLE_TOOL_IN ||
+          Boolean(params.source?.startsWith("tool_"));
+        const isMiddleware =
+          params.sourceHandle === HANDLE_MIDDLEWARE_OUT ||
+          params.targetHandle === HANDLE_MIDDLEWARE_IN ||
+          Boolean(params.source?.startsWith("mw_"));
+        const isMemory =
+          params.sourceHandle === HANDLE_MEMORY_OUT ||
+          params.targetHandle === HANDLE_MEMORY_IN ||
+          Boolean(
+            params.source?.startsWith("mem_") ||
+            params.source?.startsWith("db_"),
+          );
 
-        const sourceHandle = isLLM ? HANDLE_LLM_OUT : isTool ? HANDLE_TOOL_OUT : isMiddleware ? HANDLE_MIDDLEWARE_OUT : isMemory ? HANDLE_MEMORY_OUT : params.sourceHandle;
-        const targetHandle = isLLM ? HANDLE_LLM_IN : isTool ? HANDLE_TOOL_IN : isMiddleware ? HANDLE_MIDDLEWARE_IN : isMemory ? HANDLE_MEMORY_IN : params.targetHandle;
+        const sourceNode = nodes.find(
+          (n): n is StepNode =>
+            n.id === params.source && n.type === LANGGRAPH_CANVAS_NODE_STEP,
+        );
+        const routerBranch = sourceNode?.data?.routerConfig?.branches?.find(
+          (b: LangGraphRouterBranch) => b.id === params.sourceHandle,
+        );
 
-        const fieldStr = routerBranch?.field ? (routerBranch.field.startsWith("state.") ? routerBranch.field : `state.${routerBranch.field}`) : "state";
+        const sourceHandle = isLLM
+          ? HANDLE_LLM_OUT
+          : isTool
+            ? HANDLE_TOOL_OUT
+            : isMiddleware
+              ? HANDLE_MIDDLEWARE_OUT
+              : isMemory
+                ? HANDLE_MEMORY_OUT
+                : params.sourceHandle;
+        const targetHandle = isLLM
+          ? HANDLE_LLM_IN
+          : isTool
+            ? HANDLE_TOOL_IN
+            : isMiddleware
+              ? HANDLE_MIDDLEWARE_IN
+              : isMemory
+                ? HANDLE_MEMORY_IN
+                : params.targetHandle;
+
+        const fieldStr = routerBranch?.field
+          ? routerBranch.field.startsWith("state.")
+            ? routerBranch.field
+            : `state.${routerBranch.field}`
+          : "state";
         const label = routerBranch
-          ? routerBranch.label || (routerBranch.isDefault ? "Default" : `${fieldStr} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
+          ? routerBranch.label ||
+            (routerBranch.isDefault
+              ? "Default"
+              : `${fieldStr} ${routerBranch.operator} '${routerBranch.value ?? ""}'`)
           : undefined;
 
         const style = isLLM
           ? { stroke: "#38bdf8", strokeWidth: 2, strokeDasharray: "4 4" }
           : isTool
-          ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
-          : isMiddleware
-          ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
-          : isMemory
-          ? { stroke: "#f59e0b", strokeWidth: 2, strokeDasharray: "4 4" }
-          : routerBranch
-          ? { stroke: "#38bdf8", strokeWidth: 2 }
-          : { stroke: "#a1a1aa", strokeWidth: 2 };
+            ? { stroke: "#10b981", strokeWidth: 2, strokeDasharray: "4 4" }
+            : isMiddleware
+              ? { stroke: "#a855f7", strokeWidth: 2, strokeDasharray: "4 4" }
+              : isMemory
+                ? { stroke: "#f59e0b", strokeWidth: 2, strokeDasharray: "4 4" }
+                : routerBranch
+                  ? { stroke: "#38bdf8", strokeWidth: 2 }
+                  : { stroke: "#a1a1aa", strokeWidth: 2 };
 
         const labelStyle = routerBranch
           ? { fill: "#bae6fd", fontSize: 10, fontWeight: "bold" }
@@ -329,10 +420,10 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
             ...(label ? { label, labelStyle, labelBgStyle } : {}),
             style,
           },
-          eds
+          eds,
         );
       }),
-    [nodes, isValidConnection]
+    [nodes, isValidConnection],
   );
 
   // ── Sub-hooks for focused responsibility areas ──
@@ -377,14 +468,22 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
   const handleDeleteStep = () => {
     if (!selectedNodeId || isReservedNodeId(selectedNodeId)) return;
     setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+    setEdges((eds) =>
+      eds.filter(
+        (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
+      ),
+    );
     setSelectedNodeId(null);
   };
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedNodeId && !isReservedNodeId(selectedNodeId)) {
       setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
-      setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+      setEdges((eds) =>
+        eds.filter(
+          (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
+        ),
+      );
       setSelectedNodeId(null);
     }
     setEdges((eds) => eds.filter((e) => !e.selected));
@@ -402,7 +501,9 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     });
   }, [nodes, edges, inputChannels, stateChannels, memoryConfig, data]);
 
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">(
+    "idle",
+  );
   const isFirstRenderRef = useRef(true);
   const lastSavedJsonRef = useRef<string>(
     JSON.stringify(
@@ -412,7 +513,12 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         graphEdges: data.graphEdges || [],
         inputChannels: data.inputChannels || [],
         stateChannels: data.stateChannels || [
-          { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
+          {
+            key: "messages",
+            type: "messages",
+            reducer: "add_messages",
+            defaultValue: [],
+          },
         ],
         memoryConfig: data.memoryConfig || {
           checkpointer: "memory",
@@ -425,8 +531,8 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
         middlewareDefinitions: data.middlewareDefinitions || [],
         memoryDefinitions: data.memoryDefinitions || [],
         agentDefinitions: data.agentDefinitions || [],
-      })
-    )
+      }),
+    ),
   );
 
   // ── Auto-save with 400ms debounce ──
@@ -452,7 +558,16 @@ export function useLangGraphCanvasState({ node, updateNode, onClose }: UseLangGr
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [nodes, edges, inputChannels, stateChannels, memoryConfig, buildGraphData, node.id, updateNode]);
+  }, [
+    nodes,
+    edges,
+    inputChannels,
+    stateChannels,
+    memoryConfig,
+    buildGraphData,
+    node.id,
+    updateNode,
+  ]);
 
   // ── Flush auto-save on unmount if pending changes exist ──
   const buildGraphDataRef = useRef(buildGraphData);

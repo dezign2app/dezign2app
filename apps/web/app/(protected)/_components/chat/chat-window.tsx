@@ -8,14 +8,13 @@ import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { usePaginatedQuery } from "convex/react";
 import { ChatHistory } from "./chat-history";
-import { Resizable } from 're-resizable';
+import { Resizable } from "re-resizable";
 import { useChatStore } from "./chat-store";
 import { useChatSync } from "./use-chat-sync";
 
 interface ChatWindowProps {
   onClose?: () => void;
 }
-
 
 export const ChatWindow = ({ onClose }: ChatWindowProps) => {
   const [position, setPosition] = useState({
@@ -31,8 +30,10 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.ai.messages.listMessages,
-    conversationId ? { conversationId: conversationId as Id<"conversations"> } : "skip",
-    { initialNumItems: 10 }
+    conversationId
+      ? { conversationId: conversationId as Id<"conversations"> }
+      : "skip",
+    { initialNumItems: 10 },
   );
 
   const messages = [...results].reverse();
@@ -61,11 +62,11 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
         // Constrain to viewport bounds
         const constrainedX = Math.max(
           0,
-          Math.min(newX, windowWidth - cardWidth)
+          Math.min(newX, windowWidth - cardWidth),
         );
         const constrainedY = Math.max(
           0,
-          Math.min(newY, windowHeight - cardHeight)
+          Math.min(newY, windowHeight - cardHeight),
         );
 
         setPosition({ x: constrainedX, y: constrainedY });
@@ -93,7 +94,7 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
     <div
       className={cn(
         "z-50 absolute flex flex-col items-center justify-center overflow-hidden",
-        isDragging && "select-none"
+        isDragging && "select-none",
       )}
       style={{
         left: `${position.x}px`,
@@ -121,7 +122,11 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
           <ChatHistory />
         ) : (
           <>
-            <ChatBody messages={messages ?? []} loadMore={loadMore} status={status} />
+            <ChatBody
+              messages={messages ?? []}
+              loadMore={loadMore}
+              status={status}
+            />
             <ChatFooter conversationId={conversationId ?? ""} />
           </>
         )}

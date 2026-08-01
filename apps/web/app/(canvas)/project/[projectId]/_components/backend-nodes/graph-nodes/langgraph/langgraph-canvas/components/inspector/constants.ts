@@ -21,7 +21,11 @@ export const LLM_PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     defaultModel: "claude-3-5-sonnet-20241022",
     defaultUrl: "https://api.anthropic.com/v1/messages",
     defaultApiKeyEnv: "ANTHROPIC_API_KEY",
-    models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+    models: [
+      "claude-3-5-sonnet-20241022",
+      "claude-3-5-haiku-20241022",
+      "claude-3-opus-20240229",
+    ],
   },
   [LLM_PROVIDERS.GOOGLE]: {
     label: "Google (Gemini)",
@@ -35,7 +39,11 @@ export const LLM_PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     defaultModel: "openai/gpt-oss-120b",
     defaultUrl: "https://api.groq.com/openai/v1/chat/completions",
     defaultApiKeyEnv: "GROQ_API_KEY",
-    models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.1-8b-instant"],
+    models: [
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "llama-3.1-8b-instant",
+    ],
   },
   [LLM_PROVIDERS.CUSTOM]: {
     label: "Custom RAW API",
@@ -45,6 +53,3 @@ export const LLM_PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     models: [],
   },
 };
-
-
-

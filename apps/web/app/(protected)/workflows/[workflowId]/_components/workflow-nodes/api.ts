@@ -1,12 +1,16 @@
 import { Globe } from "lucide-react";
-import type { ApiNodeConfig, WorkflowNodeDefinition } from "../workflow-editor-types";
+import type {
+  ApiNodeConfig,
+  WorkflowNodeDefinition,
+} from "../workflow-editor-types";
 
 export const apiNode: WorkflowNodeDefinition = {
   title: "API Call",
   paletteDescription: "Call any HTTP endpoint with headers, query, and body.",
   badge: "Execution",
   minimapColor: "var(--color-chart-3)",
-  accentClassName: "from-chart-3/20 via-chart-3/10 to-transparent border-chart-3/30",
+  accentClassName:
+    "from-chart-3/20 via-chart-3/10 to-transparent border-chart-3/30",
   icon: Globe,
   deletable: true,
   hasTargetHandle: true,

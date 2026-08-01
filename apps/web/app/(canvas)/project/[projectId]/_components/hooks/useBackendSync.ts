@@ -2,14 +2,27 @@ import React, { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id, Doc } from "@workspace/backend/_generated/dataModel";
-import { useBackendCanvasStore, parseResourceHandle } from "@/lib/stores/backendCanvasStore";
+import {
+  useBackendCanvasStore,
+  parseResourceHandle,
+} from "@/lib/stores/backendCanvasStore";
 import { ensureLangGraphDataReachability } from "@workspace/canvas/constants";
-import { BackendCanvasView, BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
+import {
+  BackendCanvasView,
+  BackendNode,
+  BackendEdge,
+  SimulationTestCase,
+} from "@/types/canvas";
 
 import { BackendCanvasAdapter } from "@/lib/canvas-adapters/backendAdapter";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { z } from "zod";
-import { endpointSchema, publishedEventSchema, consumedEventSchema, identityProviderSchema } from "@workspace/canvas/schemas";
+import {
+  endpointSchema,
+  publishedEventSchema,
+  consumedEventSchema,
+  identityProviderSchema,
+} from "@workspace/canvas/schemas";
 
 export function useBackendSync(projectId: string, view: BackendCanvasView) {
   const {
@@ -50,37 +63,49 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
   const removeEndpoint = useMutation(api.canvas.removeBackendEndpoint);
   const upsertEvent = useMutation(api.canvas.upsertBackendEvent);
   const removeEvent = useMutation(api.canvas.removeBackendEvent);
-  const upsertIdentityProvider = useMutation(api.canvas.upsertBackendIdentityProvider);
-  const removeIdentityProvider = useMutation(api.canvas.removeBackendIdentityProvider);
+  const upsertIdentityProvider = useMutation(
+    api.canvas.upsertBackendIdentityProvider,
+  );
+  const removeIdentityProvider = useMutation(
+    api.canvas.removeBackendIdentityProvider,
+  );
 
   // Hydrate from Convex
   useEffect(() => {
     if (initialElements === undefined) return;
-    
+
     const isFirstHydration = !hasHydrated.current;
     hasHydrated.current = true;
 
-    const rawNodes: BackendNode[] = (initialElements.nodes ?? []).map((row: Doc<"canvas_backend_nodes">) => {
-      let activePosition = row.data?.position ?? row.position;
-      return {
-        id: row.nodeId,
-        type: row.type as BackendNode["type"],
-        position: activePosition,
-        data: {
-          ...row.data,
+    const rawNodes: BackendNode[] = (initialElements.nodes ?? []).map(
+      (row: Doc<"canvas_backend_nodes">) => {
+        let activePosition = row.data?.position ?? row.position;
+        return {
+          id: row.nodeId,
+          type: row.type as BackendNode["type"],
           position: activePosition,
-        },
-        fractionalIndex: row.fractionalIndex,
-        parentId: row.data?.parentId,
-      } as BackendNode;
-    });
-    
+          data: {
+            ...row.data,
+            position: activePosition,
+          },
+          fractionalIndex: row.fractionalIndex,
+          parentId: row.data?.parentId,
+        } as BackendNode;
+      },
+    );
+
     const store = useBackendCanvasStore.getState();
     const pendingNodeIds = new Set(store.pendingNodeUpserts.map((n) => n.id));
     const pendingEdgeIds = new Set(store.pendingEdgeUpserts.map((e) => e.id));
-    const pendingEventIds = new Set(store.pendingEventUpserts.map((ev) => ev.id));
-    const pendingEndpointIds = new Set(store.pendingEndpointUpserts.map((ep) => ep.id));
-    const pendingProviderIds = new Set(store.pendingIdentityProviderUpserts.map((p) => p.id));
+    const pendingEventIds = new Set(
+      store.pendingEventUpserts.map((ev) => ev.id),
+    );
+    const pendingEndpointIds = new Set(
+      store.pendingEndpointUpserts.map((ep) => ep.id),
+    );
+    const pendingProviderIds = new Set(
+      store.pendingIdentityProviderUpserts.map((p) => p.id),
+    );
 
     // Ensure parent nodes appear before child nodes for React Flow
     const nodesToSet: BackendNode[] = [];
@@ -92,7 +117,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
         const parent = rawNodes.find((n) => n.id === node.parentId);
         if (parent) addNode(parent);
       }
-      
+
       // Preserve local state for nodes currently being edited/dragged
       if (!isFirstHydration && pendingNodeIds.has(node.id)) {
         const localNode = store.nodes.find((n) => n.id === node.id);
@@ -102,44 +127,57 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
           return;
         }
       }
-      
+
       nodesToSet.push(node);
       addedIds.add(node.id);
     };
 
     rawNodes.forEach(addNode);
 
-    const edgesToSet: BackendEdge[] = (initialElements.edges ?? []).map((row: Doc<"canvas_backend_edges">) => {
-      if (!isFirstHydration && pendingEdgeIds.has(row.edgeId)) {
-        const localEdge = store.edges.find((e) => e.id === row.edgeId);
-        if (localEdge) return localEdge;
-      }
+    const edgesToSet: BackendEdge[] = (initialElements.edges ?? []).map(
+      (row: Doc<"canvas_backend_edges">) => {
+        if (!isFirstHydration && pendingEdgeIds.has(row.edgeId)) {
+          const localEdge = store.edges.find((e) => e.id === row.edgeId);
+          if (localEdge) return localEdge;
+        }
 
-      const sourceResource = parseResourceHandle(row.sourceHandle);
-      const targetResource = parseResourceHandle(row.targetHandle);
-      return {
-        id: row.edgeId,
-        source: row.source,
-        target: row.target,
-        type: row.type as BackendEdge["type"],
-        sourceHandle: row.sourceHandle ?? undefined,
-        targetHandle: row.targetHandle ?? undefined,
-        sourceResourceId: sourceResource?.resourceId,
-        targetResourceId: targetResource?.resourceId,
-        resourceType: targetResource?.resourceType ?? sourceResource?.resourceType,
-        data: row.data,
-        fractionalIndex: row.fractionalIndex,
-      };
-    });
-    
+        const sourceResource = parseResourceHandle(row.sourceHandle);
+        const targetResource = parseResourceHandle(row.targetHandle);
+        return {
+          id: row.edgeId,
+          source: row.source,
+          target: row.target,
+          type: row.type as BackendEdge["type"],
+          sourceHandle: row.sourceHandle ?? undefined,
+          targetHandle: row.targetHandle ?? undefined,
+          sourceResourceId: sourceResource?.resourceId,
+          targetResourceId: targetResource?.resourceId,
+          resourceType:
+            targetResource?.resourceType ?? sourceResource?.resourceType,
+          data: row.data,
+          fractionalIndex: row.fractionalIndex,
+        };
+      },
+    );
+
     const fullEndpointSchema = endpointSchema.extend({ nodeId: z.string() });
     const fullEventSchema = z.union([
-      publishedEventSchema.extend({ nodeId: z.string(), variant: z.literal("publish") }),
-      consumedEventSchema.extend({ nodeId: z.string(), variant: z.literal("consume") })
+      publishedEventSchema.extend({
+        nodeId: z.string(),
+        variant: z.literal("publish"),
+      }),
+      consumedEventSchema.extend({
+        nodeId: z.string(),
+        variant: z.literal("consume"),
+      }),
     ]);
-    const fullIdentityProviderSchema = identityProviderSchema.extend({ nodeId: z.string() });
+    const fullIdentityProviderSchema = identityProviderSchema.extend({
+      nodeId: z.string(),
+    });
 
-    const rawEndpoints = z.array(fullEndpointSchema).parse(initialElements.endpoints || []);
+    const rawEndpoints = z
+      .array(fullEndpointSchema)
+      .parse(initialElements.endpoints || []);
     const endpointsToSet = rawEndpoints.map((ep) => {
       if (!isFirstHydration && pendingEndpointIds.has(ep.id)) {
         const local = store.endpoints.find((e) => e.id === ep.id);
@@ -148,7 +186,9 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       return ep;
     });
 
-    const rawEvents = z.array(fullEventSchema).parse(initialElements.events || []);
+    const rawEvents = z
+      .array(fullEventSchema)
+      .parse(initialElements.events || []);
     const eventsToSet = rawEvents.map((ev) => {
       if (!isFirstHydration && pendingEventIds.has(ev.id)) {
         const local = store.events.find((e) => e.id === ev.id);
@@ -157,7 +197,9 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       return ev;
     });
 
-    const rawProviders = z.array(fullIdentityProviderSchema).parse(initialElements.identityProviders || []);
+    const rawProviders = z
+      .array(fullIdentityProviderSchema)
+      .parse(initialElements.identityProviders || []);
     const providersToSet = rawProviders.map((p) => {
       if (!isFirstHydration && pendingProviderIds.has(p.id)) {
         const local = store.identityProviders.find((ip) => ip.id === p.id);
@@ -172,9 +214,11 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       endpointsToSet,
       eventsToSet,
       providersToSet,
-      projectId
+      projectId,
     );
-    useSimulationStore.getState().setTestCases((initialElements.testCases || []) as any);
+    useSimulationStore
+      .getState()
+      .setTestCases((initialElements.testCases || []) as any);
   }, [initialElements, setNodesAndEdges, view, projectId]);
 
   // Handle view changes: swap active positions for existing nodes
@@ -209,10 +253,13 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     }
 
     const timer = setTimeout(() => {
-      console.log("BackendCanvas sync loop: pendingNodeUpserts", pendingNodeUpserts);
+      console.log(
+        "BackendCanvas sync loop: pendingNodeUpserts",
+        pendingNodeUpserts,
+      );
 
       const pid = projectId as Id<"projects">;
-      
+
       // Capture the exact references being synced so we can clear only them
       const syncingNodes = [...pendingNodeUpserts];
       const syncingNodeRemovals = [...pendingNodeRemovals];
@@ -223,22 +270,60 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
       const syncingEvents = [...pendingEventUpserts];
       const syncingEventRemovals = [...pendingEventRemovals];
       const syncingIdentityProviders = [...pendingIdentityProviderUpserts];
-      const syncingIdentityProviderRemovals = [...pendingIdentityProviderRemovals];
+      const syncingIdentityProviderRemovals = [
+        ...pendingIdentityProviderRemovals,
+      ];
 
       // Deduplicate for actual API calls
-      const uniqueNodesToSync = Array.from(new Map(syncingNodes.filter((n): n is typeof n => Boolean(n?.id)).map(n => [n.id, n])).values());
-      const uniqueEdgesToSync = Array.from(new Map(syncingEdges.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
-      const uniqueNodeRemovals = Array.from(new Set(syncingNodeRemovals.filter(Boolean)));
-      const uniqueEdgeRemovals = Array.from(new Set(syncingEdgeRemovals.filter(Boolean)));
-      const uniqueEndpointsToSync = Array.from(new Map(syncingEndpoints.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
-      const uniqueEventsToSync = Array.from(new Map(syncingEvents.filter((e): e is typeof e => Boolean(e?.id)).map(e => [e.id, e])).values());
-      const uniqueIdentityProvidersToSync = Array.from(new Map(syncingIdentityProviders.filter((p): p is typeof p => Boolean(p?.id)).map(p => [p.id, p])).values());
+      const uniqueNodesToSync = Array.from(
+        new Map(
+          syncingNodes
+            .filter((n): n is typeof n => Boolean(n?.id))
+            .map((n) => [n.id, n]),
+        ).values(),
+      );
+      const uniqueEdgesToSync = Array.from(
+        new Map(
+          syncingEdges
+            .filter((e): e is typeof e => Boolean(e?.id))
+            .map((e) => [e.id, e]),
+        ).values(),
+      );
+      const uniqueNodeRemovals = Array.from(
+        new Set(syncingNodeRemovals.filter(Boolean)),
+      );
+      const uniqueEdgeRemovals = Array.from(
+        new Set(syncingEdgeRemovals.filter(Boolean)),
+      );
+      const uniqueEndpointsToSync = Array.from(
+        new Map(
+          syncingEndpoints
+            .filter((e): e is typeof e => Boolean(e?.id))
+            .map((e) => [e.id, e]),
+        ).values(),
+      );
+      const uniqueEventsToSync = Array.from(
+        new Map(
+          syncingEvents
+            .filter((e): e is typeof e => Boolean(e?.id))
+            .map((e) => [e.id, e]),
+        ).values(),
+      );
+      const uniqueIdentityProvidersToSync = Array.from(
+        new Map(
+          syncingIdentityProviders
+            .filter((p): p is typeof p => Boolean(p?.id))
+            .map((p) => [p.id, p]),
+        ).values(),
+      );
 
       Promise.all([
         ...uniqueNodesToSync.map((n) => {
           let position = n.position;
-          
-          let cleanStyle: Record<string, string | number | boolean | null> | undefined = undefined;
+
+          let cleanStyle:
+            | Record<string, string | number | boolean | null>
+            | undefined = undefined;
           if (n.style) {
             const temp: Record<string, string | number | boolean | null> = {};
             for (const [k, v] of Object.entries(n.style)) {
@@ -249,16 +334,19 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
             cleanStyle = temp;
           }
 
-          const rawData = { 
-            ...n.data, 
+          const rawData = {
+            ...n.data,
             position,
-            ...(n.parentId !== undefined && { parentId: n.parentId }), 
-            ...(cleanStyle !== undefined && { style: cleanStyle }), 
-            ...(n.width !== undefined && { width: n.width }), 
-            ...(n.height !== undefined && { height: n.height }) 
+            ...(n.parentId !== undefined && { parentId: n.parentId }),
+            ...(cleanStyle !== undefined && { style: cleanStyle }),
+            ...(n.width !== undefined && { width: n.width }),
+            ...(n.height !== undefined && { height: n.height }),
           };
 
-          const finalData = n.type === "langgraph" ? ensureLangGraphDataReachability(rawData) : rawData;
+          const finalData =
+            n.type === "langgraph"
+              ? ensureLangGraphDataReachability(rawData)
+              : rawData;
 
           return upsertNode({
             projectId: pid,
@@ -270,7 +358,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
           });
         }),
         ...uniqueNodeRemovals.map((id) =>
-          removeNode({ projectId: pid, nodeId: id })
+          removeNode({ projectId: pid, nodeId: id }),
         ),
         ...uniqueEdgesToSync.map((e) =>
           upsertEdge({
@@ -283,24 +371,57 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
             targetHandle: e.targetHandle ?? undefined,
             data: e.data,
             fractionalIndex: e.fractionalIndex,
-          })
+          }),
         ),
         ...uniqueEdgeRemovals.map((id) =>
-          removeEdge({ projectId: pid, edgeId: id })
+          removeEdge({ projectId: pid, edgeId: id }),
         ),
         ...uniqueEndpointsToSync.map((e) =>
-          upsertEndpoint({ projectId: pid, nodeId: e.nodeId, endpointId: e.id, data: endpointSchema.parse(e) })
+          upsertEndpoint({
+            projectId: pid,
+            nodeId: e.nodeId,
+            endpointId: e.id,
+            data: endpointSchema.parse(e),
+          }),
         ),
-        ...syncingEndpointRemovals.map(r => removeEndpoint({ projectId: pid, nodeId: r.nodeId, endpointId: r.endpointId })),
-        ...uniqueEventsToSync.map(e => {
-          const data = e.variant === "publish" ? publishedEventSchema.parse(e) : consumedEventSchema.parse(e);
-          return upsertEvent({ projectId: pid, nodeId: e.nodeId, eventId: e.id, variant: e.variant, data });
+        ...syncingEndpointRemovals.map((r) =>
+          removeEndpoint({
+            projectId: pid,
+            nodeId: r.nodeId,
+            endpointId: r.endpointId,
+          }),
+        ),
+        ...uniqueEventsToSync.map((e) => {
+          const data =
+            e.variant === "publish"
+              ? publishedEventSchema.parse(e)
+              : consumedEventSchema.parse(e);
+          return upsertEvent({
+            projectId: pid,
+            nodeId: e.nodeId,
+            eventId: e.id,
+            variant: e.variant,
+            data,
+          });
         }),
-        ...syncingEventRemovals.map(r => removeEvent({ projectId: pid, nodeId: r.nodeId, eventId: r.eventId })),
-        ...uniqueIdentityProvidersToSync.map(p => 
-          upsertIdentityProvider({ projectId: pid, nodeId: p.nodeId, providerId: p.id, data: identityProviderSchema.parse(p) })
+        ...syncingEventRemovals.map((r) =>
+          removeEvent({ projectId: pid, nodeId: r.nodeId, eventId: r.eventId }),
         ),
-        ...syncingIdentityProviderRemovals.map(r => removeIdentityProvider({ projectId: pid, nodeId: r.nodeId, providerId: r.providerId })),
+        ...uniqueIdentityProvidersToSync.map((p) =>
+          upsertIdentityProvider({
+            projectId: pid,
+            nodeId: p.nodeId,
+            providerId: p.id,
+            data: identityProviderSchema.parse(p),
+          }),
+        ),
+        ...syncingIdentityProviderRemovals.map((r) =>
+          removeIdentityProvider({
+            projectId: pid,
+            nodeId: r.nodeId,
+            providerId: r.providerId,
+          }),
+        ),
       ])
         .then(() => {
           clearPending(
@@ -313,7 +434,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
             syncingEvents,
             syncingEventRemovals,
             syncingIdentityProviders,
-            syncingIdentityProviderRemovals
+            syncingIdentityProviderRemovals,
           );
         })
         .catch((err) => console.error("Canvas backend sync failed:", err));
@@ -342,10 +463,17 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
   ]);
 
   useEffect(() => {
-    (window as Window & typeof globalThis & { backendAdapter?: BackendCanvasAdapter }).backendAdapter = new BackendCanvasAdapter(
-      useBackendCanvasStore.getState()
+    (
+      window as Window &
+        typeof globalThis & { backendAdapter?: BackendCanvasAdapter }
+    ).backendAdapter = new BackendCanvasAdapter(
+      useBackendCanvasStore.getState(),
     );
   }, []);
 
-  return { isLoading: initialElements === undefined, hasHydrated: hasHydrated.current, nodes };
+  return {
+    isLoading: initialElements === undefined,
+    hasHydrated: hasHydrated.current,
+    nodes,
+  };
 }

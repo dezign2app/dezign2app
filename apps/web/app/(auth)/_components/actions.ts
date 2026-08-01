@@ -17,14 +17,14 @@ export async function generateUserToken() {
 
   // If the template returns an object, extract jwt. If string, execute directly.
   let jwt = "";
-  if (token && typeof token === 'object' && 'jwt' in token) {
-      jwt = token.jwt;
-  } else if (typeof token === 'string') {
-      jwt = token;
+  if (token && typeof token === "object" && "jwt" in token) {
+    jwt = token.jwt;
+  } else if (typeof token === "string") {
+    jwt = token;
   } else {
-      // Fallback to default
-      const defaultToken = await client.sessions.getToken(session.sessionId);
-      jwt = defaultToken.jwt || "";
+    // Fallback to default
+    const defaultToken = await client.sessions.getToken(session.sessionId);
+    jwt = defaultToken.jwt || "";
   }
 
   return jwt;

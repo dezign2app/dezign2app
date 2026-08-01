@@ -13,7 +13,9 @@ export const baseNodeDataSchema = z.object({
   label: z.string().optional(),
   position: z.object({ x: z.number(), y: z.number() }).optional(),
   parentId: z.string().optional(),
-  style: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  style: z
+    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional(),
   width: z.number().optional(),
   height: z.number().optional(),
   techStack: z.enum(ALL_TECH_STACK_VALUES).optional(),
@@ -63,14 +65,18 @@ export const resourceItemSchema = z.object({
   _legacyName: z.string().optional(),
 });
 
-export const simpleDataSchema = baseNodeDataSchema.extend({
-  description: z.string().optional(),
-}).strict();
+export const simpleDataSchema = baseNodeDataSchema
+  .extend({
+    description: z.string().optional(),
+  })
+  .strict();
 
-export const dbRefDataSchema = baseNodeDataSchema.extend({
-  description: z.string().optional(),
-  tableRef: z.string().optional(),
-  graphPosition: z.object({ x: z.number(), y: z.number() }).optional(),
-}).strict();
+export const dbRefDataSchema = baseNodeDataSchema
+  .extend({
+    description: z.string().optional(),
+    tableRef: z.string().optional(),
+    graphPosition: z.object({ x: z.number(), y: z.number() }).optional(),
+  })
+  .strict();
 
 export const dbRefDataInputSchema = dbRefDataSchema;

@@ -5,13 +5,26 @@ import { Briefcase } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Careers | dezign2app",
-  description: "Join the team at dezign2app building the future of AI-powered visual application design.",
+  description:
+    "Join the team at dezign2app building the future of AI-powered visual application design.",
 };
 
 const openPositions = [
-  { title: "Senior Full Stack Engineer (Next.js / Convex)", location: "Remote / Hybrid", type: "Full-Time" },
-  { title: "AI / Compiler Engineer (Canvas & Code Gen)", location: "Remote", type: "Full-Time" },
-  { title: "Product Designer (Design Systems & Canvas UI)", location: "Remote", type: "Full-Time" },
+  {
+    title: "Senior Full Stack Engineer (Next.js / Convex)",
+    location: "Remote / Hybrid",
+    type: "Full-Time",
+  },
+  {
+    title: "AI / Compiler Engineer (Canvas & Code Gen)",
+    location: "Remote",
+    type: "Full-Time",
+  },
+  {
+    title: "Product Designer (Design Systems & Canvas UI)",
+    location: "Remote",
+    type: "Full-Time",
+  },
 ];
 
 export default function CareersPage() {
@@ -29,7 +42,8 @@ export default function CareersPage() {
             Build the Future of Application Architecture
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-xl">
-            We are looking for passionate engineers, designers, and innovators to redefine how developers build software.
+            We are looking for passionate engineers, designers, and innovators
+            to redefine how developers build software.
           </p>
         </div>
 
@@ -43,7 +57,9 @@ export default function CareersPage() {
                 className="p-6 border border-gray-200 rounded-2xl bg-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-gray-300 transition-all"
               >
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-bold text-gray-900">{pos.title}</h3>
+                  <h3 className="text-base font-bold text-gray-900">
+                    {pos.title}
+                  </h3>
                   <div className="flex gap-3 text-xs text-gray-500">
                     <span>{pos.location}</span>
                     <span>•</span>
@@ -64,8 +80,12 @@ export default function CareersPage() {
         {/* General Application */}
         <div className="p-8 bg-gray-50 border border-gray-200 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col gap-1">
-            <h3 className="text-base font-bold text-gray-900">Don&apos;t see your role?</h3>
-            <p className="text-xs text-gray-600">Send your CV and portfolio directly to our founder.</p>
+            <h3 className="text-base font-bold text-gray-900">
+              Don&apos;t see your role?
+            </h3>
+            <p className="text-xs text-gray-600">
+              Send your CV and portfolio directly to our founder.
+            </p>
           </div>
           <a
             href="mailto:founder@dezign2app.com"

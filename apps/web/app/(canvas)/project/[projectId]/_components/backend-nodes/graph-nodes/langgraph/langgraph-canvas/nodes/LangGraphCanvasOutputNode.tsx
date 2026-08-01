@@ -5,17 +5,43 @@ import type { OutputNode, LangGraphCanvasNode } from "../types";
 import { LANGGRAPH_CANVAS_NODE_OUTPUT } from "../constants";
 
 const TRANSPORT_BADGES = {
-  sse: { label: "SSE Stream", color: "bg-purple-500/15 text-purple-400 border-purple-500/30", icon: Radio },
-  websocket: { label: "WebSocket Push", color: "bg-blue-500/15 text-blue-400 border-blue-500/30", icon: Plug },
-  event: { label: "Event Publisher", color: "bg-amber-500/15 text-amber-400 border-amber-500/30", icon: Zap },
-  webhook: { label: "Webhook Dispatcher", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", icon: Globe },
-  rest: { label: "REST Response", color: "bg-secondary text-foreground border-border/50", icon: Radio },
+  sse: {
+    label: "SSE Stream",
+    color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    icon: Radio,
+  },
+  websocket: {
+    label: "WebSocket Push",
+    color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    icon: Plug,
+  },
+  event: {
+    label: "Event Publisher",
+    color: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    icon: Zap,
+  },
+  webhook: {
+    label: "Webhook Dispatcher",
+    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    icon: Globe,
+  },
+  rest: {
+    label: "REST Response",
+    color: "bg-secondary text-foreground border-border/50",
+    icon: Radio,
+  },
 };
 
-export const LangGraphCanvasOutputNode = ({ id, data, selected }: NodeProps<OutputNode>) => {
+export const LangGraphCanvasOutputNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<OutputNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(data.name || data.label || "Output Channel");
+  const [nameValue, setNameValue] = useState(
+    data.name || data.label || "Output Channel",
+  );
 
   useEffect(() => {
     setNameValue(data.name || data.label || "Output Channel");
@@ -23,7 +49,11 @@ export const LangGraphCanvasOutputNode = ({ id, data, selected }: NodeProps<Outp
 
   const updateOutputData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_OUTPUT ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) =>
+        n.id === id && n.type === LANGGRAPH_CANVAS_NODE_OUTPUT
+          ? { ...n, data: { ...n.data, ...changes } }
+          : n,
+      ),
     );
   };
 
@@ -109,8 +139,12 @@ export const LangGraphCanvasOutputNode = ({ id, data, selected }: NodeProps<Outp
       {/* Content */}
       <div className="p-3 flex flex-col gap-2 nodrag text-xs">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transport</span>
-          <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${badgeInfo.color}`}>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            Transport
+          </span>
+          <span
+            className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${badgeInfo.color}`}
+          >
             {badgeInfo.label}
           </span>
         </div>

@@ -54,13 +54,24 @@ interface PlanCardProps {
 }
 
 export function PlanCard({ plan, billing }: PlanCardProps) {
-  const { id, name, desc, price, billingPeriod, freeLabel, featured, features } = plan;
+  const {
+    id,
+    name,
+    desc,
+    price,
+    billingPeriod,
+    freeLabel,
+    featured,
+    features,
+  } = plan;
 
   const displayPrice = price;
 
   return (
-    <div className={`relative border border-gray-200 flex flex-col w-[300px] translate-y-0 rounded-2xl p-7 transition-transform duration-300
-      hover:-translate-y-1 shadow-lg bg-white/60`}>
+    <div
+      className={`relative border border-gray-200 flex flex-col w-[300px] translate-y-0 rounded-2xl p-7 transition-transform duration-300
+      hover:-translate-y-1 shadow-lg bg-white/60`}
+    >
       <PlanIconBadge featured={featured} />
 
       {/* Plan name + desc */}
@@ -91,11 +102,13 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
             >
               ${displayPrice}
             </span>
-            <span className="text-xs mb-2">/ {billingPeriod === "every-year" ? "per year" : "per month"}</span>
+            <span className="text-xs mb-2">
+              / {billingPeriod === "every-year" ? "per year" : "per month"}
+            </span>
           </span>
         )}
       </div>
-      
+
       {/* CTA */}
       <SubscribeButton productId={id} />
       <ul className="flex flex-col gap-2">

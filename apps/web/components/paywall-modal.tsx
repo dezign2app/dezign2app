@@ -1,14 +1,14 @@
 /**
  * ⚠️🚨 IMPORTANT 🚨⚠️
- * 
+ *
  * ARCHITECTURE & SECURITY RECOMMENDATION:
- * 
+ *
  * 1. UX Guard vs. Server-side Enforcement:
  *    This `ROUTE_CONFIG` is a client-side boundary to guide user experience (showing the Paywall
  *    modal and handling friendly redirects). Since client-side code can be bypassed, you MUST
  *    enforce subscription rules on the backend inside your Convex mutations and queries (e.g.,
  *    by calling a helper function like `assertPremiumSubscription(ctx)` before writing database records).
- * 
+ *
  * 2. Fine-Grained Authorization (OpenFGA) vs. Convex-Native checks:
  *    - OpenFGA (Zanzibar-style ReBAC) is designed for resource-level sharing relationships (e.g.,
  *      "User A has editor rights to Workflow B because they belong to Team C").
@@ -17,7 +17,7 @@
  *    - Recommendation: Keep subscription/paywall checks native and reactive in Convex. Querying the
  *      `subscriptions` table directly in Convex is ACID-compliant, has zero additional network latency,
  *      and reactively updates the UI when the user's subscription status changes.
- * 
+ *
  */
 "use client";
 
@@ -29,8 +29,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ReadOnlyBanner } from "./read-only-banner";
 import Link from "next/link";
-
-
 
 /**
  * Access levels defined below:
@@ -124,7 +122,10 @@ export const PaywallModal = ({ children }: { children: React.ReactNode }) => {
         // If Clerk says the user is signed in, but Convex is still reported as unauthenticated
         // or the user record hasn't been created yet (synced by webhook), we wait.
         // This prevents the "sign-in -> dashboard -> pricing" bounce.
-        if (isSignedIn && (status === "unauthenticated" || status === "user_not_found")) {
+        if (
+          isSignedIn &&
+          (status === "unauthenticated" || status === "user_not_found")
+        ) {
           return;
         }
 
@@ -169,7 +170,11 @@ export const PaywallModal = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Handle transient sync states by staying in loader
-  if (isSignedIn && (subscriptionStatus.status === "unauthenticated" || subscriptionStatus.status === "user_not_found")) {
+  if (
+    isSignedIn &&
+    (subscriptionStatus.status === "unauthenticated" ||
+      subscriptionStatus.status === "user_not_found")
+  ) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#1f1f1f]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

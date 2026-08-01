@@ -6,7 +6,9 @@ interface LangGraphStepToolsBadgeProps {
   data: BackendNode["data"];
 }
 
-export const LangGraphStepToolsBadge: React.FC<LangGraphStepToolsBadgeProps> = ({ data }) => {
+export const LangGraphStepToolsBadge: React.FC<
+  LangGraphStepToolsBadgeProps
+> = ({ data }) => {
   const toolsCount = data.tools?.length ?? 0;
   if (toolsCount === 0) return null;
 

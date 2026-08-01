@@ -4,7 +4,12 @@ import { Id } from "@workspace/backend/_generated/dataModel";
 import { redis, realtime } from "../lib/redis";
 import { WORKFLOW_STREAM_TTL_SECONDS } from "./constants";
 import { WorkflowRuntimeEvent } from "./types";
-import { getStreamKey, getRealtimeChannel, redactSensitiveValue, toErrorPayload } from "./utils";
+import {
+  getStreamKey,
+  getRealtimeChannel,
+  redactSensitiveValue,
+  toErrorPayload,
+} from "./utils";
 
 export const publishRealtimeEvent = async (
   runId: Id<"workflow_runs">,

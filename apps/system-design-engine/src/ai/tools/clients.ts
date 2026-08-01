@@ -17,13 +17,17 @@ export const addClientNodeTool = tool(
     const offsetX = Math.floor(Math.random() * 600) - 300;
     const offsetY = Math.floor(Math.random() * 600) - 300;
     const position = state.viewportCenter
-      ? { x: state.viewportCenter.x + offsetX, y: state.viewportCenter.y + offsetY }
+      ? {
+          x: state.viewportCenter.x + offsetX,
+          y: state.viewportCenter.y + offsetY,
+        }
       : { x: 100 + offsetX, y: 100 + offsetY };
-    const fractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+    const fractionalIndex =
+      "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
 
     const processedEvents = (events || []).map((ev) => ({
       ...ev,
-      id: (ev as {id?: string}).id || Math.random().toString(36).slice(2, 9),
+      id: (ev as { id?: string }).id || Math.random().toString(36).slice(2, 9),
     }));
 
     try {
@@ -64,7 +68,8 @@ export const addClientNodeTool = tool(
 
       for (const edge of edgesToCreate) {
         const edgeId = `edge-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const edgeFractionalIndex = "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
+        const edgeFractionalIndex =
+          "a0" + Date.now() + Math.random().toString(36).slice(2, 6);
         await convex.mutation(api.canvas.upsertBackendEdge, {
           projectId: state.projectId as Id<"projects">,
           edgeId,
@@ -79,7 +84,11 @@ export const addClientNodeTool = tool(
 
       let resultStr = `Added client node ${label} with ID ${nodeId} and ${events?.length || 0} events.`;
       if (processedEvents.length > 0) {
-        resultStr += `\nEvents:\n` + processedEvents.map((ev) => `- ${ev.name}: sourceHandle="events-${ev.id}"`).join("\n");
+        resultStr +=
+          `\nEvents:\n` +
+          processedEvents
+            .map((ev) => `- ${ev.name}: sourceHandle="events-${ev.id}"`)
+            .join("\n");
       }
       return resultStr;
     } catch (error: unknown) {
@@ -89,9 +98,12 @@ export const addClientNodeTool = tool(
   },
   {
     name: "add_client_node",
-    description: "Add a Web Client (frontend) node to the backend canvas, including a collection of user events on the page.",
+    description:
+      "Add a Web Client (frontend) node to the backend canvas, including a collection of user events on the page.",
     schema: webClientDataInputSchema.extend({
-      label: z.string().describe("Name of the client page/component (e.g., 'Login Page')"),
-    })
-  }
+      label: z
+        .string()
+        .describe("Name of the client page/component (e.g., 'Login Page')"),
+    }),
+  },
 );

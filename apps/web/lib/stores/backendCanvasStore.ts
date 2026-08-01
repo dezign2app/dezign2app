@@ -8,8 +8,17 @@ import {
   addEdge,
   Connection,
 } from "@xyflow/react";
-import { Endpoint, AnyMessagingResource, MessagingResourceType, IdentityProvider } from "@workspace/canvas/types";
-import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "@workspace/canvas/constants";
+import {
+  Endpoint,
+  AnyMessagingResource,
+  MessagingResourceType,
+  IdentityProvider,
+} from "@workspace/canvas/types";
+import {
+  DEFAULT_LLM_PROVIDER,
+  DEFAULT_LLM_MODEL,
+  DEFAULT_LLM_TEMPERATURE,
+} from "@workspace/canvas/constants";
 import { generateKeyBetween } from "fractional-indexing";
 import { isValidConnection } from "@workspace/canvas";
 
@@ -19,7 +28,9 @@ function getLastIndex(items: { fractionalIndex?: string }[]): string | null {
   return items[items.length - 1]?.fractionalIndex ?? null;
 }
 
-function getMessagingResourceType(node: BackendNode): MessagingResourceType | null {
+function getMessagingResourceType(
+  node: BackendNode,
+): MessagingResourceType | null {
   if (!node || !node.type) return null;
   switch (node.type) {
     case "kafka":
@@ -49,18 +60,24 @@ function syncConfiguredEventEdge(
   nodes: BackendNode[],
   edges: BackendEdge[],
 ): { edges: BackendEdge[]; added: BackendEdge[]; removed: string[] } {
-  const handlePrefix = variant === "publish" ? "publishedEvents-out-" : "consumedEvents-in-";
+  const handlePrefix =
+    variant === "publish" ? "publishedEvents-out-" : "consumedEvents-in-";
   const eventHandle = `${handlePrefix}${event.id}`;
-  const existing = edges.filter((edge) =>
-    edge && (variant === "publish"
-      ? edge.source === ownerNodeId && edge.sourceHandle === eventHandle
-      : edge.target === ownerNodeId && edge.targetHandle === eventHandle),
+  const existing = edges.filter(
+    (edge) =>
+      edge &&
+      (variant === "publish"
+        ? edge.source === ownerNodeId && edge.sourceHandle === eventHandle
+        : edge.target === ownerNodeId && edge.targetHandle === eventHandle),
   );
 
   const broker = nodes.find((node) => node && node.id === event.brokerNodeId);
   const resourceType = broker ? getMessagingResourceType(broker) : null;
   const hasSelection = Boolean(
-    broker && resourceType && event.messagingResourceId && event.messagingResourceId !== "none",
+    broker &&
+    resourceType &&
+    event.messagingResourceId &&
+    event.messagingResourceId !== "none",
   );
 
   let nextEdges = edges;
@@ -69,16 +86,20 @@ function syncConfiguredEventEdge(
       if (!hasSelection) return true;
       const expectedSource = variant === "publish" ? ownerNodeId : broker!.id;
       const expectedTarget = variant === "publish" ? broker!.id : ownerNodeId;
-      const expectedSourceHandle = variant === "publish"
-        ? eventHandle
-        : `${resourceType}:out:${event.messagingResourceId}`;
-      const expectedTargetHandle = variant === "publish"
-        ? `${resourceType}:in:${event.messagingResourceId}`
-        : eventHandle;
-      return edge.source !== expectedSource ||
+      const expectedSourceHandle =
+        variant === "publish"
+          ? eventHandle
+          : `${resourceType}:out:${event.messagingResourceId}`;
+      const expectedTargetHandle =
+        variant === "publish"
+          ? `${resourceType}:in:${event.messagingResourceId}`
+          : eventHandle;
+      return (
+        edge.source !== expectedSource ||
         edge.target !== expectedTarget ||
         edge.sourceHandle !== expectedSourceHandle ||
-        edge.targetHandle !== expectedTargetHandle;
+        edge.targetHandle !== expectedTargetHandle
+      );
     })
     .map((edge) => edge.id);
 
@@ -86,28 +107,38 @@ function syncConfiguredEventEdge(
     nextEdges = nextEdges.filter((edge) => !removed.includes(edge.id));
   }
 
-  const hasExpectedEdge = hasSelection && nextEdges.some((edge) => {
-    if (variant === "publish") {
-      return edge.source === ownerNodeId &&
-        edge.target === broker!.id &&
-        edge.sourceHandle === eventHandle &&
-        edge.targetHandle === `${resourceType}:in:${event.messagingResourceId}`;
-    }
-    return edge.source === broker!.id &&
-      edge.target === ownerNodeId &&
-      edge.sourceHandle === `${resourceType}:out:${event.messagingResourceId}` &&
-      edge.targetHandle === eventHandle;
-  });
+  const hasExpectedEdge =
+    hasSelection &&
+    nextEdges.some((edge) => {
+      if (variant === "publish") {
+        return (
+          edge.source === ownerNodeId &&
+          edge.target === broker!.id &&
+          edge.sourceHandle === eventHandle &&
+          edge.targetHandle ===
+            `${resourceType}:in:${event.messagingResourceId}`
+        );
+      }
+      return (
+        edge.source === broker!.id &&
+        edge.target === ownerNodeId &&
+        edge.sourceHandle ===
+          `${resourceType}:out:${event.messagingResourceId}` &&
+        edge.targetHandle === eventHandle
+      );
+    });
 
   if (!hasExpectedEdge && hasSelection) {
     const source = variant === "publish" ? ownerNodeId : broker!.id;
     const target = variant === "publish" ? broker!.id : ownerNodeId;
-    const sourceHandle = variant === "publish"
-      ? eventHandle
-      : `${resourceType}:out:${event.messagingResourceId}`;
-    const targetHandle = variant === "publish"
-      ? `${resourceType}:in:${event.messagingResourceId}`
-      : eventHandle;
+    const sourceHandle =
+      variant === "publish"
+        ? eventHandle
+        : `${resourceType}:out:${event.messagingResourceId}`;
+    const targetHandle =
+      variant === "publish"
+        ? `${resourceType}:in:${event.messagingResourceId}`
+        : eventHandle;
     const edge: BackendEdge = {
       id: `edge-${Date.now()}-${event.id}`,
       source,
@@ -115,12 +146,15 @@ function syncConfiguredEventEdge(
       type: "message",
       sourceHandle,
       targetHandle,
-      sourceResourceId: variant === "publish" ? undefined : event.messagingResourceId,
-      targetResourceId: variant === "publish" ? event.messagingResourceId : undefined,
+      sourceResourceId:
+        variant === "publish" ? undefined : event.messagingResourceId,
+      targetResourceId:
+        variant === "publish" ? event.messagingResourceId : undefined,
       resourceType: resourceType ?? undefined,
-      fractionalIndex: getLastIndex(nextEdges) === null
-        ? generateKeyBetween(null, null)
-        : generateKeyBetween(getLastIndex(nextEdges), null),
+      fractionalIndex:
+        getLastIndex(nextEdges) === null
+          ? generateKeyBetween(null, null)
+          : generateKeyBetween(getLastIndex(nextEdges), null),
     };
     nextEdges = [...nextEdges, edge];
     return { edges: nextEdges, added: [edge], removed };
@@ -139,13 +173,18 @@ export function parseResourceHandle(handleId: string | null | undefined): {
   if (parts.length === 3) {
     const [resourceType, direction, resourceId] = parts;
     if (
-      (resourceType === "topics" || resourceType === "streams" || resourceType === "queues" || resourceType === "channels" || resourceType === "caches" || resourceType === "buckets") &&
+      (resourceType === "topics" ||
+        resourceType === "streams" ||
+        resourceType === "queues" ||
+        resourceType === "channels" ||
+        resourceType === "caches" ||
+        resourceType === "buckets") &&
       (direction === "in" || direction === "out")
     ) {
       return {
         resourceType: resourceType,
         direction: direction,
-        resourceId: resourceId!
+        resourceId: resourceId!,
       };
     }
   }
@@ -159,10 +198,51 @@ interface BackendCanvasState {
   canvasView: BackendCanvasView;
 
   endpoints: (Endpoint & { nodeId: string })[];
-  events: (AnyMessagingResource & { nodeId: string, variant: 'publish' | 'consume' })[];
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[];
   identityProviders: (IdentityProvider & { nodeId: string })[];
-  activeConfigItem: { type: 'endpoint' | 'event' | 'task' | 'searchIndex' | 'authRule' | 'identityProvider' | 'clientEvent' | 'eventTesting' | 'langgraphRoute', id: string, nodeId: string, edgeId?: string, sourceId?: string, targetNodeId?: string, endpointId?: string, initialTab?: 'trigger' | 'test-cases' } | null;
-  setActiveConfigItem: (item: { type: 'endpoint' | 'event' | 'task' | 'searchIndex' | 'authRule' | 'identityProvider' | 'clientEvent' | 'eventTesting' | 'langgraphRoute', id: string, nodeId: string, edgeId?: string, sourceId?: string, targetNodeId?: string, endpointId?: string, initialTab?: 'trigger' | 'test-cases' } | null) => void;
+  activeConfigItem: {
+    type:
+      | "endpoint"
+      | "event"
+      | "task"
+      | "searchIndex"
+      | "authRule"
+      | "identityProvider"
+      | "clientEvent"
+      | "eventTesting"
+      | "langgraphRoute";
+    id: string;
+    nodeId: string;
+    edgeId?: string;
+    sourceId?: string;
+    targetNodeId?: string;
+    endpointId?: string;
+    initialTab?: "trigger" | "test-cases";
+  } | null;
+  setActiveConfigItem: (
+    item: {
+      type:
+        | "endpoint"
+        | "event"
+        | "task"
+        | "searchIndex"
+        | "authRule"
+        | "identityProvider"
+        | "clientEvent"
+        | "eventTesting"
+        | "langgraphRoute";
+      id: string;
+      nodeId: string;
+      edgeId?: string;
+      sourceId?: string;
+      targetNodeId?: string;
+      endpointId?: string;
+      initialTab?: "trigger" | "test-cases";
+    } | null,
+  ) => void;
 
   // Pending Convex sync ops
   pendingNodeUpserts: BackendNode[];
@@ -170,11 +250,14 @@ interface BackendCanvasState {
   pendingEdgeUpserts: BackendEdge[];
   pendingEdgeRemovals: string[];
   pendingEndpointUpserts: (Endpoint & { nodeId: string })[];
-  pendingEndpointRemovals: { nodeId: string, endpointId: string }[];
-  pendingEventUpserts: (AnyMessagingResource & { nodeId: string, variant: 'publish' | 'consume' })[];
-  pendingEventRemovals: { nodeId: string, eventId: string }[];
+  pendingEndpointRemovals: { nodeId: string; endpointId: string }[];
+  pendingEventUpserts: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[];
+  pendingEventRemovals: { nodeId: string; eventId: string }[];
   pendingIdentityProviderUpserts: (IdentityProvider & { nodeId: string })[];
-  pendingIdentityProviderRemovals: { nodeId: string, providerId: string }[];
+  pendingIdentityProviderRemovals: { nodeId: string; providerId: string }[];
 
   // Deletion confirmation
   nodesPendingDeletion: BackendNode[];
@@ -187,34 +270,52 @@ interface BackendCanvasState {
 
   // Manual actions
   addNode: (node: Omit<BackendNode, "fractionalIndex">) => void;
-  addTableNode: (parentId?: string, position?: { x: number; y: number }) => void;
-  addLangGraphStepNode: (parentId: string, position?: { x: number; y: number }, name?: string, stepType?: string) => void;
+  addTableNode: (
+    parentId?: string,
+    position?: { x: number; y: number },
+  ) => void;
+  addLangGraphStepNode: (
+    parentId: string,
+    position?: { x: number; y: number },
+    name?: string,
+    stepType?: string,
+  ) => void;
   updateNode: (id: string, changes: Partial<BackendNode>) => void;
   deleteNode: (id: string) => void;
   addEdge: (edge: Omit<BackendEdge, "fractionalIndex">) => void;
   updateEdge: (id: string, changes: Partial<BackendEdge>) => void;
   deleteEdge: (id: string) => void;
-  
+
   addEndpoint: (nodeId: string, endpoint: Endpoint) => void;
   updateEndpoint: (id: string, changes: Partial<Endpoint>) => void;
   deleteEndpoint: (id: string) => void;
 
-  addEvent: (nodeId: string, variant: 'publish' | 'consume', event: AnyMessagingResource) => void;
+  addEvent: (
+    nodeId: string,
+    variant: "publish" | "consume",
+    event: AnyMessagingResource,
+  ) => void;
   updateEvent: (id: string, changes: Partial<AnyMessagingResource>) => void;
   deleteEvent: (id: string) => void;
 
   addIdentityProvider: (nodeId: string, provider: IdentityProvider) => void;
-  updateIdentityProvider: (id: string, changes: Partial<IdentityProvider>) => void;
+  updateIdentityProvider: (
+    id: string,
+    changes: Partial<IdentityProvider>,
+  ) => void;
   deleteIdentityProvider: (id: string) => void;
 
   // Bulk load from Convex (no pending ops)
   setNodesAndEdges: (
-    nodes: BackendNode[], 
-    edges: BackendEdge[], 
-    endpoints?: (Endpoint & { nodeId: string })[], 
-    events?: (AnyMessagingResource & { nodeId: string, variant: 'publish' | 'consume' })[],
+    nodes: BackendNode[],
+    edges: BackendEdge[],
+    endpoints?: (Endpoint & { nodeId: string })[],
+    events?: (AnyMessagingResource & {
+      nodeId: string;
+      variant: "publish" | "consume";
+    })[],
     identityProviders?: (IdentityProvider & { nodeId: string })[],
-    projectId?: string
+    projectId?: string,
   ) => void;
   setView: (view: BackendCanvasView) => void;
 
@@ -225,11 +326,14 @@ interface BackendCanvasState {
     syncedEdgeUpserts: BackendEdge[],
     syncedEdgeRemovals: string[],
     syncedEndpointUpserts?: (Endpoint & { nodeId: string })[],
-    syncedEndpointRemovals?: { nodeId: string, endpointId: string }[],
-    syncedEventUpserts?: (AnyMessagingResource & { nodeId: string, variant: 'publish' | 'consume' })[],
-    syncedEventRemovals?: { nodeId: string, eventId: string }[],
+    syncedEndpointRemovals?: { nodeId: string; endpointId: string }[],
+    syncedEventUpserts?: (AnyMessagingResource & {
+      nodeId: string;
+      variant: "publish" | "consume";
+    })[],
+    syncedEventRemovals?: { nodeId: string; eventId: string }[],
     syncedIdentityProviderUpserts?: (IdentityProvider & { nodeId: string })[],
-    syncedIdentityProviderRemovals?: { nodeId: string, providerId: string }[]
+    syncedIdentityProviderRemovals?: { nodeId: string; providerId: string }[],
   ) => void;
   reset: (projectId?: string | null) => void;
 }
@@ -271,15 +375,23 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const persistentChangedNodeIds = new Set(
       changes
         .filter((c) => {
-          if (c.type === "position" || c.type === "add" || c.type === "replace") {
+          if (
+            c.type === "position" ||
+            c.type === "add" ||
+            c.type === "replace"
+          ) {
             return true;
           }
-          if (c.type === "dimensions" && "resizing" in c && Boolean((c as { resizing?: boolean }).resizing)) {
+          if (
+            c.type === "dimensions" &&
+            "resizing" in c &&
+            Boolean((c as { resizing?: boolean }).resizing)
+          ) {
             return true;
           }
           return false;
         })
-        .map((c) => c.id)
+        .map((c) => c.id),
     );
 
     const upserts = next.filter((n) => persistentChangedNodeIds.has(n.id));
@@ -302,20 +414,20 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const persistentChangedEdgeIds = new Set(
       changes
         .filter((c) => c.type === "add" || c.type === "replace")
-        .map((c) => c.id)
+        .map((c) => c.id),
     );
 
     const upserts = next.filter((e) => persistentChangedEdgeIds.has(e.id));
 
     // Sync edge deletion back to node event dropdowns
-    const removedEdges = get().edges.filter(e => removedIds.includes(e.id));
-    
+    const removedEdges = get().edges.filter((e) => removedIds.includes(e.id));
+
     removedEdges.forEach((edge) => {
       if (edge.sourceHandle?.startsWith("publishedEvents-out-")) {
         const eventId = edge.sourceHandle.replace("publishedEvents-out-", "");
         get().updateEvent(eventId, { brokerNodeId: "" });
       }
-      
+
       if (edge.targetHandle?.startsWith("consumedEvents-in-")) {
         const eventId = edge.targetHandle.replace("consumedEvents-in-", "");
         get().updateEvent(eventId, { brokerNodeId: "" });
@@ -330,16 +442,22 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   onConnect: (connection) => {
-    const sourceNode = get().nodes.find(n => n.id === connection.source);
-    const targetNode = get().nodes.find(n => n.id === connection.target);
+    const sourceNode = get().nodes.find((n) => n.id === connection.source);
+    const targetNode = get().nodes.find((n) => n.id === connection.target);
     if (!sourceNode || !targetNode) return;
 
     const result = isValidConnection(
-      sourceNode.type, connection.sourceHandle,
-      targetNode.type, connection.targetHandle,
-      { sourceNodeId: connection.source!, targetNodeId: connection.target!, existingEdges: get().edges }
+      sourceNode.type,
+      connection.sourceHandle,
+      targetNode.type,
+      connection.targetHandle,
+      {
+        sourceNodeId: connection.source!,
+        targetNodeId: connection.target!,
+        existingEdges: get().edges,
+      },
     );
-    
+
     if (!result.valid) {
       console.warn("Invalid connection attempted:", result.message);
       return;
@@ -347,15 +465,19 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
     const edgeType = result.edgeType;
     const isColumnToColumn = edgeType === "foreign-key";
-    const isPublishedConnect = connection.sourceHandle?.startsWith('publishedEvents-out-');
-    const isConsumedConnect = connection.targetHandle?.startsWith('consumedEvents-in-');
+    const isPublishedConnect = connection.sourceHandle?.startsWith(
+      "publishedEvents-out-",
+    );
+    const isConsumedConnect =
+      connection.targetHandle?.startsWith("consumedEvents-in-");
 
     const parsedTarget = parseResourceHandle(connection.targetHandle);
     const parsedSource = parseResourceHandle(connection.sourceHandle);
 
     const targetResourceId = parsedTarget?.resourceId;
     const sourceResourceId = parsedSource?.resourceId;
-    const resourceType = parsedTarget?.resourceType || parsedSource?.resourceType;
+    const resourceType =
+      parsedTarget?.resourceType || parsedSource?.resourceType;
 
     const lastEdgeIndex = getLastIndex(get().edges);
     const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
@@ -372,29 +494,41 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       sourceResourceId,
       resourceType,
     };
-    
+
     // Update targetNodeId on service events if connected via messaging handles
     if (isPublishedConnect && connection.sourceHandle) {
-      const eventId = connection.sourceHandle.replace('publishedEvents-out-', '');
-      get().updateEvent(eventId, { brokerNodeId: connection.target ?? undefined });
+      const eventId = connection.sourceHandle.replace(
+        "publishedEvents-out-",
+        "",
+      );
+      get().updateEvent(eventId, {
+        brokerNodeId: connection.target ?? undefined,
+      });
     }
 
     if (isConsumedConnect && connection.targetHandle) {
-      const eventId = connection.targetHandle.replace('consumedEvents-in-', '');
-      get().updateEvent(eventId, { brokerNodeId: connection.source ?? undefined });
+      const eventId = connection.targetHandle.replace("consumedEvents-in-", "");
+      get().updateEvent(eventId, {
+        brokerNodeId: connection.source ?? undefined,
+      });
     }
 
     // Update source node's column to isForeignKey: true if it's a foreign key edge
-    if (isColumnToColumn && connection.sourceHandle?.startsWith('source-')) {
-       const colIndex = parseInt(connection.sourceHandle.replace('source-', ''), 10);
-       if (!isNaN(colIndex) && sourceNode.data.columns) {
-           const column = sourceNode.data.columns[colIndex];
-           if (column) {
-               const newCols = [...sourceNode.data.columns];
-               newCols[colIndex] = { ...column, isForeignKey: true };
-               get().updateNode(sourceNode.id, { data: { ...sourceNode.data, columns: newCols } });
-           }
-       }
+    if (isColumnToColumn && connection.sourceHandle?.startsWith("source-")) {
+      const colIndex = parseInt(
+        connection.sourceHandle.replace("source-", ""),
+        10,
+      );
+      if (!isNaN(colIndex) && sourceNode.data.columns) {
+        const column = sourceNode.data.columns[colIndex];
+        if (column) {
+          const newCols = [...sourceNode.data.columns];
+          newCols[colIndex] = { ...column, isForeignKey: true };
+          get().updateNode(sourceNode.id, {
+            data: { ...sourceNode.data, columns: newCols },
+          });
+        }
+      }
     }
 
     const next = addEdge(newEdge, get().edges);
@@ -411,7 +545,7 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         get()
           .nodes.filter((n) => n.type === "service")
           .map((n) => parseInt(n.data?.port || "8080", 10))
-          .filter((p) => !isNaN(p))
+          .filter((p) => !isNaN(p)),
       );
       let nextPort = 8080;
       while (existingPorts.has(nextPort)) {
@@ -428,7 +562,7 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const lastNodeIndex = getLastIndex(get().nodes);
     const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
     const node = { ...finalNode, fractionalIndex, selected: true };
-    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
+    const next = [...get().nodes.map((n) => ({ ...n, selected: false })), node];
     set({
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, node],
@@ -446,11 +580,11 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       fractionalIndex,
       data: {
         label: "",
-        columns: [{ name: "_id", type: "UUID", isPrimaryKey: true }] 
+        columns: [{ name: "_id", type: "UUID", isPrimaryKey: true }],
       },
-      selected: true
+      selected: true,
     };
-    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
+    const next = [...get().nodes.map((n) => ({ ...n, selected: false })), node];
     set({
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, node],
@@ -458,7 +592,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   addLangGraphStepNode: (parentId, position, name, stepType) => {
-    const existingCount = get().nodes.filter(n => n.parentId === parentId).length;
+    const existingCount = get().nodes.filter(
+      (n) => n.parentId === parentId,
+    ).length;
     const defaultPos = position || { x: 40 + existingCount * 220, y: 120 };
     const lastNodeIndex = getLastIndex(get().nodes);
     const fractionalIndex = generateKeyBetween(lastNodeIndex, null);
@@ -473,12 +609,18 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       data: {
         label: stepName,
         stepId,
-        stepType: (stepType as NonNullable<BackendNode["data"]["stepType"]>) || "llm_call",
-        modelConfig: { provider: DEFAULT_LLM_PROVIDER, model: DEFAULT_LLM_MODEL, temperature: DEFAULT_LLM_TEMPERATURE },
+        stepType:
+          (stepType as NonNullable<BackendNode["data"]["stepType"]>) ||
+          "llm_call",
+        modelConfig: {
+          provider: DEFAULT_LLM_PROVIDER,
+          model: DEFAULT_LLM_MODEL,
+          temperature: DEFAULT_LLM_TEMPERATURE,
+        },
       },
       selected: true,
     };
-    const next = [...get().nodes.map(n => ({ ...n, selected: false })), node];
+    const next = [...get().nodes.map((n) => ({ ...n, selected: false })), node];
     set({
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, node],
@@ -489,7 +631,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     console.log("backendCanvasStore: updateNode called for id", id, changes);
     const updatedNode = get().nodes.find((n) => n.id === id);
     if (!updatedNode) return;
-    const next = get().nodes.map((n) => (n.id === id ? { ...n, ...changes } : n));
+    const next = get().nodes.map((n) =>
+      n.id === id ? { ...n, ...changes } : n,
+    );
     const updated = next.find((n) => n.id === id)!;
     console.log("backendCanvasStore: adding to pendingNodeUpserts", updated);
 
@@ -499,16 +643,21 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
     if (changes.data?.publishedEvents) {
       const existingPublishEdges = nextEdges.filter(
-        (e) => e.source === id && e.sourceHandle?.startsWith("publishedEvents-out-")
+        (e) =>
+          e.source === id && e.sourceHandle?.startsWith("publishedEvents-out-"),
       );
-      
+
       const currentEvents = changes.data.publishedEvents;
-      
+
       // 1. Remove edges that are no longer referenced or changed targetNodeId
       existingPublishEdges.forEach((edge) => {
         const eventId = edge.sourceHandle?.replace("publishedEvents-out-", "");
         const ev = currentEvents.find((e) => e.id === eventId);
-        if (!ev || ev.targetNodeId !== edge.target || ev.targetNodeId === "none") {
+        if (
+          !ev ||
+          ev.targetNodeId !== edge.target ||
+          ev.targetNodeId === "none"
+        ) {
           nextEdges = nextEdges.filter((e) => e.id !== edge.id);
           edgesChanged = true;
           set({ pendingEdgeRemovals: [...get().pendingEdgeRemovals, edge.id] });
@@ -519,7 +668,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       currentEvents.forEach((ev: { id?: string; targetNodeId?: string }) => {
         if (ev.targetNodeId && ev.targetNodeId !== "none") {
           const hasEdge = existingPublishEdges.some(
-            (e) => e.sourceHandle === `publishedEvents-out-${ev.id}` && e.target === ev.targetNodeId
+            (e) =>
+              e.sourceHandle === `publishedEvents-out-${ev.id}` &&
+              e.target === ev.targetNodeId,
           );
           if (!hasEdge) {
             const lastEdgeIndex = getLastIndex(nextEdges);
@@ -543,16 +694,21 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
     if (changes.data?.consumedEvents) {
       const existingConsumeEdges = nextEdges.filter(
-        (e) => e.target === id && e.targetHandle?.startsWith("consumedEvents-in-")
+        (e) =>
+          e.target === id && e.targetHandle?.startsWith("consumedEvents-in-"),
       );
-      
+
       const currentEvents = changes.data.consumedEvents;
 
       // 1. Remove edges that are no longer referenced or changed
       existingConsumeEdges.forEach((edge) => {
         const eventId = edge.targetHandle?.replace("consumedEvents-in-", "");
         const ev = currentEvents.find((e) => e.id === eventId);
-        if (!ev || ev.targetNodeId !== edge.source || ev.targetNodeId === "none") {
+        if (
+          !ev ||
+          ev.targetNodeId !== edge.source ||
+          ev.targetNodeId === "none"
+        ) {
           nextEdges = nextEdges.filter((e) => e.id !== edge.id);
           edgesChanged = true;
           set({ pendingEdgeRemovals: [...get().pendingEdgeRemovals, edge.id] });
@@ -563,7 +719,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       currentEvents.forEach((ev: { id?: string; targetNodeId?: string }) => {
         if (ev.targetNodeId && ev.targetNodeId !== "none") {
           const hasEdge = existingConsumeEdges.some(
-            (e) => e.targetHandle === `consumedEvents-in-${ev.id}` && e.source === ev.targetNodeId
+            (e) =>
+              e.targetHandle === `consumedEvents-in-${ev.id}` &&
+              e.source === ev.targetNodeId,
           );
           if (!hasEdge) {
             const lastEdgeIndex = getLastIndex(nextEdges);
@@ -595,22 +753,26 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     set(update);
   },
 
-
   deleteNode: (id) => {
     const getChildrenIds = (parentId: string): string[] => {
-      const children = get().nodes.filter(n => n.parentId === parentId).map(n => n.id);
+      const children = get()
+        .nodes.filter((n) => n.parentId === parentId)
+        .map((n) => n.id);
       let allIds = [...children];
       for (const childId of children) {
-         allIds = [...allIds, ...getChildrenIds(childId)];
+        allIds = [...allIds, ...getChildrenIds(childId)];
       }
       return allIds;
     };
-    
+
     const idsToDelete = [id, ...getChildrenIds(id)];
-    
+
     set({
       nodes: get().nodes.filter((n) => !idsToDelete.includes(n.id)),
-      edges: get().edges.filter((e) => !idsToDelete.includes(e.source) && !idsToDelete.includes(e.target)),
+      edges: get().edges.filter(
+        (e) =>
+          !idsToDelete.includes(e.source) && !idsToDelete.includes(e.target),
+      ),
       pendingNodeRemovals: [...get().pendingNodeRemovals, ...idsToDelete],
     });
   },
@@ -627,7 +789,9 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   updateEdge: (id, changes) => {
-    const next = get().edges.map((e) => (e.id === id ? { ...e, ...changes } : e));
+    const next = get().edges.map((e) =>
+      e.id === id ? { ...e, ...changes } : e,
+    );
     const updated = next.find((e) => e.id === id)!;
     set({
       edges: next,
@@ -639,13 +803,15 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const newEndpoint = { ...endpoint, nodeId };
     set({
       endpoints: [...get().endpoints, newEndpoint],
-      pendingEndpointUpserts: [...get().pendingEndpointUpserts, newEndpoint]
+      pendingEndpointUpserts: [...get().pendingEndpointUpserts, newEndpoint],
     });
   },
 
   updateEndpoint: (id, changes) => {
-    const next = get().endpoints.map(e => e.id === id ? { ...e, ...changes } : e);
-    const updated = next.find(e => e.id === id);
+    const next = get().endpoints.map((e) =>
+      e.id === id ? { ...e, ...changes } : e,
+    );
+    const updated = next.find((e) => e.id === id);
     if (updated) {
       let nextEdges = [...get().edges];
       const addedEdges: BackendEdge[] = [];
@@ -653,7 +819,13 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
       if (updated.publishedEvents) {
         for (const event of updated.publishedEvents) {
-          const synced = syncConfiguredEventEdge(event, updated.nodeId, "publish", get().nodes, nextEdges);
+          const synced = syncConfiguredEventEdge(
+            event,
+            updated.nodeId,
+            "publish",
+            get().nodes,
+            nextEdges,
+          );
           nextEdges = synced.edges;
           addedEdges.push(...synced.added);
           removedEdgeIds.push(...synced.removed);
@@ -663,14 +835,17 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       // Sync database table reference edges for this endpoint
       const targetDbNodeIds = new Set<string>();
       if (updated.databaseNodeIds) {
-        updated.databaseNodeIds.forEach((dbId) => dbId && targetDbNodeIds.add(dbId));
+        updated.databaseNodeIds.forEach(
+          (dbId) => dbId && targetDbNodeIds.add(dbId),
+        );
       } else if (updated.databaseNodeId && updated.databaseNodeId !== "none") {
         targetDbNodeIds.add(updated.databaseNodeId);
       }
 
       const epSourceHandle = `endpoint-out-${updated.id}`;
       const existingDbEdges = nextEdges.filter(
-        (e) => e && e.source === updated.nodeId && e.sourceHandle === epSourceHandle
+        (e) =>
+          e && e.source === updated.nodeId && e.sourceHandle === epSourceHandle,
       );
 
       // 1. Remove edges to DB nodes no longer in targetDbNodeIds
@@ -685,7 +860,11 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       targetDbNodeIds.forEach((targetDbId) => {
         const hasEdge = existingDbEdges.some((e) => e.target === targetDbId);
         const targetNode = get().nodes.find((n) => n?.id === targetDbId);
-        if (!hasEdge && targetNode && (targetNode.type === "db_ref" || targetNode.type === "database")) {
+        if (
+          !hasEdge &&
+          targetNode &&
+          (targetNode.type === "db_ref" || targetNode.type === "database")
+        ) {
           const lastEdgeIndex = getLastIndex(nextEdges);
           const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
           const newEdge: BackendEdge = {
@@ -713,11 +892,14 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   deleteEndpoint: (id) => {
-    const endpoint = get().endpoints.find(e => e.id === id);
+    const endpoint = get().endpoints.find((e) => e.id === id);
     if (endpoint) {
       set({
-        endpoints: get().endpoints.filter(e => e.id !== id),
-        pendingEndpointRemovals: [...get().pendingEndpointRemovals, { nodeId: endpoint.nodeId, endpointId: id }]
+        endpoints: get().endpoints.filter((e) => e.id !== id),
+        pendingEndpointRemovals: [
+          ...get().pendingEndpointRemovals,
+          { nodeId: endpoint.nodeId, endpointId: id },
+        ],
       });
     }
   },
@@ -726,13 +908,15 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const newEvent = { ...event, nodeId, variant };
     set({
       events: [...get().events, newEvent],
-      pendingEventUpserts: [...get().pendingEventUpserts, newEvent]
+      pendingEventUpserts: [...get().pendingEventUpserts, newEvent],
     });
   },
 
   updateEvent: (id, changes) => {
-    const next = get().events.map(e => e.id === id ? { ...e, ...changes } : e);
-    const updated = next.find(e => e.id === id);
+    const next = get().events.map((e) =>
+      e.id === id ? { ...e, ...changes } : e,
+    );
+    const updated = next.find((e) => e.id === id);
     if (updated) {
       const synced = syncConfiguredEventEdge(
         updated,
@@ -752,11 +936,14 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   deleteEvent: (id) => {
-    const event = get().events.find(e => e.id === id);
+    const event = get().events.find((e) => e.id === id);
     if (event) {
       set({
-        events: get().events.filter(e => e.id !== id),
-        pendingEventRemovals: [...get().pendingEventRemovals, { nodeId: event.nodeId, eventId: id }]
+        events: get().events.filter((e) => e.id !== id),
+        pendingEventRemovals: [
+          ...get().pendingEventRemovals,
+          { nodeId: event.nodeId, eventId: id },
+        ],
       });
     }
   },
@@ -772,32 +959,50 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
     const newProvider = { ...provider, nodeId };
     set({
       identityProviders: [...get().identityProviders, newProvider],
-      pendingIdentityProviderUpserts: [...get().pendingIdentityProviderUpserts, newProvider]
+      pendingIdentityProviderUpserts: [
+        ...get().pendingIdentityProviderUpserts,
+        newProvider,
+      ],
     });
   },
 
   updateIdentityProvider: (id, changes) => {
-    const next = get().identityProviders.map(p => p.id === id ? { ...p, ...changes } : p);
-    const updated = next.find(p => p.id === id);
+    const next = get().identityProviders.map((p) =>
+      p.id === id ? { ...p, ...changes } : p,
+    );
+    const updated = next.find((p) => p.id === id);
     if (updated) {
       set({
         identityProviders: next,
-        pendingIdentityProviderUpserts: [...get().pendingIdentityProviderUpserts, updated],
+        pendingIdentityProviderUpserts: [
+          ...get().pendingIdentityProviderUpserts,
+          updated,
+        ],
       });
     }
   },
 
   deleteIdentityProvider: (id) => {
-    const provider = get().identityProviders.find(p => p.id === id);
+    const provider = get().identityProviders.find((p) => p.id === id);
     if (provider) {
       set({
-        identityProviders: get().identityProviders.filter(p => p.id !== id),
-        pendingIdentityProviderRemovals: [...get().pendingIdentityProviderRemovals, { nodeId: provider.nodeId, providerId: id }]
+        identityProviders: get().identityProviders.filter((p) => p.id !== id),
+        pendingIdentityProviderRemovals: [
+          ...get().pendingIdentityProviderRemovals,
+          { nodeId: provider.nodeId, providerId: id },
+        ],
       });
     }
   },
 
-  setNodesAndEdges: (nodes, edges, endpoints = [], events = [], identityProviders = [], projectId) =>
+  setNodesAndEdges: (
+    nodes,
+    edges,
+    endpoints = [],
+    events = [],
+    identityProviders = [],
+    projectId,
+  ) =>
     set({
       ...(projectId !== undefined && { projectId }),
       nodes,
@@ -819,18 +1024,55 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
 
   setView: (view) => set({ canvasView: view }),
 
-  clearPending: (syncedNodes, syncedNodeRemovals, syncedEdges, syncedEdgeRemovals, syncedEndpointUpserts = [], syncedEndpointRemovals = [], syncedEventUpserts = [], syncedEventRemovals = [], syncedIdentityProviderUpserts = [], syncedIdentityProviderRemovals = []) =>
+  clearPending: (
+    syncedNodes,
+    syncedNodeRemovals,
+    syncedEdges,
+    syncedEdgeRemovals,
+    syncedEndpointUpserts = [],
+    syncedEndpointRemovals = [],
+    syncedEventUpserts = [],
+    syncedEventRemovals = [],
+    syncedIdentityProviderUpserts = [],
+    syncedIdentityProviderRemovals = [],
+  ) =>
     set((state) => ({
-      pendingNodeUpserts: state.pendingNodeUpserts.filter(n => !syncedNodes.includes(n)),
-      pendingNodeRemovals: state.pendingNodeRemovals.filter(id => !syncedNodeRemovals.includes(id)),
-      pendingEdgeUpserts: state.pendingEdgeUpserts.filter(e => !syncedEdges.includes(e)),
-      pendingEdgeRemovals: state.pendingEdgeRemovals.filter(id => !syncedEdgeRemovals.includes(id)),
-      pendingEndpointUpserts: state.pendingEndpointUpserts.filter(e => !syncedEndpointUpserts.includes(e)),
-      pendingEndpointRemovals: state.pendingEndpointRemovals.filter(r => !syncedEndpointRemovals.some(sr => sr.endpointId === r.endpointId)),
-      pendingEventUpserts: state.pendingEventUpserts.filter(e => !syncedEventUpserts.includes(e)),
-      pendingEventRemovals: state.pendingEventRemovals.filter(r => !syncedEventRemovals.some(sr => sr.eventId === r.eventId)),
-      pendingIdentityProviderUpserts: state.pendingIdentityProviderUpserts.filter(p => !syncedIdentityProviderUpserts.includes(p)),
-      pendingIdentityProviderRemovals: state.pendingIdentityProviderRemovals.filter(r => !syncedIdentityProviderRemovals.some(sr => sr.providerId === r.providerId)),
+      pendingNodeUpserts: state.pendingNodeUpserts.filter(
+        (n) => !syncedNodes.includes(n),
+      ),
+      pendingNodeRemovals: state.pendingNodeRemovals.filter(
+        (id) => !syncedNodeRemovals.includes(id),
+      ),
+      pendingEdgeUpserts: state.pendingEdgeUpserts.filter(
+        (e) => !syncedEdges.includes(e),
+      ),
+      pendingEdgeRemovals: state.pendingEdgeRemovals.filter(
+        (id) => !syncedEdgeRemovals.includes(id),
+      ),
+      pendingEndpointUpserts: state.pendingEndpointUpserts.filter(
+        (e) => !syncedEndpointUpserts.includes(e),
+      ),
+      pendingEndpointRemovals: state.pendingEndpointRemovals.filter(
+        (r) =>
+          !syncedEndpointRemovals.some((sr) => sr.endpointId === r.endpointId),
+      ),
+      pendingEventUpserts: state.pendingEventUpserts.filter(
+        (e) => !syncedEventUpserts.includes(e),
+      ),
+      pendingEventRemovals: state.pendingEventRemovals.filter(
+        (r) => !syncedEventRemovals.some((sr) => sr.eventId === r.eventId),
+      ),
+      pendingIdentityProviderUpserts:
+        state.pendingIdentityProviderUpserts.filter(
+          (p) => !syncedIdentityProviderUpserts.includes(p),
+        ),
+      pendingIdentityProviderRemovals:
+        state.pendingIdentityProviderRemovals.filter(
+          (r) =>
+            !syncedIdentityProviderRemovals.some(
+              (sr) => sr.providerId === r.providerId,
+            ),
+        ),
     })),
 
   reset: (projectId = null) =>

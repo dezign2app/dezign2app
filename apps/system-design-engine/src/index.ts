@@ -1,22 +1,36 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import crypto from 'crypto';
-import { createGraph } from './ai/agent';
-import { formatToolCallLog, formatCanvasState } from './ai/utils';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import { ConvexHttpClient } from 'convex/browser';
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import crypto from "crypto";
+import { createGraph } from "./ai/agent";
+import { formatToolCallLog, formatCanvasState } from "./ai/utils";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/backend/_generated/api";
-import { SupermemorySync } from './knowledge/sync';
-import { extractAuthToken, resolveAuth } from './mcp/auth';
-import { createSession, cleanupOldSessions, Session } from './mcp/session';
+import { SupermemorySync } from "./knowledge/sync";
+import { extractAuthToken, resolveAuth } from "./mcp/auth";
+import { createSession, cleanupOldSessions, Session } from "./mcp/session";
 
-import { TestCaseItem, BackendNodeItem, JSONValue, JSONObject } from '@workspace/canvas';
+import {
+  TestCaseItem,
+  BackendNodeItem,
+  JSONValue,
+  JSONObject,
+} from "@workspace/canvas";
 
 const STRIPPED_KEYS = new Set<string>([
-  "id", "nodeId", "targetNodeId", "brokerNodeId", "messagingResourceId",
-  "sourceResourceId", "targetResourceId", "parentId", "tableRef",
-  "position", "graphPosition", "fractionalIndex",
+  "id",
+  "nodeId",
+  "targetNodeId",
+  "brokerNodeId",
+  "messagingResourceId",
+  "sourceResourceId",
+  "targetResourceId",
+  "parentId",
+  "tableRef",
+  "position",
+  "graphPosition",
+  "fractionalIndex",
 ]);
 
 function stripIds(value: JSONValue): JSONValue {
@@ -25,7 +39,7 @@ function stripIds(value: JSONValue): JSONValue {
     return Object.fromEntries(
       Object.entries(value as JSONObject)
         .filter(([k]) => !STRIPPED_KEYS.has(k))
-        .map(([k, v]) => [k, stripIds(v)])
+        .map(([k, v]) => [k, stripIds(v)]),
     );
   }
   return value;
@@ -33,16 +47,22 @@ function stripIds(value: JSONValue): JSONValue {
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
 
-app.get('/', (req, res) => {
-  res.send('System Design Engine is running!');
+app.get("/", (req, res) => {
+  res.send("System Design Engine is running!");
 });
 
-app.post('/canvas-ai', async (req, res) => {
+app.post("/canvas-ai", async (req, res) => {
   try {
     const body = req.body;
-    const { projectId, chatId, convexUrl: bodyConvexUrl, token, viewportCenter } = body;
+    const {
+      projectId,
+      chatId,
+      convexUrl: bodyConvexUrl,
+      token,
+      viewportCenter,
+    } = body;
 
     if (!chatId || !projectId) {
       res.status(400).send("Missing required fields");
@@ -56,61 +76,94 @@ app.post('/canvas-ai', async (req, res) => {
     }
 
     const client = new ConvexHttpClient(convexUrl);
-    if (token && typeof token === "string" && token.includes(".") && !token.startsWith("sk_")) {
+    if (
+      token &&
+      typeof token === "string" &&
+      token.includes(".") &&
+      !token.startsWith("sk_")
+    ) {
       client.setAuth(token);
     }
 
-    const messages = await client.query(api.project_chat.getMessages, { chatId });
+    const messages = await client.query(api.project_chat.getMessages, {
+      chatId,
+    });
 
     const agent = createGraph();
-    
-    const existingRequirements = await client.query(api.requirements.get, { projectId });
-    const existingPlan = await client.query(api.requirements.getPlan, { projectId });
-    
+
+    const existingRequirements = await client.query(api.requirements.get, {
+      projectId,
+    });
+    const existingPlan = await client.query(api.requirements.getPlan, {
+      projectId,
+    });
+
     // Fetch canvas state directly from backend
-    const elements = await client.query(api.canvas.getBackendElements, { projectId });
+    const elements = await client.query(api.canvas.getBackendElements, {
+      projectId,
+    });
     const backendCanvasState = formatCanvasState(elements);
-    
+
     // Prepare initial state
-    const formattedMessages = messages.map((m) => 
-      m.role === 'assistant' ? new AIMessage(m.content) : new HumanMessage(m.content)
+    const formattedMessages = messages.map((m) =>
+      m.role === "assistant"
+        ? new AIMessage(m.content)
+        : new HumanMessage(m.content),
     );
 
     const graphStream = await agent.streamEvents(
-      { 
+      {
         messages: formattedMessages,
         projectId,
         convexUrl,
         token,
         viewportCenter,
         canvasStateContext: backendCanvasState,
-        requirements: existingRequirements ?? { functional: [], nonFunctional: [], assumptions: [], status: "pending" },
-        implementationPlan: existingPlan ?? { content: "", status: "none" }
+        requirements: existingRequirements ?? {
+          functional: [],
+          nonFunctional: [],
+          assumptions: [],
+          status: "pending",
+        },
+        implementationPlan: existingPlan ?? { content: "", status: "none" },
       },
-      { version: 'v2' }
+      { version: "v2" },
     );
 
-    res.setHeader('Content-Type', 'application/x-ndjson');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
     for await (const event of graphStream) {
-      if (event.event === 'on_chat_model_stream') {
+      if (event.event === "on_chat_model_stream") {
         const nodeName = event.metadata?.langgraph_node;
-        if (nodeName && !['chatAgent', 'canvasAgent', 'reflectAgent', 'requirementsAgent', 'planAgent'].includes(nodeName)) {
+        if (
+          nodeName &&
+          ![
+            "chatAgent",
+            "canvasAgent",
+            "reflectAgent",
+            "requirementsAgent",
+            "planAgent",
+          ].includes(nodeName)
+        ) {
           continue;
         }
 
         const chunk = event.data.chunk;
         if (chunk.content) {
-          res.write(JSON.stringify({ type: 'text', content: chunk.content }) + '\n');
+          res.write(
+            JSON.stringify({ type: "text", content: chunk.content }) + "\n",
+          );
         }
         if (chunk.tool_calls && chunk.tool_calls.length > 0) {
-           for (const call of chunk.tool_calls) {
-             const name = call.name;
-             const message = formatToolCallLog(name, call.args);
-             res.write(JSON.stringify({ type: 'tool_call', name, message }) + '\n');
-           }
+          for (const call of chunk.tool_calls) {
+            const name = call.name;
+            const message = formatToolCallLog(name, call.args);
+            res.write(
+              JSON.stringify({ type: "tool_call", name, message }) + "\n",
+            );
+          }
         }
       }
     }
@@ -118,45 +171,79 @@ app.post('/canvas-ai', async (req, res) => {
   } catch (error: any) {
     console.error("API error:", error);
     if (!res.headersSent) {
-      res.status(500).send(`Internal Server Error: ${error?.message || 'Unknown error'}`);
+      res
+        .status(500)
+        .send(`Internal Server Error: ${error?.message || "Unknown error"}`);
     } else {
-      res.write(JSON.stringify({ type: 'error', message: 'Internal Server Error' }) + '\n');
+      res.write(
+        JSON.stringify({ type: "error", message: "Internal Server Error" }) +
+          "\n",
+      );
       res.end();
     }
   }
 });
 
-app.post('/sync-supermemory', async (req, res) => {
+app.post("/sync-supermemory", async (req, res) => {
   try {
     const body = req.body;
     const { projectId, convexUrl: bodyConvexUrl, token } = body;
 
-    if (!projectId) { res.status(400).send("Missing projectId"); return; }
-    if (!token) { res.status(401).send("Missing authentication token"); return; }
+    if (!projectId) {
+      res.status(400).send("Missing projectId");
+      return;
+    }
+    if (!token) {
+      res.status(401).send("Missing authentication token");
+      return;
+    }
 
     const convexUrl = bodyConvexUrl || process.env.CONVEX_URL;
-    if (!convexUrl) { res.status(500).send("Missing CONVEX_URL environment variable"); return; }
+    if (!convexUrl) {
+      res.status(500).send("Missing CONVEX_URL environment variable");
+      return;
+    }
 
     const client = new ConvexHttpClient(convexUrl);
-    if (token && typeof token === "string" && token.includes(".") && !token.startsWith("sk_")) {
+    if (
+      token &&
+      typeof token === "string" &&
+      token.includes(".") &&
+      !token.startsWith("sk_")
+    ) {
       client.setAuth(token);
     }
 
     let elements;
     try {
-      elements = await client.query(api.canvas.getBackendElements, { projectId });
+      elements = await client.query(api.canvas.getBackendElements, {
+        projectId,
+      });
     } catch (e) {
-      res.status(403).send("Unauthorized or project not found"); return;
+      res.status(403).send("Unauthorized or project not found");
+      return;
     }
 
-    if (!elements) { res.status(404).send("Project not found"); return; }
-    
-    const existingPlan = await client.query(api.requirements.getPlan, { projectId });
+    if (!elements) {
+      res.status(404).send("Project not found");
+      return;
+    }
+
+    const existingPlan = await client.query(api.requirements.getPlan, {
+      projectId,
+    });
     const architectureContent = existingPlan?.content || "";
 
-    const rawNodes: BackendNodeItem[] = (elements.nodes as BackendNodeItem[]) || [];
-    const rawEdges: Array<{ source: string; target: string; type?: string; data?: { label?: string } }> = elements.edges || [];
-    const rawTestCases: TestCaseItem[] = (elements.testCases as TestCaseItem[]) || [];
+    const rawNodes: BackendNodeItem[] =
+      (elements.nodes as BackendNodeItem[]) || [];
+    const rawEdges: Array<{
+      source: string;
+      target: string;
+      type?: string;
+      data?: { label?: string };
+    }> = elements.edges || [];
+    const rawTestCases: TestCaseItem[] =
+      (elements.testCases as TestCaseItem[]) || [];
 
     const nodeNameMap = new Map<string, string>();
     for (const n of rawNodes) {
@@ -192,7 +279,7 @@ app.post('/sync-supermemory', async (req, res) => {
     const nodes = rawNodes.map((n) => {
       const facts: string[] = [];
       const responsibilities: string[] = [];
-      
+
       if (n.data?.description) responsibilities.push(n.data.description);
 
       const label = n.data?.label || n.nodeId;
@@ -203,13 +290,15 @@ app.post('/sync-supermemory', async (req, res) => {
         // Round-trip through JSON to get a clean JSONObject (drops undefined values, class instances, etc.)
         const rawJson = JSON.parse(JSON.stringify(n.data)) as JSONObject;
         const cleanData = stripIds(rawJson);
-        facts.push(`${n.type}: ${label}\n${JSON.stringify(cleanData, null, 2)}`);
+        facts.push(
+          `${n.type}: ${label}\n${JSON.stringify(cleanData, null, 2)}`,
+        );
       }
 
       // Add connections fact — human-readable edge list with names not IDs
       const conns = edgeConnections.get(n.nodeId);
       if (conns && conns.length > 0) {
-        facts.push(`connections:\n${conns.map(c => `  ${c}`).join("\n")}`);
+        facts.push(`connections:\n${conns.map((c) => `  ${c}`).join("\n")}`);
       }
 
       // Collect test cases associated with this node
@@ -217,7 +306,10 @@ app.post('/sync-supermemory', async (req, res) => {
       const seenTcIds = new Set<string>();
 
       const addTc = (tc: TestCaseItem) => {
-        const id = tc.id || tc.testCaseId || `${tc.name || ''}-${tc.targetEventId || ''}`;
+        const id =
+          tc.id ||
+          tc.testCaseId ||
+          `${tc.name || ""}-${tc.targetEventId || ""}`;
         if (!seenTcIds.has(id)) {
           seenTcIds.add(id);
           nodeTestCases.push(tc);
@@ -248,30 +340,41 @@ app.post('/sync-supermemory', async (req, res) => {
 
       if (nodeTestCases.length > 0) {
         const tcLines = nodeTestCases.map((tc) => {
-          let line = `- ${tc.name || 'Unnamed Test Case'}`;
+          let line = `- ${tc.name || "Unnamed Test Case"}`;
           const details: string[] = [];
-          if (tc.expectedStatus !== undefined) details.push(`Expected Status: ${tc.expectedStatus}`);
+          if (tc.expectedStatus !== undefined)
+            details.push(`Expected Status: ${tc.expectedStatus}`);
           if (tc.request?.body !== undefined && tc.request?.body !== null) {
-            const bodyStr = typeof tc.request.body === 'string' ? tc.request.body : JSON.stringify(tc.request.body);
+            const bodyStr =
+              typeof tc.request.body === "string"
+                ? tc.request.body
+                : JSON.stringify(tc.request.body);
             details.push(`Request Body: ${bodyStr}`);
           }
           if (tc.request?.params && Object.keys(tc.request.params).length > 0) {
             details.push(`Params: ${JSON.stringify(tc.request.params)}`);
           }
           if (tc.expectedBody !== undefined && tc.expectedBody !== null) {
-            const expStr = typeof tc.expectedBody === 'string' ? tc.expectedBody : JSON.stringify(tc.expectedBody);
+            const expStr =
+              typeof tc.expectedBody === "string"
+                ? tc.expectedBody
+                : JSON.stringify(tc.expectedBody);
             details.push(`Expected Body: ${expStr}`);
           }
           if (details.length > 0) {
-            line += ` (${details.join(' | ')})`;
+            line += ` (${details.join(" | ")})`;
           }
           return line;
         });
-        facts.push(`Test Cases:\n` + tcLines.join('\n'));
+        facts.push(`Test Cases:\n` + tcLines.join("\n"));
       }
 
-      const dependencies = (edgeDeps.get(n.nodeId) || []).map((id: string) => nodeNameMap.get(id) || id);
-      const dependents = (edgeDepsBy.get(n.nodeId) || []).map((id: string) => nodeNameMap.get(id) || id);
+      const dependencies = (edgeDeps.get(n.nodeId) || []).map(
+        (id: string) => nodeNameMap.get(id) || id,
+      );
+      const dependents = (edgeDepsBy.get(n.nodeId) || []).map(
+        (id: string) => nodeNameMap.get(id) || id,
+      );
 
       return {
         projectId,
@@ -282,13 +385,18 @@ app.post('/sync-supermemory', async (req, res) => {
         dependents,
         responsibilities,
         facts,
-        version: 1
+        version: 1,
       };
     });
 
     const syncId = Date.now().toString();
     const supermemorySync = new SupermemorySync();
-    await supermemorySync.syncGraph(projectId, syncId, nodes, architectureContent);
+    await supermemorySync.syncGraph(
+      projectId,
+      syncId,
+      nodes,
+      architectureContent,
+    );
 
     res.json({ success: true, syncId });
   } catch (error) {
@@ -297,26 +405,41 @@ app.post('/sync-supermemory', async (req, res) => {
   }
 });
 
-app.post('/clear-supermemory', async (req, res) => {
+app.post("/clear-supermemory", async (req, res) => {
   try {
     const body = req.body;
     const { projectId, token, convexUrl: bodyConvexUrl } = body;
 
-    if (!projectId) { res.status(400).send("Missing projectId"); return; }
-    if (!token) { res.status(401).send("Missing authentication token"); return; }
+    if (!projectId) {
+      res.status(400).send("Missing projectId");
+      return;
+    }
+    if (!token) {
+      res.status(401).send("Missing authentication token");
+      return;
+    }
 
     const convexUrl = bodyConvexUrl || process.env.CONVEX_URL;
-    if (!convexUrl) { res.status(500).send("Missing CONVEX_URL environment variable"); return; }
+    if (!convexUrl) {
+      res.status(500).send("Missing CONVEX_URL environment variable");
+      return;
+    }
 
     const client = new ConvexHttpClient(convexUrl);
-    if (token && typeof token === "string" && token.includes(".") && !token.startsWith("sk_")) {
+    if (
+      token &&
+      typeof token === "string" &&
+      token.includes(".") &&
+      !token.startsWith("sk_")
+    ) {
       client.setAuth(token);
     }
 
     try {
       await client.query(api.canvas.getBackendElements, { projectId });
     } catch (e) {
-      res.status(403).send("Unauthorized or project not found"); return;
+      res.status(403).send("Unauthorized or project not found");
+      return;
     }
 
     const supermemorySync = new SupermemorySync();
@@ -329,14 +452,17 @@ app.post('/clear-supermemory', async (req, res) => {
   }
 });
 
-import { generateCacheConfig } from './ai/cache-generator';
+import { generateCacheConfig } from "./ai/cache-generator";
 
-app.post('/test-supermemory-fetch', async (req, res) => {
+app.post("/test-supermemory-fetch", async (req, res) => {
   try {
     const body = req.body;
     const { projectId, query } = body;
 
-    if (!projectId || !query) { res.status(400).send("Missing projectId or query"); return; }
+    if (!projectId || !query) {
+      res.status(400).send("Missing projectId or query");
+      return;
+    }
 
     const supermemorySync = new SupermemorySync();
     const result = await supermemorySync.buildCodingContext(projectId, query);
@@ -348,7 +474,7 @@ app.post('/test-supermemory-fetch', async (req, res) => {
   }
 });
 
-app.post('/generate-cache-config', async (req, res) => {
+app.post("/generate-cache-config", async (req, res) => {
   try {
     const { description } = req.body;
     if (!description) {
@@ -372,20 +498,23 @@ setInterval(() => {
   cleanupOldSessions(sessions, SESSION_MAX_AGE);
 }, SESSION_CLEANUP_INTERVAL);
 
-app.options('/mcp', (req, res) => {
+app.options("/mcp", (req, res) => {
   res.sendStatus(204);
 });
 
-app.all('/mcp', async (req, res) => {
+app.all("/mcp", async (req, res) => {
   try {
-    const existingSessionId = req.headers["mcp-session-id"] as string | undefined;
+    const existingSessionId = req.headers["mcp-session-id"] as
+      | string
+      | undefined;
 
     console.log(`\n[DEBUG] ${req.method} /mcp`);
 
     const authToken = extractAuthToken(req);
 
     // Detect if this is an initialize request
-    const isInitialize = req.method === "POST" && req.body?.method === "initialize";
+    const isInitialize =
+      req.method === "POST" && req.body?.method === "initialize";
 
     let sessionId: string;
 
@@ -394,13 +523,15 @@ app.all('/mcp', async (req, res) => {
       const authContext = authToken ? await resolveAuth(authToken) : null;
 
       if (!authContext) {
-        console.warn(`[AUTH] Warning: No valid auth token provided. Allowing unauthenticated session for local testing.`);
+        console.warn(
+          `[AUTH] Warning: No valid auth token provided. Allowing unauthenticated session for local testing.`,
+        );
       }
 
       // Create a fresh session for initialize requests
       sessionId = crypto.randomUUID();
       console.log(
-        `\n[REQUEST] ${req.method} /mcp | New session=${sessionId} | Auth: user=${authContext?.userId || 'anonymous'}`,
+        `\n[REQUEST] ${req.method} /mcp | New session=${sessionId} | Auth: user=${authContext?.userId || "anonymous"}`,
       );
 
       const session = await createSession(sessionId, authContext);
@@ -434,12 +565,14 @@ app.all('/mcp', async (req, res) => {
       if (authToken) {
         const auth = await resolveAuth(authToken);
         if (auth && (!session.userId || session.userId !== auth.userId)) {
-           console.log(`[AUTH] Updating session ${sessionId} context for user ${auth.userId}`);
-           session.userId = auth.userId;
-           session.orgId = auth.orgId;
-           session.keyId = auth.keyId;
-           session.projectId = auth.projectId;
-           session.clerkToken = auth.token;
+          console.log(
+            `[AUTH] Updating session ${sessionId} context for user ${auth.userId}`,
+          );
+          session.userId = auth.userId;
+          session.orgId = auth.orgId;
+          session.keyId = auth.keyId;
+          session.projectId = auth.projectId;
+          session.clerkToken = auth.token;
         }
       }
 
@@ -461,9 +594,7 @@ app.all('/mcp', async (req, res) => {
   }
 });
 
-
 const port = 3002;
 app.listen(port, () => {
   console.log(`System Design Engine is running on port ${port} (Express)`);
 });
-

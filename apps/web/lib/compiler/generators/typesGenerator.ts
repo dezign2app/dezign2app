@@ -12,7 +12,10 @@ import {
 export function generateTypesPackage(
   nodes: BackendNode[],
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = []
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const barrelExports: string[] = [];
@@ -23,7 +26,8 @@ export function generateTypesPackage(
       name: "@workspace/types",
       version: "0.0.0",
       private: true,
-      description: "Shared TypeScript interfaces and Zod schemas across microservices and frontend clients",
+      description:
+        "Shared TypeScript interfaces and Zod schemas across microservices and frontend clients",
       main: "src/index.ts",
       types: "src/index.ts",
       scripts: {
@@ -39,7 +43,7 @@ export function generateTypesPackage(
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "package.json",
@@ -58,7 +62,7 @@ export function generateTypesPackage(
       include: ["src/**/*"],
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "tsconfig.json",
@@ -72,13 +76,14 @@ export function generateTypesPackage(
       n.type === "service" ||
       n.type === "api_gateway" ||
       n.type === "serverless" ||
-      Boolean(n.data && (n.data.endpoints || n.data.routeGroups))
+      Boolean(n.data && (n.data.endpoints || n.data.routeGroups)),
   );
 
   const processedServiceFolders = new Set<string>();
 
   endpointNodes.forEach((serviceNode) => {
-    const rawServiceName = serviceNode.data.label || serviceNode.id || "Service";
+    const rawServiceName =
+      serviceNode.data.label || serviceNode.id || "Service";
     let serviceFolderName = toVarName(rawServiceName) || "service";
     let pascalServiceName = toPascalCase(rawServiceName);
 
@@ -87,11 +92,13 @@ export function generateTypesPackage(
       pascalServiceName = `${pascalServiceName}_${toPascalCase(serviceNode.id)}`;
     }
     processedServiceFolders.add(serviceFolderName);
-    
+
     // Gather all endpoints for this node
     let nodeEndpoints = endpoints.filter((e) => e.nodeId === serviceNode.id);
     if (nodeEndpoints.length === 0 && serviceNode.data?.endpoints) {
-      nodeEndpoints = serviceNode.data.endpoints as (Endpoint & { nodeId: string })[];
+      nodeEndpoints = serviceNode.data.endpoints as (Endpoint & {
+        nodeId: string;
+      })[];
     }
     if (serviceNode.data?.routeGroups) {
       for (const group of serviceNode.data.routeGroups as any[]) {
@@ -108,7 +115,8 @@ export function generateTypesPackage(
       nodeEndpoints.forEach((ep, index) => {
         const method = (ep.type || "GET").toLowerCase();
         const rawName = ep.name || ep.id || "route";
-        let routeFileName = toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
+        let routeFileName =
+          toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
 
         if (usedFileNames.has(routeFileName)) {
           routeFileName = `${routeFileName}_${index + 1}`;
@@ -120,13 +128,34 @@ export function generateTypesPackage(
         const schemaVarPrefix = `${serviceFolderName}${toPascalCase(routeFileName)}`;
         const isBodyMethod = ["post", "put", "patch"].includes(method);
 
-        const paramsTypeRes = parametersToTsInterface(`${pascalName}Params`, ep.pathParams, true);
-        const queryTypeRes = parametersToTsInterface(`${pascalName}Query`, ep.queryParams, false);
-        const bodyTypeRes = schemaToTsInterface(`${pascalName}Body`, ep.requestBody);
-        const responseTypeRes = schemaToTsInterface(`${pascalName}Response`, ep.responseBody);
+        const paramsTypeRes = parametersToTsInterface(
+          `${pascalName}Params`,
+          ep.pathParams,
+          true,
+        );
+        const queryTypeRes = parametersToTsInterface(
+          `${pascalName}Query`,
+          ep.queryParams,
+          false,
+        );
+        const bodyTypeRes = schemaToTsInterface(
+          `${pascalName}Body`,
+          ep.requestBody,
+        );
+        const responseTypeRes = schemaToTsInterface(
+          `${pascalName}Response`,
+          ep.responseBody,
+        );
 
-        const queryZodRes = parametersToZodSchema(`${schemaVarPrefix}QuerySchema`, ep.queryParams, false);
-        const bodyZodRes = schemaToZodSchema(`${schemaVarPrefix}BodySchema`, ep.requestBody);
+        const queryZodRes = parametersToZodSchema(
+          `${schemaVarPrefix}QuerySchema`,
+          ep.queryParams,
+          false,
+        );
+        const bodyZodRes = schemaToZodSchema(
+          `${schemaVarPrefix}BodySchema`,
+          ep.requestBody,
+        );
 
         let singleRouteCode = `import { z } from "zod";\n\n`;
         singleRouteCode += `/**\n * ${ep.type || "GET"} ${ep.name || "/"}\n * Service: ${rawServiceName}\n * ${ep.summary || "Route Schema"}\n */\n`;
@@ -168,7 +197,9 @@ export function generateTypesPackage(
       });
 
       barrelExports.push(`export * from "./${serviceFolderName}";`);
-      barrelExports.push(`export * as ${pascalServiceName} from "./${serviceFolderName}";`);
+      barrelExports.push(
+        `export * as ${pascalServiceName} from "./${serviceFolderName}";`,
+      );
     }
   });
 

@@ -67,58 +67,112 @@ export function MiddlewareNodeInspector({
 
       {/* Type-Specific Configurations */}
       {currentType === MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP && (
-        <HumanInTheLoopConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <HumanInTheLoopConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_SUMMARIZATION && (
-        <SummarizationConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <SummarizationConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_MODEL_CALL_LIMIT && (
-        <ModelCallLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ModelCallLimitConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_TOOL_CALL_LIMIT && (
-        <ToolCallLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ToolCallLimitConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_MODEL_FALLBACK && (
-        <ModelFallbackConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ModelFallbackConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_PII_DETECTION && (
-        <PiiDetectionConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <PiiDetectionConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_TODO_LIST && (
-        <TodoListConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <TodoListConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_LLM_TOOL_SELECTOR && (
-        <LlmToolSelectorConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <LlmToolSelectorConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_TOOL_RETRY && (
-        <ToolRetryConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ToolRetryConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_MODEL_RETRY && (
-        <ModelRetryConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ModelRetryConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_LLM_TOOL_EMULATOR && (
-        <LlmToolEmulatorConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <LlmToolEmulatorConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_CONTEXT_EDITING && (
-        <ContextEditingConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ContextEditingConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_PROVIDER_TOOL_SEARCH && (
-        <ProviderToolSearchConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <ProviderToolSearchConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_FILESYSTEM && (
-        <FilesystemConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <FilesystemConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_SUBAGENT && (
-        <SubagentConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <SubagentConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_RATE_LIMIT && (
-        <RateLimitConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <RateLimitConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_LOGGING_TRACING && (
-        <LoggingTracingConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <LoggingTracingConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
       {currentType === MIDDLEWARE_TYPE_CUSTOM && (
-        <CustomMiddlewareConfig data={selectedMiddlewareData} onUpdate={onUpdateMiddleware} />
+        <CustomMiddlewareConfig
+          data={selectedMiddlewareData}
+          onUpdate={onUpdateMiddleware}
+        />
       )}
     </div>
   );

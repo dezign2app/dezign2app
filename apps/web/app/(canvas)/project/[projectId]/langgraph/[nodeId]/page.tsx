@@ -19,7 +19,9 @@ export default function LangGraphStudioPage({
 
   // Hydrate store from Convex
   const { isLoading } = useBackendSync(projectId, "graph");
-  const node = useBackendCanvasStore((s) => s.nodes.find((n) => n.id === nodeId));
+  const node = useBackendCanvasStore((s) =>
+    s.nodes.find((n) => n.id === nodeId),
+  );
 
   const handleClose = () => {
     router.push(`/project/${projectId}`);
@@ -38,7 +40,9 @@ export default function LangGraphStudioPage({
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-background text-foreground gap-4">
         <h2 className="text-lg font-bold">LangGraph Agent Node Not Found</h2>
-        <p className="text-sm text-muted-foreground">The node "{nodeId}" could not be found in this project.</p>
+        <p className="text-sm text-muted-foreground">
+          The node "{nodeId}" could not be found in this project.
+        </p>
         <Button onClick={handleClose} variant="outline" className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Return to Architecture Canvas
         </Button>

@@ -42,9 +42,9 @@ aiRouter.post("/history", async (req: Request, res: Response) => {
   const streamKey = `agent:stream:${streamId}`;
   try {
     const items = await redis.lrange(streamKey, 0, -1);
-    
+
     const parsed = items
-      .map(item => {
+      .map((item) => {
         try {
           return typeof item === "string" ? JSON.parse(item) : item;
         } catch {

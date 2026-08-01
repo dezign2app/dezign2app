@@ -37,7 +37,7 @@ export function compileUiPackage(): { files: CompiledFile[] } {
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "package.json",
@@ -84,7 +84,7 @@ export default config;
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "components.json",
@@ -106,7 +106,7 @@ export default config;
       include: ["src"],
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "tsconfig.json",

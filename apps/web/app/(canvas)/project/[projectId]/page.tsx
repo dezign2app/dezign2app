@@ -12,20 +12,27 @@ import { AiPanel } from "./_components/AiPanel";
 import { Loader2 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 
-export default function ProjectCanvasPage({ params }: { params: Promise<{ projectId: string }> }) {
+export default function ProjectCanvasPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
   const { projectId } = React.use(params);
-
 
   const [view, setView] = useQueryState<BackendCanvasView>(
     "view",
-    parseAsStringEnum<BackendCanvasView>(["graph", "sequence", "schema"]).withDefault("graph")
+    parseAsStringEnum<BackendCanvasView>([
+      "graph",
+      "sequence",
+      "schema",
+    ]).withDefault("graph"),
   );
 
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   // Fetch project basic info to show in toolbar
-  const project = useQuery(api.projects.getProjectById, { 
-    projectId: projectId as Id<"projects"> 
+  const project = useQuery(api.projects.getProjectById, {
+    projectId: projectId as Id<"projects">,
   });
 
   if (project === undefined) {
@@ -55,16 +62,16 @@ export default function ProjectCanvasPage({ params }: { params: Promise<{ projec
           aiPanelOpen={aiPanelOpen}
           setAiPanelOpen={setAiPanelOpen}
         />
-        
+
         <div className="flex-1 relative overflow-hidden flex">
           <div className="flex-1 relative">
             <BackendCanvas projectId={projectId} view={view} />
           </div>
-          
-          <AiPanel 
-            projectId={projectId} 
-            isOpen={aiPanelOpen} 
-            onClose={() => setAiPanelOpen(false)} 
+
+          <AiPanel
+            projectId={projectId}
+            isOpen={aiPanelOpen}
+            onClose={() => setAiPanelOpen(false)}
             setView={setView}
           />
         </div>

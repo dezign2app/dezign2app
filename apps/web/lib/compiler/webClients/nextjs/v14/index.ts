@@ -1,5 +1,9 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource, UIEventItem } from "@workspace/canvas/types";
+import {
+  Endpoint,
+  AnyMessagingResource,
+  UIEventItem,
+} from "@workspace/canvas/types";
 import { CompiledFile, CompiledWebClientResult } from "../../../types";
 import { generateWebClientE2ETests } from "../../../generators/testGenerator";
 
@@ -24,7 +28,7 @@ export function resolveLinkedEndpoint(
   allNodes: BackendNode[],
   allEdges: BackendEdge[],
   allEndpoints: (Endpoint & { nodeId: string })[] = [],
-  depth: number = 0
+  depth: number = 0,
 ): LinkedEndpointInfo | null {
   if (depth > 5) return null;
 
@@ -33,7 +37,7 @@ export function resolveLinkedEndpoint(
       e.source === fromNodeId &&
       (e.sourceHandle === `events-${eventId}` ||
         e.sourceHandle === eventId ||
-        e.sourceHandle?.endsWith(eventId))
+        e.sourceHandle?.endsWith(eventId)),
   );
 
   if (!edge || !edge.target) return null;
@@ -50,8 +54,18 @@ export function resolveLinkedEndpoint(
     targetHandle.startsWith("ws-in-") ||
     targetHandle.startsWith("event-in-")
   ) {
-    const nextEventId = targetHandle.replace(/^(pageload|sse|websocket|ws|event)-in-/, "");
-    return resolveLinkedEndpoint(edge.target, nextEventId, allNodes, allEdges, allEndpoints, depth + 1);
+    const nextEventId = targetHandle.replace(
+      /^(pageload|sse|websocket|ws|event)-in-/,
+      "",
+    );
+    return resolveLinkedEndpoint(
+      edge.target,
+      nextEventId,
+      allNodes,
+      allEdges,
+      allEndpoints,
+      depth + 1,
+    );
   }
 
   if (targetNode.type === "service") {
@@ -59,7 +73,10 @@ export function resolveLinkedEndpoint(
     const targetServiceName = targetNode.data?.label || "Service";
 
     let endpointId = targetHandle
-      ? targetHandle.replace(/^(endpoint-in-|endpoint-out-|endpoints-in-|endpoints-out-|events-in-|events-out-)/, "")
+      ? targetHandle.replace(
+          /^(endpoint-in-|endpoint-out-|endpoints-in-|endpoints-out-|events-in-|events-out-)/,
+          "",
+        )
       : undefined;
 
     if (endpointId && endpointId.includes("-in-")) {
@@ -70,16 +87,24 @@ export function resolveLinkedEndpoint(
     let ep: Endpoint | undefined;
 
     if (endpointId) {
-      ep = allEndpoints.find((e) => e.nodeId === targetNode.id && (e.id === endpointId || e.name === endpointId));
+      ep = allEndpoints.find(
+        (e) =>
+          e.nodeId === targetNode.id &&
+          (e.id === endpointId || e.name === endpointId),
+      );
 
       if (!ep && targetNode.data?.endpoints) {
-        ep = (targetNode.data.endpoints as Endpoint[]).find((e) => e.id === endpointId || e.name === endpointId);
+        ep = (targetNode.data.endpoints as Endpoint[]).find(
+          (e) => e.id === endpointId || e.name === endpointId,
+        );
       }
 
       if (!ep && targetNode.data?.routeGroups) {
         for (const group of targetNode.data.routeGroups as any[]) {
           if (group.endpoints) {
-            ep = group.endpoints.find((e: Endpoint) => e.id === endpointId || e.name === endpointId);
+            ep = group.endpoints.find(
+              (e: Endpoint) => e.id === endpointId || e.name === endpointId,
+            );
             if (ep) break;
           }
         }
@@ -87,23 +112,36 @@ export function resolveLinkedEndpoint(
     }
 
     if (!ep && endpointId) {
-      const consumed = targetNode.data?.consumedEvents?.find((e: any) => e.id === endpointId || e.name === endpointId);
-      const published = targetNode.data?.publishedEvents?.find((e: any) => e.id === endpointId || e.name === endpointId);
+      const consumed = targetNode.data?.consumedEvents?.find(
+        (e: any) => e.id === endpointId || e.name === endpointId,
+      );
+      const published = targetNode.data?.publishedEvents?.find(
+        (e: any) => e.id === endpointId || e.name === endpointId,
+      );
       const eventMatch = consumed || published;
       if (eventMatch) {
         ep = {
           id: eventMatch.id,
-          name: eventMatch.name ? (eventMatch.name.startsWith("/") ? eventMatch.name : `/events/${eventMatch.name}`) : "/events",
+          name: eventMatch.name
+            ? eventMatch.name.startsWith("/")
+              ? eventMatch.name
+              : `/events/${eventMatch.name}`
+            : "/events",
           type: "POST",
         };
       }
     }
 
     if (!ep) {
-      const srvEndpoints = allEndpoints.filter((e) => e.nodeId === targetNode.id);
+      const srvEndpoints = allEndpoints.filter(
+        (e) => e.nodeId === targetNode.id,
+      );
       if (srvEndpoints.length > 0) {
         ep = srvEndpoints[0];
-      } else if (targetNode.data?.endpoints && (targetNode.data.endpoints as Endpoint[]).length > 0) {
+      } else if (
+        targetNode.data?.endpoints &&
+        (targetNode.data.endpoints as Endpoint[]).length > 0
+      ) {
         ep = (targetNode.data.endpoints as Endpoint[])[0];
       }
     }
@@ -128,14 +166,24 @@ export function resolveLinkedEndpoint(
     };
   }
 
-  if (targetNode.type === "api_gateway" || targetNode.type === "load_balancer") {
+  if (
+    targetNode.type === "api_gateway" ||
+    targetNode.type === "load_balancer"
+  ) {
     const gatewayPort = targetNode.data?.port || "8000";
     const outgoingEdge = allEdges.find((e) => e.source === targetNode.id);
     if (outgoingEdge) {
       const downstreamNode = allNodes.find((n) => n.id === outgoingEdge.target);
       if (downstreamNode && downstreamNode.type === "service") {
         const downstreamPort = getServicePort(downstreamNode);
-        const resolved = resolveLinkedEndpoint(targetNode.id, eventId, allNodes, allEdges, allEndpoints, depth + 1);
+        const resolved = resolveLinkedEndpoint(
+          targetNode.id,
+          eventId,
+          allNodes,
+          allEdges,
+          allEndpoints,
+          depth + 1,
+        );
         if (resolved) {
           return resolved;
         }
@@ -162,7 +210,15 @@ export function resolveLinkedEndpoint(
     };
   }
 
-  const messagingTypes = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+  const messagingTypes = [
+    "kafka",
+    "sqs",
+    "redis-streams",
+    "redis-pubsub",
+    "pubsub",
+    "eventstream",
+    "queue",
+  ];
   if (messagingTypes.includes(targetNode.type)) {
     const resourceList =
       targetNode.data?.topics ||
@@ -210,11 +266,14 @@ function slugToComponentName(slug: string): string {
 export function compileNextjsV14WebClient(
   webClientNodes: BackendNode[],
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
   projectName: string = "Blueprint Monorepo",
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledWebClientResult {
   const files: CompiledFile[] = [];
 
@@ -239,7 +298,8 @@ export function compileNextjsV14WebClient(
     }
     usedSlugs.add(slug);
 
-    const isRoot = idx === 0 && (slug === "home" || webClientNodes.length === 1);
+    const isRoot =
+      idx === 0 && (slug === "home" || webClientNodes.length === 1);
     const routePath = isRoot ? "/" : `/${slug}`;
     const componentName = slugToComponentName(slug);
 
@@ -286,7 +346,7 @@ export function compileNextjsV14WebClient(
       },
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "package.json",
@@ -336,7 +396,7 @@ export function compileNextjsV14WebClient(
       exclude: ["node_modules"],
     },
     null,
-    2
+    2,
   );
   files.push({
     filename: "tsconfig.json",
@@ -369,7 +429,7 @@ export default nextConfig;
   const pagesNavLinks = pagesInfo
     .map(
       (p) =>
-        `<Link href="${p.routePath}" className="hover:text-indigo-400 transition-colors font-medium">${p.label}</Link>`
+        `<Link href="${p.routePath}" className="hover:text-indigo-400 transition-colors font-medium">${p.label}</Link>`,
     )
     .join("\n              ");
 
@@ -424,7 +484,9 @@ export default function RootLayout({
       return eStr === "pageload" || eStr === "onload";
     });
 
-    const actionEvents = rawEvents.filter((evt) => !pageLoadEvents.includes(evt));
+    const actionEvents = rawEvents.filter(
+      (evt) => !pageLoadEvents.includes(evt),
+    );
 
     let pageLoadFetchStatements = "";
     if (pageLoadEvents.length === 0) {
@@ -432,7 +494,13 @@ export default function RootLayout({
     } else {
       const statements: string[] = [];
       pageLoadEvents.forEach((evt, eIdx) => {
-        const link = resolveLinkedEndpoint(node.id, evt.id, allNodes, allEdges, endpoints);
+        const link = resolveLinkedEndpoint(
+          node.id,
+          evt.id,
+          allNodes,
+          allEdges,
+          endpoints,
+        );
         const eventNameStr = evt.name || "pageLoad";
         if (link) {
           statements.push(`
@@ -473,7 +541,13 @@ export default function RootLayout({
       actionButtonsJsx = `<p className="text-slate-500 text-sm italic">No click or trigger events configured for this page node.</p>`;
     } else {
       const buttonElems = actionEvents.map((evt) => {
-        const link = resolveLinkedEndpoint(node.id, evt.id, allNodes, allEdges, endpoints);
+        const link = resolveLinkedEndpoint(
+          node.id,
+          evt.id,
+          allNodes,
+          allEdges,
+          endpoints,
+        );
         const url = link ? link.fullUrl : "";
         const method = link ? link.method : "POST";
         const evtName = evt.name || "Action";
@@ -730,7 +804,7 @@ export default function ${pageMeta.componentName}() {
             <div className="flex items-center text-xs text-indigo-400 font-semibold group-hover:translate-x-1 transition-transform">
               Open Page &rarr;
             </div>
-          </Link>`
+          </Link>`,
       )
       .join("\n");
 
@@ -770,10 +844,23 @@ export default function WebClientIndexPage() {
   }
 
   // 8. Generate WebClient Playwright E2E Tests
-  files.push(...generateWebClientE2ETests(webClientNodes, endpoints, events, allNodes, allEdges, testCases));
+  files.push(
+    ...generateWebClientE2ETests(
+      webClientNodes,
+      endpoints,
+      events,
+      allNodes,
+      allEdges,
+      testCases,
+    ),
+  );
 
-  const webClientName = webClientNodes.length === 1 ? webClientNodes[0]?.data.label || "web-client" : "web-client";
-  const webClientId = webClientNodes.length === 1 ? webClientNodes[0]!.id : "web-client";
+  const webClientName =
+    webClientNodes.length === 1
+      ? webClientNodes[0]?.data.label || "web-client"
+      : "web-client";
+  const webClientId =
+    webClientNodes.length === 1 ? webClientNodes[0]!.id : "web-client";
 
   return {
     webClientId,

@@ -1,4 +1,3 @@
-
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ConvexError } from "convex/values";
@@ -24,7 +23,7 @@ function generateRawKey() {
 }
 
 export const generate = mutation({
-  args: { 
+  args: {
     name: v.optional(v.string()),
     projectId: v.optional(v.string()),
   },
@@ -36,7 +35,7 @@ export const generate = mutation({
 
     const rawKey = generateRawKey();
     const keyHash = await hashKey(rawKey);
-    
+
     await ctx.db.insert("api_keys", {
       keyHash,
       userId: identity.subject,
@@ -69,7 +68,7 @@ export const list = query({
 });
 
 export const listPaginated = query({
-  args: { 
+  args: {
     paginationOpts: paginationOptsValidator,
   },
   async handler(ctx, args) {
@@ -97,7 +96,7 @@ export const listPaginated = query({
           }
         }
         return { ...key, projectName };
-      })
+      }),
     );
 
     return {
@@ -117,8 +116,8 @@ export const revoke = mutation({
     }
 
     const existing = await ctx.db.get(args.id);
-    if (!existing) return; 
-    
+    if (!existing) return;
+
     if (existing.userId !== identity.subject) {
       throw new ConvexError("Unauthorized");
     }
@@ -128,7 +127,7 @@ export const revoke = mutation({
 });
 
 export const validate = query({
-  args: { 
+  args: {
     key: v.string(),
   },
   async handler(ctx, args) {

@@ -16,7 +16,14 @@ export function SimulationTerminal() {
   const scrollRef = useRef<HTMLElement>(null);
 
   const visibleTrace = trace.slice(0, activeIndex + 1);
-  const statusLabel = status === "idle" ? "READY" : status === "running" ? "RUNNING" : status === "failed" ? "FAILED" : "COMPLETE";
+  const statusLabel =
+    status === "idle"
+      ? "READY"
+      : status === "running"
+        ? "RUNNING"
+        : status === "failed"
+          ? "FAILED"
+          : "COMPLETE";
 
   const innerRef = useRef<HTMLDivElement>(null);
 
@@ -42,13 +49,15 @@ export function SimulationTerminal() {
   return (
     <section
       ref={scrollRef}
-      className="w-[min(720px,calc(100vw-3rem))] max-h-60 overflow-y-auto rounded-lg border bg-background/95 shadow-lg backdrop-blur hide-scrollbar" 
+      className="w-[min(720px,calc(100vw-3rem))] max-h-60 overflow-y-auto rounded-lg border bg-background/95 shadow-lg backdrop-blur hide-scrollbar"
       aria-label="Simulation terminal"
     >
       <header className="flex items-center gap-2 border-b px-3 py-2 text-xs font-medium">
         <TerminalSquare className="h-3.5 w-3.5" />
         <span>Simulation terminal</span>
-        <span className="ml-auto font-mono text-[10px] text-muted-foreground">{statusLabel}</span>
+        <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+          {statusLabel}
+        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -69,44 +78,64 @@ export function SimulationTerminal() {
       <div ref={innerRef} className="space-y-1 px-3 py-2 font-mono text-[10px]">
         <AnimatePresence initial={false}>
           {visibleTrace.length === 0 && (
-            <motion.div 
+            <motion.div
               key="empty"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="text-muted-foreground"
             >
-              No simulation executed. Select a test case and trigger an event to see the execution trace.
+              No simulation executed. Select a test case and trigger an event to
+              see the execution trace.
             </motion.div>
           )}
           {visibleTrace.map((entry, index) => (
-            <motion.div 
+            <motion.div
               key={`${entry.id}-${index}`}
               initial={{ opacity: 0, x: -10, height: 0 }}
               animate={{ opacity: 1, x: 0, height: "auto" }}
               exit={{ opacity: 0, x: -10, height: 0 }}
               transition={{ duration: 0.2 }}
-              className={entry.status === "failed" ? "text-destructive overflow-hidden" : "text-foreground overflow-hidden"}
+              className={
+                entry.status === "failed"
+                  ? "text-destructive overflow-hidden"
+                  : "text-foreground overflow-hidden"
+              }
             >
               <div className="py-0.5">
-                <span className="mr-2 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
-                <span className={
-                  entry.kind === "messaging" ? "text-emerald-400" :
-                  entry.kind === "push" ? "text-sky-400" :
-                  entry.status === "failed" ? "text-destructive" : ""
-                }>
-                  {entry.status === "failed" ? "✕" :
-                   entry.kind === "messaging" ? "⇢" :
-                   entry.kind === "push" ? "⊳" :
-                   "›"}{" "}
+                <span className="mr-2 text-muted-foreground">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span
+                  className={
+                    entry.kind === "messaging"
+                      ? "text-emerald-400"
+                      : entry.kind === "push"
+                        ? "text-sky-400"
+                        : entry.status === "failed"
+                          ? "text-destructive"
+                          : ""
+                  }
+                >
+                  {entry.status === "failed"
+                    ? "✕"
+                    : entry.kind === "messaging"
+                      ? "⇢"
+                      : entry.kind === "push"
+                        ? "⊳"
+                        : "›"}{" "}
                   {entry.label}
                 </span>
                 {entry.detail && <span> — {entry.detail}</span>}
                 {entry.input !== undefined && (
-                  <pre className="mt-1 ml-6 text-muted-foreground whitespace-pre-wrap break-all bg-foreground/5 p-1.5 rounded border border-border/50">in = {formatPayload(entry.input)}</pre>
+                  <pre className="mt-1 ml-6 text-muted-foreground whitespace-pre-wrap break-all bg-foreground/5 p-1.5 rounded border border-border/50">
+                    in = {formatPayload(entry.input)}
+                  </pre>
                 )}
                 {entry.output !== undefined && (
-                  <pre className="mt-1.5 ml-6 text-muted-foreground whitespace-pre-wrap break-all bg-foreground/5 p-1.5 rounded border border-border/50">out = {formatPayload(entry.output)}</pre>
+                  <pre className="mt-1.5 ml-6 text-muted-foreground whitespace-pre-wrap break-all bg-foreground/5 p-1.5 rounded border border-border/50">
+                    out = {formatPayload(entry.output)}
+                  </pre>
                 )}
               </div>
             </motion.div>

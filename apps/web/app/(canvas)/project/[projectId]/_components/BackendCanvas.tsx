@@ -34,14 +34,14 @@ function Flow({ projectId, view }: BackendCanvasProps) {
   const { isLoading } = useBackendSync(projectId, view);
 
   // Syncs the active test case for this project from localStorage
-  const testCases = useSimulationStore(s => s.testCases);
-  const selectedCaseId = useSimulationStore(s => s.selectedCaseId);
-  const selectTestCase = useSimulationStore(s => s.selectTestCase);
-  
+  const testCases = useSimulationStore((s) => s.testCases);
+  const selectedCaseId = useSimulationStore((s) => s.selectedCaseId);
+  const selectTestCase = useSimulationStore((s) => s.selectTestCase);
+
   React.useEffect(() => {
     if (testCases.length > 0 && !selectedCaseId) {
       const savedId = localStorage.getItem(`active-test-case-${projectId}`);
-      if (savedId && testCases.some(tc => tc.id === savedId)) {
+      if (savedId && testCases.some((tc) => tc.id === savedId)) {
         selectTestCase(savedId);
       }
     }
@@ -91,28 +91,48 @@ export function BackendCanvas(props: BackendCanvasProps) {
   }, []);
 
   if (!props.projectId) return null;
-  
-  const nodesPendingDeletion = useBackendCanvasStore(s => s.nodesPendingDeletion);
-  const setNodesPendingDeletion = useBackendCanvasStore(s => s.setNodesPendingDeletion);
-  const deleteNode = useBackendCanvasStore(s => s.deleteNode);
+
+  const nodesPendingDeletion = useBackendCanvasStore(
+    (s) => s.nodesPendingDeletion,
+  );
+  const setNodesPendingDeletion = useBackendCanvasStore(
+    (s) => s.setNodesPendingDeletion,
+  );
+  const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
 
   return (
     <>
       <Flow {...props} />
-      <AlertDialog open={nodesPendingDeletion.length > 0} onOpenChange={(open) => !open && setNodesPendingDeletion([])}>
+      <AlertDialog
+        open={nodesPendingDeletion.length > 0}
+        onOpenChange={(open) => !open && setNodesPendingDeletion([])}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the {nodesPendingDeletion.length > 1 ? "selected items" : (nodesPendingDeletion[0]?.type === 'group' ? "group" : "table")} "{nodesPendingDeletion.map(n => n.data.label || 'Untitled').join(", ")}" and all of their contents. This action cannot be undone.
+              This will delete the{" "}
+              {nodesPendingDeletion.length > 1
+                ? "selected items"
+                : nodesPendingDeletion[0]?.type === "group"
+                  ? "group"
+                  : "table"}{" "}
+              "
+              {nodesPendingDeletion
+                .map((n) => n.data.label || "Untitled")
+                .join(", ")}
+              " and all of their contents. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              nodesPendingDeletion.forEach(n => deleteNode(n.id));
-              setNodesPendingDeletion([]);
-            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={() => {
+                nodesPendingDeletion.forEach((n) => deleteNode(n.id));
+                setNodesPendingDeletion([]);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

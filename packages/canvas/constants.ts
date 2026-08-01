@@ -11,75 +11,76 @@ import type {
 export const RULES_VERSION = 1;
 
 // ─── Backend Canvas Main Node Types ───────────────────────────────────────────
-export const BACKEND_NODE_SERVICE           = "service" as const;
-export const BACKEND_NODE_DATABASE          = "database" as const;
-export const BACKEND_NODE_QUEUE             = "queue" as const;
-export const BACKEND_NODE_PUBSUB            = "pubsub" as const;
-export const BACKEND_NODE_EVENTSTREAM       = "eventstream" as const;
-export const BACKEND_NODE_KAFKA             = "kafka" as const;
-export const BACKEND_NODE_REDIS_STREAMS     = "redis-streams" as const;
-export const BACKEND_NODE_SQS               = "sqs" as const;
-export const BACKEND_NODE_REDIS_PUBSUB      = "redis-pubsub" as const;
-export const BACKEND_NODE_REDIS_CACHE       = "redis-cache" as const;
-export const BACKEND_NODE_ENTITY            = "entity" as const;
-export const BACKEND_NODE_WEB_CLIENT        = "webClient" as const;
-export const BACKEND_NODE_EXTERNAL          = "external" as const;
-export const BACKEND_NODE_GROUP             = "group" as const;
-export const BACKEND_NODE_DB_REF            = "db_ref" as const;
-export const BACKEND_NODE_STORAGE          = "storage" as const;
-export const BACKEND_NODE_WORKER           = "worker" as const;
-export const BACKEND_NODE_SERVERLESS        = "serverless" as const;
-export const BACKEND_NODE_SEARCH_INDEX      = "search_index" as const;
-export const BACKEND_NODE_API_GATEWAY       = "api_gateway" as const;
-export const BACKEND_NODE_LOAD_BALANCER     = "load_balancer" as const;
-export const BACKEND_NODE_WEBHOOK           = "webhook" as const;
-export const BACKEND_NODE_LLM               = "llm" as const;
-export const BACKEND_NODE_MCP_SERVER        = "mcp_server" as const;
-export const BACKEND_NODE_VECTOR_DB_REF     = "vector_db_ref" as const;
+export const BACKEND_NODE_SERVICE = "service" as const;
+export const BACKEND_NODE_DATABASE = "database" as const;
+export const BACKEND_NODE_QUEUE = "queue" as const;
+export const BACKEND_NODE_PUBSUB = "pubsub" as const;
+export const BACKEND_NODE_EVENTSTREAM = "eventstream" as const;
+export const BACKEND_NODE_KAFKA = "kafka" as const;
+export const BACKEND_NODE_REDIS_STREAMS = "redis-streams" as const;
+export const BACKEND_NODE_SQS = "sqs" as const;
+export const BACKEND_NODE_REDIS_PUBSUB = "redis-pubsub" as const;
+export const BACKEND_NODE_REDIS_CACHE = "redis-cache" as const;
+export const BACKEND_NODE_ENTITY = "entity" as const;
+export const BACKEND_NODE_WEB_CLIENT = "webClient" as const;
+export const BACKEND_NODE_EXTERNAL = "external" as const;
+export const BACKEND_NODE_GROUP = "group" as const;
+export const BACKEND_NODE_DB_REF = "db_ref" as const;
+export const BACKEND_NODE_STORAGE = "storage" as const;
+export const BACKEND_NODE_WORKER = "worker" as const;
+export const BACKEND_NODE_SERVERLESS = "serverless" as const;
+export const BACKEND_NODE_SEARCH_INDEX = "search_index" as const;
+export const BACKEND_NODE_API_GATEWAY = "api_gateway" as const;
+export const BACKEND_NODE_LOAD_BALANCER = "load_balancer" as const;
+export const BACKEND_NODE_WEBHOOK = "webhook" as const;
+export const BACKEND_NODE_LLM = "llm" as const;
+export const BACKEND_NODE_MCP_SERVER = "mcp_server" as const;
+export const BACKEND_NODE_VECTOR_DB_REF = "vector_db_ref" as const;
 export const BACKEND_NODE_IDENTITY_PROVIDER = "identity_provider" as const;
-export const BACKEND_NODE_LANGGRAPH         = "langgraph" as const;
-export const BACKEND_NODE_LANGGRAPH_STEP    = "langgraph_step" as const;
+export const BACKEND_NODE_LANGGRAPH = "langgraph" as const;
+export const BACKEND_NODE_LANGGRAPH_STEP = "langgraph_step" as const;
 
 // ─── LangGraph Step Execution Types ───────────────────────────────────────────
-export const STEP_TYPE_LLM_CALL       = "llm_call" as const;
-export const STEP_TYPE_TOOL_NODE      = "tool_node" as const;
-export const STEP_TYPE_EVALUATOR      = "evaluator" as const;
-export const STEP_TYPE_SUMMARIZER     = "summarizer" as const;
-export const STEP_TYPE_CUSTOM_CODE    = "custom_code" as const;
-export const STEP_TYPE_HUMAN_GATE     = "human_gate" as const;
-export const STEP_TYPE_INTERRUPT      = "interrupt" as const;
-export const STEP_TYPE_VECTOR_SEARCH  = "vector_search" as const;
-export const STEP_TYPE_ROUTER         = "router" as const;
+export const STEP_TYPE_LLM_CALL = "llm_call" as const;
+export const STEP_TYPE_TOOL_NODE = "tool_node" as const;
+export const STEP_TYPE_EVALUATOR = "evaluator" as const;
+export const STEP_TYPE_SUMMARIZER = "summarizer" as const;
+export const STEP_TYPE_CUSTOM_CODE = "custom_code" as const;
+export const STEP_TYPE_HUMAN_GATE = "human_gate" as const;
+export const STEP_TYPE_INTERRUPT = "interrupt" as const;
+export const STEP_TYPE_VECTOR_SEARCH = "vector_search" as const;
+export const STEP_TYPE_ROUTER = "router" as const;
 
 // ─── LangGraph Middleware Types ───────────────────────────────────────────────
-export const MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP     = "human_in_the_loop" as const;
-export const MIDDLEWARE_TYPE_RATE_LIMIT            = "rate_limit" as const;
-export const MIDDLEWARE_TYPE_LOGGING_TRACING       = "logging_tracing" as const;
-export const MIDDLEWARE_TYPE_SUMMARIZATION         = "summarization" as const;
-export const MIDDLEWARE_TYPE_MODEL_CALL_LIMIT     = "model_call_limit" as const;
-export const MIDDLEWARE_TYPE_TOOL_CALL_LIMIT      = "tool_call_limit" as const;
-export const MIDDLEWARE_TYPE_MODEL_FALLBACK       = "model_fallback" as const;
-export const MIDDLEWARE_TYPE_PII_DETECTION         = "pii_detection" as const;
-export const MIDDLEWARE_TYPE_TODO_LIST             = "todo_list" as const;
-export const MIDDLEWARE_TYPE_LLM_TOOL_SELECTOR     = "llm_tool_selector" as const;
-export const MIDDLEWARE_TYPE_TOOL_RETRY            = "tool_retry" as const;
-export const MIDDLEWARE_TYPE_MODEL_RETRY           = "model_retry" as const;
-export const MIDDLEWARE_TYPE_LLM_TOOL_EMULATOR     = "llm_tool_emulator" as const;
-export const MIDDLEWARE_TYPE_CONTEXT_EDITING       = "context_editing" as const;
-export const MIDDLEWARE_TYPE_PROVIDER_TOOL_SEARCH = "provider_tool_search" as const;
-export const MIDDLEWARE_TYPE_FILESYSTEM            = "filesystem" as const;
-export const MIDDLEWARE_TYPE_SUBAGENT              = "subagent" as const;
-export const MIDDLEWARE_TYPE_CUSTOM                = "custom" as const;
+export const MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP = "human_in_the_loop" as const;
+export const MIDDLEWARE_TYPE_RATE_LIMIT = "rate_limit" as const;
+export const MIDDLEWARE_TYPE_LOGGING_TRACING = "logging_tracing" as const;
+export const MIDDLEWARE_TYPE_SUMMARIZATION = "summarization" as const;
+export const MIDDLEWARE_TYPE_MODEL_CALL_LIMIT = "model_call_limit" as const;
+export const MIDDLEWARE_TYPE_TOOL_CALL_LIMIT = "tool_call_limit" as const;
+export const MIDDLEWARE_TYPE_MODEL_FALLBACK = "model_fallback" as const;
+export const MIDDLEWARE_TYPE_PII_DETECTION = "pii_detection" as const;
+export const MIDDLEWARE_TYPE_TODO_LIST = "todo_list" as const;
+export const MIDDLEWARE_TYPE_LLM_TOOL_SELECTOR = "llm_tool_selector" as const;
+export const MIDDLEWARE_TYPE_TOOL_RETRY = "tool_retry" as const;
+export const MIDDLEWARE_TYPE_MODEL_RETRY = "model_retry" as const;
+export const MIDDLEWARE_TYPE_LLM_TOOL_EMULATOR = "llm_tool_emulator" as const;
+export const MIDDLEWARE_TYPE_CONTEXT_EDITING = "context_editing" as const;
+export const MIDDLEWARE_TYPE_PROVIDER_TOOL_SEARCH =
+  "provider_tool_search" as const;
+export const MIDDLEWARE_TYPE_FILESYSTEM = "filesystem" as const;
+export const MIDDLEWARE_TYPE_SUBAGENT = "subagent" as const;
+export const MIDDLEWARE_TYPE_CUSTOM = "custom" as const;
 
-export const DEFAULT_MIDDLEWARE_TYPE              = MIDDLEWARE_TYPE_SUMMARIZATION;
+export const DEFAULT_MIDDLEWARE_TYPE = MIDDLEWARE_TYPE_SUMMARIZATION;
 
 // ─── Edge Target & Connection Kinds ───────────────────────────────────────────
 export const TARGET_KIND_STEP = "step" as const;
 export const TARGET_KIND_PORT = "port" as const;
-export const TARGET_KIND_END  = "end" as const;
+export const TARGET_KIND_END = "end" as const;
 
 // ─── Sub-Canvas Handle IDs ─────────────────────────────────────────────────────
-export const HANDLE_LLM_IN  = "llm_in" as const;
+export const HANDLE_LLM_IN = "llm_in" as const;
 export const HANDLE_LLM_OUT = "llm_out" as const;
 export const HANDLE_TOOL_IN = "tool_in" as const;
 export const HANDLE_TOOL_OUT = "tool_out" as const;
@@ -100,34 +101,39 @@ export const LLM_PROVIDERS = {
 
 export const ALL_LLM_PROVIDER_VALUES = Object.values(LLM_PROVIDERS) as [
   (typeof LLM_PROVIDERS)[keyof typeof LLM_PROVIDERS],
-  ...(typeof LLM_PROVIDERS)[keyof typeof LLM_PROVIDERS][]
+  ...(typeof LLM_PROVIDERS)[keyof typeof LLM_PROVIDERS][],
 ];
 
 export const LLM_PROVIDER_MAP = {
   [LLM_PROVIDERS.GROQ]: { value: LLM_PROVIDERS.GROQ, label: "Groq" },
   [LLM_PROVIDERS.OPENAI]: { value: LLM_PROVIDERS.OPENAI, label: "OpenAI" },
-  [LLM_PROVIDERS.ANTHROPIC]: { value: LLM_PROVIDERS.ANTHROPIC, label: "Anthropic" },
+  [LLM_PROVIDERS.ANTHROPIC]: {
+    value: LLM_PROVIDERS.ANTHROPIC,
+    label: "Anthropic",
+  },
   [LLM_PROVIDERS.GOOGLE]: { value: LLM_PROVIDERS.GOOGLE, label: "Google" },
-  [LLM_PROVIDERS.CUSTOM]: { value: LLM_PROVIDERS.CUSTOM, label: "Custom / Other" },
+  [LLM_PROVIDERS.CUSTOM]: {
+    value: LLM_PROVIDERS.CUSTOM,
+    label: "Custom / Other",
+  },
 } as const;
 
 export const LLM_PROVIDER_OPTIONS = Object.values(LLM_PROVIDER_MAP);
 
-export const LLM_PROVIDER_GROQ      = LLM_PROVIDERS.GROQ;
-export const LLM_PROVIDER_OPENAI    = LLM_PROVIDERS.OPENAI;
+export const LLM_PROVIDER_GROQ = LLM_PROVIDERS.GROQ;
+export const LLM_PROVIDER_OPENAI = LLM_PROVIDERS.OPENAI;
 export const LLM_PROVIDER_ANTHROPIC = LLM_PROVIDERS.ANTHROPIC;
-export const LLM_PROVIDER_GOOGLE    = LLM_PROVIDERS.GOOGLE;
-export const LLM_PROVIDER_CUSTOM    = LLM_PROVIDERS.CUSTOM;
-export const LLM_PROVIDER_OTHER     = LLM_PROVIDERS.CUSTOM;
+export const LLM_PROVIDER_GOOGLE = LLM_PROVIDERS.GOOGLE;
+export const LLM_PROVIDER_CUSTOM = LLM_PROVIDERS.CUSTOM;
+export const LLM_PROVIDER_OTHER = LLM_PROVIDERS.CUSTOM;
 
 // ─── Default LLM Configuration Constants ─────────────────────────────────────
 export const DEFAULT_LLM_PROVIDER = LLM_PROVIDERS.GROQ;
 export const DEFAULT_LLM_MODEL = "openai/gpt-oss-120b";
-export const DEFAULT_LLM_BASE_URL = "https://api.groq.com/openai/v1/chat/completions";
+export const DEFAULT_LLM_BASE_URL =
+  "https://api.groq.com/openai/v1/chat/completions";
 export const DEFAULT_LLM_API_KEY_ENV = "GROQ_API_KEY";
 export const DEFAULT_LLM_TEMPERATURE = 0.2;
-
-
 
 export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   kafka: "kafka",
@@ -151,8 +157,6 @@ export const NODE_TYPE_TO_RESOURCE_KIND: Record<string, string | undefined> = {
   langgraph_step: "langgraph_step",
 };
 
-
-
 export const MESSAGING_RESOURCE_TYPES = [
   "topics",
   "streams",
@@ -170,7 +174,7 @@ export const MESSAGING_RESOURCE_TYPES = [
   "tasks",
 ] as const;
 
-export type MessagingResourceType = typeof MESSAGING_RESOURCE_TYPES[number];
+export type MessagingResourceType = (typeof MESSAGING_RESOURCE_TYPES)[number];
 
 export const MESSAGING_NODE_TYPES = [
   "queue",
@@ -185,7 +189,7 @@ export const MESSAGING_NODE_TYPES = [
   "redis-cache", // Added to make sure we cover all cache/storage nodes
 ] as const;
 
-export type MessagingNodeType = typeof MESSAGING_NODE_TYPES[number];
+export type MessagingNodeType = (typeof MESSAGING_NODE_TYPES)[number];
 
 export interface LangGraphDataInput {
   graphSteps?: LangGraphStepConfig[];
@@ -193,7 +197,8 @@ export interface LangGraphDataInput {
   [key: string]: unknown;
 }
 
-export function ensureLangGraphDataReachability<T extends LangGraphDataInput>(data: T): T {
+export function ensureLangGraphDataReachability<T extends LangGraphDataInput>(
+  data: T,
+): T {
   return data;
 }
-

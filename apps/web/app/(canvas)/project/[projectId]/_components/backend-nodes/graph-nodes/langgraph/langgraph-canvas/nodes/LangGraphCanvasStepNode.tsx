@@ -10,5 +10,7 @@ export function LangGraphCanvasStepNode(props: NodeProps<StepNode>) {
   if (props.data.stepType === STEP_TYPE_ROUTER) {
     return <LangGraphCanvasRouterNode {...props} />;
   }
-  return <LangGraphCanvasNode {...(props as unknown as NodeProps<CanvasNode>)} />;
+  return (
+    <LangGraphCanvasNode {...(props as unknown as NodeProps<CanvasNode>)} />
+  );
 }

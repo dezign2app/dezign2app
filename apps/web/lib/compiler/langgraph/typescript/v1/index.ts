@@ -97,7 +97,9 @@ export interface CompileLangGraphInput {
 export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
   const ctx = buildContext(input);
   const files: CompiledFile[] = [];
-  const pkgId = toIdentifier(input.graphLabel || "langgraph-agent").toLowerCase().replace(/_/g, "-");
+  const pkgId = toIdentifier(input.graphLabel || "langgraph-agent")
+    .toLowerCase()
+    .replace(/_/g, "-");
   const deps = buildDependencies(ctx);
 
   const llmMetaMap = buildLLMMetaMap(ctx);
@@ -120,7 +122,11 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
   // .env.example
   const envContent = buildEnvExample(ctx);
   if (envContent) {
-    files.push({ filename: ".env.example", language: "dotenv", content: envContent });
+    files.push({
+      filename: ".env.example",
+      language: "dotenv",
+      content: envContent,
+    });
   }
 
   // README.md
@@ -322,9 +328,12 @@ function buildNodeMetaMap(ctx: CompileContext): Map<string, NodeMeta> {
     }
     used.add(fileName);
 
-    const exportName = d.stepType === "router"
-      ? (base.endsWith("Router") ? base : `${base}Router`)
-      : base;
+    const exportName =
+      d.stepType === "router"
+        ? base.endsWith("Router")
+          ? base
+          : `${base}Router`
+        : base;
 
     map.set(stepNode.id, { fileName, exportName });
   }
@@ -355,12 +364,26 @@ interface CompileContext {
 function buildContext(input: CompileLangGraphInput): CompileContext {
   const { nodes, edges } = input;
 
-  const llmNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_LLM) as Array<{ id: string; data: LangGraphLLMNodeData }>;
-  const toolNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_TOOL) as Array<{ id: string; data: ToolNodeData }>;
-  const agentNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_NODE || n.type === LANGGRAPH_CANVAS_NODE_AGENT) as Array<{ id: string; data: CanvasNodeData }>;
-  const stepNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_STEP) as Array<{ id: string; data: StepNodeData }>;
-  const memoryNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_MEMORY) as Array<{ id: string; data: MemoryNodeData }>;
-  const middlewareNodes = nodes.filter((n) => n.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE) as Array<{ id: string; data: MiddlewareNodeData }>;
+  const llmNodes = nodes.filter(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_LLM,
+  ) as Array<{ id: string; data: LangGraphLLMNodeData }>;
+  const toolNodes = nodes.filter(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_TOOL,
+  ) as Array<{ id: string; data: ToolNodeData }>;
+  const agentNodes = nodes.filter(
+    (n) =>
+      n.type === LANGGRAPH_CANVAS_NODE_NODE ||
+      n.type === LANGGRAPH_CANVAS_NODE_AGENT,
+  ) as Array<{ id: string; data: CanvasNodeData }>;
+  const stepNodes = nodes.filter(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_STEP,
+  ) as Array<{ id: string; data: StepNodeData }>;
+  const memoryNodes = nodes.filter(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_MEMORY,
+  ) as Array<{ id: string; data: MemoryNodeData }>;
+  const middlewareNodes = nodes.filter(
+    (n) => n.type === LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+  ) as Array<{ id: string; data: MiddlewareNodeData }>;
 
   const agentLLMMap = new Map<string, string>();
   const agentToolsMap = new Map<string, string[]>();
@@ -383,14 +406,21 @@ function buildContext(input: CompileLangGraphInput): CompileContext {
   }
 
   const routerStepIds = new Set(
-    stepNodes.filter((n) => n.data.stepType === "router").map((n) => n.id)
+    stepNodes.filter((n) => n.data.stepType === "router").map((n) => n.id),
   );
 
-  const hasHumanInLoop = middlewareNodes.some(
-    (m) => m.data.type === MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP
-  ) || stepNodes.some((s) => s.data.stepType === "human_gate" || s.data.stepType === "interrupt");
+  const hasHumanInLoop =
+    middlewareNodes.some(
+      (m) => m.data.type === MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,
+    ) ||
+    stepNodes.some(
+      (s) =>
+        s.data.stepType === "human_gate" || s.data.stepType === "interrupt",
+    );
 
-  const usesMessages = input.stateChannels.some((c) => c.key === "messages" || c.reducer === "add_messages");
+  const usesMessages = input.stateChannels.some(
+    (c) => c.key === "messages" || c.reducer === "add_messages",
+  );
 
   return {
     input,
@@ -414,15 +444,18 @@ function buildContext(input: CompileLangGraphInput): CompileContext {
 }
 
 function ctxMemoryNeedsStore(ctx: CompileContext): boolean {
-  return ctx.memoryNodes.some((m) => m.data.checkpointer === "redis" || m.data.checkpointer === "postgres");
+  return ctx.memoryNodes.some(
+    (m) =>
+      m.data.checkpointer === "redis" || m.data.checkpointer === "postgres",
+  );
 }
 
 function buildDependencies(ctx: CompileContext): Record<string, string> {
   const deps: Record<string, string> = {
     "@langchain/langgraph": "^1.1.2",
     "@langchain/core": "^1.1.17",
-    "zod": "^3.24.1",
-    "dotenv": "^17.3.1",
+    zod: "^3.24.1",
+    dotenv: "^17.3.1",
   };
 
   for (const llmNode of ctx.llmNodes) {
@@ -431,7 +464,8 @@ function buildDependencies(ctx: CompileContext): Record<string, string> {
   }
 
   const hasWebSocket = ctx.input.nodes.some(
-    (n) => n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && (n.data).type === "websocket"
+    (n) =>
+      n.type === LANGGRAPH_CANVAS_NODE_OUTPUT && n.data.type === "websocket",
   );
   if (hasWebSocket) {
     deps["socket.io"] = "^4.7.5";
@@ -452,7 +486,8 @@ function buildPackageJson(pkgId: string, deps: Record<string, string>): string {
     {
       name: pkgId,
       version: "1.0.0",
-      description: "Compiled LangGraph v1.x agent workflow generated by Blueprint Studio",
+      description:
+        "Compiled LangGraph v1.x agent workflow generated by Blueprint Studio",
       main: "dist/index.js",
       type: "module",
       scripts: {
@@ -463,12 +498,12 @@ function buildPackageJson(pkgId: string, deps: Record<string, string>): string {
       dependencies: deps,
       devDependencies: {
         "@types/node": "^22.0.0",
-        "tsx": "^4.19.0",
-        "typescript": "^5.7.0",
+        tsx: "^4.19.0",
+        typescript: "^5.7.0",
       },
     },
     null,
-    2
+    2,
   );
 }
 
@@ -490,7 +525,7 @@ function buildTsConfig(): string {
       include: ["src/**/*"],
     },
     null,
-    2
+    2,
   );
 }
 
@@ -504,7 +539,11 @@ function buildEnvExample(ctx: CompileContext): string {
   return envVars.map((v) => `${v}=your_api_key_here`).join("\n");
 }
 
-function buildReadme(ctx: CompileContext, pkgId: string, deps: Record<string, string>): string {
+function buildReadme(
+  ctx: CompileContext,
+  pkgId: string,
+  deps: Record<string, string>,
+): string {
   const envVars = ctx.llmNodes
     .map((l) => getEnvKey(l.data))
     .filter(Boolean)
@@ -521,37 +560,53 @@ Compiled \`@langchain/langgraph\` (v1.1.2) agent generated by **Blueprint Studio
    npm install
    \`\`\`
 
-${envVars.length > 0 ? `2. **Set Environment Variables:**
+${
+  envVars.length > 0
+    ? `2. **Set Environment Variables:**
    Create a \`.env\` file based on \`.env.example\`:
    \`\`\`env
 ${envVars.map((v) => `${v}=your_key_here`).join("\n")}
    \`\`\`
-` : ""}
+`
+    : ""
+}
 3. **Run the graph:**
    \`\`\`bash
    npm start
    \`\`\`
 
 ## Graph Overview
-- **Nodes (${ctx.agentNodes.length + ctx.stepNodes.length}):** ${[...ctx.agentNodes.map(a => a.data.name || a.data.label), ...ctx.stepNodes.map(s => s.data.label)].filter(Boolean).join(", ") || "Default pipeline"}
-- **Tools (${ctx.toolNodes.length}):** ${ctx.toolNodes.map(t => t.data.name).filter(Boolean).join(", ") || "None"}
-- **LLM Providers:** ${[...new Set(ctx.llmNodes.map(l => l.data.provider))].join(", ") || "Default"}
+- **Nodes (${ctx.agentNodes.length + ctx.stepNodes.length}):** ${[...ctx.agentNodes.map((a) => a.data.name || a.data.label), ...ctx.stepNodes.map((s) => s.data.label)].filter(Boolean).join(", ") || "Default pipeline"}
+- **Tools (${ctx.toolNodes.length}):** ${
+    ctx.toolNodes
+      .map((t) => t.data.name)
+      .filter(Boolean)
+      .join(", ") || "None"
+  }
+- **LLM Providers:** ${[...new Set(ctx.llmNodes.map((l) => l.data.provider))].join(", ") || "Default"}
 `;
 }
 
 function buildStateFile(ctx: CompileContext): string {
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
   const imports: string[] = ["StateSchema"];
-  
+
   if (ctx.usesMessages) imports.push("MessagesValue");
   const needsReducedValue = ctx.input.stateChannels.some(
-    (c) => c.reducer && (c.reducer as string) !== "replace" && (c.reducer as string) !== "add_messages"
+    (c) =>
+      c.reducer &&
+      (c.reducer as string) !== "replace" &&
+      (c.reducer as string) !== "add_messages",
   );
   if (needsReducedValue) imports.push("ReducedValue");
 
   const channelLines = ctx.input.stateChannels.map((ch) => {
     const field = toCamelCase(ch.key);
-    if (ch.key === "messages" || ch.type === "messages" || (ch.reducer as string) === "add_messages") {
+    if (
+      ch.key === "messages" ||
+      ch.type === "messages" ||
+      (ch.reducer as string) === "add_messages"
+    ) {
       return `  ${field}: MessagesValue,`;
     }
     const zodType = getZodType(ch.type, ch.defaultValue);
@@ -626,7 +681,8 @@ function buildToolsFile(ctx: CompileContext): string {
     if (promptText) {
       bodyLines.push(`    // --- Natural Language Instructions ---`);
       promptText.split("\n").forEach((line: string, idx: number) => {
-        if (line.trim()) bodyLines.push(`    // STEP ${idx + 1}: ${line.trim()}`);
+        if (line.trim())
+          bodyLines.push(`    // STEP ${idx + 1}: ${line.trim()}`);
       });
     }
     if (codeBlock) {
@@ -655,11 +711,13 @@ ${body}
 function buildIndividualLLMFile(
   llmNode: { id: string; data: LangGraphLLMNodeData },
   ctx: CompileContext,
-  llmMetaMap: Map<string, LLMMeta>
+  llmMetaMap: Map<string, LLMMeta>,
 ): string {
   const d = llmNode.data;
   const meta = llmMetaMap.get(llmNode.id);
-  const varName = meta ? meta.varName : toIdentifier(d.label || `llm_${llmNode.id}`);
+  const varName = meta
+    ? meta.varName
+    : toIdentifier(d.label || `llm_${llmNode.id}`);
 
   const pkg = getProviderPackage(d.provider);
   const cls = getProviderClass(d.provider);
@@ -682,7 +740,9 @@ function buildIndividualLLMFile(
   const toolVarNames = [...connectedToolIds]
     .map((tid) => {
       const toolNode = ctx.toolNodes.find((t) => t.id === tid);
-      return toolNode ? toIdentifier(toolNode.data.name || `tool_${tid}`) : null;
+      return toolNode
+        ? toIdentifier(toolNode.data.name || `tool_${tid}`)
+        : null;
     })
     .filter(Boolean) as string[];
 
@@ -692,26 +752,40 @@ function buildIndividualLLMFile(
 
   const configLines: string[] = [];
   if (d.model) configLines.push(`  model: "${d.model}",`);
-  if (d.temperature !== undefined) configLines.push(`  temperature: ${d.temperature},`);
-  if (d.maxTokens !== undefined) configLines.push(`  maxTokens: ${d.maxTokens},`);
+  if (d.temperature !== undefined)
+    configLines.push(`  temperature: ${d.temperature},`);
+  if (d.maxTokens !== undefined)
+    configLines.push(`  maxTokens: ${d.maxTokens},`);
 
-  if ((d.provider === "ollama" || d.provider === "custom") && (d.baseUrl || d.url)) {
+  if (
+    (d.provider === "ollama" || d.provider === "custom") &&
+    (d.baseUrl || d.url)
+  ) {
     configLines.push(`  baseURL: "${d.baseUrl || d.url}",`);
   }
 
   const parts: string[] = [imports.join("\n"), ""];
 
   if (toolVarNames.length > 0) {
-    parts.push(`const ${varName}Base = new ${cls}({\n${configLines.join("\n")}\n});`);
-    parts.push(`export const ${varName} = ${varName}Base.bindTools([${toolVarNames.join(", ")}]);`);
+    parts.push(
+      `const ${varName}Base = new ${cls}({\n${configLines.join("\n")}\n});`,
+    );
+    parts.push(
+      `export const ${varName} = ${varName}Base.bindTools([${toolVarNames.join(", ")}]);`,
+    );
   } else {
-    parts.push(`export const ${varName} = new ${cls}({\n${configLines.join("\n")}\n});`);
+    parts.push(
+      `export const ${varName} = new ${cls}({\n${configLines.join("\n")}\n});`,
+    );
   }
 
   return parts.join("\n\n");
 }
 
-function buildLLMIndexFile(ctx: CompileContext, llmMetaMap: Map<string, LLMMeta>): string {
+function buildLLMIndexFile(
+  ctx: CompileContext,
+  llmMetaMap: Map<string, LLMMeta>,
+): string {
   const exports = ctx.llmNodes.map((l) => {
     const meta = llmMetaMap.get(l.id);
     return `export * from "./${meta?.fileName}";`;
@@ -723,11 +797,13 @@ function buildAgentNodeFile(
   agentNode: { id: string; data: CanvasNodeData },
   ctx: CompileContext,
   nodeMetaMap: Map<string, NodeMeta>,
-  llmMetaMap: Map<string, LLMMeta>
+  llmMetaMap: Map<string, LLMMeta>,
 ): string {
   const d = agentNode.data;
   const nodeMeta = nodeMetaMap.get(agentNode.id);
-  const fnName = nodeMeta ? nodeMeta.exportName : toIdentifier(d.name || d.label || `node_${agentNode.id}`);
+  const fnName = nodeMeta
+    ? nodeMeta.exportName
+    : toIdentifier(d.name || d.label || `node_${agentNode.id}`);
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
 
   const llmId = ctx.agentLLMMap.get(agentNode.id);
@@ -735,9 +811,7 @@ function buildAgentNodeFile(
   const llmMeta = llmId ? llmMetaMap.get(llmId) : null;
   const llmVar = llmMeta ? llmMeta.varName : null;
 
-  const imports: string[] = [
-    `import { ${schemaName}Type } from "../state";`,
-  ];
+  const imports: string[] = [`import { ${schemaName}Type } from "../state";`];
 
   const systemPrompt = d.systemPrompt?.trim();
   if (systemPrompt && llmVar) {
@@ -752,12 +826,16 @@ function buildAgentNodeFile(
 
   if (systemPrompt && llmVar) {
     bodyLines.push(`  const messages = [`);
-    bodyLines.push(`    new SystemMessage(\`${escapeTemplateLiteral(systemPrompt)}\`),`);
+    bodyLines.push(
+      `    new SystemMessage(\`${escapeTemplateLiteral(systemPrompt)}\`),`,
+    );
     bodyLines.push(`    ...state.messages,`);
     bodyLines.push(`  ];`);
     bodyLines.push(`  const response = await ${llmVar}.invoke(messages);`);
   } else if (llmVar) {
-    bodyLines.push(`  const response = await ${llmVar}.invoke(state.messages);`);
+    bodyLines.push(
+      `  const response = await ${llmVar}.invoke(state.messages);`,
+    );
   } else {
     bodyLines.push(`  // Node without LLM execution logic`);
     bodyLines.push(`  const response = null;`);
@@ -790,27 +868,35 @@ function buildStepNodeFile(
   stepNode: { id: string; data: StepNodeData },
   ctx: CompileContext,
   nodeMetaMap: Map<string, NodeMeta>,
-  llmMetaMap: Map<string, LLMMeta>
+  llmMetaMap: Map<string, LLMMeta>,
 ): string {
   const d = stepNode.data;
   const nodeMeta = nodeMetaMap.get(stepNode.id);
-  const fnName = nodeMeta ? nodeMeta.exportName : toIdentifier(d.label || `step_${stepNode.id}`);
+  const fnName = nodeMeta
+    ? nodeMeta.exportName
+    : toIdentifier(d.label || `step_${stepNode.id}`);
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
 
   if (d.stepType === "router") {
-    const routerConfig = d.routerConfig as {
-      branches?: Array<{
-        id: string;
-        label: string;
-        field?: string;
-        operator?: string;
-        value?: string;
-        isDefault?: boolean;
-        conditions?: Array<{ field?: string; operator?: string; value?: string }>;
-        targetId?: string;
-      }>;
-      defaultBranchId?: string;
-    } | undefined;
+    const routerConfig = d.routerConfig as
+      | {
+          branches?: Array<{
+            id: string;
+            label: string;
+            field?: string;
+            operator?: string;
+            value?: string;
+            isDefault?: boolean;
+            conditions?: Array<{
+              field?: string;
+              operator?: string;
+              value?: string;
+            }>;
+            targetId?: string;
+          }>;
+          defaultBranchId?: string;
+        }
+      | undefined;
 
     const branches = routerConfig?.branches || [];
     const branchLines: string[] = [];
@@ -820,7 +906,9 @@ function buildStepNodeFile(
       // Find connected target node if targetId is not explicitly set
       let targetId = branch.targetId;
       if (!targetId) {
-        const edge = ctx.input.edges.find((e) => e.source === stepNode.id && e.sourceHandle === branch.id);
+        const edge = ctx.input.edges.find(
+          (e) => e.source === stepNode.id && e.sourceHandle === branch.id,
+        );
         if (edge) {
           targetId = edge.target;
         }
@@ -832,7 +920,11 @@ function buildStepNodeFile(
         if (meta) {
           targetExpr = `"${meta.exportName}"`;
           possibleTargets.add(`"${meta.exportName}"`);
-        } else if (targetId === "END" || targetId === "__end__" || targetId === NODE_ID_END) {
+        } else if (
+          targetId === "END" ||
+          targetId === "__end__" ||
+          targetId === NODE_ID_END
+        ) {
           targetExpr = "END";
           possibleTargets.add("typeof END");
         } else {
@@ -855,14 +947,22 @@ function buildStepNodeFile(
       if (branch.conditions && branch.conditions.length > 0) {
         const condParts = branch.conditions.map((c) => {
           const rawField = c.field || "messages";
-          const field = rawField.startsWith("state.") ? rawField : `state.${toCamelCase(rawField)}`;
+          const field = rawField.startsWith("state.")
+            ? rawField
+            : `state.${toCamelCase(rawField)}`;
           return buildCondition(field, c.operator || "eq", c.value || "");
         });
         condExpr = condParts.join(" && ");
       } else if (branch.field) {
         const rawField = branch.field;
-        const field = rawField.startsWith("state.") ? rawField : `state.${toCamelCase(rawField)}`;
-        condExpr = buildCondition(field, branch.operator || "eq", branch.value || "");
+        const field = rawField.startsWith("state.")
+          ? rawField
+          : `state.${toCamelCase(rawField)}`;
+        condExpr = buildCondition(
+          field,
+          branch.operator || "eq",
+          branch.value || "",
+        );
       }
 
       if (condExpr) {
@@ -877,7 +977,10 @@ function buildStepNodeFile(
     if (defaultBranch) {
       let defTargetId = defaultBranch.targetId;
       if (!defTargetId) {
-        const edge = ctx.input.edges.find((e) => e.source === stepNode.id && e.sourceHandle === defaultBranch.id);
+        const edge = ctx.input.edges.find(
+          (e) =>
+            e.source === stepNode.id && e.sourceHandle === defaultBranch.id,
+        );
         if (edge) defTargetId = edge.target;
       }
       if (defTargetId) {
@@ -885,7 +988,11 @@ function buildStepNodeFile(
         if (meta) {
           defaultTargetExpr = `"${meta.exportName}"`;
           possibleTargets.add(`"${meta.exportName}"`);
-        } else if (defTargetId === "END" || defTargetId === "__end__" || defTargetId === NODE_ID_END) {
+        } else if (
+          defTargetId === "END" ||
+          defTargetId === "__end__" ||
+          defTargetId === NODE_ID_END
+        ) {
           defaultTargetExpr = "END";
           possibleTargets.add("typeof END");
         }
@@ -895,7 +1002,10 @@ function buildStepNodeFile(
       if (meta) {
         defaultTargetExpr = `"${meta.exportName}"`;
         possibleTargets.add(`"${meta.exportName}"`);
-      } else if (routerConfig.defaultBranchId === "END" || routerConfig.defaultBranchId === "__end__") {
+      } else if (
+        routerConfig.defaultBranchId === "END" ||
+        routerConfig.defaultBranchId === "__end__"
+      ) {
         defaultTargetExpr = "END";
         possibleTargets.add("typeof END");
       } else {
@@ -907,7 +1017,8 @@ function buildStepNodeFile(
       possibleTargets.add("typeof END");
     }
 
-    const returnTypeStr = possibleTargets.size > 0 ? [...possibleTargets].join(" | ") : "string";
+    const returnTypeStr =
+      possibleTargets.size > 0 ? [...possibleTargets].join(" | ") : "string";
     const hasEnd = possibleTargets.has("typeof END");
     const importHeader = hasEnd
       ? `import { END } from "@langchain/langgraph";\nimport { ${schemaName}Type } from "../state";`
@@ -923,7 +1034,9 @@ ${branchLines.join("\n")}
   }
 
   if (d.stepType === "tool_node") {
-    const toolVarNames = ctx.toolNodes.map((t) => toIdentifier(t.data.name || `tool_${t.id}`));
+    const toolVarNames = ctx.toolNodes.map((t) =>
+      toIdentifier(t.data.name || `tool_${t.id}`),
+    );
     return `import { ToolNode } from "@langchain/langgraph";
 import { ${toolVarNames.join(", ")} } from "../tools";
 
@@ -979,7 +1092,10 @@ export async function ${fnName}(state: ${schemaName}Type) {
 `;
 }
 
-function buildNodesIndexFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string {
+function buildNodesIndexFile(
+  ctx: CompileContext,
+  nodeMetaMap: Map<string, NodeMeta>,
+): string {
   const files = new Set<string>();
   for (const agentNode of ctx.agentNodes) {
     const meta = nodeMetaMap.get(agentNode.id);
@@ -992,7 +1108,10 @@ function buildNodesIndexFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeM
   return [...files].map((f) => `export * from "./${f}";`).join("\n") + "\n";
 }
 
-function buildGraphFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string {
+function buildGraphFile(
+  ctx: CompileContext,
+  nodeMetaMap: Map<string, NodeMeta>,
+): string {
   const schemaName = `${toPascalCase(ctx.graphId)}State`;
   const graphVarName = `${toCamelCase(ctx.graphId)}Graph`;
   const builderVarName = `${toCamelCase(ctx.graphId)}Builder`;
@@ -1023,14 +1142,20 @@ function buildGraphFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
 
   for (const agentNode of ctx.agentNodes) {
     const meta = nodeMetaMap.get(agentNode.id);
-    const fnName = meta ? meta.exportName : toIdentifier(agentNode.data.name || agentNode.data.label || `node_${agentNode.id}`);
+    const fnName = meta
+      ? meta.exportName
+      : toIdentifier(
+          agentNode.data.name || agentNode.data.label || `node_${agentNode.id}`,
+        );
     lines.push(`  .addNode("${fnName}", ${fnName})`);
   }
 
   for (const stepNode of ctx.stepNodes) {
     if (stepNode.data.stepType === "router") continue;
     const meta = nodeMetaMap.get(stepNode.id);
-    const fnName = meta ? meta.exportName : toIdentifier(stepNode.data.label || `step_${stepNode.id}`);
+    const fnName = meta
+      ? meta.exportName
+      : toIdentifier(stepNode.data.label || `step_${stepNode.id}`);
     lines.push(`  .addNode("${fnName}", ${fnName})`);
   }
 
@@ -1045,9 +1170,13 @@ function buildGraphFile(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
     lines.push(`const checkpointer = new MemorySaver();`);
     if (ctxMemoryNeedsStore(ctx)) {
       lines.push(`const store = new MemoryStore();`);
-      lines.push(`export const ${graphVarName} = ${builderVarName}.compile({ checkpointer, store });`);
+      lines.push(
+        `export const ${graphVarName} = ${builderVarName}.compile({ checkpointer, store });`,
+      );
     } else {
-      lines.push(`export const ${graphVarName} = ${builderVarName}.compile({ checkpointer });`);
+      lines.push(
+        `export const ${graphVarName} = ${builderVarName}.compile({ checkpointer });`,
+      );
     }
   } else {
     lines.push(`export const ${graphVarName} = ${builderVarName}.compile();`);
@@ -1092,84 +1221,93 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
     return true;
   });
 
-  const routeHandlers = deduped.map((route) => {
-    const isEvent = route.kind === "event";
-    const payloadMap = route.payloadMapping ?? {};
-    const stateChannels = ctx.input.stateChannels || [];
+  const routeHandlers = deduped
+    .map((route) => {
+      const isEvent = route.kind === "event";
+      const payloadMap = route.payloadMapping ?? {};
+      const stateChannels = ctx.input.stateChannels || [];
 
-    // Collect all defined state channel keys + explicit payload mapping keys
-    const allStateKeys = new Set<string>();
-    stateChannels.forEach((ch) => allStateKeys.add(ch.key));
-    Object.keys(payloadMap).forEach((k) => allStateKeys.add(k));
-    if (allStateKeys.size === 0) {
-      allStateKeys.add("messages");
-    }
+      // Collect all defined state channel keys + explicit payload mapping keys
+      const allStateKeys = new Set<string>();
+      stateChannels.forEach((ch) => allStateKeys.add(ch.key));
+      Object.keys(payloadMap).forEach((k) => allStateKeys.add(k));
+      if (allStateKeys.size === 0) {
+        allStateKeys.add("messages");
+      }
 
-    const stateFields: string[] = [];
-    for (const key of allStateKeys) {
-      const customPath = payloadMap[key];
-      if (customPath) {
-        const accessor = customPath.startsWith("headers.")
-          ? `req.headers["${customPath.slice(8)}"]`
-          : customPath.startsWith("body.")
-          ? `req.body?.${customPath.slice(5)}`
-          : `req.body?.${customPath}`;
-        stateFields.push(`      ${JSON.stringify(key)}: ${accessor}`);
-      } else if (key === "messages") {
-        if (isEvent) {
-          stateFields.push(`      messages: req.body?.messages ?? [{ role: "user", content: JSON.stringify(req.body) }]`);
+      const stateFields: string[] = [];
+      for (const key of allStateKeys) {
+        const customPath = payloadMap[key];
+        if (customPath) {
+          const accessor = customPath.startsWith("headers.")
+            ? `req.headers["${customPath.slice(8)}"]`
+            : customPath.startsWith("body.")
+              ? `req.body?.${customPath.slice(5)}`
+              : `req.body?.${customPath}`;
+          stateFields.push(`      ${JSON.stringify(key)}: ${accessor}`);
+        } else if (key === "messages") {
+          if (isEvent) {
+            stateFields.push(
+              `      messages: req.body?.messages ?? [{ role: "user", content: JSON.stringify(req.body) }]`,
+            );
+          } else {
+            stateFields.push(
+              `      messages: req.body?.messages ?? [{ role: "user", content: req.body?.message ?? (typeof req.body === "string" ? req.body : JSON.stringify(req.body)) }]`,
+            );
+          }
         } else {
-          stateFields.push(`      messages: req.body?.messages ?? [{ role: "user", content: req.body?.message ?? (typeof req.body === "string" ? req.body : JSON.stringify(req.body)) }]`);
+          stateFields.push(`      ${JSON.stringify(key)}: req.body?.${key}`);
         }
-      } else {
-        stateFields.push(`      ${JSON.stringify(key)}: req.body?.${key}`);
       }
-    }
 
-    const stateInit = `{\n${stateFields.join(",\n")}\n    }`;
+      const stateInit = `{\n${stateFields.join(",\n")}\n    }`;
 
-    const preInvokeBlock = (() => {
-      if (route.preInvokeCode && route.preInvokeCode.trim()) {
-        return `\n      // Pre-Invoke Business Logic\n      ${route.preInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
-      }
-      if (route.preInvokePrompt && route.preInvokePrompt.trim()) {
-        // Natural language: emit as a comment directive for the AI agent
-        const lines = route.preInvokePrompt.trim().split("\n");
-        const commentLines = lines.map((l, i) => `      // STEP ${i + 1}: ${l.trim()}`).join("\n");
-        return `\n      // Pre-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
-      }
-      return "";
-    })();
+      const preInvokeBlock = (() => {
+        if (route.preInvokeCode && route.preInvokeCode.trim()) {
+          return `\n      // Pre-Invoke Business Logic\n      ${route.preInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
+        }
+        if (route.preInvokePrompt && route.preInvokePrompt.trim()) {
+          // Natural language: emit as a comment directive for the AI agent
+          const lines = route.preInvokePrompt.trim().split("\n");
+          const commentLines = lines
+            .map((l, i) => `      // STEP ${i + 1}: ${l.trim()}`)
+            .join("\n");
+          return `\n      // Pre-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
+        }
+        return "";
+      })();
 
-    const postInvokeBlock = (() => {
-      if (route.postInvokeCode && route.postInvokeCode.trim()) {
-        return `\n      // Post-Invoke Business Logic\n      ${route.postInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
-      }
-      if (route.postInvokePrompt && route.postInvokePrompt.trim()) {
-        const lines = route.postInvokePrompt.trim().split("\n");
-        const commentLines = lines.map((l, i) => `      // POST-STEP ${i + 1}: ${l.trim()}`).join("\n");
-        return `\n      // Post-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
-      }
-      return "";
-    })();
+      const postInvokeBlock = (() => {
+        if (route.postInvokeCode && route.postInvokeCode.trim()) {
+          return `\n      // Post-Invoke Business Logic\n      ${route.postInvokeCode.trim().replace(/\n/g, "\n      ")}\n`;
+        }
+        if (route.postInvokePrompt && route.postInvokePrompt.trim()) {
+          const lines = route.postInvokePrompt.trim().split("\n");
+          const commentLines = lines
+            .map((l, i) => `      // POST-STEP ${i + 1}: ${l.trim()}`)
+            .join("\n");
+          return `\n      // Post-Invoke Business Logic (natural language spec — implement below):\n${commentLines}\n`;
+        }
+        return "";
+      })();
 
-    const threadIdLine = hasMemory
-      ? `\n    const threadId = req.body?.thread_id ?? req.headers["x-thread-id"] ?? "default";`
-      : "";
+      const threadIdLine = hasMemory
+        ? `\n    const threadId = req.body?.thread_id ?? req.headers["x-thread-id"] ?? "default";`
+        : "";
 
-    const configLine = hasMemory
-      ? `,\n      { configurable: { thread_id: threadId } }`
-      : "";
+      const configLine = hasMemory
+        ? `,\n      { configurable: { thread_id: threadId } }`
+        : "";
 
-    const comment = isEvent
-      ? `// Event: ${route.eventName ?? route.path} (from ${route.sourceNodeLabel ?? "event source"})`
-      : `// Route: ${route.method} ${route.path} (from ${route.sourceNodeLabel ?? "service"})`;
+      const comment = isEvent
+        ? `// Event: ${route.eventName ?? route.path} (from ${route.sourceNodeLabel ?? "event source"})`
+        : `// Route: ${route.method} ${route.path} (from ${route.sourceNodeLabel ?? "service"})`;
 
-    const isStream = route.responseExecutionMode === "stream";
-    const isAsyncAck = route.responseExecutionMode === "async_ack";
+      const isStream = route.responseExecutionMode === "stream";
+      const isAsyncAck = route.responseExecutionMode === "async_ack";
 
-    if (isStream) {
-      return `
+      if (isStream) {
+        return `
   ${comment}
   app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
     let isAborted = false;
@@ -1216,10 +1354,10 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       }
     }
   });`;
-    }
+      }
 
-    if (isAsyncAck) {
-      return `
+      if (isAsyncAck) {
+        return `
   ${comment}
   app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
     try {${threadIdLine}
@@ -1243,14 +1381,17 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       }
     }
   });`;
-    }
+      }
 
-    // Default Sync REST Response Mode
-    const resultExpr = route.responseOutputMode === "selected" && route.responseFields && route.responseFields.length > 0
-      ? `{\n${route.responseFields.map(f => `        ${JSON.stringify(f)}: result[${JSON.stringify(f)}]`).join(",\n")}\n      }`
-      : "result";
+      // Default Sync REST Response Mode
+      const resultExpr =
+        route.responseOutputMode === "selected" &&
+        route.responseFields &&
+        route.responseFields.length > 0
+          ? `{\n${route.responseFields.map((f) => `        ${JSON.stringify(f)}: result[${JSON.stringify(f)}]`).join(",\n")}\n      }`
+          : "result";
 
-    return `
+      return `
   ${comment}
   app.${route.method.toLowerCase()}(${JSON.stringify(route.path)}, async (req, res) => {
     try {${threadIdLine}
@@ -1265,8 +1406,8 @@ function buildServerFile(ctx: CompileContext, routes: RouteEndpoint[]): string {
       }
     }
   });`;
-
-  }).join("\n");
+    })
+    .join("\n");
 
   const portEnvLine = `const PORT = Number(process.env.PORT ?? 3001);`;
   const agentLabel = escapeStr(ctx.input.graphLabel || "LangGraph Agent");
@@ -1307,7 +1448,10 @@ ${deduped.map((r) => `  console.log("  ${r.method.padEnd(6)} http://localhost:\$
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>): string[] {
+function buildFlowEdges(
+  ctx: CompileContext,
+  nodeMetaMap: Map<string, NodeMeta>,
+): string[] {
   const { edges } = ctx.input;
   const lines: string[] = [];
 
@@ -1344,7 +1488,9 @@ function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
 
       // Get the router function name
       const routerMeta = nodeMetaMap.get(routerId);
-      const routerFnName = routerMeta ? routerMeta.exportName : `${toIdentifier(getNodeLabel(routerId, ctx) || routerId)}Router`;
+      const routerFnName = routerMeta
+        ? routerMeta.exportName
+        : `${toIdentifier(getNodeLabel(routerId, ctx) || routerId)}Router`;
 
       // Collect all downstream targets that the router can route to
       const routerOutEdges = flowEdges.filter((e2) => e2.source === routerId);
@@ -1352,7 +1498,7 @@ function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
         ...new Set(
           routerOutEdges
             .map((e2) => resolveNodeName(e2.target, ctx, nodeMetaMap))
-            .filter(Boolean) as string[]
+            .filter(Boolean) as string[],
         ),
       ];
 
@@ -1361,9 +1507,13 @@ function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
         .join(", ");
 
       if (sourceName === "START") {
-        lines.push(`  .addConditionalEdges(START, ${routerFnName}, [${targetsStr}])`);
+        lines.push(
+          `  .addConditionalEdges(START, ${routerFnName}, [${targetsStr}])`,
+        );
       } else {
-        lines.push(`  .addConditionalEdges("${sourceName}", ${routerFnName}, [${targetsStr}])`);
+        lines.push(
+          `  .addConditionalEdges("${sourceName}", ${routerFnName}, [${targetsStr}])`,
+        );
       }
       continue;
     }
@@ -1394,62 +1544,94 @@ function buildFlowEdges(ctx: CompileContext, nodeMetaMap: Map<string, NodeMeta>)
 
 function getProviderPackage(provider?: string): string {
   switch (provider) {
-    case "openai": return "@langchain/openai";
-    case "anthropic": return "@langchain/anthropic";
-    case "google": return "@langchain/google-genai";
-    case "groq": return "@langchain/groq";
-    case "ollama": return "@langchain/ollama";
-    default: return "@langchain/openai";
+    case "openai":
+      return "@langchain/openai";
+    case "anthropic":
+      return "@langchain/anthropic";
+    case "google":
+      return "@langchain/google-genai";
+    case "groq":
+      return "@langchain/groq";
+    case "ollama":
+      return "@langchain/ollama";
+    default:
+      return "@langchain/openai";
   }
 }
 
 function getProviderClass(provider?: string): string {
   switch (provider) {
-    case "openai": return "ChatOpenAI";
-    case "anthropic": return "ChatAnthropic";
-    case "google": return "ChatGoogleGenerativeAI";
-    case "groq": return "ChatGroq";
-    case "ollama": return "ChatOllama";
-    default: return "ChatOpenAI";
+    case "openai":
+      return "ChatOpenAI";
+    case "anthropic":
+      return "ChatAnthropic";
+    case "google":
+      return "ChatGoogleGenerativeAI";
+    case "groq":
+      return "ChatGroq";
+    case "ollama":
+      return "ChatOllama";
+    default:
+      return "ChatOpenAI";
   }
 }
 
 function getEnvKey(data: LangGraphLLMNodeData): string | null {
   if (data.apiKeyHeader) return data.apiKeyHeader;
   switch (data.provider) {
-    case "openai": return "OPENAI_API_KEY";
-    case "anthropic": return "ANTHROPIC_API_KEY";
-    case "google": return "GEMINI_API_KEY";
-    case "groq": return "GROQ_API_KEY";
-    default: return null;
+    case "openai":
+      return "OPENAI_API_KEY";
+    case "anthropic":
+      return "ANTHROPIC_API_KEY";
+    case "google":
+      return "GEMINI_API_KEY";
+    case "groq":
+      return "GROQ_API_KEY";
+    default:
+      return null;
   }
 }
 
 function getZodType(type: string, defaultValue?: unknown): string {
   switch (type) {
-    case "string": return `z.string().default(${JSON.stringify(defaultValue ?? "")})`;
-    case "number": return `z.number().default(${Number(defaultValue ?? 0)})`;
-    case "boolean": return `z.boolean().default(${Boolean(defaultValue ?? false)})`;
-    case "array": return `z.array(z.any()).default(${JSON.stringify(defaultValue ?? [])})`;
-    case "object": return `z.record(z.any()).default({})`;
-    case "messages": return "MessagesValue";
-    default: return `z.any().default(${JSON.stringify(defaultValue ?? null)})`;
+    case "string":
+      return `z.string().default(${JSON.stringify(defaultValue ?? "")})`;
+    case "number":
+      return `z.number().default(${Number(defaultValue ?? 0)})`;
+    case "boolean":
+      return `z.boolean().default(${Boolean(defaultValue ?? false)})`;
+    case "array":
+      return `z.array(z.any()).default(${JSON.stringify(defaultValue ?? [])})`;
+    case "object":
+      return `z.record(z.any()).default({})`;
+    case "messages":
+      return "MessagesValue";
+    default:
+      return `z.any().default(${JSON.stringify(defaultValue ?? null)})`;
   }
 }
 
 function getReducerFn(reducer: string, type: string): string {
   switch (reducer) {
-    case "append": return type === "array" ? "(x, y) => x.concat(y)" : "(x, y) => x + y";
-    case "add": return "(x, y) => x + y";
-    case "max": return "(x, y) => Math.max(x, y)";
-    case "min": return "(x, y) => Math.min(x, y)";
-    default: return "(x, y) => y";
+    case "append":
+      return type === "array" ? "(x, y) => x.concat(y)" : "(x, y) => x + y";
+    case "add":
+      return "(x, y) => x + y";
+    case "max":
+      return "(x, y) => Math.max(x, y)";
+    case "min":
+      return "(x, y) => Math.min(x, y)";
+    default:
+      return "(x, y) => y";
   }
 }
 
 function jsonSchemaToZod(schema: Record<string, unknown>): string {
   if (schema.type !== "object" || !schema.properties) return "z.object({})";
-  const props = schema.properties as Record<string, { type?: string; description?: string; enum?: string[] }>;
+  const props = schema.properties as Record<
+    string,
+    { type?: string; description?: string; enum?: string[] }
+  >;
   const required = (schema.required as string[]) || [];
 
   const fields = Object.entries(props).map(([key, prop]) => {
@@ -1458,22 +1640,36 @@ function jsonSchemaToZod(schema: Record<string, unknown>): string {
       zodType = `z.enum([${prop.enum.map((e) => `"${e}"`).join(", ")}])`;
     } else {
       switch (prop.type) {
-        case "string": zodType = "z.string()"; break;
-        case "number": zodType = "z.number()"; break;
-        case "boolean": zodType = "z.boolean()"; break;
-        case "array": zodType = "z.array(z.any())"; break;
-        default: zodType = "z.any()";
+        case "string":
+          zodType = "z.string()";
+          break;
+        case "number":
+          zodType = "z.number()";
+          break;
+        case "boolean":
+          zodType = "z.boolean()";
+          break;
+        case "array":
+          zodType = "z.array(z.any())";
+          break;
+        default:
+          zodType = "z.any()";
       }
     }
     if (!required.includes(key)) zodType += ".optional()";
-    if (prop.description) zodType += `.describe("${escapeStr(prop.description)}")`;
+    if (prop.description)
+      zodType += `.describe("${escapeStr(prop.description)}")`;
     return `  ${key}: ${zodType},`;
   });
 
   return `z.object({\n${fields.join("\n")}\n})`;
 }
 
-function resolveNodeName(nodeId: string, ctx: CompileContext, nodeMetaMap?: Map<string, NodeMeta>): string | null {
+function resolveNodeName(
+  nodeId: string,
+  ctx: CompileContext,
+  nodeMetaMap?: Map<string, NodeMeta>,
+): string | null {
   if (nodeId === NODE_ID_START) return "START";
   if (nodeId === NODE_ID_END || nodeId === "END") return "END";
 
@@ -1485,8 +1681,15 @@ function resolveNodeName(nodeId: string, ctx: CompileContext, nodeMetaMap?: Map<
   const node = ctx.input.nodes.find((n) => n.id === nodeId);
   if (!node) return null;
 
-  if (node.type === LANGGRAPH_CANVAS_NODE_NODE || node.type === LANGGRAPH_CANVAS_NODE_AGENT) {
-    return toIdentifier((node.data as CanvasNodeData).name || (node.data as CanvasNodeData).label || nodeId);
+  if (
+    node.type === LANGGRAPH_CANVAS_NODE_NODE ||
+    node.type === LANGGRAPH_CANVAS_NODE_AGENT
+  ) {
+    return toIdentifier(
+      (node.data as CanvasNodeData).name ||
+        (node.data as CanvasNodeData).label ||
+        nodeId,
+    );
   }
   if (node.type === LANGGRAPH_CANVAS_NODE_STEP) {
     return toIdentifier((node.data as StepNodeData).label || nodeId);
@@ -1502,20 +1705,37 @@ function getNodeLabel(nodeId: string, ctx: CompileContext): string | null {
   return (node.data as { label?: string }).label || null;
 }
 
-function buildCondition(field: string, operator: string, value: string): string {
-  const formattedVal = value === "true" ? "true" : value === "false" ? "false" : JSON.stringify(value);
+function buildCondition(
+  field: string,
+  operator: string,
+  value: string,
+): string {
+  const formattedVal =
+    value === "true"
+      ? "true"
+      : value === "false"
+        ? "false"
+        : JSON.stringify(value);
   switch (operator) {
-    case "eq": case "==": case "equals":
+    case "eq":
+    case "==":
+    case "equals":
       return `${field} === ${formattedVal}`;
-    case "neq": case "!=": case "not_equals":
+    case "neq":
+    case "!=":
+    case "not_equals":
       return `${field} !== ${formattedVal}`;
-    case "gt": case ">":
+    case "gt":
+    case ">":
       return `Number(${field}) > ${Number(value) || 0}`;
-    case "gte": case ">=":
+    case "gte":
+    case ">=":
       return `Number(${field}) >= ${Number(value) || 0}`;
-    case "lt": case "<":
+    case "lt":
+    case "<":
       return `Number(${field}) < ${Number(value) || 0}`;
-    case "lte": case "<=":
+    case "lte":
+    case "<=":
       return `Number(${field}) <= ${Number(value) || 0}`;
     case "contains":
       return `String(${field} ?? "").includes(${JSON.stringify(value)})`;
@@ -1578,5 +1798,8 @@ function escapeTemplateLiteral(str: string): string {
 
 function indent(code: string, spaces: number): string {
   const pad = " ".repeat(spaces);
-  return code.split("\n").map((line) => (line.trim() ? pad + line : line)).join("\n");
+  return code
+    .split("\n")
+    .map((line) => (line.trim() ? pad + line : line))
+    .join("\n");
 }

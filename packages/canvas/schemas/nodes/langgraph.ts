@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { DEFAULT_LLM_PROVIDER, DEFAULT_LLM_MODEL, DEFAULT_LLM_TEMPERATURE } from "../../constants";
+import {
+  DEFAULT_LLM_PROVIDER,
+  DEFAULT_LLM_MODEL,
+  DEFAULT_LLM_TEMPERATURE,
+} from "../../constants";
 import { baseNodeDataSchema } from "./base";
 
 // ----------------------------------------------------------------------------
@@ -19,14 +23,16 @@ export const leafComparisonSchema = z.object({
     "is_not_null",
     "has_tool_calls",
   ]),
-  value: z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.null(),
-    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
-    z.record(z.unknown()),
-  ]).optional(),
+  value: z
+    .union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.null(),
+      z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+      z.record(z.unknown()),
+    ])
+    .optional(),
 });
 
 export type LeafComparison = z.infer<typeof leafComparisonSchema>;
@@ -43,7 +49,7 @@ export const conditionAstSchema: z.ZodType<ConditionAst> = z.lazy(() =>
     z.object({ and: z.array(conditionAstSchema) }),
     z.object({ or: z.array(conditionAstSchema) }),
     z.object({ not: conditionAstSchema }),
-  ])
+  ]),
 );
 
 export const graphEdgeTargetSchema = z.object({
@@ -58,7 +64,9 @@ export const sendConfigSchema = z.object({
   itemsField: z.string(),
   itemTarget: graphEdgeTargetSchema,
   joinStepId: z.string(),
-  batchErrorPolicy: z.enum(["fail_fast", "ignore_failures", "collect_errors"]).default("fail_fast"),
+  batchErrorPolicy: z
+    .enum(["fail_fast", "ignore_failures", "collect_errors"])
+    .default("fail_fast"),
 });
 export type SendConfig = z.infer<typeof sendConfigSchema>;
 
@@ -86,33 +94,45 @@ export const toolDefinitionSchema = z.object({
   mcpConnectionId: z.string().optional(),
   remoteToolName: z.string().optional(),
   returnDirect: z.boolean().optional(),
-  returnType: z.enum(["string", "object", "content_blocks", "command"]).optional(),
+  returnType: z
+    .enum(["string", "object", "content_blocks", "command"])
+    .optional(),
   outputSchema: z.string().optional(),
-  commandConfig: z.object({
-    stateUpdates: z.array(z.object({
-      channelKey: z.string(),
-      mode: z.enum(["set", "append", "expression"]).optional(),
-      value: z.string().optional(),
-    }))
-  }).optional(),
+  commandConfig: z
+    .object({
+      stateUpdates: z.array(
+        z.object({
+          channelKey: z.string(),
+          mode: z.enum(["set", "append", "expression"]).optional(),
+          value: z.string().optional(),
+        }),
+      ),
+    })
+    .optional(),
   functionBody: z.string().optional(),
   executionMode: z.enum(["sandboxed_vm", "disabled"]).optional(),
   headless: z.boolean().optional(),
-  contextAccess: z.object({
-    enabled: z.boolean().optional(),
-    fields: z.array(z.string()).optional(),
-  }).optional(),
-  storeAccess: z.object({
-    enabled: z.boolean().optional(),
-    namespace: z.string().optional(),
-    operations: z.array(z.enum(["get", "put", "delete", "list"])).optional(),
-  }).optional(),
+  contextAccess: z
+    .object({
+      enabled: z.boolean().optional(),
+      fields: z.array(z.string()).optional(),
+    })
+    .optional(),
+  storeAccess: z
+    .object({
+      enabled: z.boolean().optional(),
+      namespace: z.string().optional(),
+      operations: z.array(z.enum(["get", "put", "delete", "list"])).optional(),
+    })
+    .optional(),
   streamWriter: z.boolean().optional(),
-  errorHandling: z.object({
-    enabled: z.boolean().optional(),
-    retryCount: z.number().optional(),
-    customErrorMessage: z.string().optional(),
-  }).optional(),
+  errorHandling: z
+    .object({
+      enabled: z.boolean().optional(),
+      retryCount: z.number().optional(),
+      customErrorMessage: z.string().optional(),
+    })
+    .optional(),
   position: z.object({ x: z.number(), y: z.number() }).optional(),
 });
 export type ToolDefinition = z.infer<typeof toolDefinitionSchema>;
@@ -141,118 +161,156 @@ export const middlewareDefinitionSchema = z.object({
     "subagent",
     "custom",
   ]),
-  humanInTheLoopConfig: z.object({
-    interruptOn: z.record(z.boolean()).optional(),
-    approvalPrompt: z.string().optional(),
-    requiredRole: z.string().optional(),
-  }).optional(),
-  rateLimitConfig: z.object({
-    requestsPerMinute: z.number(),
-    windowMs: z.number().optional(),
-  }).optional(),
-  loggingConfig: z.object({
-    logLevel: z.enum(["debug", "info", "warn", "error"]),
-    tracingTarget: z.enum(["langsmith", "opentelemetry", "convex"]).optional(),
-  }).optional(),
-  summarizationConfig: z.object({
-    model: z.string().optional(),
-    triggerTokens: z.number().optional(),
-    triggerMessages: z.number().optional(),
-    triggerFraction: z.number().optional(),
-    keepMessages: z.number().optional(),
-    keepTokens: z.number().optional(),
-    keepFraction: z.number().optional(),
-    summaryPrompt: z.string().optional(),
-    trimTokensToSummarize: z.number().optional(),
-    summaryPrefix: z.string().optional(),
-  }).optional(),
-  modelCallLimitConfig: z.object({
-    threadLimit: z.number().optional(),
-    runLimit: z.number().optional(),
-    exitBehavior: z.enum(["end", "error"]).optional(),
-  }).optional(),
-  toolCallLimitConfig: z.object({
-    toolName: z.string().optional(),
-    threadLimit: z.number().optional(),
-    runLimit: z.number().optional(),
-    exitBehavior: z.enum(["continue", "error", "end"]).optional(),
-  }).optional(),
-  modelFallbackConfig: z.object({
-    fallbackModels: z.array(z.string()).optional(),
-  }).optional(),
-  piiConfig: z.object({
-    piiType: z.string().optional(),
-    strategy: z.enum(["redact", "block", "mask", "hash"]).optional(),
-    detectorPattern: z.string().optional(),
-    applyToInput: z.boolean().optional(),
-    applyToOutput: z.boolean().optional(),
-    applyToToolResults: z.boolean().optional(),
-  }).optional(),
-  todoListConfig: z.object({
-    enableWriteTodos: z.boolean().optional(),
-    autoInjectPrompt: z.boolean().optional(),
-    initialTasks: z.string().optional(),
-  }).optional(),
-  llmToolSelectorConfig: z.object({
-    model: z.string().optional(),
-    maxTools: z.number().optional(),
-    alwaysInclude: z.array(z.string()).optional(),
-    systemPrompt: z.string().optional(),
-  }).optional(),
-  toolRetryConfig: z.object({
-    maxRetries: z.number().optional(),
-    backoffFactor: z.number().optional(),
-    initialDelayMs: z.number().optional(),
-    maxDelayMs: z.number().optional(),
-    jitter: z.boolean().optional(),
-    onFailure: z.enum(["continue", "error"]).optional(),
-    tools: z.array(z.string()).optional(),
-  }).optional(),
-  modelRetryConfig: z.object({
-    maxRetries: z.number().optional(),
-    backoffFactor: z.number().optional(),
-    initialDelayMs: z.number().optional(),
-    maxDelayMs: z.number().optional(),
-    jitter: z.boolean().optional(),
-    onFailure: z.enum(["continue", "error"]).optional(),
-  }).optional(),
-  toolEmulatorConfig: z.object({
-    model: z.string().optional(),
-    emulatedTools: z.array(z.string()).optional(),
-  }).optional(),
-  contextEditingConfig: z.object({
-    triggerTokens: z.number().optional(),
-    keep: z.number().optional(),
-    clearToolInputs: z.boolean().optional(),
-    excludeTools: z.array(z.string()).optional(),
-    placeholder: z.string().optional(),
-  }).optional(),
-  providerToolSearchConfig: z.object({
-    searchableTools: z.array(z.string()).optional(),
-  }).optional(),
-  filesystemConfig: z.object({
-    backend: z.enum(["state", "store", "composite"]).optional(),
-    memoriesPath: z.string().optional(),
-    systemPrompt: z.string().optional(),
-    customToolDescriptions: z.string().optional(),
-  }).optional(),
-  subagentConfig: z.object({
-    defaultModel: z.string().optional(),
-    defaultTools: z.array(z.string()).optional(),
-    subagentsJson: z.string().optional(),
-  }).optional(),
+  humanInTheLoopConfig: z
+    .object({
+      interruptOn: z.record(z.boolean()).optional(),
+      approvalPrompt: z.string().optional(),
+      requiredRole: z.string().optional(),
+    })
+    .optional(),
+  rateLimitConfig: z
+    .object({
+      requestsPerMinute: z.number(),
+      windowMs: z.number().optional(),
+    })
+    .optional(),
+  loggingConfig: z
+    .object({
+      logLevel: z.enum(["debug", "info", "warn", "error"]),
+      tracingTarget: z
+        .enum(["langsmith", "opentelemetry", "convex"])
+        .optional(),
+    })
+    .optional(),
+  summarizationConfig: z
+    .object({
+      model: z.string().optional(),
+      triggerTokens: z.number().optional(),
+      triggerMessages: z.number().optional(),
+      triggerFraction: z.number().optional(),
+      keepMessages: z.number().optional(),
+      keepTokens: z.number().optional(),
+      keepFraction: z.number().optional(),
+      summaryPrompt: z.string().optional(),
+      trimTokensToSummarize: z.number().optional(),
+      summaryPrefix: z.string().optional(),
+    })
+    .optional(),
+  modelCallLimitConfig: z
+    .object({
+      threadLimit: z.number().optional(),
+      runLimit: z.number().optional(),
+      exitBehavior: z.enum(["end", "error"]).optional(),
+    })
+    .optional(),
+  toolCallLimitConfig: z
+    .object({
+      toolName: z.string().optional(),
+      threadLimit: z.number().optional(),
+      runLimit: z.number().optional(),
+      exitBehavior: z.enum(["continue", "error", "end"]).optional(),
+    })
+    .optional(),
+  modelFallbackConfig: z
+    .object({
+      fallbackModels: z.array(z.string()).optional(),
+    })
+    .optional(),
+  piiConfig: z
+    .object({
+      piiType: z.string().optional(),
+      strategy: z.enum(["redact", "block", "mask", "hash"]).optional(),
+      detectorPattern: z.string().optional(),
+      applyToInput: z.boolean().optional(),
+      applyToOutput: z.boolean().optional(),
+      applyToToolResults: z.boolean().optional(),
+    })
+    .optional(),
+  todoListConfig: z
+    .object({
+      enableWriteTodos: z.boolean().optional(),
+      autoInjectPrompt: z.boolean().optional(),
+      initialTasks: z.string().optional(),
+    })
+    .optional(),
+  llmToolSelectorConfig: z
+    .object({
+      model: z.string().optional(),
+      maxTools: z.number().optional(),
+      alwaysInclude: z.array(z.string()).optional(),
+      systemPrompt: z.string().optional(),
+    })
+    .optional(),
+  toolRetryConfig: z
+    .object({
+      maxRetries: z.number().optional(),
+      backoffFactor: z.number().optional(),
+      initialDelayMs: z.number().optional(),
+      maxDelayMs: z.number().optional(),
+      jitter: z.boolean().optional(),
+      onFailure: z.enum(["continue", "error"]).optional(),
+      tools: z.array(z.string()).optional(),
+    })
+    .optional(),
+  modelRetryConfig: z
+    .object({
+      maxRetries: z.number().optional(),
+      backoffFactor: z.number().optional(),
+      initialDelayMs: z.number().optional(),
+      maxDelayMs: z.number().optional(),
+      jitter: z.boolean().optional(),
+      onFailure: z.enum(["continue", "error"]).optional(),
+    })
+    .optional(),
+  toolEmulatorConfig: z
+    .object({
+      model: z.string().optional(),
+      emulatedTools: z.array(z.string()).optional(),
+    })
+    .optional(),
+  contextEditingConfig: z
+    .object({
+      triggerTokens: z.number().optional(),
+      keep: z.number().optional(),
+      clearToolInputs: z.boolean().optional(),
+      excludeTools: z.array(z.string()).optional(),
+      placeholder: z.string().optional(),
+    })
+    .optional(),
+  providerToolSearchConfig: z
+    .object({
+      searchableTools: z.array(z.string()).optional(),
+    })
+    .optional(),
+  filesystemConfig: z
+    .object({
+      backend: z.enum(["state", "store", "composite"]).optional(),
+      memoriesPath: z.string().optional(),
+      systemPrompt: z.string().optional(),
+      customToolDescriptions: z.string().optional(),
+    })
+    .optional(),
+  subagentConfig: z
+    .object({
+      defaultModel: z.string().optional(),
+      defaultTools: z.array(z.string()).optional(),
+      subagentsJson: z.string().optional(),
+    })
+    .optional(),
   customBody: z.string().optional(),
   position: z.object({ x: z.number(), y: z.number() }).optional(),
 });
 export type MiddlewareDefinition = z.infer<typeof middlewareDefinitionSchema>;
 
-export const streamConfigSchema = z.object({
-  enabled: z.boolean().optional().default(false),
-  version: z.string().optional().default("v3"),
-  selectedEvents: z.array(z.string()).optional(),
-  eventSignature: z.string().optional(),
-  customTransformers: z.string().optional(),
-}).optional();
+export const streamConfigSchema = z
+  .object({
+    enabled: z.boolean().optional().default(false),
+    version: z.string().optional().default("v3"),
+    selectedEvents: z.array(z.string()).optional(),
+    eventSignature: z.string().optional(),
+    customTransformers: z.string().optional(),
+  })
+  .optional();
 
 export const memoryDefinitionSchema = z.object({
   id: z.string().optional(),
@@ -260,7 +318,10 @@ export const memoryDefinitionSchema = z.object({
   name: z.string().default("Memory Saver"),
   checkpointer: z.string().default("memory"),
   threadIdKey: z.string().optional().default("thread_id"),
-  threadScope: z.enum(["session", "user", "global"]).optional().default("session"),
+  threadScope: z
+    .enum(["session", "user", "global"])
+    .optional()
+    .default("session"),
   autoSummarize: z.boolean().optional().default(true),
   maxWindowMessages: z.number().optional().default(10),
   saveMessages: z.boolean().optional().default(true),
@@ -268,15 +329,20 @@ export const memoryDefinitionSchema = z.object({
 });
 export type MemoryDefinition = z.infer<typeof memoryDefinitionSchema>;
 
-export const agentMemoryConfigSchema = z.object({
-  enabled: z.boolean().optional().default(true),
-  checkpointer: z.string().optional().default("memory"),
-  threadIdKey: z.string().optional().default("thread_id"),
-  threadScope: z.enum(["session", "user", "global"]).optional().default("session"),
-  autoSummarize: z.boolean().optional().default(true),
-  maxWindowMessages: z.number().optional().default(10),
-  saveMessages: z.boolean().optional().default(true),
-}).optional();
+export const agentMemoryConfigSchema = z
+  .object({
+    enabled: z.boolean().optional().default(true),
+    checkpointer: z.string().optional().default("memory"),
+    threadIdKey: z.string().optional().default("thread_id"),
+    threadScope: z
+      .enum(["session", "user", "global"])
+      .optional()
+      .default("session"),
+    autoSummarize: z.boolean().optional().default(true),
+    maxWindowMessages: z.number().optional().default(10),
+    saveMessages: z.boolean().optional().default(true),
+  })
+  .optional();
 export type AgentMemoryConfig = z.infer<typeof agentMemoryConfigSchema>;
 
 export const agentDefinitionSchema = z.object({
@@ -297,7 +363,9 @@ export type AgentDefinition = z.infer<typeof agentDefinitionSchema>;
 
 export const vectorStoreConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  provider: z.enum(["convex", "pinecone", "pgvector", "qdrant"]).default("convex"),
+  provider: z
+    .enum(["convex", "pinecone", "pgvector", "qdrant"])
+    .default("convex"),
   embeddingModel: z.string().default("text-embedding-3-small"),
   collection: z.string().default("agent_memories"),
   topK: z.number().default(5),
@@ -307,10 +375,29 @@ export type VectorStoreConfig = z.infer<typeof vectorStoreConfigSchema>;
 
 export const inputChannelSchema = z.object({
   key: z.string(),
-  type: z.enum(["string", "messages", "json", "number", "boolean", "object", "array"]).default("string"),
+  type: z
+    .enum([
+      "string",
+      "messages",
+      "json",
+      "number",
+      "boolean",
+      "object",
+      "array",
+    ])
+    .default("string"),
   required: z.boolean().default(true),
   description: z.string().optional(),
-  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.unknown()), z.record(z.unknown())]).optional(),
+  defaultValue: z
+    .union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.null(),
+      z.array(z.unknown()),
+      z.record(z.unknown()),
+    ])
+    .optional(),
 });
 export type InputChannel = z.infer<typeof inputChannelSchema>;
 
@@ -395,7 +482,7 @@ export const graphStepSchema = z.object({
           value: z.string().optional(),
           isDefault: z.boolean().optional(),
           targetId: z.string().optional(),
-        })
+        }),
       ),
     })
     .optional(),
@@ -412,7 +499,7 @@ export const graphStepSchema = z.object({
         channelKey: z.string(),
         value: z.string().optional(),
         mode: z.enum(["set", "append", "expression"]).optional(),
-      })
+      }),
     )
     .optional(),
   position: z.object({ x: z.number(), y: z.number() }).optional(),
@@ -426,7 +513,9 @@ export const outputChannelSchema = z.object({
   topicOrEventName: z.string().optional(),
   targetStateChannel: z.string().optional(),
   description: z.string().optional(),
-  streamContentMode: z.enum(["ai_node_tokens", "structured_output", "step_output", "full_state"]).optional(),
+  streamContentMode: z
+    .enum(["ai_node_tokens", "structured_output", "step_output", "full_state"])
+    .optional(),
   sourceStepId: z.string().optional(),
   boundRouteIds: z.array(z.string()).optional(),
   schemaJson: z.string().optional(),
@@ -448,24 +537,47 @@ export const langgraphDataSchema = baseNodeDataSchema
         z.object({
           key: z.string(),
           type: z.enum(["messages", "string", "json", "number", "boolean"]),
-          reducer: z.enum(["add_messages", "append", "replace", "merge_object", "concat_array"]),
-          defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.unknown()), z.record(z.unknown())]).optional(),
-        })
+          reducer: z.enum([
+            "add_messages",
+            "append",
+            "replace",
+            "merge_object",
+            "concat_array",
+          ]),
+          defaultValue: z
+            .union([
+              z.string(),
+              z.number(),
+              z.boolean(),
+              z.null(),
+              z.array(z.unknown()),
+              z.record(z.unknown()),
+            ])
+            .optional(),
+        }),
       )
       .default([
-        { key: "messages", type: "messages", reducer: "add_messages", defaultValue: [] },
-        { key: "summary", type: "string", reducer: "replace", defaultValue: "" },
+        {
+          key: "messages",
+          type: "messages",
+          reducer: "add_messages",
+          defaultValue: [],
+        },
+        {
+          key: "summary",
+          type: "string",
+          reducer: "replace",
+          defaultValue: "",
+        },
         { key: "intent", type: "string", reducer: "replace", defaultValue: "" },
       ]),
 
-    outputPorts: z
-      .array(outputPortSchema)
-      .default([
-        { id: "tool_call", label: "Tool Output Port" },
-        { id: "human_gate", label: "Human Approval Port" },
-        { id: "completed", label: "Completed Output Port" },
-        { id: "error", label: "Error Output Port" },
-      ]),
+    outputPorts: z.array(outputPortSchema).default([
+      { id: "tool_call", label: "Tool Output Port" },
+      { id: "human_gate", label: "Human Approval Port" },
+      { id: "completed", label: "Completed Output Port" },
+      { id: "error", label: "Error Output Port" },
+    ]),
 
     toolDefinitions: z.array(toolDefinitionSchema).default([]),
     middlewareDefinitions: z.array(middlewareDefinitionSchema).default([]),
@@ -500,7 +612,7 @@ export const langgraphDataSchema = baseNodeDataSchema
           temperature: z.number().optional(),
           maxTokens: z.number().optional(),
           position: z.object({ x: z.number(), y: z.number() }).optional(),
-        })
+        }),
       )
       .optional()
       .default([]),
@@ -513,20 +625,38 @@ export const langgraphDataSchema = baseNodeDataSchema
           id: z.string(),
           label: z.string().optional(),
           position: z.object({ x: z.number(), y: z.number() }).optional(),
-        })
+        }),
       )
       .optional()
       .default([]),
   })
   .superRefine((data, ctx) => {
     const stepIds = new Set(data.graphSteps.map((s) => s.id));
-    const toolIds = new Set(data.toolDefinitions.map((t) => t.toolId || t.id).filter((id): id is string => Boolean(id)));
-    const middlewareIds = new Set(data.middlewareDefinitions.map((m) => m.middlewareId || m.id).filter((id): id is string => Boolean(id)));
-    const agentIds = new Set(data.agentDefinitions.map((a) => a.agentId || a.id).filter((id): id is string => Boolean(id)));
-    const memoryIds = new Set(data.memoryDefinitions.map((m) => m.memoryId || m.id).filter((id): id is string => Boolean(id)));
+    const toolIds = new Set(
+      data.toolDefinitions
+        .map((t) => t.toolId || t.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const middlewareIds = new Set(
+      data.middlewareDefinitions
+        .map((m) => m.middlewareId || m.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const agentIds = new Set(
+      data.agentDefinitions
+        .map((a) => a.agentId || a.id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const memoryIds = new Set(
+      data.memoryDefinitions
+        .map((m) => m.memoryId || m.id)
+        .filter((id): id is string => Boolean(id)),
+    );
     const portIds = new Set(data.outputPorts.map((p) => p.id));
     const customLlmIds = new Set(data.customLlmNodes?.map((l) => l.id) || []);
-    const outputChannelIds = new Set(data.outputChannels?.map((o) => o.id) || []);
+    const outputChannelIds = new Set(
+      data.outputChannels?.map((o) => o.id) || [],
+    );
 
     // 1. Enforce Step Type Restrictions on retryPolicy & Tool Integrity
     data.graphSteps.forEach((step, idx) => {
@@ -587,7 +717,10 @@ export const langgraphDataSchema = baseNodeDataSchema
         sourcesWithConditionalEdge.add(edge.source);
       }
       if (edge.isDefault || edge.condition === undefined) {
-        if (edge.isDefault && sourcesWithDefaultOrUnconditional.has(edge.source)) {
+        if (
+          edge.isDefault &&
+          sourcesWithDefaultOrUnconditional.has(edge.source)
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: `Multiple edges from source "${edge.source}" marked as isDefault or unconditional.`,

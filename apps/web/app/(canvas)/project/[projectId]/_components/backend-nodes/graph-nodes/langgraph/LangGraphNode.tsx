@@ -2,9 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import {
-  Network, ShieldCheck, Sparkles, ExternalLink, Trash2, Pencil, Plug, Zap, Settings, Radio, Globe,
+  Network,
+  ShieldCheck,
+  Sparkles,
+  ExternalLink,
+  Trash2,
+  Pencil,
+  Plug,
+  Zap,
+  Settings,
+  Radio,
+  Globe,
 } from "lucide-react";
-import type { BackendNode, LangGraphStepConfig, LangGraphStateChannel, OutputChannelConfig } from "@/types/canvas";
+import type {
+  BackendNode,
+  LangGraphStepConfig,
+  LangGraphStateChannel,
+  OutputChannelConfig,
+} from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
@@ -35,10 +50,30 @@ const DEFAULT_CHANNEL_TYPE_BADGE: ChannelBadgeInfo = {
 
 const CHANNEL_TYPE_BADGES: Record<string, ChannelBadgeInfo> = {
   sse: DEFAULT_CHANNEL_TYPE_BADGE,
-  websocket: { label: "WS", badgeColor: "bg-blue-500/15 text-blue-400 border-blue-500/30", iconColor: "text-blue-400", icon: Plug },
-  event: { label: "EVENT", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30", iconColor: "text-amber-400", icon: Zap },
-  webhook: { label: "HOOK", badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", iconColor: "text-emerald-400", icon: Globe },
-  rest: { label: "REST", badgeColor: "bg-secondary text-foreground border-border/50", iconColor: "text-muted-foreground", icon: Radio },
+  websocket: {
+    label: "WS",
+    badgeColor: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    iconColor: "text-blue-400",
+    icon: Plug,
+  },
+  event: {
+    label: "EVENT",
+    badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    iconColor: "text-amber-400",
+    icon: Zap,
+  },
+  webhook: {
+    label: "HOOK",
+    badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    iconColor: "text-emerald-400",
+    icon: Globe,
+  },
+  rest: {
+    label: "REST",
+    badgeColor: "bg-secondary text-foreground border-border/50",
+    iconColor: "text-muted-foreground",
+    icon: Radio,
+  },
 };
 
 function getChannelTypeBadge(type: string): ChannelBadgeInfo {
@@ -107,25 +142,33 @@ export function useConnectedRoutes(nodeId: string): ConnectedRouteInfo[] {
 }
 
 const METHOD_COLORS: Record<string, string> = {
-  GET:    "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  POST:   "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  PUT:    "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  PATCH:  "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  GET: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  POST: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  PUT: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  PATCH: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   DELETE: "bg-red-500/15 text-red-400 border-red-500/30",
-  EVENT:  "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  EVENT: "bg-purple-500/15 text-purple-400 border-purple-500/30",
   INVOKE: "bg-secondary text-muted-foreground border-border/50",
 };
 
-export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
+export const LangGraphNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const deleteNode = useBackendCanvasStore((s) => s.deleteNode);
-  const setActiveConfigItem = useBackendCanvasStore((s) => s.setActiveConfigItem);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
   const storeProjectId = useBackendCanvasStore((s) => s.projectId);
   const params = useParams();
   const router = useRouter();
   const projectId = (params?.projectId as string) || storeProjectId;
 
-  const [isEditing, setIsEditing] = useState(data.label === "" || data.label === "Untitled");
+  const [isEditing, setIsEditing] = useState(
+    data.label === "" || data.label === "Untitled",
+  );
   const [name, setName] = useState(data.label || "LangGraph Agent");
 
   const connectedRoutes = useConnectedRoutes(id);
@@ -151,7 +194,12 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
   const inputChannels = data.inputChannels || [];
   const stateChannels = data.stateChannels || [];
   const graphSteps = data.graphSteps || [];
-  const memoryConfig = data.memoryConfig || { checkpointer: "convex", threadScope: "session", autoSummarize: true, maxWindowMessages: 10 };
+  const memoryConfig = data.memoryConfig || {
+    checkpointer: "convex",
+    threadScope: "session",
+    autoSummarize: true,
+    maxWindowMessages: 10,
+  };
 
   return (
     <div
@@ -159,7 +207,7 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         "rounded-2xl bg-card/95 backdrop-blur-xl border-2 w-[340px] flex flex-col transition-all duration-300 relative shadow-2xl group",
         selected
           ? "border-primary ring-4 ring-primary/20 shadow-primary/10"
-          : "border-border hover:border-border/80"
+          : "border-border hover:border-border/80",
       )}
       onDoubleClick={handleOpenEditor}
     >
@@ -214,7 +262,10 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
             )}
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
               <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
-              <span className="truncate">{inputChannels.length} inputs · {graphSteps.length} steps · {stateChannels.length} state fields</span>
+              <span className="truncate">
+                {inputChannels.length} inputs · {graphSteps.length} steps ·{" "}
+                {stateChannels.length} state fields
+              </span>
             </div>
           </div>
         </div>
@@ -296,7 +347,9 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                 <span
                   className={cn(
                     "text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono",
-                    METHOD_COLORS[route.method] || METHOD_COLORS["INVOKE"] || ""
+                    METHOD_COLORS[route.method] ||
+                      METHOD_COLORS["INVOKE"] ||
+                      "",
                   )}
                 >
                   {route.method}
@@ -356,8 +409,12 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                   className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/40 transition-colors nodrag relative group/channel"
                   title={`Emitted output channel: ${ch.name} (${ch.type})`}
                 >
-                  <IconComponent className={`w-3 h-3 shrink-0 ${typeInfo.iconColor}`} />
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono ${typeInfo.badgeColor}`}>
+                  <IconComponent
+                    className={`w-3 h-3 shrink-0 ${typeInfo.iconColor}`}
+                  />
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 font-mono ${typeInfo.badgeColor}`}
+                  >
                     {typeInfo.label}
                   </span>
                   <span className="font-medium truncate text-foreground flex-1">
@@ -390,7 +447,10 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
           </div>
           <div className="flex flex-wrap gap-1">
             {stateChannels.slice(0, 3).map((ch: LangGraphStateChannel) => (
-              <span key={ch.key} className="text-[9px] px-1.5 py-0.5 rounded bg-[#006ddd]/15 text-[#006ddd] font-mono border border-[#006ddd]/30 font-semibold">
+              <span
+                key={ch.key}
+                className="text-[9px] px-1.5 py-0.5 rounded bg-[#006ddd]/15 text-[#006ddd] font-mono border border-[#006ddd]/30 font-semibold"
+              >
                 {ch.key}
               </span>
             ))}
@@ -405,7 +465,9 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
         {/* Steps mini-list */}
         <div className="flex flex-wrap gap-1.5">
           {graphSteps.slice(0, 4).map((step: LangGraphStepConfig) => {
-            const hasUpdates = Boolean(step.stateUpdates && step.stateUpdates.length > 0);
+            const hasUpdates = Boolean(
+              step.stateUpdates && step.stateUpdates.length > 0,
+            );
             return (
               <span
                 key={step.id}
@@ -413,11 +475,13 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
                   "text-[10px] px-2 py-0.5 rounded-md border font-mono flex items-center gap-1",
                   hasUpdates
                     ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                    : "bg-secondary text-foreground border-border/50"
+                    : "bg-secondary text-foreground border-border/50",
                 )}
               >
                 {step.name || step.id}
-                {hasUpdates && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+                {hasUpdates && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                )}
               </span>
             );
           })}
@@ -435,7 +499,9 @@ export const LangGraphNode = ({ id, data, selected }: NodeProps<BackendNode>) =>
           </span>
           <span>checkpointer</span>
           {memoryConfig.autoSummarize && (
-            <span className="px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/40 font-mono">auto-summarize</span>
+            <span className="px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/40 font-mono">
+              auto-summarize
+            </span>
           )}
         </div>
 

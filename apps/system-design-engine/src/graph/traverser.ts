@@ -1,5 +1,5 @@
-import { GraphRepository } from './repository.js';
-import { NodeMemory } from '../knowledge/documents.js';
+import { GraphRepository } from "./repository.js";
+import { NodeMemory } from "../knowledge/documents.js";
 
 export class GraphTraverser {
   constructor(private readonly repo: GraphRepository) {}
@@ -14,12 +14,18 @@ export class GraphTraverser {
     return [];
   }
 
-  async findPublishers(projectId: string, topicId: string): Promise<NodeMemory[]> {
+  async findPublishers(
+    projectId: string,
+    topicId: string,
+  ): Promise<NodeMemory[]> {
     // TODO: Traverse based on dependents of topicId
     return [];
   }
 
-  async findConsumers(projectId: string, topicId: string): Promise<NodeMemory[]> {
+  async findConsumers(
+    projectId: string,
+    topicId: string,
+  ): Promise<NodeMemory[]> {
     // TODO: Traverse based on dependencies of topicId
     return [];
   }

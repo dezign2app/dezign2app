@@ -5,8 +5,8 @@ import { useRealtime } from "@upstash/realtime/client";
 import { useChatStore, RESET_STREAMING_TEXT } from "./chat-store";
 
 export const useChatSync = (conversationId: string | null) => {
-  const { 
-    setStreamingText, 
+  const {
+    setStreamingText,
     setStreamingThinking,
     sendingMessage,
     resetStreamingState,
@@ -24,11 +24,14 @@ export const useChatSync = (conversationId: string | null) => {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_WORKFLOW_ENGINE_BASE_URL}/ai/history`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversationId }),
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_WORKFLOW_ENGINE_BASE_URL}/ai/history`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ conversationId }),
+          },
+        );
 
         if (!response.ok) {
           let errorMessage = "";
@@ -39,16 +42,23 @@ export const useChatSync = (conversationId: string | null) => {
             // Ignore parse errors
           }
           setStreamingText(RESET_STREAMING_TEXT);
-          setStreamingText(errorMessage ? `⚠️ ${errorMessage}` : "⚠️ Connection error. Please try again later.");
+          setStreamingText(
+            errorMessage
+              ? `⚠️ ${errorMessage}`
+              : "⚠️ Connection error. Please try again later.",
+          );
           return;
         }
 
         const { history } = await response.json();
-        
+
         setStreamingText(RESET_STREAMING_TEXT); // Clear first
         setStreamingThinking(RESET_STREAMING_TEXT); // Clear thinking too
         history.forEach((payload: any) => {
-          const chunkId = payload._idx !== undefined ? `idx-${payload._idx}` : JSON.stringify(payload);
+          const chunkId =
+            payload._idx !== undefined
+              ? `idx-${payload._idx}`
+              : JSON.stringify(payload);
           if (!processedChunks.current.has(chunkId)) {
             applyPayload(payload);
             processedChunks.current.add(chunkId);
@@ -70,8 +80,8 @@ export const useChatSync = (conversationId: string | null) => {
     } else if (payload.type === "error") {
       setStreamingText(payload.error || "⚠️ Something went wrong.");
     } else if (payload.type === "done") {
-        setStreamingText(RESET_STREAMING_TEXT);
-        setStreamingThinking(RESET_STREAMING_TEXT);
+      setStreamingText(RESET_STREAMING_TEXT);
+      setStreamingThinking(RESET_STREAMING_TEXT);
     }
   };
 
@@ -84,9 +94,13 @@ export const useChatSync = (conversationId: string | null) => {
       if (!content) return;
 
       try {
-        const payload = typeof content === "string" ? JSON.parse(content) : content;
-        const chunkId = payload._idx !== undefined ? `idx-${payload._idx}` : JSON.stringify(payload);
-        
+        const payload =
+          typeof content === "string" ? JSON.parse(content) : content;
+        const chunkId =
+          payload._idx !== undefined
+            ? `idx-${payload._idx}`
+            : JSON.stringify(payload);
+
         if (!processedChunks.current.has(chunkId)) {
           applyPayload(payload);
           processedChunks.current.add(chunkId);
@@ -94,6 +108,6 @@ export const useChatSync = (conversationId: string | null) => {
       } catch (e) {
         console.error("Failed to parse payload", e);
       }
-    }
+    },
   });
 };

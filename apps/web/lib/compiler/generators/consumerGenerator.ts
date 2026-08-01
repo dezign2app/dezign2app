@@ -7,10 +7,13 @@ import { resolveConsumerTrace } from "../traceResolver";
 
 export function generateConsumers(
   serviceName: string,
-  nodeConsumedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[],
+  nodeConsumedEvents: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[],
   serviceNode?: BackendNode,
   allNodes: BackendNode[] = [],
-  allEdges: BackendEdge[] = []
+  allEdges: BackendEdge[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const consumerImports: string[] = [];
@@ -87,7 +90,8 @@ export async function ${handlerName}(rawPayload: unknown): Promise<void> {
       if (promptText) {
         consumerCode += `    // --- Natural Language Instructions ---\n`;
         promptText.split("\n").forEach((line: string, idx: number) => {
-          if (line.trim()) consumerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
+          if (line.trim())
+            consumerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
         });
         consumerCode += `\n`;
       } else if (!codeBlock) {
@@ -114,8 +118,12 @@ export async function ${handlerName}(rawPayload: unknown): Promise<void> {
         content: consumerCode,
       });
 
-      consumerImports.push(`import { ${handlerName} } from "./${consumerFileName}";`);
-      consumerInits.push(`  logger.info("Registered listener for topic: ${ev.name}");`);
+      consumerImports.push(
+        `import { ${handlerName} } from "./${consumerFileName}";`,
+      );
+      consumerInits.push(
+        `  logger.info("Registered listener for topic: ${ev.name}");`,
+      );
     });
 
     const consumersIndexCode = `import { createLogger } from "@workspace/logger";

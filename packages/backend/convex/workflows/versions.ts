@@ -117,12 +117,19 @@ export const publishWorkflow = mutation({
       updatedAt: now,
     });
 
-    if (startNode?.config?.triggerType === "cron" && startNode?.config?.cronExpression) {
-      await ctx.scheduler.runAfter(0, internal.workflows.cron.scheduleNextTick, {
-        workflowId: workflow._id,
-        cronExpression: startNode.config.cronExpression,
-        timezone: startNode.config.timezone,
-      });
+    if (
+      startNode?.config?.triggerType === "cron" &&
+      startNode?.config?.cronExpression
+    ) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.workflows.cron.scheduleNextTick,
+        {
+          workflowId: workflow._id,
+          cronExpression: startNode.config.cronExpression,
+          timezone: startNode.config.timezone,
+        },
+      );
     }
 
     return publishedVersionId;
@@ -193,11 +200,15 @@ export const restoreWorkflowVersion = mutation({
     const [oldNodes, oldEdges] = await Promise.all([
       ctx.db
         .query("workflow_nodes")
-        .withIndex("by_version", (q) => q.eq("versionId", workflow.draftVersionId!))
+        .withIndex("by_version", (q) =>
+          q.eq("versionId", workflow.draftVersionId!),
+        )
         .collect(),
       ctx.db
         .query("workflow_edges")
-        .withIndex("by_version", (q) => q.eq("versionId", workflow.draftVersionId!))
+        .withIndex("by_version", (q) =>
+          q.eq("versionId", workflow.draftVersionId!),
+        )
         .collect(),
     ]);
 
@@ -295,7 +306,8 @@ export const deleteWorkflowVersion = mutation({
     const version = await ctx.db.get(args.versionId);
     if (!version) throw new ConvexError("Version not found");
 
-    if (version.workflowId !== workflow._id) throw new ConvexError("Version does not belong to this workflow");
+    if (version.workflowId !== workflow._id)
+      throw new ConvexError("Version does not belong to this workflow");
 
     if (workflow.publishedVersionId === args.versionId) {
       throw new ConvexError(
@@ -303,7 +315,8 @@ export const deleteWorkflowVersion = mutation({
       );
     }
 
-    if (workflow.draftVersionId === args.versionId) throw new ConvexError("Cannot delete the draft version");
+    if (workflow.draftVersionId === args.versionId)
+      throw new ConvexError("Cannot delete the draft version");
 
     if (workflow.activeVersionId === args.versionId) {
       throw new ConvexError(

@@ -30,7 +30,9 @@ export const processingStepSchema = z.object({
   id: z.string(),
   text: z.string(),
   operation: processingOperationEnum.optional(),
-  config: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  config: z
+    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional(),
 });
 export type ProcessingStep = z.infer<typeof processingStepSchema>;
 

@@ -1,14 +1,47 @@
 import React, { useState, useEffect } from "react";
-import { NodeProps, Handle, Position, useReactFlow, Connection } from "@xyflow/react";
-import { Globe, Trash2, Code, Key, Shield, Sparkles, Brain } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@workspace/ui/components/tabs";
+import {
+  NodeProps,
+  Handle,
+  Position,
+  useReactFlow,
+  Connection,
+} from "@xyflow/react";
+import {
+  Globe,
+  Trash2,
+  Code,
+  Key,
+  Shield,
+  Sparkles,
+  Brain,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@workspace/ui/components/tabs";
 import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
-import { LANGGRAPH_CANVAS_NODE_LLM, HANDLE_LLM_IN, HANDLE_LLM_OUT } from "../constants";
+import {
+  LANGGRAPH_CANVAS_NODE_LLM,
+  HANDLE_LLM_IN,
+  HANDLE_LLM_OUT,
+} from "../constants";
 import { LLM_PROVIDER_PRESETS } from "../components/inspector/constants";
 import { LocalInput, LocalTextarea } from "../../../common/shared";
 
-export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGraphLLMNode>) => {
+export const LangGraphCanvasLLMNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<LangGraphLLMNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(data.label || "LLM");
@@ -19,7 +52,11 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
 
   const updateLLMData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_LLM ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) =>
+        n.id === id && n.type === LANGGRAPH_CANVAS_NODE_LLM
+          ? { ...n, data: { ...n.data, ...changes } }
+          : n,
+      ),
     );
   };
 
@@ -33,7 +70,8 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
   };
 
   const activeProviderKey = data.provider || "openai";
-  const activePreset = LLM_PROVIDER_PRESETS[activeProviderKey] || LLM_PROVIDER_PRESETS.custom;
+  const activePreset =
+    LLM_PROVIDER_PRESETS[activeProviderKey] || LLM_PROVIDER_PRESETS.custom;
   const currentModels = activePreset?.models || [];
 
   const defaultBody = JSON.stringify(
@@ -43,22 +81,26 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
       temperature: data.temperature ?? 0.7,
     },
     null,
-    2
+    2,
   );
 
   const defaultHeaders = JSON.stringify(
     {
       "Content-Type": "application/json",
-      Authorization: data.apiKeyHeader ? `Bearer ${data.apiKeyHeader}` : "Bearer YOUR_API_KEY",
+      Authorization: data.apiKeyHeader
+        ? `Bearer ${data.apiKeyHeader}`
+        : "Bearer YOUR_API_KEY",
     },
     null,
-    2
+    2,
   );
 
   return (
     <div
       className={`rounded-xl bg-card border-2 min-w-[300px] max-w-[360px] p-3 flex flex-col gap-2.5 transition-all duration-200 shadow-md relative group ${
-        selected ? "border-blue-500 ring-2 ring-blue-500/20 shadow-blue-500/10" : "border-border hover:border-blue-500/40 hover:shadow-blue-500/5"
+        selected
+          ? "border-blue-500 ring-2 ring-blue-500/20 shadow-blue-500/10"
+          : "border-border hover:border-blue-500/40 hover:shadow-blue-500/5"
       }`}
     >
       {/* Output Handle to connect edge to step nodes */}
@@ -67,7 +109,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
         position={Position.Bottom}
         id={HANDLE_LLM_OUT}
         style={{ left: "50%" }}
-        isValidConnection={(connection: Connection) => connection.targetHandle === HANDLE_LLM_IN}
+        isValidConnection={(connection: Connection) =>
+          connection.targetHandle === HANDLE_LLM_IN
+        }
         className="!bg-sky-400 !w-3.5 !h-3.5 !border-2 !border-background hover:!scale-125 transition-transform !-bottom-[7px]"
         title="Connect to Step Node LLM Config"
       />
@@ -118,7 +162,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
                 {data.label || "LLM"}
               </span>
             )}
-            <span className="text-[9px] font-mono text-muted-foreground">{data.llmId}</span>
+            <span className="text-[9px] font-mono text-muted-foreground">
+              {data.llmId}
+            </span>
           </div>
         </div>
 
@@ -146,7 +192,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
       <div className="flex flex-col gap-1 nodrag">
         <label className="text-[9px] font-medium text-muted-foreground flex items-center justify-between">
           <span>Provider Preset</span>
-          <span className="text-sky-400 font-mono text-[9px]">{activePreset?.label}</span>
+          <span className="text-sky-400 font-mono text-[9px]">
+            {activePreset?.label}
+          </span>
         </label>
         <Select
           value={activeProviderKey}
@@ -181,21 +229,35 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
       {activeProviderKey === "custom" ? (
         <Tabs defaultValue="endpoint" className="w-full text-xs nodrag">
           <TabsList className="grid grid-cols-3 h-7 bg-secondary/50 p-0.5 rounded-lg border border-border/50 text-[10px] nodrag">
-            <TabsTrigger value="endpoint" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-sky-400 nodrag">
+            <TabsTrigger
+              value="endpoint"
+              className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-sky-400 nodrag"
+            >
               Endpoint
             </TabsTrigger>
-            <TabsTrigger value="headers" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-amber-400 nodrag">
+            <TabsTrigger
+              value="headers"
+              className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-amber-400 nodrag"
+            >
               Headers
             </TabsTrigger>
-            <TabsTrigger value="body" className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-emerald-400 nodrag">
+            <TabsTrigger
+              value="body"
+              className="h-6 text-[10px] font-medium data-[state=active]:bg-background data-[state=active]:text-emerald-400 nodrag"
+            >
               Body
             </TabsTrigger>
           </TabsList>
 
           {/* Tab 1: Custom Endpoint URL */}
-          <TabsContent value="endpoint" className="flex flex-col gap-2 pt-2 nodrag">
+          <TabsContent
+            value="endpoint"
+            className="flex flex-col gap-2 pt-2 nodrag"
+          >
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] font-medium text-muted-foreground">Model Identifier</label>
+              <label className="text-[9px] font-medium text-muted-foreground">
+                Model Identifier
+              </label>
               <LocalInput
                 className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
                 placeholder="e.g. gpt-4o, claude-3-5-sonnet, llama3:8b"
@@ -211,7 +273,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
               <div className="flex items-center gap-1.5">
                 <Select
                   value={data.method || "POST"}
-                  onValueChange={(val: string) => updateLLMData({ method: val })}
+                  onValueChange={(val: string) =>
+                    updateLLMData({ method: val })
+                  }
                 >
                   <SelectTrigger className="h-6 w-16 text-[9.5px] bg-background border border-border/60 rounded px-1 font-bold font-mono text-sky-400 nodrag">
                     <SelectValue />
@@ -225,28 +289,41 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
                 <LocalInput
                   className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground flex-1 nodrag"
                   placeholder="https://api.openai.com/v1/chat/completions"
-                  value={data.url || data.baseUrl || activePreset?.defaultUrl || ""}
-                  onChange={(e) => updateLLMData({ url: e.target.value, baseUrl: e.target.value })}
+                  value={
+                    data.url || data.baseUrl || activePreset?.defaultUrl || ""
+                  }
+                  onChange={(e) =>
+                    updateLLMData({
+                      url: e.target.value,
+                      baseUrl: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-0.5">
               <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
-                <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret Token (Optional)
+                <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret
+                Token (Optional)
               </label>
               <LocalInput
                 type="password"
                 className="h-6 text-[10px] bg-background border border-border/60 rounded px-1.5 font-mono text-foreground nodrag"
                 placeholder="Bearer sk-... or secret token"
                 value={data.apiKeyHeader || ""}
-                onChange={(e) => updateLLMData({ apiKeyHeader: e.target.value })}
+                onChange={(e) =>
+                  updateLLMData({ apiKeyHeader: e.target.value })
+                }
               />
             </div>
           </TabsContent>
 
           {/* Tab 2: Headers */}
-          <TabsContent value="headers" className="flex flex-col gap-1.5 pt-2 nodrag">
+          <TabsContent
+            value="headers"
+            className="flex flex-col gap-1.5 pt-2 nodrag"
+          >
             <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
               <Key className="w-3 h-3 text-amber-400" /> Request Headers (JSON)
             </label>
@@ -254,15 +331,23 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
               className="min-h-[90px] max-h-[160px] text-[9.5px] bg-background border border-border/60 rounded p-1.5 font-mono text-foreground nodrag resize-y"
               placeholder='{\n  "Content-Type": "application/json"\n}'
               rows={4}
-              value={data.headersJson !== undefined ? data.headersJson : defaultHeaders}
+              value={
+                data.headersJson !== undefined
+                  ? data.headersJson
+                  : defaultHeaders
+              }
               onChange={(e) => updateLLMData({ headersJson: e.target.value })}
             />
           </TabsContent>
 
           {/* Tab 3: Request Body */}
-          <TabsContent value="body" className="flex flex-col gap-1.5 pt-2 nodrag">
+          <TabsContent
+            value="body"
+            className="flex flex-col gap-1.5 pt-2 nodrag"
+          >
             <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
-              <Code className="w-3 h-3 text-emerald-400" /> Request Payload (JSON Body)
+              <Code className="w-3 h-3 text-emerald-400" /> Request Payload
+              (JSON Body)
             </label>
             <LocalTextarea
               className="min-h-[100px] max-h-[180px] text-[9.5px] bg-background border border-border/60 rounded p-1.5 font-mono text-foreground nodrag resize-y"
@@ -279,7 +364,9 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
           <div className="flex flex-col gap-0.5">
             <label className="text-[9px] font-medium text-muted-foreground flex items-center justify-between">
               <span>Model Identifier</span>
-              <span className="font-mono text-[8.5px] text-sky-400">{data.model || activePreset?.defaultModel}</span>
+              <span className="font-mono text-[8.5px] text-sky-400">
+                {data.model || activePreset?.defaultModel}
+              </span>
             </label>
             {currentModels.length > 0 ? (
               <Select
@@ -310,7 +397,8 @@ export const LangGraphCanvasLLMNode = ({ id, data, selected }: NodeProps<LangGra
           {/* API Key / Secret Token */}
           <div className="flex flex-col gap-0.5">
             <label className="text-[9px] font-medium text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret Token (Optional)
+              <Shield className="w-3 h-3 text-amber-400" /> API Key / Secret
+              Token (Optional)
             </label>
             <LocalInput
               type="password"

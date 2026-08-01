@@ -1,19 +1,18 @@
 import React from "react";
-import {
-  EdgeProps,
-  getBezierPath,
-  BaseEdge,
-} from "@xyflow/react";
+import { EdgeProps, getBezierPath, BaseEdge } from "@xyflow/react";
 import { BackendEdge } from "@/types/canvas";
 
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 
 function useSimulationEdgeState(edgeId: string) {
-  const { status, activeEdgeIds, currentEdgeId, trace, activeIndex } = useSimulationStore();
+  const { status, activeEdgeIds, currentEdgeId, trace, activeIndex } =
+    useSimulationStore();
   const hasRun = status !== "idle";
   const visitedTrace = trace.slice(0, activeIndex + 1);
-  const isVisited = activeEdgeIds.includes(edgeId) || visitedTrace.some(t => t.edgeId === edgeId);
+  const isVisited =
+    activeEdgeIds.includes(edgeId) ||
+    visitedTrace.some((t) => t.edgeId === edgeId);
   const isCurrent = currentEdgeId === edgeId;
 
   return { hasRun, isVisited, isCurrent };
@@ -84,7 +83,15 @@ const EdgeMarkers = () => (
 
 // 3. Database Reference Edge (Amber/Orange Dashed)
 export const DatabaseRefEdge = (props: EdgeProps<BackendEdge>) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style,
+  } = props;
   const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
@@ -122,7 +129,9 @@ export const DatabaseRefEdge = (props: EdgeProps<BackendEdge>) => {
           stroke: "#f59e0b", // amber-500
           strokeDasharray: "4, 4",
           opacity: simulation.hasRun && !simulation.isVisited ? 0.08 : 1,
-          filter: simulation.isCurrent ? "drop-shadow(0 0 5px #f59e0b)" : undefined,
+          filter: simulation.isCurrent
+            ? "drop-shadow(0 0 5px #f59e0b)"
+            : undefined,
         }}
       />
     </>
@@ -131,8 +140,8 @@ export const DatabaseRefEdge = (props: EdgeProps<BackendEdge>) => {
 
 // 1. HTTP/API Connection Edge (Blue/Teal)
 export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
-  const targetNode = useBackendCanvasStore(
-    (s) => s.nodes.find((n) => n.id === props.target)
+  const targetNode = useBackendCanvasStore((s) =>
+    s.nodes.find((n) => n.id === props.target),
   );
   const simulation = useSimulationEdgeState(props.id);
 
@@ -140,7 +149,15 @@ export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
     return <DatabaseRefEdge {...props} />;
   }
 
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style,
+  } = props;
 
   const [edgePath] = getBezierPath({
     sourceX,
@@ -155,7 +172,7 @@ export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
     <>
       <EdgeStyles />
       <EdgeMarkers />
-      
+
       {/* Background/Base path */}
       <BaseEdge
         path={edgePath}
@@ -176,29 +193,43 @@ export const HTTPConnectionEdge = (props: EdgeProps<BackendEdge>) => {
           strokeWidth: 1.5,
           stroke: "#0ea5e9", // sky-500
           opacity: simulation.hasRun && !simulation.isVisited ? 0.08 : 1,
-          filter: simulation.isCurrent ? "drop-shadow(0 0 5px #0ea5e9)" : undefined,
+          filter: simulation.isCurrent
+            ? "drop-shadow(0 0 5px #0ea5e9)"
+            : undefined,
         }}
       />
 
       {/* Animated Flow dots */}
-      {(!simulation.hasRun || simulation.isVisited) && <path
+      {(!simulation.hasRun || simulation.isVisited) && (
+        <path
           d={edgePath}
           fill="none"
-          className={simulation.isCurrent ? "edge-flow-animated-fast" : undefined}
+          className={
+            simulation.isCurrent ? "edge-flow-animated-fast" : undefined
+          }
           style={{
             strokeWidth: 1.5,
             stroke: "#e0f2fe", // sky-100 overlay
             pointerEvents: "none",
             opacity: simulation.hasRun && !simulation.isCurrent ? 0.35 : 1,
           }}
-        />}
+        />
+      )}
     </>
   );
 };
 
 // 2. Messaging Edge (Purple/Lavender)
 export const MessagingEdge = (props: EdgeProps<BackendEdge>) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style,
+  } = props;
   const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
@@ -235,12 +266,15 @@ export const MessagingEdge = (props: EdgeProps<BackendEdge>) => {
           strokeWidth: 1.5,
           stroke: "#a855f7", // purple-500
           opacity: simulation.hasRun && !simulation.isVisited ? 0.08 : 1,
-          filter: simulation.isCurrent ? "drop-shadow(0 0 5px #a855f7)" : undefined,
+          filter: simulation.isCurrent
+            ? "drop-shadow(0 0 5px #a855f7)"
+            : undefined,
         }}
       />
 
       {/* Animated messaging pulses */}
-      {(!simulation.hasRun || simulation.isVisited) && <path
+      {(!simulation.hasRun || simulation.isVisited) && (
+        <path
           d={edgePath}
           fill="none"
           className={simulation.isCurrent ? "edge-flow-animated" : undefined}
@@ -250,14 +284,23 @@ export const MessagingEdge = (props: EdgeProps<BackendEdge>) => {
             pointerEvents: "none",
             opacity: simulation.hasRun && !simulation.isCurrent ? 0.35 : 1,
           }}
-        />}
+        />
+      )}
     </>
   );
 };
 
 // 4. Identity Connection Edge (Emerald/Teal Dashed)
 export const IdentityConnectionEdge = (props: EdgeProps<BackendEdge>) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style } = props;
+  const {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style,
+  } = props;
   const simulation = useSimulationEdgeState(props.id);
 
   const [edgePath] = getBezierPath({
@@ -294,10 +337,11 @@ export const IdentityConnectionEdge = (props: EdgeProps<BackendEdge>) => {
           stroke: "#10b981", // emerald-500
           strokeDasharray: "4, 4",
           opacity: simulation.hasRun && !simulation.isVisited ? 0.08 : 1,
-          filter: simulation.isCurrent ? "drop-shadow(0 0 5px #10b981)" : undefined,
+          filter: simulation.isCurrent
+            ? "drop-shadow(0 0 5px #10b981)"
+            : undefined,
         }}
       />
     </>
   );
 };
-

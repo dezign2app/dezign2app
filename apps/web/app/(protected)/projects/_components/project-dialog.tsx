@@ -33,7 +33,7 @@ export function ProjectDialog({
   onOpenChange: setControlledOpen,
 }: ProjectDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  
+
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = setControlledOpen ?? setUncontrolledOpen;
 
@@ -75,7 +75,9 @@ export function ProjectDialog({
         setDescription("");
       }
     } catch (error) {
-      toast.error(isEditing ? "Failed to update project" : "Failed to create project");
+      toast.error(
+        isEditing ? "Failed to update project" : "Failed to create project",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -84,13 +86,18 @@ export function ProjectDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit Project" : "Create New Project"}</DialogTitle>
+            <DialogTitle>
+              {isEditing ? "Edit Project" : "Create New Project"}
+            </DialogTitle>
             <DialogDescription>
-              {isEditing 
-                ? "Update your project's name and description." 
+              {isEditing
+                ? "Update your project's name and description."
                 : "This action will create a new space for your project."}
             </DialogDescription>
           </DialogHeader>
@@ -119,16 +126,22 @@ export function ProjectDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button 
-                type="button" 
-                variant="outline" 
-                disabled={isLoading} 
-                onClick={() => setOpen(false)}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create")}
+              {isLoading
+                ? isEditing
+                  ? "Saving..."
+                  : "Creating..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </form>

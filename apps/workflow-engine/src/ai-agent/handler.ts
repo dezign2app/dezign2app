@@ -104,25 +104,30 @@ export const aiAgentHandler = async (req: Request, res: Response) => {
 
           if (intent === "kanban") {
             console.log("🚀 Triggering Kanban Inngest flow");
-            
+
             // Fetch history to provide context to Inngest
-            let chatHistory:{role:string,content:string}[] = [];
+            let chatHistory: { role: string; content: string }[] = [];
             if (conversationId) {
               const { getConvexClient } = await import("./convex-client");
               const { api } = await import("@workspace/backend/_generated/api");
               const client = getConvexClient(sessionToken);
-              const messages = await client.query(api.ai.messages.getLastNMessages, {
-                conversationId: conversationId as Id<"conversations">,
-                n: 10
-              });
-              chatHistory = (messages || []).map(m => ({
+              const messages = await client.query(
+                api.ai.messages.getLastNMessages,
+                {
+                  conversationId: conversationId as Id<"conversations">,
+                  n: 10,
+                },
+              );
+              chatHistory = (messages || []).map((m) => ({
                 role: m.role,
                 content: m.content,
               }));
             }
 
             // Immediate feedback while Inngest works
-            const thinkingMsg = reasoning ? `🔍 ${reasoning}` : "🔍 Analyzing your Kanban request... hang tight!";
+            const thinkingMsg = reasoning
+              ? `🔍 ${reasoning}`
+              : "🔍 Analyzing your Kanban request... hang tight!";
             pushToStream({ type: "thinking", content: thinkingMsg });
             fullThinkingContent += thinkingMsg;
 
@@ -139,18 +144,26 @@ export const aiAgentHandler = async (req: Request, res: Response) => {
               },
             });
             delegatedToBackground = true;
-            pipeRedisToSSE(streamKey, res, req, pushToStream, streamedPayloadCount);
-            return; 
+            pipeRedisToSSE(
+              streamKey,
+              res,
+              req,
+              pushToStream,
+              streamedPayloadCount,
+            );
+            return;
           }
 
           if (intent === "workflow") {
             console.log("🚀 Triggering Workflow Inngest flow");
 
             // Immediate feedback with proposed visualization
-            const msg1 = reasoning ? `🔍 ${reasoning}\n\n` : "🔍 Analyzing your workflow request...\n\n";
-            
+            const msg1 = reasoning
+              ? `🔍 ${reasoning}\n\n`
+              : "🔍 Analyzing your workflow request...\n\n";
+
             pushToStream({ type: "thinking", content: msg1 });
-            
+
             fullThinkingContent += msg1;
 
             await inngest.send({
@@ -167,7 +180,13 @@ export const aiAgentHandler = async (req: Request, res: Response) => {
               },
             });
             delegatedToBackground = true;
-            pipeRedisToSSE(streamKey, res, req, pushToStream, streamedPayloadCount);
+            pipeRedisToSSE(
+              streamKey,
+              res,
+              req,
+              pushToStream,
+              streamedPayloadCount,
+            );
             return;
           }
         }
@@ -192,17 +211,19 @@ export const aiAgentHandler = async (req: Request, res: Response) => {
           }
         }
       } else if (event.event === "on_chain_end" && event.name === "LangGraph") {
-         if (event.data?.output?.operations) {
-            pushToStream({
-              type: "response",
-              response: { operations: event.data.output.operations },
-            });
+        if (event.data?.output?.operations) {
+          pushToStream({
+            type: "response",
+            response: { operations: event.data.output.operations },
+          });
 
-            const chatOp = event.data.output.operations.find((op: any) => op.type === "chat_response");
-            if (chatOp && chatOp.content && !fullAiContent.trim()) {
-                fullAiContent = chatOp.content;
-            }
+          const chatOp = event.data.output.operations.find(
+            (op: any) => op.type === "chat_response",
+          );
+          if (chatOp && chatOp.content && !fullAiContent.trim()) {
+            fullAiContent = chatOp.content;
           }
+        }
       }
     }
   } catch (e: any) {

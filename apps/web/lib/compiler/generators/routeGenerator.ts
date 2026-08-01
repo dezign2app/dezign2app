@@ -14,7 +14,7 @@ export function generateRoutes(
   serviceNode?: BackendNode,
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  allEndpoints: (Endpoint & { nodeId: string })[] = []
+  allEndpoints: (Endpoint & { nodeId: string })[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const routeImports: string[] = [];
@@ -50,7 +50,8 @@ export async function defaultHandler(_req: Request, res: Response) {
     nodeEndpoints.forEach((ep, index) => {
       const method = (ep.type || "GET").toLowerCase();
       const rawName = ep.name || ep.id || "route";
-      let routeFileName = toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
+      let routeFileName =
+        toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
 
       if (usedFileNames.has(routeFileName)) {
         routeFileName = `${routeFileName}_${index + 1}`;
@@ -66,18 +67,34 @@ export async function defaultHandler(_req: Request, res: Response) {
       const parsedResSchema = parseSchemaJson(ep.responseBody?.rawJson);
       let responseData: string;
       if (parsedResSchema) {
-        responseData = JSON.stringify(parsedResSchema, null, 6).replace(/\n/g, "\n    ");
+        responseData = JSON.stringify(parsedResSchema, null, 6).replace(
+          /\n/g,
+          "\n    ",
+        );
       } else {
         responseData = `{\n      success: true,\n      message: "Successfully executed ${ep.type || "GET"} ${path}",\n      timestamp: new Date().toISOString()\n    }`;
       }
 
-      const queryTypeRes = parametersToTsInterface(`${pascalName}Query`, ep.queryParams, false);
-      const bodyTypeRes = schemaToTsInterface(`${pascalName}Body`, ep.requestBody);
+      const queryTypeRes = parametersToTsInterface(
+        `${pascalName}Query`,
+        ep.queryParams,
+        false,
+      );
+      const bodyTypeRes = schemaToTsInterface(
+        `${pascalName}Body`,
+        ep.requestBody,
+      );
       const isBodyMethod = ["post", "put", "patch"].includes(method);
 
       // Resolve targeted connection trace for this endpoint
       const trace = serviceNode
-        ? resolveEndpointTrace(serviceNode, ep, allNodes, allEdges, allEndpoints)
+        ? resolveEndpointTrace(
+            serviceNode,
+            ep,
+            allNodes,
+            allEdges,
+            allEndpoints,
+          )
         : { incoming: [], outgoing: [] };
 
       // Build imports from @workspace/types
@@ -146,7 +163,8 @@ export async function ${handlerName}(
       if (trace.incoming.length > 0) {
         trace.incoming.forEach((inc) => {
           routeHandlerCode += `    // - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
-          if (inc.dataContext) routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
+          if (inc.dataContext)
+            routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
         });
       } else {
         routeHandlerCode += `    // - Direct API request (Method: ${ep.type || "GET"}, Path: ${path})\n`;
@@ -156,7 +174,8 @@ export async function ${handlerName}(
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
           routeHandlerCode += `    // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
-          if (out.dataContext) routeHandlerCode += `    //   Data Context: ${out.dataContext}\n`;
+          if (out.dataContext)
+            routeHandlerCode += `    //   Data Context: ${out.dataContext}\n`;
         });
       } else {
         routeHandlerCode += `    // - Returns HTTP ${ep.type === "POST" ? 201 : 200} JSON response\n`;
@@ -166,9 +185,12 @@ export async function ${handlerName}(
         routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
         for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
           if (ops && ops.length > 0) {
-            const tableNode = allNodes.find(n => n.id === tableId);
-            const tableName = tableNode?.data?.label || tableNode?.data?.tableRef || "Unknown Table";
-            routeHandlerCode += `    // - Table [${tableName}]: ${ops.map(o => o.toUpperCase()).join(", ")}\n`;
+            const tableNode = allNodes.find((n) => n.id === tableId);
+            const tableName =
+              tableNode?.data?.label ||
+              tableNode?.data?.tableRef ||
+              "Unknown Table";
+            routeHandlerCode += `    // - Table [${tableName}]: ${ops.map((o) => o.toUpperCase()).join(", ")}\n`;
             if (ep.crudExplanations && ep.crudExplanations[tableId]) {
               for (const op of ops) {
                 const explanation = ep.crudExplanations[tableId][op];
@@ -190,7 +212,8 @@ export async function ${handlerName}(
       if (promptText) {
         routeHandlerCode += `    // --- Natural Language Instructions ---\n`;
         promptText.split("\n").forEach((line: string, idx: number) => {
-          if (line.trim()) routeHandlerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
+          if (line.trim())
+            routeHandlerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
         });
         routeHandlerCode += `\n`;
       } else if (!codeBlock) {

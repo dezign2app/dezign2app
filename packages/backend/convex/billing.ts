@@ -2,12 +2,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const handleCheckoutCompleted = mutation({
-  args: { 
-    data: v.any(), 
-    secret: v.string() 
+  args: {
+    data: v.any(),
+    secret: v.string(),
   },
   handler: async (ctx, { data, secret }) => {
-
     const customerEmail = data.customer?.email;
     let userId;
     const user = await ctx.db
@@ -26,7 +25,10 @@ export const handleCheckoutCompleted = mutation({
     // Handle Early Believer checkout metadata
     if (data.metadata?.type === "early_believer" || data.metadata?.tier) {
       const tier: 500 | 1000 = Number(data.metadata.tier) === 1000 ? 1000 : 500;
-      const seats = Math.max(1, Number(data.metadata.seats) || Number(data.units) || 1);
+      const seats = Math.max(
+        1,
+        Number(data.metadata.seats) || Number(data.units) || 1,
+      );
       const discountPercent = tier === 1000 ? 10 : 5;
       const totalPaid = tier * seats;
 
@@ -81,11 +83,16 @@ export const handleCheckoutCompleted = mutation({
     }
 
     if (data.subscription) {
-      const productId = typeof data.subscription.product === 'string' ? data.subscription.product : data.subscription.product?.id;
+      const productId =
+        typeof data.subscription.product === "string"
+          ? data.subscription.product
+          : data.subscription.product?.id;
 
       const existingSub = await ctx.db
         .query("subscriptions")
-        .withIndex("by_creem_sub_id", (q) => q.eq("creemSubscriptionId", data.subscription.id))
+        .withIndex("by_creem_sub_id", (q) =>
+          q.eq("creemSubscriptionId", data.subscription.id),
+        )
         .unique();
 
       if (existingSub) {
@@ -99,7 +106,7 @@ export const handleCheckoutCompleted = mutation({
           planId: productId,
           status: data.subscription.status,
           currentPeriodStart: Date.now(),
-          currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000, 
+          currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000,
           creemSubscriptionId: data.subscription.id,
         });
       }
@@ -126,10 +133,28 @@ export const getUserEarlyBeliever = query({
     if (ebPurchases.length === 0) return null;
 
     const totalSeats = ebPurchases.reduce((acc, item) => acc + item.seats, 0);
-    const maxDiscountPercent = Math.max(...ebPurchases.map((item) => item.discountPercent));
-    const totalPaid = ebPurchases.reduce((acc, item) => acc + item.totalPaid, 0);
-    const totalInvestment = ebPurchases.reduce((acc, item) => acc + (item.investmentAmount || (item.tier === 1000 ? 900 : 450) * item.seats), 0);
-    const maxSubscriptionEnd = Math.max(...ebPurchases.map((item) => item.currentPeriodEnd || (item.purchasedAt + (item.tier === 1000 ? 365 : 182) * 24 * 60 * 60 * 1000)));
+    const maxDiscountPercent = Math.max(
+      ...ebPurchases.map((item) => item.discountPercent),
+    );
+    const totalPaid = ebPurchases.reduce(
+      (acc, item) => acc + item.totalPaid,
+      0,
+    );
+    const totalInvestment = ebPurchases.reduce(
+      (acc, item) =>
+        acc +
+        (item.investmentAmount ||
+          (item.tier === 1000 ? 900 : 450) * item.seats),
+      0,
+    );
+    const maxSubscriptionEnd = Math.max(
+      ...ebPurchases.map(
+        (item) =>
+          item.currentPeriodEnd ||
+          item.purchasedAt +
+            (item.tier === 1000 ? 365 : 182) * 24 * 60 * 60 * 1000,
+      ),
+    );
 
     return {
       purchases: ebPurchases,
@@ -143,20 +168,22 @@ export const getUserEarlyBeliever = query({
 });
 
 export const handleSubscriptionEvent = mutation({
-  args: { 
+  args: {
     type: v.string(),
-    data: v.any(), 
-    secret: v.string() 
+    data: v.any(),
+    secret: v.string(),
   },
   handler: async (ctx, { type, data, secret }) => {
-    if (secret !== process.env.CREEM_SUBSCRIPTION_WEBHOOK_SECRET) throw new Error("Unauthorized webhook call");
+    if (secret !== process.env.CREEM_SUBSCRIPTION_WEBHOOK_SECRET)
+      throw new Error("Unauthorized webhook call");
 
     const customerId = data.customer?.id;
     const user = await ctx.db
       .query("users")
-      .withIndex("by_creem_customer", (q) => q.eq("creemCustomerId", customerId))
+      .withIndex("by_creem_customer", (q) =>
+        q.eq("creemCustomerId", customerId),
+      )
       .unique();
-
 
     if (!user) {
       console.error(`User not found for creemCustomerId: ${customerId}`);
@@ -167,7 +194,7 @@ export const handleSubscriptionEvent = mutation({
       .query("subscriptions")
       .withIndex("by_creem_sub_id", (q) => q.eq("creemSubscriptionId", data.id))
       .unique();
-    
+
     let newStatus = data.status;
     if (type === "subscription.canceled") newStatus = "canceled";
 
@@ -176,7 +203,8 @@ export const handleSubscriptionEvent = mutation({
         status: newStatus,
       });
     } else {
-      const productId = typeof data.product === 'string' ? data.product : data.product?.id;
+      const productId =
+        typeof data.product === "string" ? data.product : data.product?.id;
 
       await ctx.db.insert("subscriptions", {
         userId: user._id,
@@ -192,17 +220,20 @@ export const handleSubscriptionEvent = mutation({
 });
 
 export const handleSubscriptionExpired = mutation({
-  args: { 
-    data: v.any(), 
-    secret: v.string() 
+  args: {
+    data: v.any(),
+    secret: v.string(),
   },
   handler: async (ctx, { data, secret }) => {
-    if (secret !== process.env.CREEM_SUBSCRIPTION_WEBHOOK_SECRET) throw new Error("Unauthorized webhook call");
+    if (secret !== process.env.CREEM_SUBSCRIPTION_WEBHOOK_SECRET)
+      throw new Error("Unauthorized webhook call");
 
     const customerId = data.customer?.id;
     const user = await ctx.db
       .query("users")
-      .withIndex("by_creem_customer", (q) => q.eq("creemCustomerId", customerId))
+      .withIndex("by_creem_customer", (q) =>
+        q.eq("creemCustomerId", customerId),
+      )
       .unique();
 
     if (!user) {
@@ -220,7 +251,8 @@ export const handleSubscriptionExpired = mutation({
         status: "expired",
       });
     } else {
-      const productId = typeof data.product === 'string' ? data.product : data.product?.id;
+      const productId =
+        typeof data.product === "string" ? data.product : data.product?.id;
 
       await ctx.db.insert("subscriptions", {
         userId: user._id,
@@ -234,4 +266,3 @@ export const handleSubscriptionExpired = mutation({
     return { success: true };
   },
 });
-

@@ -10,19 +10,36 @@ import { compileFastAPIService } from "./services/fastapi/v0";
 export function compileServiceNode(
   node: BackendNode,
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledServiceResult {
   const techStack = node.data.techStack || "express";
   const techVersion = node.data.techVersion || "4.x";
 
   switch (techStack) {
     case "fastapi":
-      return compileFastAPIService(node, endpoints, events, allNodes, allEdges, testCases);
+      return compileFastAPIService(
+        node,
+        endpoints,
+        events,
+        allNodes,
+        allEdges,
+        testCases,
+      );
     case "express":
     default:
-      return compileExpressV4Service(node, endpoints, events, allNodes, allEdges, testCases);
+      return compileExpressV4Service(
+        node,
+        endpoints,
+        events,
+        allNodes,
+        allEdges,
+        testCases,
+      );
   }
 }

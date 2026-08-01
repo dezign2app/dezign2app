@@ -18,7 +18,12 @@ import {
   extractTestCaseSummaries,
   generateSystemOverview,
 } from "../graph/engine.js";
-import type { CanvasElements, GraphNode, RawNodeRecord, RawEdgeRecord } from "../graph/types.js";
+import type {
+  CanvasElements,
+  GraphNode,
+  RawNodeRecord,
+  RawEdgeRecord,
+} from "../graph/types.js";
 
 export interface Session {
   server: McpServer;
@@ -47,40 +52,60 @@ export async function createSession(
   // If the API key has a bound projectId, tools are restricted to that project only.
   const boundProjectId = auth?.projectId;
   const boundClerkToken = auth?.token;
-  console.log(`[SESSION] boundProjectId for session ${sessionId}: ${boundProjectId ?? "NONE (no project bound — tools will error)"}`);
+  console.log(
+    `[SESSION] boundProjectId for session ${sessionId}: ${boundProjectId ?? "NONE (no project bound — tools will error)"}`,
+  );
 
   // ── Native DB Tools ─────────────────────────────────────────────────────────
 
   server.registerTool(
     "get_system_design_context",
     {
-      description: "PRIMARY TOOL FOR AI CODING AGENTS. Call this tool FIRST to retrieve structured architectural context (database entity schemas/relations, services, web clients, endpoints, data schemas, and test cases) directly from the project database. The project is determined automatically from your API key.",
+      description:
+        "PRIMARY TOOL FOR AI CODING AGENTS. Call this tool FIRST to retrieve structured architectural context (database entity schemas/relations, services, web clients, endpoints, data schemas, and test cases) directly from the project database. The project is determined automatically from your API key.",
       inputSchema: {
-        query: z.string().optional().describe("Optional specific query or topic to filter the system design context (e.g., 'auth', 'user', 'kafka')")
+        query: z
+          .string()
+          .optional()
+          .describe(
+            "Optional specific query or topic to filter the system design context (e.g., 'auth', 'user', 'kafka')",
+          ),
       },
     },
     async ({ query }) => {
       if (!boundProjectId) {
         return {
-          content: [{ type: "text" as const, text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard." }],
+          content: [
+            {
+              type: "text" as const,
+              text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard.",
+            },
+          ],
           isError: true,
         };
       }
-      console.log(`[TOOL] get_system_design_context called — project=${boundProjectId}, query="${query ?? ""}"`);
+      console.log(
+        `[TOOL] get_system_design_context called — project=${boundProjectId}, query="${query ?? ""}"`,
+      );
       try {
         const elements = await fetchElements();
         const text = generateSystemOverview(elements, query);
         return {
-          content: [{ type: "text" as const, text }]
+          content: [{ type: "text" as const, text }],
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text" as const, text: `Error retrieving context: ${message}` }],
-          isError: true
+          content: [
+            {
+              type: "text" as const,
+              text: `Error retrieving context: ${message}`,
+            },
+          ],
+          isError: true,
         };
       }
-    }
+    },
   );
 
   // ── Graph-Native Tools (new, no LLM, no Supermemory) ───────────────────────
@@ -88,11 +113,16 @@ export async function createSession(
   /** Fetch the full canvas from Convex and return a typed CanvasElements object. */
   async function fetchElements(): Promise<CanvasElements> {
     const convexUrl = process.env.CONVEX_URL;
-    if (!convexUrl) throw new Error("CONVEX_URL environment variable is not set.");
+    if (!convexUrl)
+      throw new Error("CONVEX_URL environment variable is not set.");
     if (!boundProjectId) throw new Error("No project bound to this session.");
 
     const client = new ConvexHttpClient(convexUrl);
-    if (boundClerkToken && boundClerkToken.includes(".") && !boundClerkToken.startsWith("sk_")) {
+    if (
+      boundClerkToken &&
+      boundClerkToken.includes(".") &&
+      !boundClerkToken.startsWith("sk_")
+    ) {
       client.setAuth(boundClerkToken);
     }
 
@@ -110,12 +140,33 @@ export async function createSession(
   }
 
   const nodeTypeEnum = z.enum([
-    "service", "database", "queue", "pubsub", "eventstream", "kafka",
-    "redis-streams", "sqs", "redis-pubsub", "redis-cache",
-    "entity", "webClient", "external", "group", "db_ref", "storage",
-    "worker", "serverless", "search_index", "api_gateway",
-    "load_balancer", "webhook", "llm", "mcp_server", "vector_db_ref",
-    "identity_provider", "all",
+    "service",
+    "database",
+    "queue",
+    "pubsub",
+    "eventstream",
+    "kafka",
+    "redis-streams",
+    "sqs",
+    "redis-pubsub",
+    "redis-cache",
+    "entity",
+    "webClient",
+    "external",
+    "group",
+    "db_ref",
+    "storage",
+    "worker",
+    "serverless",
+    "search_index",
+    "api_gateway",
+    "load_balancer",
+    "webhook",
+    "llm",
+    "mcp_server",
+    "vector_db_ref",
+    "identity_provider",
+    "all",
   ]);
 
   server.registerTool(
@@ -132,7 +183,7 @@ export async function createSession(
           .string()
           .describe(
             "Topic to search for — matched case-insensitively against node labels, descriptions, " +
-            "and types. E.g. 'payment service', 'user auth', 'kafka', 'redis'.",
+              "and types. E.g. 'payment service', 'user auth', 'kafka', 'redis'.",
           ),
         depth: z
           .number()
@@ -140,17 +191,26 @@ export async function createSession(
           .min(1)
           .max(4)
           .optional()
-          .describe("BFS traversal depth — how many hops from matching nodes to include. Default: 2."),
+          .describe(
+            "BFS traversal depth — how many hops from matching nodes to include. Default: 2.",
+          ),
       },
     },
     async ({ topic, depth }) => {
       if (!boundProjectId) {
         return {
-          content: [{ type: "text" as const, text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard." }],
+          content: [
+            {
+              type: "text" as const,
+              text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard.",
+            },
+          ],
           isError: true,
         };
       }
-      console.log(`[TOOL] traverse_architecture_graph — project=${boundProjectId}, topic="${topic}", depth=${depth ?? 2}`);
+      console.log(
+        `[TOOL] traverse_architecture_graph — project=${boundProjectId}, topic="${topic}", depth=${depth ?? 2}`,
+      );
 
       try {
         const elements = await fetchElements();
@@ -175,15 +235,28 @@ export async function createSession(
         }
 
         // 3. Fall back to full graph if nothing matched
-        const relevantNodes = reachable.length > 0 ? reachable : Array.from(graph.nodes.values());
+        const relevantNodes =
+          reachable.length > 0 ? reachable : Array.from(graph.nodes.values());
 
         // 4. Gather associated endpoints and test cases
         const nodeIdSet = new Set<string>(relevantNodes.map((n) => n.nodeId));
-        const endpointSummaries = extractEndpointSummaries(elements.endpoints, nodeIdSet);
-        const testCaseSummaries = extractTestCaseSummaries(elements.testCases, nodeIdSet);
+        const endpointSummaries = extractEndpointSummaries(
+          elements.endpoints,
+          nodeIdSet,
+        );
+        const testCaseSummaries = extractTestCaseSummaries(
+          elements.testCases,
+          nodeIdSet,
+        );
 
         // 5. Serialize to structured text
-        const text = serializeSubgraph(graph, relevantNodes, endpointSummaries, testCaseSummaries, elements);
+        const text = serializeSubgraph(
+          graph,
+          relevantNodes,
+          endpointSummaries,
+          testCaseSummaries,
+          elements,
+        );
 
         return { content: [{ type: "text" as const, text }] };
       } catch (err) {
@@ -207,25 +280,38 @@ export async function createSession(
       inputSchema: {
         nodeType: nodeTypeEnum
           .optional()
-          .describe("Filter by canvas node type. Omit or use 'all' to include every type."),
+          .describe(
+            "Filter by canvas node type. Omit or use 'all' to include every type.",
+          ),
         keyword: z
           .string()
           .optional()
-          .describe("Additional keyword filter on label/description (case-insensitive substring match)."),
+          .describe(
+            "Additional keyword filter on label/description (case-insensitive substring match).",
+          ),
         includeEdges: z
           .boolean()
           .optional()
-          .describe("Whether to include direct neighbour connections in the output. Default: true."),
+          .describe(
+            "Whether to include direct neighbour connections in the output. Default: true.",
+          ),
       },
     },
     async ({ nodeType, keyword, includeEdges }) => {
       if (!boundProjectId) {
         return {
-          content: [{ type: "text" as const, text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard." }],
+          content: [
+            {
+              type: "text" as const,
+              text: "Unauthorized: this API key is not bound to a project. Please regenerate your key from the Blueprint dashboard.",
+            },
+          ],
           isError: true,
         };
       }
-      console.log(`[TOOL] search_architecture_nodes — project=${boundProjectId}, nodeType=${nodeType ?? "all"}, keyword=${keyword ?? "(none)"}`);
+      console.log(
+        `[TOOL] search_architecture_nodes — project=${boundProjectId}, nodeType=${nodeType ?? "all"}, keyword=${keyword ?? "(none)"}`,
+      );
 
       try {
         const elements = await fetchElements();

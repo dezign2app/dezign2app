@@ -24,9 +24,17 @@ import { compileLangGraph } from "@/lib/compiler";
 import { simulateLangGraphTestCase } from "@/lib/simulation/runtime";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import type { SimulationTestCase } from "@workspace/canvas";
-import type { LangGraphCanvasNode, LangGraphCanvasEdge } from "./langgraph-canvas/types";
+import type {
+  LangGraphCanvasNode,
+  LangGraphCanvasEdge,
+} from "./langgraph-canvas/types";
 import type { LangGraphStepConfig } from "@/types/canvas";
-import { HANDLE_LLM_IN, HANDLE_TOOL_IN, HANDLE_MIDDLEWARE_IN, HANDLE_MEMORY_IN } from "./langgraph-canvas/constants";
+import {
+  HANDLE_LLM_IN,
+  HANDLE_TOOL_IN,
+  HANDLE_MIDDLEWARE_IN,
+  HANDLE_MEMORY_IN,
+} from "./langgraph-canvas/constants";
 
 import { useConnectedRoutes } from "./LangGraphNode";
 
@@ -35,11 +43,17 @@ interface LangGraphStudioViewProps {
   onClose: () => void;
 }
 
-export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps) {
+export function LangGraphStudioView({
+  node,
+  onClose,
+}: LangGraphStudioViewProps) {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const connectedRoutes = useConnectedRoutes(node.id);
   const allTestCases = useSimulationStore((state) => state.testCases);
-  const graphTestCases = useMemo(() => allTestCases.filter((testCase) => testCase.targetNodeId === node.id), [allTestCases, node.id]);
+  const graphTestCases = useMemo(
+    () => allTestCases.filter((testCase) => testCase.targetNodeId === node.id),
+    [allTestCases, node.id],
+  );
 
   const {
     nodes,
@@ -95,63 +109,95 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
 
   const connectedLLMId = useMemo(() => {
     if (!selectedNodeId) return null;
-    const edge = edges.find((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_LLM_IN);
+    const edge = edges.find(
+      (e) => e.target === selectedNodeId && e.targetHandle === HANDLE_LLM_IN,
+    );
     return edge ? edge.source : null;
   }, [edges, selectedNodeId]);
 
   const connectedToolIds = useMemo(() => {
     if (!selectedNodeId) return [];
     return edges
-      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_TOOL_IN)
+      .filter(
+        (e) => e.target === selectedNodeId && e.targetHandle === HANDLE_TOOL_IN,
+      )
       .map((e) => e.source);
   }, [edges, selectedNodeId]);
 
   const connectedMiddlewareIds = useMemo(() => {
     if (!selectedNodeId) return [];
     return edges
-      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MIDDLEWARE_IN)
+      .filter(
+        (e) =>
+          e.target === selectedNodeId &&
+          e.targetHandle === HANDLE_MIDDLEWARE_IN,
+      )
       .map((e) => e.source);
   }, [edges, selectedNodeId]);
 
   const connectedMemoryIds = useMemo(() => {
     if (!selectedNodeId) return [];
     return edges
-      .filter((e) => e.target === selectedNodeId && e.targetHandle === HANDLE_MEMORY_IN)
+      .filter(
+        (e) =>
+          e.target === selectedNodeId && e.targetHandle === HANDLE_MEMORY_IN,
+      )
       .map((e) => e.source);
   }, [edges, selectedNodeId]);
 
   const connectedToolsCount = connectedToolIds.length;
   const connectedMiddlewareCount = connectedMiddlewareIds.length;
-  const graphSteps = useMemo<LangGraphStepConfig[]>(() => nodes
-    .filter(
-      (canvasNode) =>
-        canvasNode.type === "step" ||
-        canvasNode.type === "langgraph_node" ||
-        canvasNode.type === "langgraph_agent"
-    )
-    .map((canvasNode) => {
-      const data = canvasNode.data as unknown as {
-        stepId?: string;
-        label?: string;
-        name?: string;
-        stepType?: LangGraphStepConfig["type"];
-        routerConfig?: LangGraphStepConfig["routerConfig"];
-        stateUpdates?: LangGraphStepConfig["stateUpdates"];
-        modelConfig?: LangGraphStepConfig["modelConfig"];
-        customCode?: LangGraphStepConfig["customCode"];
-      };
-      return {
-        id: canvasNode.id,
-        name: data.label || data.name || canvasNode.id,
-        type: data.stepType || "llm_call",
-        routerConfig: data.routerConfig,
-        stateUpdates: data.stateUpdates,
-        modelConfig: data.modelConfig,
-        customCode: data.customCode,
-      };
-    }), [nodes]);
-  const graphPathEdges = useMemo(() => edges.map((edge) => ({ source: edge.source, sourceHandle: edge.sourceHandle, target: edge.target })), [edges]);
-  const graphNodeLabels = useMemo(() => Object.fromEntries(nodes.map((canvasNode) => [canvasNode.id, (canvasNode.data as { label?: string }).label || canvasNode.id])), [nodes]);
+  const graphSteps = useMemo<LangGraphStepConfig[]>(
+    () =>
+      nodes
+        .filter(
+          (canvasNode) =>
+            canvasNode.type === "step" ||
+            canvasNode.type === "langgraph_node" ||
+            canvasNode.type === "langgraph_agent",
+        )
+        .map((canvasNode) => {
+          const data = canvasNode.data as unknown as {
+            stepId?: string;
+            label?: string;
+            name?: string;
+            stepType?: LangGraphStepConfig["type"];
+            routerConfig?: LangGraphStepConfig["routerConfig"];
+            stateUpdates?: LangGraphStepConfig["stateUpdates"];
+            modelConfig?: LangGraphStepConfig["modelConfig"];
+            customCode?: LangGraphStepConfig["customCode"];
+          };
+          return {
+            id: canvasNode.id,
+            name: data.label || data.name || canvasNode.id,
+            type: data.stepType || "llm_call",
+            routerConfig: data.routerConfig,
+            stateUpdates: data.stateUpdates,
+            modelConfig: data.modelConfig,
+            customCode: data.customCode,
+          };
+        }),
+    [nodes],
+  );
+  const graphPathEdges = useMemo(
+    () =>
+      edges.map((edge) => ({
+        source: edge.source,
+        sourceHandle: edge.sourceHandle,
+        target: edge.target,
+      })),
+    [edges],
+  );
+  const graphNodeLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        nodes.map((canvasNode) => [
+          canvasNode.id,
+          (canvasNode.data as { label?: string }).label || canvasNode.id,
+        ]),
+      ),
+    [nodes],
+  );
   const activeNodeIds = useSimulationStore((s) => s.activeNodeIds);
   const activeEdgeIds = useSimulationStore((s) => s.activeEdgeIds);
   const currentNodeId = useSimulationStore((s) => s.currentNodeId);
@@ -161,7 +207,11 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     return edges.map((edge) => {
       const isCurrent = currentEdgeId === edge.id;
       const isActive = activeEdgeIds.includes(edge.id);
-      const strokeColor = isCurrent ? "#38bdf8" : isActive ? "#818cf8" : edge.style?.stroke || "#a1a1aa";
+      const strokeColor = isCurrent
+        ? "#38bdf8"
+        : isActive
+          ? "#818cf8"
+          : edge.style?.stroke || "#a1a1aa";
 
       return {
         ...edge,
@@ -169,7 +219,11 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
         style: {
           ...edge.style,
           stroke: strokeColor,
-          strokeWidth: isCurrent ? 3.5 : isActive ? 2.5 : edge.style?.strokeWidth || 2,
+          strokeWidth: isCurrent
+            ? 3.5
+            : isActive
+              ? 2.5
+              : edge.style?.strokeWidth || 2,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
@@ -185,7 +239,8 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     return nodes.map((n) => {
       const isCurrent = currentNodeId === n.id;
       const isActive = activeNodeIds.includes(n.id);
-      const isPill = n.id === "START" || n.type === "end" || n.id.startsWith("end_");
+      const isPill =
+        n.id === "START" || n.type === "end" || n.id.startsWith("end_");
       const baseRounded = isPill ? "rounded-full" : "rounded-2xl";
       if (!isCurrent && !isActive) {
         return {
@@ -208,9 +263,26 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
 
   const runGraphTestCase = async (testCase: SimulationTestCase) => {
     const graphEdges = edges
-      .filter((edge) => edge.source !== "STATE_GLOBAL" && edge.target !== "STATE_GLOBAL")
-      .map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle, targets: [{ id: edge.target, kind: edge.target === "END" ? "end" as const : "step" as const, targetHandle: edge.targetHandle }] }));
-    const result = await simulateLangGraphTestCase({ graph: { ...node, data: { ...node.data, graphSteps, graphEdges } }, testCase });
+      .filter(
+        (edge) =>
+          edge.source !== "STATE_GLOBAL" && edge.target !== "STATE_GLOBAL",
+      )
+      .map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        sourceHandle: edge.sourceHandle,
+        targets: [
+          {
+            id: edge.target,
+            kind: edge.target === "END" ? ("end" as const) : ("step" as const),
+            targetHandle: edge.targetHandle,
+          },
+        ],
+      }));
+    const result = await simulateLangGraphTestCase({
+      graph: { ...node, data: { ...node.data, graphSteps, graphEdges } },
+      testCase,
+    });
     useSimulationStore.getState().start(result.trace);
     return result;
   };
@@ -240,7 +312,9 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
       {/* Header */}
       <LangGraphCanvasHeader
         label={node.data.label}
-        onUpdateLabel={(newLabel) => updateNode(node.id, { data: { ...node.data, label: newLabel } })}
+        onUpdateLabel={(newLabel) =>
+          updateNode(node.id, { data: { ...node.data, label: newLabel } })
+        }
         onSave={handleSave}
         onClose={onClose}
         onAutoLayout={(dir) => handleLayout(dir || "LR")}
@@ -280,7 +354,9 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             edgesFocusable={true}
             elementsSelectable={true}
             onEdgeClick={(_: React.MouseEvent, edge: LangGraphCanvasEdge) => {
-              setEdges((eds) => eds.map((e) => ({ ...e, selected: e.id === edge.id })));
+              setEdges((eds) =>
+                eds.map((e) => ({ ...e, selected: e.id === edge.id })),
+              );
             }}
             onNodeClick={(_: React.MouseEvent, n: LangGraphCanvasNode) => {
               setSelectedNodeId(n.id);
@@ -306,10 +382,21 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
               interactionWidth: 20,
             }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={20} color="#3f3f46" size={1.5} />
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={20}
+              color="#3f3f46"
+              size={1.5}
+            />
             <Controls className="!bg-background !border-border !text-foreground" />
-            <MiniMap className="!bg-background/90 !border-border" nodeColor="#71717a" />
-            <Panel position="top-left" className="flex items-center gap-1.5 bg-background/95 backdrop-blur border border-border p-1 rounded-xl shadow-md">
+            <MiniMap
+              className="!bg-background/90 !border-border"
+              nodeColor="#71717a"
+            />
+            <Panel
+              position="top-left"
+              className="flex items-center gap-1.5 bg-background/95 backdrop-blur border border-border p-1 rounded-xl shadow-md"
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -352,10 +439,21 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
           connectedToolIds={connectedToolIds}
           connectedMiddlewareIds={connectedMiddlewareIds}
           connectedMemoryIds={connectedMemoryIds}
-          onSelectLLM={(llmId) => selectedNodeId && handleSelectLLMForAgent(selectedNodeId, llmId)}
-          onToggleTool={(toolId, connect) => selectedNodeId && handleToggleToolForAgent(selectedNodeId, toolId, connect)}
-          onToggleMiddleware={(mwId, connect) => selectedNodeId && handleToggleMiddlewareForAgent(selectedNodeId, mwId, connect)}
-          onToggleMemory={(memId, connect) => selectedNodeId && handleToggleMemoryForAgent(selectedNodeId, memId, connect)}
+          onSelectLLM={(llmId) =>
+            selectedNodeId && handleSelectLLMForAgent(selectedNodeId, llmId)
+          }
+          onToggleTool={(toolId, connect) =>
+            selectedNodeId &&
+            handleToggleToolForAgent(selectedNodeId, toolId, connect)
+          }
+          onToggleMiddleware={(mwId, connect) =>
+            selectedNodeId &&
+            handleToggleMiddlewareForAgent(selectedNodeId, mwId, connect)
+          }
+          onToggleMemory={(memId, connect) =>
+            selectedNodeId &&
+            handleToggleMemoryForAgent(selectedNodeId, memId, connect)
+          }
           onDeleteStep={handleDeleteStep}
           onUpdateStep={updateSelectedStep}
           onUpdateLLM={updateSelectedLLM}
@@ -390,7 +488,16 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             memoryConfig,
             testCases: graphTestCases,
           });
-        }, [showCompileModal, node.data.label, stateChannels, inputChannels, nodes, edges, memoryConfig, graphTestCases])}
+        }, [
+          showCompileModal,
+          node.data.label,
+          stateChannels,
+          inputChannels,
+          nodes,
+          edges,
+          memoryConfig,
+          graphTestCases,
+        ])}
       />
     </div>
   );

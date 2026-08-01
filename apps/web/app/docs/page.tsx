@@ -3,26 +3,27 @@ import Link from "next/link";
 import { Header } from "../_landing_components/header";
 import { Footer } from "../_landing_components/footer";
 import { Metadata } from "next";
-import { 
-  BookOpen, 
-  Code2, 
-  Cpu, 
-  Zap, 
-  Layers, 
-  Workflow, 
-  Sparkles, 
-  Terminal, 
-  ShieldCheck, 
-  FileText, 
+import {
+  BookOpen,
+  Code2,
+  Cpu,
+  Zap,
+  Layers,
+  Workflow,
+  Sparkles,
+  Terminal,
+  ShieldCheck,
+  FileText,
   ExternalLink,
   Search,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Documentation & API Reference | dezign2app",
-  description: "Comprehensive guides, API documentation, and architecture references for building with dezign2app.",
+  description:
+    "Comprehensive guides, API documentation, and architecture references for building with dezign2app.",
 };
 
 const docSections = [
@@ -88,13 +89,18 @@ export default function DocsPage() {
             Documentation & Developer Guides
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl">
-            Everything you need to turn system architecture diagrams, AI wireframes, and workflow graphs into production-ready web applications.
+            Everything you need to turn system architecture diagrams, AI
+            wireframes, and workflow graphs into production-ready web
+            applications.
           </p>
 
           {/* Quick Support Badge */}
           <div className="mt-2 text-xs text-gray-500 flex items-center gap-1.5 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
             <span>Need personalized setup assistance? Contact support:</span>
-            <a href="mailto:founder@dezign2app.com" className="text-black font-semibold hover:underline">
+            <a
+              href="mailto:founder@dezign2app.com"
+              className="text-black font-semibold hover:underline"
+            >
               founder@dezign2app.com
             </a>
           </div>
@@ -103,7 +109,6 @@ export default function DocsPage() {
 
       {/* Main Docs Content Layout */}
       <main className="w-full max-w-7xl px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-4 gap-10">
-        
         {/* Left Navigation Sidebar */}
         <aside className="lg:col-span-1 flex flex-col gap-8 pr-4 lg:border-r lg:border-gray-100">
           {docSections.map((section) => {
@@ -131,9 +136,12 @@ export default function DocsPage() {
           })}
 
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-col gap-2">
-            <h4 className="text-xs font-bold text-gray-900">Developer Support</h4>
+            <h4 className="text-xs font-bold text-gray-900">
+              Developer Support
+            </h4>
             <p className="text-[11px] text-gray-500 leading-relaxed">
-              Have questions about integrating dezign2app into your enterprise stack?
+              Have questions about integrating dezign2app into your enterprise
+              stack?
             </p>
             <a
               href="mailto:founder@dezign2app.com"
@@ -146,70 +154,118 @@ export default function DocsPage() {
 
         {/* Main Guide Content */}
         <section className="lg:col-span-3 flex flex-col gap-12 text-gray-800">
-          
           {/* Section 1: Quickstart */}
-          <article id="getting-started" className="flex flex-col gap-6 border-b border-gray-100 pb-10">
+          <article
+            id="getting-started"
+            className="flex flex-col gap-6 border-b border-gray-100 pb-10"
+          >
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
               <Zap className="size-4 text-black" />
               <span>Getting Started</span>
             </div>
-            <h2 id="overview" className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h2
+              id="overview"
+              className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight"
+            >
               Platform Overview
             </h2>
             <p className="text-sm md:text-base leading-relaxed text-gray-600">
-              dezign2app is an AI-native visual design and system architecture platform. It seamlessly connects visual node-based diagrams, component wireframes, and asynchronous automation workflows into real React/Next.js code bases.
+              dezign2app is an AI-native visual design and system architecture
+              platform. It seamlessly connects visual node-based diagrams,
+              component wireframes, and asynchronous automation workflows into
+              real React/Next.js code bases.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">1</div>
-                <h3 className="text-xs font-bold text-gray-900">Visual Canvas</h3>
+                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">
+                  1
+                </div>
+                <h3 className="text-xs font-bold text-gray-900">
+                  Visual Canvas
+                </h3>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
-                  Drag and drop UI blocks, system design components, and data connectors on an infinite canvas.
+                  Drag and drop UI blocks, system design components, and data
+                  connectors on an infinite canvas.
                 </p>
               </div>
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">2</div>
-                <h3 className="text-xs font-bold text-gray-900">AI Code Generation</h3>
+                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">
+                  2
+                </div>
+                <h3 className="text-xs font-bold text-gray-900">
+                  AI Code Generation
+                </h3>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
-                  Leverage LLM design pipelines to turn sketches into accessible, production ready TSX code.
+                  Leverage LLM design pipelines to turn sketches into
+                  accessible, production ready TSX code.
                 </p>
               </div>
               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">3</div>
-                <h3 className="text-xs font-bold text-gray-900">Automation Engine</h3>
+                <div className="size-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">
+                  3
+                </div>
+                <h3 className="text-xs font-bold text-gray-900">
+                  Automation Engine
+                </h3>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
-                  Connect visual trigger nodes to real backend events, webhooks, and third-party integrations.
+                  Connect visual trigger nodes to real backend events, webhooks,
+                  and third-party integrations.
                 </p>
               </div>
             </div>
 
-            <h3 id="quickstart" className="text-lg font-bold text-gray-900 mt-4">
+            <h3
+              id="quickstart"
+              className="text-lg font-bold text-gray-900 mt-4"
+            >
               5-Minute Quickstart
             </h3>
             <p className="text-xs md:text-sm text-gray-600 leading-relaxed">
-              Follow these simple steps to start creating your first project on dezign2app:
+              Follow these simple steps to start creating your first project on
+              dezign2app:
             </p>
             <ol className="flex flex-col gap-3 pl-4 list-decimal text-xs md:text-sm text-gray-700 font-medium">
               <li>Sign in to your dezign2app workspace account.</li>
-              <li>Click <strong>&quot;New Project&quot;</strong> in the dashboard navigation bar.</li>
-              <li>Choose between starting with a blank canvas, importing a prompt, or choosing a system architecture template.</li>
-              <li>Drag components from the sidebar palette onto your workspace canvas.</li>
-              <li>Click <strong>&quot;Export Code&quot;</strong> to copy optimized Tailwind/React code to your local repository.</li>
+              <li>
+                Click <strong>&quot;New Project&quot;</strong> in the dashboard
+                navigation bar.
+              </li>
+              <li>
+                Choose between starting with a blank canvas, importing a prompt,
+                or choosing a system architecture template.
+              </li>
+              <li>
+                Drag components from the sidebar palette onto your workspace
+                canvas.
+              </li>
+              <li>
+                Click <strong>&quot;Export Code&quot;</strong> to copy optimized
+                Tailwind/React code to your local repository.
+              </li>
             </ol>
           </article>
 
           {/* Section 2: AI Design Engine */}
-          <article id="design-engine" className="flex flex-col gap-6 border-b border-gray-100 pb-10">
+          <article
+            id="design-engine"
+            className="flex flex-col gap-6 border-b border-gray-100 pb-10"
+          >
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
               <Sparkles className="size-4 text-black" />
               <span>AI & Design Engine</span>
             </div>
-            <h2 id="prompt-to-app" className="text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h2
+              id="prompt-to-app"
+              className="text-2xl font-extrabold text-gray-900 tracking-tight"
+            >
               Prompt-to-Application Architecture
             </h2>
             <p className="text-xs md:text-sm leading-relaxed text-gray-600">
-              When you type a prompt (e.g. &quot;Build a multi-tenant Kanban dashboard with dark mode support&quot;), dezign2app breaks the prompt down into layout specifications, component component props, and color tokens.
+              When you type a prompt (e.g. &quot;Build a multi-tenant Kanban
+              dashboard with dark mode support&quot;), dezign2app breaks the
+              prompt down into layout specifications, component component props,
+              and color tokens.
             </p>
 
             {/* Code Example Box */}
@@ -219,7 +275,7 @@ export default function DocsPage() {
                 <span>POST /api/public/v1/generate</span>
               </div>
               <pre className="leading-relaxed">
-{`{
+                {`{
   "prompt": "Create an e-commerce product detail canvas with checkout triggers",
   "framework": "nextjs-16",
   "styling": "tailwind-v4",
@@ -233,21 +289,38 @@ export default function DocsPage() {
           </article>
 
           {/* Section 3: Workflows & Automations */}
-          <article id="workflows" className="flex flex-col gap-6 border-b border-gray-100 pb-10">
+          <article
+            id="workflows"
+            className="flex flex-col gap-6 border-b border-gray-100 pb-10"
+          >
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400">
               <Workflow className="size-4 text-black" />
               <span>Automations</span>
             </div>
-            <h2 id="workflow-triggers" className="text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h2
+              id="workflow-triggers"
+              className="text-2xl font-extrabold text-gray-900 tracking-tight"
+            >
               Workflow Triggers & Event Pipelines
             </h2>
             <p className="text-xs md:text-sm leading-relaxed text-gray-600">
-              dezign2app workflows run on high-performance serverless event buses. You can trigger execution graphs based on canvas events, HTTP webhooks, scheduled crons, or manual triggers.
+              dezign2app workflows run on high-performance serverless event
+              buses. You can trigger execution graphs based on canvas events,
+              HTTP webhooks, scheduled crons, or manual triggers.
             </p>
             <ul className="flex flex-col gap-2 text-xs md:text-sm text-gray-600 pl-4 list-disc">
-              <li><strong>Manual Triggers:</strong> Launch pipeline runs on demand directly from the canvas interface.</li>
-              <li><strong>Webhook Triggers:</strong> Listen to Stripe, GitHub, or custom HTTP POST requests.</li>
-              <li><strong>Scheduled Crons:</strong> Set recurring cron schedules (e.g., every hour, daily backups).</li>
+              <li>
+                <strong>Manual Triggers:</strong> Launch pipeline runs on demand
+                directly from the canvas interface.
+              </li>
+              <li>
+                <strong>Webhook Triggers:</strong> Listen to Stripe, GitHub, or
+                custom HTTP POST requests.
+              </li>
+              <li>
+                <strong>Scheduled Crons:</strong> Set recurring cron schedules
+                (e.g., every hour, daily backups).
+              </li>
             </ul>
           </article>
 
@@ -257,18 +330,26 @@ export default function DocsPage() {
               <Code2 className="size-4 text-black" />
               <span>API Reference & Help</span>
             </div>
-            <h2 id="authentication" className="text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h2
+              id="authentication"
+              className="text-2xl font-extrabold text-gray-900 tracking-tight"
+            >
               API Authentication & Developer Contact
             </h2>
             <p className="text-xs md:text-sm leading-relaxed text-gray-600">
-              All API requests must contain a valid bearer token in the authorization header. Obtain your key from the Dashboard API Keys settings panel.
+              All API requests must contain a valid bearer token in the
+              authorization header. Obtain your key from the Dashboard API Keys
+              settings panel.
             </p>
 
             <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mt-2">
               <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-bold text-gray-900">Need Custom API Limits or Enterprise Dedicated Support?</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Need Custom API Limits or Enterprise Dedicated Support?
+                </h3>
                 <p className="text-xs text-gray-500">
-                  Reach out directly to our engineering leadership for dedicated solutions.
+                  Reach out directly to our engineering leadership for dedicated
+                  solutions.
                 </p>
               </div>
               <a
@@ -279,7 +360,6 @@ export default function DocsPage() {
               </a>
             </div>
           </article>
-
         </section>
       </main>
 

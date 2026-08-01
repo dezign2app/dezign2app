@@ -25,7 +25,7 @@ export const upsertLangGraphStep = mutation({
     const existing = await ctx.db
       .query("canvas_backend_langgraph_steps")
       .withIndex("by_node_step", (q) =>
-        q.eq("nodeId", args.nodeId).eq("stepId", args.stepId)
+        q.eq("nodeId", args.nodeId).eq("stepId", args.stepId),
       )
       .first();
 
@@ -47,7 +47,7 @@ export const getLangGraphSteps = query({
     return await ctx.db
       .query("canvas_backend_langgraph_steps")
       .withIndex("by_project_node", (q) =>
-        q.eq("projectId", args.projectId).eq("nodeId", args.nodeId)
+        q.eq("projectId", args.projectId).eq("nodeId", args.nodeId),
       )
       .collect();
   },
@@ -72,7 +72,7 @@ export const upsertLangGraphEdge = mutation({
     const existing = await ctx.db
       .query("canvas_backend_langgraph_edges")
       .withIndex("by_node_edge", (q) =>
-        q.eq("nodeId", args.nodeId).eq("edgeId", args.edgeId)
+        q.eq("nodeId", args.nodeId).eq("edgeId", args.edgeId),
       )
       .first();
 
@@ -94,7 +94,7 @@ export const getLangGraphEdges = query({
     return await ctx.db
       .query("canvas_backend_langgraph_edges")
       .withIndex("by_project_node", (q) =>
-        q.eq("projectId", args.projectId).eq("nodeId", args.nodeId)
+        q.eq("projectId", args.projectId).eq("nodeId", args.nodeId),
       )
       .collect();
   },
@@ -124,7 +124,10 @@ export const saveCheckpoint = mutation({
       await ctx.db.patch(existing._id, { ...args, updatedAt });
       return existing._id;
     } else {
-      return await ctx.db.insert("langgraph_checkpoints", { ...args, updatedAt });
+      return await ctx.db.insert("langgraph_checkpoints", {
+        ...args,
+        updatedAt,
+      });
     }
   },
 });
@@ -180,20 +183,20 @@ export const atomicConsumeResumeToken = mutation({
     if (!tokenDoc) {
       // Zero rows affected / token not found: Token was already consumed, expired, or invalid
       throw new ConvexError(
-        "InvalidResumeTokenError: Resume token is invalid, expired, or already consumed."
+        "InvalidResumeTokenError: Resume token is invalid, expired, or already consumed.",
       );
     }
 
     if (tokenDoc.threadId !== args.threadId) {
       throw new ConvexError(
-        "InvalidResumeTokenError: Token does not match active thread session."
+        "InvalidResumeTokenError: Token does not match active thread session.",
       );
     }
 
     if (tokenDoc.expiresAt < Date.now()) {
       await ctx.db.delete(tokenDoc._id);
       throw new ConvexError(
-        "InvalidResumeTokenError: Resume token has expired."
+        "InvalidResumeTokenError: Resume token has expired.",
       );
     }
 

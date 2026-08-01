@@ -1,16 +1,37 @@
 import React, { useState } from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
-import { Search, ChevronDown, ChevronUp, Settings, Plus, X, Check } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+  Plus,
+  X,
+  Check,
+} from "lucide-react";
 import { BackendNode, SearchSource } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { NodeHeader, generateId } from "../../common/shared";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
-import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from "@workspace/ui/components/combobox";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@workspace/ui/components/combobox";
 
 const tableRefTypes = new Set(["db_ref"]);
 
@@ -36,7 +57,7 @@ export const SearchIndexNode = ({
     <div
       className={cn(
         "shadow-md rounded-xl bg-card border-2 min-w-[260px] max-w-[360px] flex flex-col",
-        selected ? "border-primary" : "border-border"
+        selected ? "border-primary" : "border-border",
       )}
     >
       <NodeHeader
@@ -140,7 +161,6 @@ export const SearchIndexNode = ({
   );
 };
 
-
 const SearchSourceList = ({
   nodeId,
   sources,
@@ -157,7 +177,7 @@ const SearchSourceList = ({
   const addEdge = useBackendCanvasStore((s) => s.addEdge);
   const deleteEdge = useBackendCanvasStore((s) => s.deleteEdge);
   const setActiveConfigItem = useBackendCanvasStore(
-    (s) => s.setActiveConfigItem
+    (s) => s.setActiveConfigItem,
   );
   const [addingSource, setAddingSource] = useState(false);
   const [newTable, setNewTable] = useState("");
@@ -166,7 +186,7 @@ const SearchSourceList = ({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const tableRefs = nodes.filter((n) => tableRefTypes.has(n.type));
   const availableTables = tableRefs.filter(
-    (n) => !sources.some((s) => s.dbTable === n.id)
+    (n) => !sources.some((s) => s.dbTable === n.id),
   );
   const updateSources = (next: SearchSource[]) =>
     updateNode(nodeId, { data: { ...data, searchSources: next } });
@@ -175,7 +195,7 @@ const SearchSourceList = ({
   const tableFields = (tableId: string) => {
     const tableRef = tableRefs.find((node) => node.id === tableId);
     const entity = nodes.find(
-      (node) => node.type === "entity" && node.id === tableRef?.data.tableRef
+      (node) => node.type === "entity" && node.id === tableRef?.data.tableRef,
     );
     return entity?.data.columns?.map((column) => column.name) ?? [];
   };
@@ -183,10 +203,10 @@ const SearchSourceList = ({
     if (!newTable) return;
     const tableRef = tableRefs.find((node) => node.id === newTable);
     const entity = nodes.find(
-      (node) => node.type === "entity" && node.id === tableRef?.data.tableRef
+      (node) => node.type === "entity" && node.id === tableRef?.data.tableRef,
     );
     const primaryKey = entity?.data.columns?.find(
-      (column) => column.isPrimaryKey
+      (column) => column.isPrimaryKey,
     )?.name;
     const sourceId = generateId();
     updateSources([
@@ -199,7 +219,14 @@ const SearchSourceList = ({
         indexes: [],
       },
     ]);
-    if (!edges.some((edge) => edge.source === newTable && edge.target === nodeId && edge.targetHandle === `source-in-${sourceId}`)) {
+    if (
+      !edges.some(
+        (edge) =>
+          edge.source === newTable &&
+          edge.target === nodeId &&
+          edge.targetHandle === `source-in-${sourceId}`,
+      )
+    ) {
       addEdge({
         id: generateId(),
         source: newTable,
@@ -218,8 +245,8 @@ const SearchSourceList = ({
       sources.map((source) =>
         source.id === sourceId
           ? { ...source, indexes: [...source.indexes, index] }
-          : source
-      )
+          : source,
+      ),
     );
     setEditing(index.id);
     setName("");
@@ -232,19 +259,23 @@ const SearchSourceList = ({
               ...source,
               indexes: source.indexes.filter((index) => index.id !== indexId),
             }
-          : source
-      )
+          : source,
+      ),
     );
   const removeSource = (sourceId: string) => {
     edges
-      .filter((edge) => edge.target === nodeId && edge.targetHandle === `index-in-${sourceId}`)
+      .filter(
+        (edge) =>
+          edge.target === nodeId &&
+          edge.targetHandle === `index-in-${sourceId}`,
+      )
       .forEach((edge) => deleteEdge(edge.id));
     updateSources(sources.filter((source) => source.id !== sourceId));
   };
   const commitName = (
     sourceId: string,
     indexId: string,
-    selectedName: string
+    selectedName: string,
   ) => {
     if (!selectedName.trim()) return;
     updateSources(
@@ -255,11 +286,11 @@ const SearchSourceList = ({
               indexes: source.indexes.map((index) =>
                 index.id === indexId
                   ? { ...index, name: selectedName.trim() }
-                  : index
+                  : index,
               ),
             }
-          : source
-      )
+          : source,
+      ),
     );
     setEditing(null);
     setActiveConfigItem({ type: "searchIndex", id: indexId, nodeId, sourceId });
@@ -292,7 +323,7 @@ const SearchSourceList = ({
             <Handle
               type="target"
               position={Position.Left}
-                id={`index-in-${source.id}`}
+              id={`index-in-${source.id}`}
               className="w-2 h-2 -left-1"
             />
             <div
@@ -407,7 +438,13 @@ const SearchSourceList = ({
         <div className="flex items-center gap-1.5 px-3 py-2 border-t nodrag bg-secondary/5">
           <Select value={newTable} onValueChange={setNewTable}>
             <SelectTrigger className="h-6 text-xs flex-1">
-              <SelectValue placeholder={availableTables.length === 0 ? "No table refs available" : "table reference..."} />
+              <SelectValue
+                placeholder={
+                  availableTables.length === 0
+                    ? "No table refs available"
+                    : "table reference..."
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {availableTables.map((node) => (
@@ -442,7 +479,6 @@ const SearchSourceList = ({
     </>
   );
 };
-
 
 const TableFieldCombobox = ({
   value,

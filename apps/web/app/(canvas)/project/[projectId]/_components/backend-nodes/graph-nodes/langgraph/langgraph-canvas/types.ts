@@ -1,5 +1,15 @@
 import { Node, Edge } from "@xyflow/react";
-import { Brain, Code2, Cpu, GitBranch, Wrench, Shield, Bot, Database, CheckCircle2 } from "lucide-react";
+import {
+  Brain,
+  Code2,
+  Cpu,
+  GitBranch,
+  Wrench,
+  Shield,
+  Bot,
+  Database,
+  CheckCircle2,
+} from "lucide-react";
 import type {
   LangGraphStepConfig,
   LangGraphStateChannel,
@@ -69,7 +79,14 @@ export type AgentNodeData = CanvasNodeData; // Backwards compatible alias
 export type LangGraphLLMNodeData = {
   label: string;
   llmId: string;
-  provider?: "openai" | "anthropic" | "google" | "groq" | "ollama" | "custom" | (string & {});
+  provider?:
+    | "openai"
+    | "anthropic"
+    | "google"
+    | "groq"
+    | "ollama"
+    | "custom"
+    | (string & {});
   url?: string;
   baseUrl?: string;
   method?: "POST" | "GET" | "PUT" | string;
@@ -176,7 +193,11 @@ export interface OutputChannelConfig {
   topicOrEventName?: string;
   targetStateChannel?: string;
   description?: string;
-  streamContentMode?: "ai_node_tokens" | "structured_output" | "step_output" | "full_state";
+  streamContentMode?:
+    | "ai_node_tokens"
+    | "structured_output"
+    | "step_output"
+    | "full_state";
   sourceStepId?: string;
   boundRouteIds?: string[];
   schemaJson?: string;
@@ -211,27 +232,70 @@ export type BaseCanvasNodeProps = {
   style?: React.CSSProperties;
 };
 
-export type LangGraphLLMNode = Node<LangGraphLLMNodeData, typeof LANGGRAPH_CANVAS_NODE_LLM> & BaseCanvasNodeProps;
+export type LangGraphLLMNode = Node<
+  LangGraphLLMNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_LLM
+> &
+  BaseCanvasNodeProps;
 export type CustomLLMNode = LangGraphLLMNode; // Backwards compatible alias
 export type CustomLLMNodeData = LangGraphLLMNodeData; // Backwards compatible alias
-export type StepNode = Node<StepNodeData, typeof LANGGRAPH_CANVAS_NODE_STEP> & BaseCanvasNodeProps;
-export type StartNode = Node<StartNodeData, typeof LANGGRAPH_CANVAS_NODE_START> & BaseCanvasNodeProps;
-export type EndNode = Node<EndNodeData, typeof LANGGRAPH_CANVAS_NODE_END> & BaseCanvasNodeProps;
-export type PortNode = Node<PortNodeData, typeof LANGGRAPH_CANVAS_NODE_PORT> & BaseCanvasNodeProps;
-export type StateGlobalNode = Node<StateGlobalNodeData, typeof LANGGRAPH_CANVAS_NODE_STATE_GLOBAL> & BaseCanvasNodeProps;
+export type StepNode = Node<StepNodeData, typeof LANGGRAPH_CANVAS_NODE_STEP> &
+  BaseCanvasNodeProps;
+export type StartNode = Node<
+  StartNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_START
+> &
+  BaseCanvasNodeProps;
+export type EndNode = Node<EndNodeData, typeof LANGGRAPH_CANVAS_NODE_END> &
+  BaseCanvasNodeProps;
+export type PortNode = Node<PortNodeData, typeof LANGGRAPH_CANVAS_NODE_PORT> &
+  BaseCanvasNodeProps;
+export type StateGlobalNode = Node<
+  StateGlobalNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_STATE_GLOBAL
+> &
+  BaseCanvasNodeProps;
 
-export type ToolNode = Node<ToolNodeData, typeof LANGGRAPH_CANVAS_NODE_TOOL> & BaseCanvasNodeProps;
-export type MiddlewareNode = Node<MiddlewareNodeData, typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE> & BaseCanvasNodeProps;
-export type CanvasNode = Node<CanvasNodeData, typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT> & BaseCanvasNodeProps;
+export type ToolNode = Node<ToolNodeData, typeof LANGGRAPH_CANVAS_NODE_TOOL> &
+  BaseCanvasNodeProps;
+export type MiddlewareNode = Node<
+  MiddlewareNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE
+> &
+  BaseCanvasNodeProps;
+export type CanvasNode = Node<
+  CanvasNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT
+> &
+  BaseCanvasNodeProps;
 export type AgentNode = CanvasNode; // Backwards compatible alias
-export type MemoryNode = Node<MemoryNodeData, typeof LANGGRAPH_CANVAS_NODE_MEMORY> & BaseCanvasNodeProps;
-export type OutputNode = Node<OutputNodeData, typeof LANGGRAPH_CANVAS_NODE_OUTPUT> & BaseCanvasNodeProps;
+export type MemoryNode = Node<
+  MemoryNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_MEMORY
+> &
+  BaseCanvasNodeProps;
+export type OutputNode = Node<
+  OutputNodeData,
+  typeof LANGGRAPH_CANVAS_NODE_OUTPUT
+> &
+  BaseCanvasNodeProps;
 
 export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;
 };
 
-export type LangGraphCanvasNodeUnion = StepNode | StartNode | EndNode | PortNode | StateGlobalNode | LangGraphLLMNode | ToolNode | MiddlewareNode | CanvasNode | MemoryNode | OutputNode;
+export type LangGraphCanvasNodeUnion =
+  | StepNode
+  | StartNode
+  | EndNode
+  | PortNode
+  | StateGlobalNode
+  | LangGraphLLMNode
+  | ToolNode
+  | MiddlewareNode
+  | CanvasNode
+  | MemoryNode
+  | OutputNode;
 export type LangGraphCanvasNode = LangGraphCanvasNodeUnion;
 
 export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
@@ -239,7 +303,16 @@ export function getStepData(node: LangGraphCanvasNode): StepNodeData | null {
   return null;
 }
 
-export type LangGraphCanvasNodeAddType = LangGraphStepConfig["type"] | typeof LANGGRAPH_CANVAS_NODE_LLM | typeof LANGGRAPH_CANVAS_NODE_TOOL | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE | typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT | typeof LANGGRAPH_CANVAS_NODE_MEMORY | typeof LANGGRAPH_CANVAS_NODE_END | typeof LANGGRAPH_CANVAS_NODE_OUTPUT;
+export type LangGraphCanvasNodeAddType =
+  | LangGraphStepConfig["type"]
+  | typeof LANGGRAPH_CANVAS_NODE_LLM
+  | typeof LANGGRAPH_CANVAS_NODE_TOOL
+  | typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE
+  | typeof LANGGRAPH_CANVAS_NODE_NODE
+  | typeof LANGGRAPH_CANVAS_NODE_AGENT
+  | typeof LANGGRAPH_CANVAS_NODE_MEMORY
+  | typeof LANGGRAPH_CANVAS_NODE_END
+  | typeof LANGGRAPH_CANVAS_NODE_OUTPUT;
 
 import { Radio } from "lucide-react";
 
@@ -251,12 +324,52 @@ export type ToolPaletteItem = {
 };
 
 export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
-  { type: LANGGRAPH_CANVAS_NODE_NODE, label: "Node", desc: "LangGraph node with optional LLM, tools, middleware & memory", icon: Bot },
-  { type: STEP_TYPE_ROUTER, label: "Conditional Router", desc: "Routes execution dynamically based on comparison rules", icon: GitBranch },
-  { type: LANGGRAPH_CANVAS_NODE_END, label: "END Node", desc: "Terminal graph node representing __end__ execution", icon: CheckCircle2 },
-  { type: LANGGRAPH_CANVAS_NODE_LLM, label: "LLM config", desc: "Configure an LLM provider or raw API endpoint", icon: Cpu },
-  { type: LANGGRAPH_CANVAS_NODE_TOOL, label: "Tool", desc: "Configure an executable tool for LLMs", icon: Wrench },
-  { type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE, label: "Middleware", desc: "Interceptors for Human-in-the-loop, rate limit & tracing", icon: Shield },
-  { type: LANGGRAPH_CANVAS_NODE_MEMORY, label: "Memory / DB Ref", desc: "Save chat history & state checkpoints per session", icon: Database },
-  { type: LANGGRAPH_CANVAS_NODE_OUTPUT, label: "Output Channel", desc: "Emit SSE, WebSocket, Event, or Webhook output", icon: Radio },
+  {
+    type: LANGGRAPH_CANVAS_NODE_NODE,
+    label: "Node",
+    desc: "LangGraph node with optional LLM, tools, middleware & memory",
+    icon: Bot,
+  },
+  {
+    type: STEP_TYPE_ROUTER,
+    label: "Conditional Router",
+    desc: "Routes execution dynamically based on comparison rules",
+    icon: GitBranch,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_END,
+    label: "END Node",
+    desc: "Terminal graph node representing __end__ execution",
+    icon: CheckCircle2,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_LLM,
+    label: "LLM config",
+    desc: "Configure an LLM provider or raw API endpoint",
+    icon: Cpu,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_TOOL,
+    label: "Tool",
+    desc: "Configure an executable tool for LLMs",
+    icon: Wrench,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+    label: "Middleware",
+    desc: "Interceptors for Human-in-the-loop, rate limit & tracing",
+    icon: Shield,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_MEMORY,
+    label: "Memory / DB Ref",
+    desc: "Save chat history & state checkpoints per session",
+    icon: Database,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_OUTPUT,
+    label: "Output Channel",
+    desc: "Emit SSE, WebSocket, Event, or Webhook output",
+    icon: Radio,
+  },
 ];

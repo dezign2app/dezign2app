@@ -119,7 +119,11 @@ export const resolveTemplateValue = (
       : null;
 
   if (pureExpressionMatch) {
-    return resolveReference(pureExpressionMatch[1] ?? "", runtimeState, onFailure);
+    return resolveReference(
+      pureExpressionMatch[1] ?? "",
+      runtimeState,
+      onFailure,
+    );
   }
 
   if (matches.length === 0) {
@@ -127,7 +131,9 @@ export const resolveTemplateValue = (
   }
 
   return rawValue.replace(EXPRESSION_PATTERN, (_, expression: string) =>
-    stringifyTemplateValue(resolveReference(expression, runtimeState, onFailure)),
+    stringifyTemplateValue(
+      resolveReference(expression, runtimeState, onFailure),
+    ),
   );
 };
 
@@ -141,7 +147,9 @@ export const resolveStructuredValue = (
   }
 
   if (Array.isArray(value)) {
-    return value.map((entry) => resolveStructuredValue(entry, runtimeState, onFailure));
+    return value.map((entry) =>
+      resolveStructuredValue(entry, runtimeState, onFailure),
+    );
   }
 
   if (!isRecord(value)) {

@@ -4,14 +4,33 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Pencil, Trash2, Copy, ExternalLink, FolderOpen } from "lucide-react";
 import { Doc } from "@workspace/backend/_generated/dataModel";
-import { Card, CardHeader, CardTitle, CardDescription, CardAction } from "@workspace/ui/components/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { ActionMenu, ActionMenuItem, ActionMenuSeparator } from "@workspace/ui/components/action-menu";
+import {
+  ActionMenu,
+  ActionMenuItem,
+  ActionMenuSeparator,
+} from "@workspace/ui/components/action-menu";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@workspace/ui/components/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
@@ -94,17 +113,26 @@ export const ProjectCard = ({ project, className }: ProjectCardProps) => {
     },
   ];
 
-  const updatedAtText = dayjs(project.updatedAt).fromNow() === "a few seconds ago"
-    ? "Just now"
-    : dayjs(project.updatedAt).fromNow();
+  const updatedAtText =
+    dayjs(project.updatedAt).fromNow() === "a few seconds ago"
+      ? "Just now"
+      : dayjs(project.updatedAt).fromNow();
 
   return (
     <>
       <ActionMenu items={menuItems} contentClassName="w-48">
         <Link href={route}>
-          <Card className={cn("gap-0 relative w-full pt-0 hover:shadow-lg transition-all border p-0 border-border/50 group bg-secondary/10 overflow-hidden", className)}>
+          <Card
+            className={cn(
+              "gap-0 relative w-full pt-0 hover:shadow-lg transition-all border p-0 border-border/50 group bg-secondary/10 overflow-hidden",
+              className,
+            )}
+          >
             <div className="absolute inset-0 z-30 aspect-video bg-black/20 group-hover:bg-black/10 transition-colors rounded-t-lg flex items-center justify-center">
-               <FolderOpen className="text-white/20 group-hover:scale-110 transition-transform" size={48} />
+              <FolderOpen
+                className="text-white/20 group-hover:scale-110 transition-transform"
+                size={48}
+              />
             </div>
             <img
               src={`https://avatar.vercel.sh/${project._id}`}
@@ -117,7 +145,9 @@ export const ProjectCard = ({ project, className }: ProjectCardProps) => {
                   {updatedAtText}
                 </Badge>
               </CardAction>
-              <CardTitle className="text-sm font-medium truncate">{project.name}</CardTitle>
+              <CardTitle className="text-sm font-medium truncate">
+                {project.name}
+              </CardTitle>
               {project.description && (
                 <CardDescription className="text-xs truncate">
                   {project.description}
@@ -128,7 +158,7 @@ export const ProjectCard = ({ project, className }: ProjectCardProps) => {
         </Link>
       </ActionMenu>
 
-      <ProjectDialog 
+      <ProjectDialog
         project={project}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}

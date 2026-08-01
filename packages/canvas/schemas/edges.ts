@@ -31,4 +31,3 @@ export const edgeDataSchema = z.object({
   postInvokePrompt: z.string().optional(),
   postInvokeCode: z.string().optional(),
 });
-

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { creem } from '@/lib/creem';
+import { NextResponse } from "next/server";
+import { creem } from "@/lib/creem";
 
 export const revalidate = 3600;
 

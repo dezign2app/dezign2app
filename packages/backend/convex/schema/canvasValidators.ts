@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { zodToConvex } from "convex-helpers/server/zod";
-import { 
+import {
   serviceDataSchema,
   dbRefDataSchema,
   webClientDataSchema,
@@ -35,7 +35,9 @@ import {
 } from "@workspace/canvas/schemas";
 
 // Test Case Data Validator
-export const backendTestCaseDataValidator = zodToConvex(simulationTestCaseSchema);
+export const backendTestCaseDataValidator = zodToConvex(
+  simulationTestCaseSchema,
+);
 
 // Edge Data Validator
 export const backendEdgeDataValidator = zodToConvex(edgeDataSchema);
@@ -45,7 +47,12 @@ export const langgraphConvexDataValidator = v.object({
   description: v.optional(v.string()),
   parentId: v.optional(v.string()),
   position: v.optional(v.object({ x: v.number(), y: v.number() })),
-  style: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean(), v.null()))),
+  style: v.optional(
+    v.record(
+      v.string(),
+      v.union(v.string(), v.number(), v.boolean(), v.null()),
+    ),
+  ),
   width: v.optional(v.number()),
   height: v.optional(v.number()),
   version: v.optional(v.number()),
@@ -102,14 +109,23 @@ export const backendNodeDataValidator = v.union(
     label: v.optional(v.string()),
     parentId: v.optional(v.string()),
     position: v.optional(v.object({ x: v.number(), y: v.number() })),
-    style: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean(), v.null()))),
+    style: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.boolean(), v.null()),
+      ),
+    ),
     width: v.optional(v.number()),
     height: v.optional(v.number()),
-  })
+  }),
 );
 
 import { z } from "zod";
 
 export const backendEndpointDataValidator = zodToConvex(endpointSchema);
-export const backendIdentityProviderDataValidator = zodToConvex(identityProviderSchema);
-export const backendEventDataValidator = zodToConvex(z.union([publishedEventSchema, consumedEventSchema]));
+export const backendIdentityProviderDataValidator = zodToConvex(
+  identityProviderSchema,
+);
+export const backendEventDataValidator = zodToConvex(
+  z.union([publishedEventSchema, consumedEventSchema]),
+);

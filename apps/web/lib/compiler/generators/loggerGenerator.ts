@@ -11,7 +11,8 @@ export function generateLoggerPackage(): CompiledFile[] {
       name: "@workspace/logger",
       version: "0.0.0",
       private: true,
-      description: "Shared logger utility with environment-configurable log levels (debug, info, warn, error, none)",
+      description:
+        "Shared logger utility with environment-configurable log levels (debug, info, warn, error, none)",
       main: "src/index.ts",
       types: "src/index.ts",
       scripts: {
@@ -25,7 +26,7 @@ export function generateLoggerPackage(): CompiledFile[] {
       },
     },
     null,
-    2
+    2,
   );
 
   const tsconfig = JSON.stringify(
@@ -38,7 +39,7 @@ export function generateLoggerPackage(): CompiledFile[] {
       include: ["src/**/*"],
     },
     null,
-    2
+    2,
   );
 
   const indexCode = `export type LogLevel = "debug" | "info" | "warn" | "error" | "none";

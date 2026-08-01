@@ -240,11 +240,15 @@ export const saveDraftGraph = mutation({
     const [currentNodes, currentEdges] = await Promise.all([
       ctx.db
         .query("workflow_nodes")
-        .withIndex("by_version", (q) => q.eq("versionId", workflow.draftVersionId!))
+        .withIndex("by_version", (q) =>
+          q.eq("versionId", workflow.draftVersionId!),
+        )
         .collect(),
       ctx.db
         .query("workflow_edges")
-        .withIndex("by_version", (q) => q.eq("versionId", workflow.draftVersionId!))
+        .withIndex("by_version", (q) =>
+          q.eq("versionId", workflow.draftVersionId!),
+        )
         .collect(),
     ]);
 
@@ -389,7 +393,10 @@ export const updateNodeConfig = mutation({
     const workflow = await assertWorkflowAccess(ctx, args.workflowId, identity);
 
     if (!workflow.draftVersionId) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Workflow draft not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Workflow draft not found",
+      });
     }
 
     const existing = await ctx.db
@@ -400,7 +407,10 @@ export const updateNodeConfig = mutation({
       .unique();
 
     if (!existing) {
-      throw new ConvexError({ code: "NOT_FOUND", message: `Node "${args.nodeKey}" not found in draft` });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: `Node "${args.nodeKey}" not found in draft`,
+      });
     }
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -431,7 +441,10 @@ export const addNode = mutation({
     const workflow = await assertWorkflowAccess(ctx, args.workflowId, identity);
 
     if (!workflow.draftVersionId) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Workflow draft not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Workflow draft not found",
+      });
     }
 
     const now = Date.now();
@@ -463,28 +476,39 @@ export const removeNode = mutation({
     const workflow = await assertWorkflowAccess(ctx, args.workflowId, identity);
 
     if (!workflow.draftVersionId) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Workflow draft not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Workflow draft not found",
+      });
     }
 
     const [existing, allEdges] = await Promise.all([
       ctx.db
         .query("workflow_nodes")
         .withIndex("by_version_node_key", (q) =>
-          q.eq("versionId", workflow.draftVersionId!).eq("nodeKey", args.nodeKey),
+          q
+            .eq("versionId", workflow.draftVersionId!)
+            .eq("nodeKey", args.nodeKey),
         )
         .unique(),
       ctx.db
         .query("workflow_edges")
-        .withIndex("by_version", (q) => q.eq("versionId", workflow.draftVersionId!))
+        .withIndex("by_version", (q) =>
+          q.eq("versionId", workflow.draftVersionId!),
+        )
         .collect(),
     ]);
 
     if (!existing) {
-      throw new ConvexError({ code: "NOT_FOUND", message: `Node "${args.nodeKey}" not found in draft` });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: `Node "${args.nodeKey}" not found in draft`,
+      });
     }
 
     const danglingEdges = allEdges.filter(
-      (e) => e.sourceNodeKey === args.nodeKey || e.targetNodeKey === args.nodeKey,
+      (e) =>
+        e.sourceNodeKey === args.nodeKey || e.targetNodeKey === args.nodeKey,
     );
 
     await Promise.all([
@@ -514,7 +538,10 @@ export const upsertEdge = mutation({
     const workflow = await assertWorkflowAccess(ctx, args.workflowId, identity);
 
     if (!workflow.draftVersionId) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Workflow draft not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Workflow draft not found",
+      });
     }
 
     const existing = await ctx.db
@@ -562,7 +589,10 @@ export const removeEdge = mutation({
     const workflow = await assertWorkflowAccess(ctx, args.workflowId, identity);
 
     if (!workflow.draftVersionId) {
-      throw new ConvexError({ code: "NOT_FOUND", message: "Workflow draft not found" });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Workflow draft not found",
+      });
     }
 
     const existing = await ctx.db
@@ -573,7 +603,10 @@ export const removeEdge = mutation({
       .unique();
 
     if (!existing) {
-      throw new ConvexError({ code: "NOT_FOUND", message: `Edge "${args.edgeKey}" not found in draft` });
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: `Edge "${args.edgeKey}" not found in draft`,
+      });
     }
 
     await ctx.db.delete(existing._id);

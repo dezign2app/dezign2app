@@ -20,15 +20,17 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
           enableSystem
           disableTransitionOnChange
         >
-            <SidebarProvider defaultOpen={defaultOpen}>
-              <ProtectedSidebar />
-              <Toaster />
-              <ChatContainer />
-              <main className="flex flex-1 flex-col min-h-screen">{children}</main>
-            </SidebarProvider>
+          <SidebarProvider defaultOpen={defaultOpen}>
+            <ProtectedSidebar />
+            <Toaster />
+            <ChatContainer />
+            <main className="flex flex-1 flex-col min-h-screen">
+              {children}
+            </main>
+          </SidebarProvider>
         </ThemeProvider>
       </AuthenticatedProvider>
-    </UpstashRealtimeProvider>    
+    </UpstashRealtimeProvider>
   );
 };
 

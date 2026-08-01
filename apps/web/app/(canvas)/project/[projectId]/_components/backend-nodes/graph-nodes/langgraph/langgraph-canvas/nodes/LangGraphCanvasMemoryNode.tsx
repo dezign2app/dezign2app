@@ -2,18 +2,36 @@ import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import { Database, Trash2, HardDrive, Key, Layers } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import type { MemoryNode, LangGraphCanvasNode } from "../types";
 import { LANGGRAPH_CANVAS_NODE_MEMORY, HANDLE_MEMORY_OUT } from "../constants";
 import { LocalInput } from "../../../common/shared";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 
-export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<MemoryNode>) => {
+export const LangGraphCanvasMemoryNode = ({
+  id,
+  data,
+  selected,
+}: NodeProps<MemoryNode>) => {
   const { setNodes } = useReactFlow<LangGraphCanvasNode>();
-  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+  const entities = useBackendCanvasStore(
+    useShallow((s) =>
+      s.nodes.filter(
+        (n) => n?.type === "entity" && n.data?.dbType !== "vector",
+      ),
+    ),
+  );
   const [isEditingName, setIsEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(data.name || data.label || "Memory Saver");
+  const [nameValue, setNameValue] = useState(
+    data.name || data.label || "Memory Saver",
+  );
 
   useEffect(() => {
     setNameValue(data.name || data.label || "Memory Saver");
@@ -21,7 +39,11 @@ export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<Memo
 
   const updateMemoryData = (changes: Partial<typeof data>) => {
     setNodes((nds) =>
-      nds.map((n) => (n.id === id && n.type === LANGGRAPH_CANVAS_NODE_MEMORY ? { ...n, data: { ...n.data, ...changes } } : n))
+      nds.map((n) =>
+        n.id === id && n.type === LANGGRAPH_CANVAS_NODE_MEMORY
+          ? { ...n, data: { ...n.data, ...changes } }
+          : n,
+      ),
     );
   };
 
@@ -152,7 +174,9 @@ export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<Memo
           >
             <Select
               value={checkpointerType}
-              onValueChange={(val: string) => updateMemoryData({ checkpointer: val })}
+              onValueChange={(val: string) =>
+                updateMemoryData({ checkpointer: val })
+              }
             >
               <SelectTrigger className="h-7 text-xs bg-secondary/30 font-mono">
                 <SelectValue />
@@ -191,8 +215,12 @@ export const LangGraphCanvasMemoryNode = ({ id, data, selected }: NodeProps<Memo
         {/* Auto Summarization */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/20 border border-border/50 nodrag">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-foreground">Auto-Summarize</span>
-            <span className="text-[9px] text-muted-foreground">Compress past messages</span>
+            <span className="text-xs font-semibold text-foreground">
+              Auto-Summarize
+            </span>
+            <span className="text-[9px] text-muted-foreground">
+              Compress past messages
+            </span>
           </div>
           <div
             className="nodrag"

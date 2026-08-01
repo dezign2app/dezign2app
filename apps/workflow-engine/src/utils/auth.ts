@@ -32,21 +32,25 @@ function verifyClerkJWT(token: string): ClerkPayload | null {
 export function extractAuthToken(req: Request): string | null {
   const authHeader = req.headers.authorization;
   console.log(`[AUTH] Authorization header present: ${!!authHeader}`);
-  
+
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
     console.log(`[AUTH] Token starts with: ${token.substring(0, 10)}...`);
     return token;
   }
-  
+
   if (authHeader) {
-    console.warn(`[AUTH] Authorization header found but does not start with "Bearer "`);
+    console.warn(
+      `[AUTH] Authorization header found but does not start with "Bearer "`,
+    );
   }
-  
+
   return null;
 }
 
-async function validateConvexApiKey(key: string): Promise<{ userId: string; orgId?: string; keyId: string } | null> {
+async function validateConvexApiKey(
+  key: string,
+): Promise<{ userId: string; orgId?: string; keyId: string } | null> {
   try {
     const response = await fetch(`${CONVEX_URL}/api/query`, {
       method: "POST",
@@ -61,16 +65,24 @@ async function validateConvexApiKey(key: string): Promise<{ userId: string; orgI
     });
 
     if (!response.ok) {
-      console.error("[AUTH] Convex validation request failed:", response.statusText);
+      console.error(
+        "[AUTH] Convex validation request failed:",
+        response.statusText,
+      );
       return null;
     }
 
     const data = await response.json();
     if (data.status === "success" && data.value) {
-      console.log("[AUTH] Convex validation success:", data.value.userId,"for accessing org", data.value.orgId);
+      console.log(
+        "[AUTH] Convex validation success:",
+        data.value.userId,
+        "for accessing org",
+        data.value.orgId,
+      );
       return data.value;
     }
-    
+
     console.warn("[AUTH] Convex validation failed or returned no data:", data);
     return null;
   } catch (err) {

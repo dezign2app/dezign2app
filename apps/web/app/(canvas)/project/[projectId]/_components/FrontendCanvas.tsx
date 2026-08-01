@@ -44,7 +44,7 @@ export function FrontendCanvas({ projectId }: FrontendCanvasProps) {
           remove,
         }).catch(console.error);
       },
-      { scope: "document", source: "user" }
+      { scope: "document", source: "user" },
     );
 
     // Listen to session changes to save camera viewport
@@ -55,11 +55,14 @@ export function FrontendCanvas({ projectId }: FrontendCanvasProps) {
         cameraSaveTimeout = setTimeout(() => {
           try {
             const camera = editor.getCamera();
-            localStorage.setItem(`canvas_viewport_${projectId}_frontend`, JSON.stringify({ x: camera.x, y: camera.y, z: camera.z }));
+            localStorage.setItem(
+              `canvas_viewport_${projectId}_frontend`,
+              JSON.stringify({ x: camera.x, y: camera.y, z: camera.z }),
+            );
           } catch (e) {}
         }, 500);
       },
-      { scope: "session" }
+      { scope: "session" },
     );
   };
 
@@ -78,12 +81,14 @@ export function FrontendCanvas({ projectId }: FrontendCanvasProps) {
         console.error("Failed to hydrate tldraw from Convex:", err);
       }
     }
-    
+
     setHydrated(true);
 
     // Restore camera
     try {
-      const saved = localStorage.getItem(`canvas_viewport_${projectId}_frontend`);
+      const saved = localStorage.getItem(
+        `canvas_viewport_${projectId}_frontend`,
+      );
       if (saved) {
         editor.setCamera(JSON.parse(saved));
       }

@@ -6,7 +6,7 @@ process.env.GROQ_LLM_MODEL = "dummy";
 
 async function run() {
   const workflow = createGraph();
-  const mermaid = await workflow.getGraphAsync().then(g => g.drawMermaid());
+  const mermaid = await workflow.getGraphAsync().then((g) => g.drawMermaid());
   console.log(mermaid);
 }
 run();

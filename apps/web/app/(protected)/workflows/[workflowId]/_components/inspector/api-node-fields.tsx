@@ -82,8 +82,10 @@ export const ApiNodeFields = ({
             const newAuthType = value as ApiNodeConfig["authType"];
             updateConfig({
               authType: newAuthType,
-              authHeaderName: newAuthType === "api_key_header" ? config.authHeaderName : "",
-              authQueryName: newAuthType === "api_key_query" ? config.authQueryName : "",
+              authHeaderName:
+                newAuthType === "api_key_header" ? config.authHeaderName : "",
+              authQueryName:
+                newAuthType === "api_key_query" ? config.authQueryName : "",
               authUsername: newAuthType === "basic" ? config.authUsername : "",
             });
           }}
@@ -135,9 +137,7 @@ export const ApiNodeFields = ({
                 value={config.authUsername ?? ""}
                 disabled={isReadOnly}
                 placeholder="admin"
-                onChange={(e) =>
-                  updateConfig({ authUsername: e.target.value })
-                }
+                onChange={(e) => updateConfig({ authUsername: e.target.value })}
               />
             </Field>
           )}
@@ -191,9 +191,7 @@ export const ApiNodeFields = ({
           value={config.headers}
           disabled={isReadOnly}
           placeholder='{"Content-Type":"application/json"}'
-          onChange={(event) =>
-            updateConfig({ headers: event.target.value })
-          }
+          onChange={(event) => updateConfig({ headers: event.target.value })}
         />
       </Field>
 
@@ -203,9 +201,7 @@ export const ApiNodeFields = ({
           value={config.query}
           disabled={isReadOnly}
           placeholder='{"limit":"10"}'
-          onChange={(event) =>
-            updateConfig({ query: event.target.value })
-          }
+          onChange={(event) => updateConfig({ query: event.target.value })}
         />
       </Field>
 

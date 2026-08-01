@@ -1,5 +1,11 @@
 import React from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import { TabsContent } from "@workspace/ui/components/tabs";
 import type { LangGraphMemoryConfig } from "@/types/canvas";
@@ -15,7 +21,13 @@ export function MemoryTabContent({
   memoryConfig,
   setMemoryConfig,
 }: MemoryTabContentProps) {
-  const entities = useBackendCanvasStore(useShallow((s) => s.nodes.filter((n) => n?.type === "entity" && n.data?.dbType !== "vector")));
+  const entities = useBackendCanvasStore(
+    useShallow((s) =>
+      s.nodes.filter(
+        (n) => n?.type === "entity" && n.data?.dbType !== "vector",
+      ),
+    ),
+  );
 
   return (
     <TabsContent
@@ -54,12 +66,18 @@ export function MemoryTabContent({
 
       <div className="flex items-center justify-between rounded-xl border bg-card/50 p-4 shadow-sm backdrop-blur-sm">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-semibold text-foreground">Auto-Summarize</span>
-          <span className="text-xs text-muted-foreground">Compress history to save tokens</span>
+          <span className="text-sm font-semibold text-foreground">
+            Auto-Summarize
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Compress history to save tokens
+          </span>
         </div>
         <Switch
           checked={memoryConfig.autoSummarize ?? true}
-          onCheckedChange={(c) => setMemoryConfig({ ...memoryConfig, autoSummarize: c })}
+          onCheckedChange={(c) =>
+            setMemoryConfig({ ...memoryConfig, autoSummarize: c })
+          }
         />
       </div>
     </TabsContent>

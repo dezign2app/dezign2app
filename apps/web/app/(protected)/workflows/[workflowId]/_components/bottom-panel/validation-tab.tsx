@@ -15,13 +15,8 @@ const saveStateLabel: Record<WorkflowSaveState, string> = {
 };
 
 export const ValidationTab = () => {
-  const {
-    compileStatus,
-    compileErrors,
-    saveState,
-    nodes,
-    edges,
-  } = useWorkflowEditorContext();
+  const { compileStatus, compileErrors, saveState, nodes, edges } =
+    useWorkflowEditorContext();
 
   const nodeCount = nodes.length;
   const edgeCount = edges.length;

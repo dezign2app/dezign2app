@@ -1,12 +1,16 @@
 import { GitBranch } from "lucide-react";
-import type { ConditionNodeConfig, WorkflowNodeDefinition } from "../workflow-editor-types";
+import type {
+  ConditionNodeConfig,
+  WorkflowNodeDefinition,
+} from "../workflow-editor-types";
 
 export const conditionNode: WorkflowNodeDefinition = {
   title: "Condition",
   paletteDescription: "Split execution into explicit true and false branches.",
   badge: "Branch",
   minimapColor: "var(--color-chart-2)",
-  accentClassName: "from-chart-2/20 via-chart-2/10 to-transparent border-chart-2/30",
+  accentClassName:
+    "from-chart-2/20 via-chart-2/10 to-transparent border-chart-2/30",
   icon: GitBranch,
   deletable: true,
   hasTargetHandle: true,

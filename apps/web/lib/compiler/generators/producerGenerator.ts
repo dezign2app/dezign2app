@@ -6,10 +6,13 @@ import { resolveProducerTrace } from "../traceResolver";
 
 export function generateProducers(
   serviceName: string,
-  nodePublishedEvents: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[],
+  nodePublishedEvents: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[],
   serviceNode?: BackendNode,
   allNodes: BackendNode[] = [],
-  allEdges: BackendEdge[] = []
+  allEdges: BackendEdge[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const producerExports: string[] = [];
@@ -56,7 +59,8 @@ export async function ${funcName}(eventData: ${payloadInterfaceName}): Promise<v
       if (trace.outgoing.length > 0) {
         trace.outgoing.forEach((out) => {
           producerCode += `  // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
-          if (out.dataContext) producerCode += `  //   Details: ${out.dataContext}\n`;
+          if (out.dataContext)
+            producerCode += `  //   Details: ${out.dataContext}\n`;
         });
       } else {
         producerCode += `  // - Publishes topic/event "${ev.name}"\n`;

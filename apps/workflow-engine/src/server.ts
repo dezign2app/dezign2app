@@ -10,7 +10,7 @@ import { Options } from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(
@@ -50,18 +50,21 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   const streamKey = `agent:stream:${streamId}`;
   const realtimeChannel = `agent:realtime:${streamId}`;
-  
+
   // Reset or initialize index for new stream
   streamIndices.set(streamId, 0);
 
   const processLine = (line: string) => {
     try {
       const payload = JSON.parse(line);
-      
+
       // ← KEY FIX: Already indexed means it came from Redis via pipeRedisToSSE
       // Don't re-store it or you'll get duplicates
       if (typeof payload._idx === "number") {
-        realtime.channel(realtimeChannel).emit("message", line).catch(() => {});
+        realtime
+          .channel(realtimeChannel)
+          .emit("message", line)
+          .catch(() => {});
         return;
       }
 
@@ -73,10 +76,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
       redis.rpush(streamKey, indexedLine).catch(console.error);
       redis.expire(streamKey, 60 * 60).catch(() => {});
-      realtime.channel(realtimeChannel).emit("message", indexedLine).catch(() => {});
+      realtime
+        .channel(realtimeChannel)
+        .emit("message", indexedLine)
+        .catch(() => {});
     } catch {
       redis.rpush(streamKey, line).catch(() => {});
-      realtime.channel(realtimeChannel).emit("message", line).catch(() => {});
+      realtime
+        .channel(realtimeChannel)
+        .emit("message", line)
+        .catch(() => {});
     }
   };
 
@@ -84,7 +93,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const originalEnd = res.end;
 
   res.write = function (this: Response, chunk: any, ...args: any[]) {
-    const str = typeof chunk === "string" ? chunk : chunk instanceof Uint8Array ? new TextDecoder().decode(chunk) : String(chunk);
+    const str =
+      typeof chunk === "string"
+        ? chunk
+        : chunk instanceof Uint8Array
+          ? new TextDecoder().decode(chunk)
+          : String(chunk);
     if (str) {
       str.split("\n").forEach((line: string) => {
         if (line.trim()) {
@@ -92,12 +106,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         }
       });
     }
-    return originalWrite.apply(res, [chunk, ...args] as Parameters<typeof originalWrite>);
+    return originalWrite.apply(res, [chunk, ...args] as Parameters<
+      typeof originalWrite
+    >);
   };
 
   res.end = function (this: Response, chunk?: any, ...args: any[]) {
     if (chunk && typeof chunk !== "function") {
-      const str = typeof chunk === "string" ? chunk : chunk instanceof Uint8Array ? new TextDecoder().decode(chunk) : String(chunk);
+      const str =
+        typeof chunk === "string"
+          ? chunk
+          : chunk instanceof Uint8Array
+            ? new TextDecoder().decode(chunk)
+            : String(chunk);
       if (str && str.trim()) {
         str.split("\n").forEach((line: string) => {
           if (line.trim()) {
@@ -106,7 +127,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         });
       }
     }
-    return originalEnd.apply(res, [chunk, ...args] as Parameters<typeof originalEnd>);
+    return originalEnd.apply(res, [chunk, ...args] as Parameters<
+      typeof originalEnd
+    >);
   };
 
   next();
@@ -115,29 +138,45 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ─── Rate Limiters ────────────────────────────────────────────────────────────
 
 const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,   // 1 minute
-  max: 120,              // 120 req / min per IP
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // 120 req / min per IP
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
-  handler: (req: Request, res: Response, _next: NextFunction, options: Options) => {
-    console.warn(`[rate-limit] global – blocked ${req.ip} on ${req.method} ${req.url}`);
+  handler: (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+    options: Options,
+  ) => {
+    console.warn(
+      `[rate-limit] global – blocked ${req.ip} on ${req.method} ${req.url}`,
+    );
     res.status(options.statusCode).json(options.message);
   },
 });
 
 const agentLimiter = rateLimit({
-  windowMs: 60 * 1000,   // 1 minute
-  max: 60,               // 60 req / min per IP (AI calls are expensive)
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 req / min per IP (AI calls are expensive)
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { error: "AI agent rate limit exceeded. Please slow down." },
-  handler: async (req: Request, res: Response, _next: NextFunction, options: Options) => {
-    console.warn(`[rate-limit] agent - blocked ${req.ip} on ${req.method} ${req.url}`);
-    
+  handler: async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+    options: Options,
+  ) => {
+    console.warn(
+      `[rate-limit] agent - blocked ${req.ip} on ${req.method} ${req.url}`,
+    );
+
     // Attempt to persist the rate limit error to Convex if we have context
     const { conversationId, sessionToken } = req.body || {};
-    const errorMessage = (options.message as { error?: string }).error || "AI agent rate limit exceeded.";
+    const errorMessage =
+      (options.message as { error?: string }).error ||
+      "AI agent rate limit exceeded.";
 
     if (conversationId && sessionToken) {
       try {

@@ -3,11 +3,20 @@ import Link from "next/link";
 import { Header } from "../_landing_components/header";
 import { Footer } from "../_landing_components/footer";
 import { Metadata } from "next";
-import { HelpCircle, Mail, MessageSquare, LifeBuoy, BookOpen, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  HelpCircle,
+  Mail,
+  MessageSquare,
+  LifeBuoy,
+  BookOpen,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Customer Support | dezign2app",
-  description: "Get in touch with customer support at dezign2app. We are here to help you turn system designs into code.",
+  description:
+    "Get in touch with customer support at dezign2app. We are here to help you turn system designs into code.",
 };
 
 export default function SupportPage() {
@@ -26,7 +35,9 @@ export default function SupportPage() {
             How can we help you today?
           </h1>
           <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl">
-            Have questions about system architecture generation, canvas workflows, or custom billing? Our engineering team is standing by to assist.
+            Have questions about system architecture generation, canvas
+            workflows, or custom billing? Our engineering team is standing by to
+            assist.
           </p>
         </div>
 
@@ -37,9 +48,12 @@ export default function SupportPage() {
               <Mail className="size-4" />
               <span>Direct Founder & Support Line</span>
             </div>
-            <h2 className="text-xl md:text-2xl font-bold">Email Our Team Directly</h2>
+            <h2 className="text-xl md:text-2xl font-bold">
+              Email Our Team Directly
+            </h2>
             <p className="text-xs md:text-sm text-gray-300 leading-relaxed">
-              We respond to all technical, workspace, and account queries within 24 hours.
+              We respond to all technical, workspace, and account queries within
+              24 hours.
             </p>
           </div>
           <a
@@ -59,9 +73,13 @@ export default function SupportPage() {
             </div>
             <h3 className="text-base font-bold text-gray-900">Documentation</h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Explore detailed guides, API specifications, and architecture generator walk-throughs.
+              Explore detailed guides, API specifications, and architecture
+              generator walk-throughs.
             </p>
-            <Link href="/docs" className="text-xs font-semibold text-black hover:underline mt-2">
+            <Link
+              href="/docs"
+              className="text-xs font-semibold text-black hover:underline mt-2"
+            >
               Explore Docs →
             </Link>
           </div>
@@ -72,9 +90,13 @@ export default function SupportPage() {
             </div>
             <h3 className="text-base font-bold text-gray-900">Contact Sales</h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Looking for custom API limits, dedicated hosting, or enterprise SSO integrations?
+              Looking for custom API limits, dedicated hosting, or enterprise
+              SSO integrations?
             </p>
-            <Link href="/contact" className="text-xs font-semibold text-black hover:underline mt-2">
+            <Link
+              href="/contact"
+              className="text-xs font-semibold text-black hover:underline mt-2"
+            >
               Contact Sales →
             </Link>
           </div>
@@ -83,18 +105,30 @@ export default function SupportPage() {
             <div className="size-10 rounded-xl bg-gray-100 flex items-center justify-center text-black font-bold">
               <ShieldCheck className="size-5" />
             </div>
-            <h3 className="text-base font-bold text-gray-900">Privacy & Terms</h3>
+            <h3 className="text-base font-bold text-gray-900">
+              Privacy & Terms
+            </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Read about our commitment to user data protection, uptime SLAs, and legal compliance.
+              Read about our commitment to user data protection, uptime SLAs,
+              and legal compliance.
             </p>
             <div className="flex flex-wrap gap-4 mt-2">
-              <Link href="/privacy" className="text-xs font-semibold text-black hover:underline">
+              <Link
+                href="/privacy"
+                className="text-xs font-semibold text-black hover:underline"
+              >
                 Privacy
               </Link>
-              <Link href="/terms" className="text-xs font-semibold text-black hover:underline">
+              <Link
+                href="/terms"
+                className="text-xs font-semibold text-black hover:underline"
+              >
                 Terms
               </Link>
-              <Link href="/acceptable-use" className="text-xs font-semibold text-black hover:underline">
+              <Link
+                href="/acceptable-use"
+                className="text-xs font-semibold text-black hover:underline"
+              >
                 Acceptable Use
               </Link>
             </div>

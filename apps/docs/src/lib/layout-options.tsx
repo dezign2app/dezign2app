@@ -5,5 +5,5 @@ export const layoutOptions: BaseLayoutProps = {
     title: "Workflow Template Docs",
     url: "/",
   },
-  links: [  ],
+  links: [],
 };

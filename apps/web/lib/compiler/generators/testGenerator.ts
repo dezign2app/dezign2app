@@ -11,7 +11,7 @@ import { resolveLinkedEndpoint } from "../compileWebClientNode";
 export function generateServiceUnitTests(
   serviceName: string,
   nodeEndpoints: (Endpoint & { nodeId: string })[],
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
 
@@ -51,7 +51,8 @@ describe("${serviceName} Unit Test: defaultRoute", () => {
   nodeEndpoints.forEach((ep, index) => {
     const method = (ep.type || "GET").toLowerCase();
     const rawName = ep.name || ep.id || "route";
-    let routeFileName = toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
+    let routeFileName =
+      toVarName(`${method}_${rawName}`) || `route_${index + 1}`;
 
     if (usedFileNames.has(routeFileName)) {
       routeFileName = `${routeFileName}_${index + 1}`;
@@ -64,7 +65,7 @@ describe("${serviceName} Unit Test: defaultRoute", () => {
 
     // Match any simulation test cases defined for this endpoint
     const matchingCases = testCases.filter(
-      (tc) => tc.targetNodeId === ep.nodeId || tc.targetEventId === ep.id
+      (tc) => tc.targetNodeId === ep.nodeId || tc.targetEventId === ep.id,
     );
 
     if (matchingCases.length > 0) {
@@ -75,7 +76,9 @@ describe("${serviceName} Unit Test: defaultRoute", () => {
 
         const reqHeaders = JSON.stringify(tc.request?.headers || {});
         const reqParams = JSON.stringify(tc.request?.params || {});
-        const reqBody = tc.request?.body ? JSON.stringify(tc.request.body, null, 6) : "{}";
+        const reqBody = tc.request?.body
+          ? JSON.stringify(tc.request.body, null, 6)
+          : "{}";
         const statusToAssert = tc.expectedStatus || expectedStatus;
 
         const content = `import { describe, it, expect, vi } from "vitest";
@@ -154,10 +157,13 @@ describe("Unit Test: ${serviceName} -> ${method.toUpperCase()} ${path}", () => {
 export function generateWebClientE2ETests(
   webClientNodes: BackendNode[],
   endpoints: (Endpoint & { nodeId: string })[] = [],
-  events: (AnyMessagingResource & { nodeId: string; variant: "publish" | "consume" })[] = [],
+  events: (AnyMessagingResource & {
+    nodeId: string;
+    variant: "publish" | "consume";
+  })[] = [],
   nodes: BackendNode[] = [],
   edges: BackendEdge[] = [],
-  testCases: SimulationTestCase[] = []
+  testCases: SimulationTestCase[] = [],
 ): CompiledFile[] {
   const files: CompiledFile[] = [];
   const usedFileNames = new Set<string>();
@@ -179,15 +185,25 @@ export function generateWebClientE2ETests(
       let method = "POST";
 
       if (targetNodeId && targetEventId) {
-        const resolved = resolveLinkedEndpoint(targetNodeId, targetEventId, nodes, edges, endpoints);
+        const resolved = resolveLinkedEndpoint(
+          targetNodeId,
+          targetEventId,
+          nodes,
+          edges,
+          endpoints,
+        );
         if (resolved) {
           targetUrl = resolved.fullUrl;
           method = resolved.method || "POST";
         }
       }
 
-      const reqHeaders = JSON.stringify(tc.request?.headers || { "Content-Type": "application/json" });
-      const reqBody = tc.request?.body ? JSON.stringify(tc.request.body, null, 6) : "{}";
+      const reqHeaders = JSON.stringify(
+        tc.request?.headers || { "Content-Type": "application/json" },
+      );
+      const reqBody = tc.request?.body
+        ? JSON.stringify(tc.request.body, null, 6)
+        : "{}";
       const expectedStatus = tc.expectedStatus || 200;
 
       let fileContent = `import { describe, it, expect } from "vitest";
@@ -223,7 +239,13 @@ describe("E2E Flow: ${tcName}", () => {
     webClientNodes.forEach((webNode) => {
       const webEvents = webNode.data?.events || [];
       webEvents.forEach((ev: any, idx: number) => {
-        const resolved = resolveLinkedEndpoint(webNode.id, ev.id, nodes, edges, endpoints);
+        const resolved = resolveLinkedEndpoint(
+          webNode.id,
+          ev.id,
+          nodes,
+          edges,
+          endpoints,
+        );
         if (resolved) {
           const rawName = `${webNode.data?.label || "Page"}_${ev.name || ev.event || "event"}`;
           let tcSlug = toVarName(rawName) || `e2e_flow_${idx + 1}`;

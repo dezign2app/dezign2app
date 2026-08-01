@@ -22,7 +22,8 @@ function openDatabase(): Promise<IDBDatabase | null> {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Unable to open simulation database."));
+    request.onerror = () =>
+      reject(request.error ?? new Error("Unable to open simulation database."));
   });
 }
 
@@ -32,8 +33,10 @@ async function readRecord(tableId: string): Promise<TableRecord | undefined> {
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readonly");
     const request = transaction.objectStore(STORE_NAME).get(tableId);
-    request.onsuccess = () => resolve(request.result as TableRecord | undefined);
-    request.onerror = () => reject(request.error ?? new Error("Unable to read simulation table."));
+    request.onsuccess = () =>
+      resolve(request.result as TableRecord | undefined);
+    request.onerror = () =>
+      reject(request.error ?? new Error("Unable to read simulation table."));
   });
 }
 
@@ -47,11 +50,17 @@ async function writeRecord(record: TableRecord) {
     const transaction = database.transaction(STORE_NAME, "readwrite");
     transaction.objectStore(STORE_NAME).put(record);
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("Unable to save simulation table."));
+    transaction.onerror = () =>
+      reject(
+        transaction.error ?? new Error("Unable to save simulation table."),
+      );
   });
 }
 
-export async function getSimulationTable(tableId: string, seedRows: Array<Record<string, unknown>> = []) {
+export async function getSimulationTable(
+  tableId: string,
+  seedRows: Array<Record<string, unknown>> = [],
+) {
   const existing = await readRecord(tableId);
   if (existing) return clone(existing.rows);
   const rows = clone(seedRows);
@@ -59,6 +68,9 @@ export async function getSimulationTable(tableId: string, seedRows: Array<Record
   return rows;
 }
 
-export async function saveSimulationTable(tableId: string, rows: Array<Record<string, unknown>>) {
+export async function saveSimulationTable(
+  tableId: string,
+  rows: Array<Record<string, unknown>>,
+) {
   await writeRecord({ tableId, rows: clone(rows), updatedAt: Date.now() });
 }

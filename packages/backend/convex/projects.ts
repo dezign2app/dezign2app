@@ -96,7 +96,7 @@ export const getProjectById = query({
       });
     }
 
-    const response = {...project}
+    const response = { ...project };
 
     // TODO: Add organization member check when implemented
     const hasOrgAccess = true;
@@ -269,4 +269,3 @@ export const duplicateProject = mutation({
     return newProjectId;
   },
 });
-

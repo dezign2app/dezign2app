@@ -5,7 +5,7 @@ import {
   ComboboxContent,
   ComboboxList,
   ComboboxItem,
-  ComboboxEmpty
+  ComboboxEmpty,
 } from "@workspace/ui/components/combobox";
 
 export const PRESET_LABELS = [
@@ -18,20 +18,20 @@ export const PRESET_LABELS = [
   "Supabase",
   "Azure Entra ID",
   "OpenID Connect",
-  "Custom JWT"
+  "Custom JWT",
 ];
 
 export const LABEL_TO_KEY: Record<string, string> = {
-  "Auth0": "auth0",
-  "Clerk": "clerk",
-  "Keycloak": "keycloak",
-  "Okta": "okta",
+  Auth0: "auth0",
+  Clerk: "clerk",
+  Keycloak: "keycloak",
+  Okta: "okta",
   "AWS Cognito": "cognito",
-  "Firebase": "firebase",
-  "Supabase": "supabase",
+  Firebase: "firebase",
+  Supabase: "supabase",
   "Azure Entra ID": "entraid",
   "OpenID Connect": "oidc",
-  "Custom JWT": "custom"
+  "Custom JWT": "custom",
 };
 
 interface ProviderPresetComboboxProps {
@@ -55,18 +55,18 @@ export function ProviderPresetCombobox({
   placeholder = "Search preset...",
   className,
   contentClassName = "bg-sidebar!",
-  autoFocus
+  autoFocus,
 }: ProviderPresetComboboxProps) {
   return (
-    <Combobox 
-      items={PRESET_LABELS} 
+    <Combobox
+      items={PRESET_LABELS}
       value={value}
       onValueChange={onValueChange}
       inputValue={inputValue}
       onInputValueChange={onInputValueChange}
     >
-      <ComboboxInput 
-        placeholder={placeholder} 
+      <ComboboxInput
+        placeholder={placeholder}
         className={className}
         onKeyDown={onKeyDown}
         autoFocus={autoFocus}

@@ -1,9 +1,19 @@
 import React from "react";
 import { WorkerTask, WorkerTaskTrigger, BackendNode } from "@/types/canvas";
-import { LocalInput, LocalTextarea, generateId } from "../backend-nodes/graph-nodes/shared";
+import {
+  LocalInput,
+  LocalTextarea,
+  generateId,
+} from "../backend-nodes/graph-nodes/shared";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { SchemaEditor } from "../backend-nodes/graph-nodes/Editors";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Plus, Trash } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
@@ -13,7 +23,7 @@ const TriggerItemConfig = ({
   allTriggers,
   triggerNodes,
   onUpdate,
-  onDelete
+  onDelete,
 }: {
   trigger: WorkerTaskTrigger;
   index: number;
@@ -24,7 +34,11 @@ const TriggerItemConfig = ({
 }) => {
   const currentTrigger = React.useMemo(() => {
     if (!trigger.value) return null;
-    return allTriggers.find(t => (t.name || t.id) === trigger.value || t.id === trigger.value) || null;
+    return (
+      allTriggers.find(
+        (t) => (t.name || t.id) === trigger.value || t.id === trigger.value,
+      ) || null
+    );
   }, [trigger.value, allTriggers]);
 
   const [selectedServiceId, setSelectedServiceId] = React.useState<string>("");
@@ -38,7 +52,12 @@ const TriggerItemConfig = ({
   return (
     <div className="flex flex-col gap-3 p-3 rounded-lg border bg-background/50 relative group">
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={onDelete}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+          onClick={onDelete}
+        >
           <Trash className="w-3 h-3" />
         </Button>
       </div>
@@ -49,22 +68,28 @@ const TriggerItemConfig = ({
         </span>
         <Select
           value={trigger.type}
-          onValueChange={(v) => onUpdate({ type: v as "event" | "cron", value: "" })}
+          onValueChange={(v) =>
+            onUpdate({ type: v as "event" | "cron", value: "" })
+          }
         >
           <SelectTrigger className="w-[120px] h-7 text-xs">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="event" className="text-xs">Event / Endpoint</SelectItem>
-            <SelectItem value="cron" className="text-xs">Cron Schedule</SelectItem>
+            <SelectItem value="event" className="text-xs">
+              Event / Endpoint
+            </SelectItem>
+            <SelectItem value="cron" className="text-xs">
+              Cron Schedule
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {trigger.type === "event" ? (
         <div className="flex flex-col gap-2 mt-1">
-          <Select 
-            value={selectedServiceId} 
+          <Select
+            value={selectedServiceId}
             onValueChange={(v) => {
               setSelectedServiceId(v);
               onUpdate({ value: "" });
@@ -74,8 +99,12 @@ const TriggerItemConfig = ({
               <SelectValue placeholder="Select Service / Node" />
             </SelectTrigger>
             <SelectContent>
-              {triggerNodes.length === 0 && <SelectItem value="none" disabled className="text-xs">No services found</SelectItem>}
-              {triggerNodes.map(node => (
+              {triggerNodes.length === 0 && (
+                <SelectItem value="none" disabled className="text-xs">
+                  No services found
+                </SelectItem>
+              )}
+              {triggerNodes.map((node) => (
                 <SelectItem key={node.id} value={node.id} className="text-xs">
                   {node.data.label || node.type}
                 </SelectItem>
@@ -93,11 +122,18 @@ const TriggerItemConfig = ({
               </SelectTrigger>
               <SelectContent>
                 {(() => {
-                  const nodeOptions = allTriggers.filter(t => t.serviceId === selectedServiceId);
-                  
-                  if (nodeOptions.length === 0) return <SelectItem value="none" disabled className="text-xs">No resources found</SelectItem>;
-                  
-                  return nodeOptions.map(opt => (
+                  const nodeOptions = allTriggers.filter(
+                    (t) => t.serviceId === selectedServiceId,
+                  );
+
+                  if (nodeOptions.length === 0)
+                    return (
+                      <SelectItem value="none" disabled className="text-xs">
+                        No resources found
+                      </SelectItem>
+                    );
+
+                  return nodeOptions.map((opt) => (
                     <SelectItem key={opt.id} value={opt.id} className="text-xs">
                       {opt.name || opt.id}
                     </SelectItem>
@@ -135,30 +171,57 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
 
   const messagingResources = React.useMemo(() => {
-    return nodes.flatMap(n => {
+    return nodes.flatMap((n) => {
       const data = n.data || {};
       const res = [
-        ...(data.topics?.map(t => ({...t, type: 'topics', brokerId: n.id})) || []),
-        ...(data.streams?.map(t => ({...t, type: 'streams', brokerId: n.id})) || []),
-        ...(data.queues?.map(t => ({...t, type: 'queues', brokerId: n.id})) || []),
-        ...(data.channels?.map(t => ({...t, type: 'channels', brokerId: n.id})) || [])
+        ...(data.topics?.map((t) => ({
+          ...t,
+          type: "topics",
+          brokerId: n.id,
+        })) || []),
+        ...(data.streams?.map((t) => ({
+          ...t,
+          type: "streams",
+          brokerId: n.id,
+        })) || []),
+        ...(data.queues?.map((t) => ({
+          ...t,
+          type: "queues",
+          brokerId: n.id,
+        })) || []),
+        ...(data.channels?.map((t) => ({
+          ...t,
+          type: "channels",
+          brokerId: n.id,
+        })) || []),
       ];
-      return res.map(r => ({ ...r, nodeName: data.label || n.type }));
+      return res.map((r) => ({ ...r, nodeName: data.label || n.type }));
     });
   }, [nodes]);
 
   const allTriggers = React.useMemo(() => {
     return [
-      ...events.filter(e => e.variant === 'publish').map(e => ({ ...e, serviceId: e.nodeId, triggerType: 'event' })),
-      ...messagingResources.map(r => ({ ...r, serviceId: r.brokerId, triggerType: 'resource' })),
-      ...endpoints.map(ep => ({ id: ep.id, name: `${ep.type} ${ep.name}`, serviceId: ep.nodeId, triggerType: 'endpoint' }))
+      ...events
+        .filter((e) => e.variant === "publish")
+        .map((e) => ({ ...e, serviceId: e.nodeId, triggerType: "event" })),
+      ...messagingResources.map((r) => ({
+        ...r,
+        serviceId: r.brokerId,
+        triggerType: "resource",
+      })),
+      ...endpoints.map((ep) => ({
+        id: ep.id,
+        name: `${ep.type} ${ep.name}`,
+        serviceId: ep.nodeId,
+        triggerType: "endpoint",
+      })),
     ];
   }, [events, messagingResources, endpoints]);
 
   const triggerNodes = React.useMemo(() => {
-    const ids = new Set<string>(allTriggers.map(t => t.serviceId));
-    return Array.from(ids).flatMap(id => {
-      const n = nodes.find(n => n.id === id);
+    const ids = new Set<string>(allTriggers.map((t) => t.serviceId));
+    return Array.from(ids).flatMap((id) => {
+      const n = nodes.find((n) => n.id === id);
       return n ? [n] : [];
     });
   }, [allTriggers, nodes]);
@@ -176,14 +239,23 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
   const triggers = item.triggers || [];
 
   const syncEdges = (newTriggers: WorkerTaskTrigger[]) => {
-    const existingEdges = edges.filter(e => e.target === nodeId && e.targetHandle === `task-in-${id}`);
+    const existingEdges = edges.filter(
+      (e) => e.target === nodeId && e.targetHandle === `task-in-${id}`,
+    );
     const desiredEdges: any[] = [];
-    
-    newTriggers.forEach(trigger => {
+
+    newTriggers.forEach((trigger) => {
       if (trigger.type === "event" && trigger.value) {
-        const ev = events.find(e => (e.name || e.id) === trigger.value || e.id === trigger.value);
-        const res = messagingResources.find(r => (r.name || r.id) === trigger.value || r.id === trigger.value);
-        const ep = endpoints.find(e => e.id === trigger.value || `${e.type} ${e.name}` === trigger.value);
+        const ev = events.find(
+          (e) => (e.name || e.id) === trigger.value || e.id === trigger.value,
+        );
+        const res = messagingResources.find(
+          (r) => (r.name || r.id) === trigger.value || r.id === trigger.value,
+        );
+        const ep = endpoints.find(
+          (e) =>
+            e.id === trigger.value || `${e.type} ${e.name}` === trigger.value,
+        );
 
         let sourceNodeId = "";
         let sourceHandleId = "";
@@ -200,20 +272,32 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
         }
 
         if (sourceNodeId && sourceHandleId) {
-          desiredEdges.push({ sourceNodeId, sourceHandleId, sourceResourceId: ev?.id || res?.id || ep?.id });
+          desiredEdges.push({
+            sourceNodeId,
+            sourceHandleId,
+            sourceResourceId: ev?.id || res?.id || ep?.id,
+          });
         }
       }
     });
 
-    existingEdges.forEach(ee => {
-      const isDesired = desiredEdges.some(de => de.sourceNodeId === ee.source && de.sourceHandleId === ee.sourceHandle);
+    existingEdges.forEach((ee) => {
+      const isDesired = desiredEdges.some(
+        (de) =>
+          de.sourceNodeId === ee.source &&
+          de.sourceHandleId === ee.sourceHandle,
+      );
       if (!isDesired) {
         deleteEdge(ee.id);
       }
     });
 
-    desiredEdges.forEach(de => {
-      const exists = existingEdges.some(ee => ee.source === de.sourceNodeId && ee.sourceHandle === de.sourceHandleId);
+    desiredEdges.forEach((de) => {
+      const exists = existingEdges.some(
+        (ee) =>
+          ee.source === de.sourceNodeId &&
+          ee.sourceHandle === de.sourceHandleId,
+      );
       if (!exists) {
         addEdge({
           id: generateId(),
@@ -236,7 +320,7 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
 
     if (parentNode.data.tasks) {
       const updatedList = parentNode.data.tasks.map((t) =>
-        t.id === id ? { ...t, ...changes } : t
+        t.id === id ? { ...t, ...changes } : t,
       );
       updateNode(nodeId, { data: { ...parentNode.data, tasks: updatedList } });
     }
@@ -275,12 +359,15 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Triggers
           </span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 text-xs px-2"
             onClick={() => {
-              const newTriggers = [...triggers, { id: generateId(), type: "event" as const, value: "" }];
+              const newTriggers = [
+                ...triggers,
+                { id: generateId(), type: "event" as const, value: "" },
+              ];
               handleUpdate({ triggers: newTriggers });
             }}
           >
@@ -288,7 +375,7 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
             Add Trigger
           </Button>
         </div>
-        
+
         {triggers.length === 0 ? (
           <div className="h-16 flex items-center justify-center text-xs text-muted-foreground bg-secondary/20 border border-dashed rounded-lg">
             No triggers configured
@@ -304,12 +391,14 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
                 triggerNodes={triggerNodes}
                 onUpdate={(updates) => {
                   const newTriggers = [...triggers];
-                  if(newTriggers[i])
+                  if (newTriggers[i])
                     newTriggers[i] = { ...newTriggers[i], ...updates };
                   handleUpdate({ triggers: newTriggers });
                 }}
                 onDelete={() => {
-                  const newTriggers = triggers.filter(t => t.id !== trigger.id);
+                  const newTriggers = triggers.filter(
+                    (t) => t.id !== trigger.id,
+                  );
                   handleUpdate({ triggers: newTriggers });
                 }}
               />
@@ -341,7 +430,9 @@ export const TaskConfig = ({ id, nodeId }: TaskConfigProps) => {
           </span>
           <Select
             value={item.retryPolicy || "default"}
-            onValueChange={(v) => handleUpdate({ retryPolicy: v === "default" ? undefined : v })}
+            onValueChange={(v) =>
+              handleUpdate({ retryPolicy: v === "default" ? undefined : v })
+            }
           >
             <SelectTrigger className="w-[180px] text-xs">
               <SelectValue placeholder="Use Default" />

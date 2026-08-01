@@ -13,6 +13,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 You may **NOT** use, host, rebrand, sub-license, deploy, or distribute this Software (or any substantially similar derivative work derived from this codebase) as a commercial product, SaaS offering, managed service, or direct competitor to **Dezign2App** (Blueprint) without prior explicit written permission from the copyright owner (Subhash Nayak).
 
 Specifically, you agree not to:
+
 1. Host or offer this platform (or a white-labeled/modified version) as a competing commercial system design diagramming or AI canvas SaaS tool.
 2. Monetize the core codebase or components in a manner that directly competes with Dezign2App.
 

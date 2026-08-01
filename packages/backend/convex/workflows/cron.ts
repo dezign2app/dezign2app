@@ -25,9 +25,13 @@ export const scheduleNextTick = internalAction({
       const nextRunTime = interval.next().getTime();
 
       // Schedule the next mutation tick
-      const scheduledJobId = await ctx.scheduler.runAt(nextRunTime, internal.workflows.cron.tickCron, {
-        workflowId: args.workflowId,
-      });
+      const scheduledJobId = await ctx.scheduler.runAt(
+        nextRunTime,
+        internal.workflows.cron.tickCron,
+        {
+          workflowId: args.workflowId,
+        },
+      );
 
       // Update the workflow with the new scheduled job ID
       await ctx.runMutation(internal.workflows.cron.updateScheduledJobId, {
@@ -35,7 +39,10 @@ export const scheduleNextTick = internalAction({
         scheduledJobId: scheduledJobId as string,
       });
     } catch (error) {
-      console.error(`[Cron Scheduler] Failed to parse expression "${args.cronExpression}":`, error);
+      console.error(
+        `[Cron Scheduler] Failed to parse expression "${args.cronExpression}":`,
+        error,
+      );
     }
   },
 });
@@ -52,8 +59,15 @@ export const tickCron = internalMutation({
     const workflow = await ctx.db.get(args.workflowId);
 
     // Self-termination: Stop if workflow is gone, archived, or unpublished
-    if (!workflow || workflow.isArchived || !workflow.publishedVersionId || !workflow.activeVersionId) {
-      console.log(`[Cron Scheduler] Terminating cycle for workflow ${args.workflowId} (inactive or archived)`);
+    if (
+      !workflow ||
+      workflow.isArchived ||
+      !workflow.publishedVersionId ||
+      !workflow.activeVersionId
+    ) {
+      console.log(
+        `[Cron Scheduler] Terminating cycle for workflow ${args.workflowId} (inactive or archived)`,
+      );
       return;
     }
 
@@ -67,8 +81,14 @@ export const tickCron = internalMutation({
       .filter((q) => q.eq(q.field("type"), "start"))
       .first();
 
-    if (!startNode || startNode.config?.triggerType !== "cron" || !startNode.config?.cronExpression) {
-      console.warn(`[Cron Scheduler] Stopping cycle for workflow ${args.workflowId} (no cron config found)`);
+    if (
+      !startNode ||
+      startNode.config?.triggerType !== "cron" ||
+      !startNode.config?.cronExpression
+    ) {
+      console.warn(
+        `[Cron Scheduler] Stopping cycle for workflow ${args.workflowId} (no cron config found)`,
+      );
       return;
     }
 
@@ -123,7 +143,9 @@ export const triggerEngine = internalAction({
   async handler(ctx, args) {
     const engineUrl = process.env.WORKFLOW_ENGINE_BASE_URL;
     if (!engineUrl) {
-      console.warn("[Cron Scheduler] WORKFLOW_ENGINE_BASE_URL not set. Run will stay in queue.");
+      console.warn(
+        "[Cron Scheduler] WORKFLOW_ENGINE_BASE_URL not set. Run will stay in queue.",
+      );
       return;
     }
 
@@ -138,10 +160,15 @@ export const triggerEngine = internalAction({
       });
 
       if (!response.ok) {
-        throw new Error(`Engine returned ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `Engine returned ${response.status}: ${response.statusText}`,
+        );
       }
     } catch (error) {
-      console.error(`[Cron Scheduler] Failed to trigger engine for run ${args.runId}:`, error);
+      console.error(
+        `[Cron Scheduler] Failed to trigger engine for run ${args.runId}:`,
+        error,
+      );
     }
   },
 });

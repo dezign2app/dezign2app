@@ -122,22 +122,83 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
   const connectedToolsCount = connectedToolIds.length;
   const connectedMiddlewareCount = connectedMiddlewareIds.length;
   const graphSteps = useMemo<LangGraphStepConfig[]>(() => nodes
-    .filter((canvasNode) => canvasNode.type === "step")
+    .filter(
+      (canvasNode) =>
+        canvasNode.type === "step" ||
+        canvasNode.type === "langgraph_node" ||
+        canvasNode.type === "langgraph_agent"
+    )
     .map((canvasNode) => {
-      const data = canvasNode.data as unknown as { stepId: string; label: string; stepType: LangGraphStepConfig["type"]; routerConfig?: LangGraphStepConfig["routerConfig"]; stateUpdates?: LangGraphStepConfig["stateUpdates"]; modelConfig?: LangGraphStepConfig["modelConfig"]; customCode?: LangGraphStepConfig["customCode"] };
-      // Runtime traversal follows React Flow edge source/target ids. Keep the
-      // step config keyed by the canvas node id as well, including legacy
-      // graphs where data.stepId can differ from the node id.
-      return { id: canvasNode.id, name: data.label, type: data.stepType, routerConfig: data.routerConfig, stateUpdates: data.stateUpdates, modelConfig: data.modelConfig, customCode: data.customCode };
+      const data = canvasNode.data as unknown as {
+        stepId?: string;
+        label?: string;
+        name?: string;
+        stepType?: LangGraphStepConfig["type"];
+        routerConfig?: LangGraphStepConfig["routerConfig"];
+        stateUpdates?: LangGraphStepConfig["stateUpdates"];
+        modelConfig?: LangGraphStepConfig["modelConfig"];
+        customCode?: LangGraphStepConfig["customCode"];
+      };
+      return {
+        id: canvasNode.id,
+        name: data.label || data.name || canvasNode.id,
+        type: data.stepType || "llm_call",
+        routerConfig: data.routerConfig,
+        stateUpdates: data.stateUpdates,
+        modelConfig: data.modelConfig,
+        customCode: data.customCode,
+      };
     }), [nodes]);
   const graphPathEdges = useMemo(() => edges.map((edge) => ({ source: edge.source, sourceHandle: edge.sourceHandle, target: edge.target })), [edges]);
   const graphNodeLabels = useMemo(() => Object.fromEntries(nodes.map((canvasNode) => [canvasNode.id, (canvasNode.data as { label?: string }).label || canvasNode.id])), [nodes]);
+  const activeNodeIds = useSimulationStore((s) => s.activeNodeIds);
+  const activeEdgeIds = useSimulationStore((s) => s.activeEdgeIds);
+  const currentNodeId = useSimulationStore((s) => s.currentNodeId);
+  const currentEdgeId = useSimulationStore((s) => s.currentEdgeId);
+
+  const displayEdges = useMemo(() => {
+    return edges.map((edge) => {
+      const isCurrent = currentEdgeId === edge.id;
+      const isActive = activeEdgeIds.includes(edge.id);
+      if (!isCurrent && !isActive) return edge;
+
+      return {
+        ...edge,
+        animated: true,
+        style: {
+          ...edge.style,
+          stroke: isCurrent ? "#38bdf8" : "#818cf8",
+          strokeWidth: isCurrent ? 3.5 : 2.5,
+        },
+      };
+    });
+  }, [edges, activeEdgeIds, currentEdgeId]);
+
+  const displayNodes = useMemo(() => {
+    return nodes.map((n) => {
+      const isCurrent = currentNodeId === n.id;
+      const isActive = activeNodeIds.includes(n.id);
+      if (!isCurrent && !isActive) return n;
+
+      const existingClass = n.className || "";
+      return {
+        ...n,
+        className: `${existingClass} ${
+          isCurrent
+            ? "ring-4 ring-sky-400 ring-offset-2 ring-offset-background transition-all duration-300"
+            : "ring-2 ring-sky-500/60 transition-all duration-300"
+        }`,
+      };
+    });
+  }, [nodes, activeNodeIds, currentNodeId]);
+
   const runGraphTestCase = async (testCase: SimulationTestCase) => {
     const graphEdges = edges
       .filter((edge) => edge.source !== "STATE_GLOBAL" && edge.target !== "STATE_GLOBAL")
       .map((edge) => ({ id: edge.id, source: edge.source, sourceHandle: edge.sourceHandle, targets: [{ id: edge.target, kind: edge.target === "END" ? "end" as const : "step" as const, targetHandle: edge.targetHandle }] }));
     const result = await simulateLangGraphTestCase({ graph: { ...node, data: { ...node.data, graphSteps, graphEdges } }, testCase });
     useSimulationStore.getState().start(result.trace);
+    return result;
   };
 
   return (
@@ -181,8 +242,8 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
         {/* Center Canvas */}
         <div className="flex-1 relative">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={displayNodes}
+            edges={displayEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}

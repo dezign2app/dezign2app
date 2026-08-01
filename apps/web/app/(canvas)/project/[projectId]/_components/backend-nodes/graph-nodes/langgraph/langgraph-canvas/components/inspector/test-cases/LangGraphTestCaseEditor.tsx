@@ -134,8 +134,6 @@ export const LangGraphTestCaseEditor = ({
     onSave,
   ]);
 
-  const routers = graphSteps.filter((step) => step.type === "router");
-
   const currentCaseForTrace = useMemo<SimulationTestCase>(
     () => ({
       ...testCase,
@@ -271,86 +269,55 @@ export const LangGraphTestCaseEditor = ({
         }}
       />
 
-      {/* Conditional Router Choices */}
-      {routers.length > 0 && (
-        <div className="flex flex-col gap-2 border rounded-lg p-3 bg-background/50">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-            <GitBranch className="w-3 h-3" /> Conditional Router Choices
-          </div>
-          {routers.map((router) => (
-            <div key={router.id} className="flex flex-col gap-1">
-              <Label className="text-xs font-mono text-muted-foreground">
-                {router.name || router.id}
-              </Label>
-              <Select
-                value={routerChoices[router.id] || "auto"}
-                onValueChange={(value) =>
-                  setRouterChoices((prev) => ({
-                    ...prev,
-                    [router.id]: value === "auto" ? "" : value,
-                  }))
-                }
-              >
-                <SelectTrigger className="h-7 text-xs bg-background">
-                  <SelectValue placeholder="Evaluate conditions automatically" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Evaluate conditions automatically</SelectItem>
-                  {(router.routerConfig?.branches || []).map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.label || branch.id}
-                      {branch.isDefault ? " (default)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Selected Graph Path */}
-      <div className="flex flex-col gap-1.5 border rounded-lg p-3 bg-background/50">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          Selected Graph Path / Trace Nodes
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
-          {pathPreview.map((node, index) => (
-            <React.Fragment key={`${node.id}-${index}`}>
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${
-                  index === 0 || index === pathPreview.length - 1
-                    ? "border-primary/40 bg-primary/10 text-primary font-semibold"
-                    : "border-border bg-background text-foreground"
-                }`}
-              >
-                {node.label}
-              </span>
-              {index < pathPreview.length - 1 && (
-                <span className="text-muted-foreground text-xs">→</span>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-        <div className="text-[10px] text-muted-foreground mt-0.5">
-          Changing a router branch updates this path and trace node outputs.
-        </div>
-      </div>
-
-      {/* Downstream Node Outputs (mockables format) */}
+      {/* Sequential Execution Steps & Router Choices */}
       {pathPreview.filter((node) => node.id !== "START" && node.id !== "END").length > 0 && (
         <div className="flex flex-col gap-3 pt-2">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Manual Node Outputs
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              Configure mock return output for each step during simulation.
-            </div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Graph Execution Steps & Mock Outputs
           </div>
           {pathPreview
             .filter((node) => node.id !== "START" && node.id !== "END")
             .map((node) => {
+              const step = graphSteps.find((s) => s.id === node.id);
+              const isRouter = step?.type === "router";
+              const isOutputNode = node.id.startsWith("output_") || node.id.startsWith("channel_");
+
+              if (isRouter) {
+                return (
+                  <div key={node.id} className="flex flex-col gap-2 border rounded-lg p-3 bg-background/50">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1">
+                      <GitBranch className="w-3.5 h-3.5" /> {node.label} · Router Choice
+                    </div>
+                    <Select
+                      value={routerChoices[node.id] || "auto"}
+                      onValueChange={(value) =>
+                        setRouterChoices((prev) => ({
+                          ...prev,
+                          [node.id]: value === "auto" ? "" : value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="h-7 text-xs bg-background font-medium">
+                        <SelectValue placeholder="Evaluate conditions automatically" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Evaluate conditions automatically</SelectItem>
+                        {(step.routerConfig?.branches || []).map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.label || branch.id}
+                            {branch.isDefault ? " (default)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              }
+
+              if (isOutputNode) {
+                return null;
+              }
+
               const mock = mocks[node.id];
               return (
                 <div key={node.id} className="flex flex-col gap-2 pt-3 border-t">

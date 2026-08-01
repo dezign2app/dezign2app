@@ -47,4 +47,22 @@ export const authTables = {
     .index("by_key_hash", ["keyHash"])
     .index("by_user", ["userId"])
     .index("by_user_org", ["userId", "orgId"]),
+
+  early_believers: defineTable({
+    userId: v.id("users"),
+    tier: v.union(v.literal(500), v.literal(1000)),
+    seats: v.number(),
+    discountPercent: v.number(),
+    investmentAmount: v.optional(v.number()),
+    subscriptionMonths: v.optional(v.number()),
+    currentPeriodStart: v.optional(v.number()),
+    currentPeriodEnd: v.optional(v.number()),
+    totalPaid: v.number(),
+    status: v.literal("active"),
+    creemCheckoutId: v.optional(v.string()),
+    creemCustomerId: v.optional(v.string()),
+    purchasedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_creem_customer", ["creemCustomerId"]),
 };

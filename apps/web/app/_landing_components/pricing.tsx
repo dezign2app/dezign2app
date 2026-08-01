@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PlanCard, type BillingCycle, type Plan } from "./plan-card";
+import { EarlyBelieverCard } from "./early-believer-card";
 
 type PricingProps = {
   hideHeader?: boolean;
@@ -9,7 +10,21 @@ type PricingProps = {
   externalBilling?: BillingCycle;
 };
 
-function normalizeBillingPeriod(item: any): "every-month" | "every-year" {
+interface CreemProductItem {
+  id: string;
+  name: string;
+  description?: string;
+  price?: number;
+  billing_period?: string;
+  billingPeriod?: string;
+  billing_cycle?: string;
+  billingCycle?: string;
+  interval?: string;
+  period?: string;
+  metadata?: Record<string, string | undefined>;
+}
+
+function normalizeBillingPeriod(item: CreemProductItem): "every-month" | "every-year" {
   const period = String(
     item.billing_period ||
       item.billingPeriod ||
@@ -45,20 +60,30 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
         const res = await fetch("/api/checkout/subscription/products");
         if (!res.ok) throw new Error("Failed to load products");
         const data = await res.json();
-        const items = data.items || [];
+        const rawItems: CreemProductItem[] = data.items || [];
+        const items = rawItems.filter((item: CreemProductItem) => {
+          const name = String(item.name || "").toLowerCase();
+          const desc = String(item.description || "").toLowerCase();
+          const metaType = String(item.metadata?.type || "").toLowerCase();
+          return (
+            !name.includes("early believer") &&
+            !desc.includes("early believer") &&
+            metaType !== "early_believer"
+          );
+        });
 
         if (items.length === 0) {
           setPlans([]);
           return;
         }
 
-        const mappedPlans: Plan[] = items.map((item: any) => ({
+        const mappedPlans: Plan[] = items.map((item: CreemProductItem) => ({
           id: item.id,
           name: item.name,
           desc: item.description || "Simple description for this plan.",
           price: item.price ? item.price / 100 : 0,
           billingPeriod: normalizeBillingPeriod(item),
-          featured: item.metadata?.featured === "true" || false,
+          featured: item.metadata?.featured === "true",
           features: item.metadata?.features ? item.metadata.features.split(",") : [],
         }));
 
@@ -138,13 +163,18 @@ const Pricing = ({ hideHeader = false, hideToggle = false, externalBilling }: Pr
             </div>
           </div>
         ) : (
-          plans
-            .filter(
-              (plan) =>
-                plan.billingPeriod ===
-                (billing === "monthly" ? "every-month" : "every-year")
-            )
-            .map((plan) => <PlanCard key={plan.id} plan={plan} billing={billing} />)
+          <>
+            {plans
+              .filter(
+                (plan) =>
+                  plan.billingPeriod ===
+                  (billing === "monthly" ? "every-month" : "every-year")
+              )
+              .map((plan) => (
+                <PlanCard key={plan.id} plan={plan} billing={billing} />
+              ))}
+            <EarlyBelieverCard />
+          </>
         )}
       </div>
     </section>

@@ -206,21 +206,26 @@ import {
   STEP_TYPE_ROUTER,
 } from "./constants";
 
-export type LangGraphLLMNode = Node<LangGraphLLMNodeData, typeof LANGGRAPH_CANVAS_NODE_LLM>;
+export type BaseCanvasNodeProps = {
+  className?: string;
+  style?: React.CSSProperties;
+};
+
+export type LangGraphLLMNode = Node<LangGraphLLMNodeData, typeof LANGGRAPH_CANVAS_NODE_LLM> & BaseCanvasNodeProps;
 export type CustomLLMNode = LangGraphLLMNode; // Backwards compatible alias
 export type CustomLLMNodeData = LangGraphLLMNodeData; // Backwards compatible alias
-export type StepNode = Node<StepNodeData, typeof LANGGRAPH_CANVAS_NODE_STEP>;
-export type StartNode = Node<StartNodeData, typeof LANGGRAPH_CANVAS_NODE_START>;
-export type EndNode = Node<EndNodeData, typeof LANGGRAPH_CANVAS_NODE_END>;
-export type PortNode = Node<PortNodeData, typeof LANGGRAPH_CANVAS_NODE_PORT>;
-export type StateGlobalNode = Node<StateGlobalNodeData, typeof LANGGRAPH_CANVAS_NODE_STATE_GLOBAL>;
+export type StepNode = Node<StepNodeData, typeof LANGGRAPH_CANVAS_NODE_STEP> & BaseCanvasNodeProps;
+export type StartNode = Node<StartNodeData, typeof LANGGRAPH_CANVAS_NODE_START> & BaseCanvasNodeProps;
+export type EndNode = Node<EndNodeData, typeof LANGGRAPH_CANVAS_NODE_END> & BaseCanvasNodeProps;
+export type PortNode = Node<PortNodeData, typeof LANGGRAPH_CANVAS_NODE_PORT> & BaseCanvasNodeProps;
+export type StateGlobalNode = Node<StateGlobalNodeData, typeof LANGGRAPH_CANVAS_NODE_STATE_GLOBAL> & BaseCanvasNodeProps;
 
-export type ToolNode = Node<ToolNodeData, typeof LANGGRAPH_CANVAS_NODE_TOOL>;
-export type MiddlewareNode = Node<MiddlewareNodeData, typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE>;
-export type CanvasNode = Node<CanvasNodeData, typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT>;
+export type ToolNode = Node<ToolNodeData, typeof LANGGRAPH_CANVAS_NODE_TOOL> & BaseCanvasNodeProps;
+export type MiddlewareNode = Node<MiddlewareNodeData, typeof LANGGRAPH_CANVAS_NODE_MIDDLEWARE> & BaseCanvasNodeProps;
+export type CanvasNode = Node<CanvasNodeData, typeof LANGGRAPH_CANVAS_NODE_NODE | typeof LANGGRAPH_CANVAS_NODE_AGENT> & BaseCanvasNodeProps;
 export type AgentNode = CanvasNode; // Backwards compatible alias
-export type MemoryNode = Node<MemoryNodeData, typeof LANGGRAPH_CANVAS_NODE_MEMORY>;
-export type OutputNode = Node<OutputNodeData, typeof LANGGRAPH_CANVAS_NODE_OUTPUT>;
+export type MemoryNode = Node<MemoryNodeData, typeof LANGGRAPH_CANVAS_NODE_MEMORY> & BaseCanvasNodeProps;
+export type OutputNode = Node<OutputNodeData, typeof LANGGRAPH_CANVAS_NODE_OUTPUT> & BaseCanvasNodeProps;
 
 export type LangGraphCanvasEdge = Edge & {
   selected?: boolean;

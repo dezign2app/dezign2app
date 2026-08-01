@@ -13,6 +13,7 @@ import {
   LangGraphMemoryDefinition,
   LangGraphAgentDefinition,
   OutputChannelConfig,
+  SimulationTestCase,
 } from "@/types/canvas";
 import { CompiledServiceResult } from "./types";
 import { compileLangGraph, CompileLangGraphInput, RouteEndpoint } from "./langgraph/typescript/v1";
@@ -442,6 +443,7 @@ export function compileLangGraphNode(
     nodes?: BackendNode[];
     endpoints?: Endpoint[];
     events?: Array<{ id: string; name?: string; variant?: string }>;
+    testCases?: SimulationTestCase[];
   },
 ): CompiledServiceResult {
   const serviceName = node.data?.label || "LangGraph Service";
@@ -457,6 +459,7 @@ export function compileLangGraphNode(
       context.events ?? [],
     );
     input.routeEndpoints = routeEndpoints;
+    input.testCases = context.testCases?.filter((testCase) => testCase.targetNodeId === node.id);
   }
 
   const files = compileLangGraph(input);

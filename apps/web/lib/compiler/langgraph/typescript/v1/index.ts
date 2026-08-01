@@ -15,6 +15,7 @@ import type {
   LangGraphStateChannel,
   LangGraphInputChannel,
   LangGraphMemoryConfig,
+  SimulationTestCase,
 } from "@/types/canvas";
 import type {
   LangGraphCanvasNode,
@@ -85,6 +86,8 @@ export interface CompileLangGraphInput {
   memoryConfig?: LangGraphMemoryConfig;
   /** Connected HTTP/event entry points that invoke this agent (from main canvas edges). */
   routeEndpoints?: RouteEndpoint[];
+  /** Test scenarios configured for this graph's StartNode. */
+  testCases?: SimulationTestCase[];
 }
 
 /**
@@ -214,7 +217,37 @@ export function compileLangGraph(input: CompileLangGraphInput): CompiledFile[] {
     });
   }
 
+  if (input.testCases && input.testCases.length > 0) {
+    files.push({
+      filename: "src/tests/langgraph-scenarios.ts",
+      language: "typescript",
+      content: buildLangGraphScenariosFile(input.testCases),
+    });
+  }
+
   return files;
+}
+
+function buildLangGraphScenariosFile(testCases: SimulationTestCase[]): string {
+  const scenarios = testCases.map((testCase) => ({
+    id: testCase.id,
+    name: testCase.name,
+    targetRouteId: testCase.targetRouteId,
+    request: testCase.request,
+    initialState: testCase.initialState,
+    routerChoices: testCase.routerChoices,
+    mocks: testCase.mocks,
+    expectedStatus: testCase.expectedStatus,
+    expectedState: testCase.expectedState,
+    expectedPath: testCase.expectedPath,
+  }));
+
+  return `/**
+ * LangGraph test scenarios generated from the StartNode test-case configuration.
+ * Node outputs are intentionally mocked; these scenarios do not execute node implementations.
+ */
+export const langGraphScenarios = ${JSON.stringify(scenarios, null, 2)} as const;
+`;
 }
 
 // ─── Internal Context & Metadata ─────────────────────────────────────────────

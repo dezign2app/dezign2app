@@ -5,9 +5,21 @@ import type {
   LangGraphMemoryConfig,
   LangGraphStepConfig,
 } from "@/types/canvas";
-import type { StepNodeData, LangGraphLLMNodeData, ToolNodeData, MiddlewareNodeData, AgentNodeData, MemoryNodeData, OutputNodeData, LangGraphLLMNode, ToolNode, MiddlewareNode, MemoryNode, OutputNode } from "../types";
+import type {
+  StepNodeData,
+  LangGraphLLMNodeData,
+  ToolNodeData,
+  MiddlewareNodeData,
+  AgentNodeData,
+  MemoryNodeData,
+  OutputNodeData,
+  LangGraphLLMNode,
+  ToolNode,
+  MiddlewareNode,
+  MemoryNode,
+} from "../types";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
-import { StartNodeTestCasesInspector } from "./inspector/StartNodeTestCasesInspector";
+import { LangGraphTestCasesInspector } from "./inspector/LangGraphTestCasesInspector";
 
 import type { ConnectedRouteInfo } from "../../LangGraphNode";
 import type { SimulationTestCase } from "@workspace/canvas";
@@ -97,9 +109,7 @@ export function InspectorSidebar({
   onUpdateMemory,
   onUpdateOutput,
   stateChannels,
-  activeSideTab,
   inputChannels = [],
-  setInputChannels,
 }: InspectorSidebarProps) {
   const [width, setWidth] = useState(340);
   const [isResizing, setIsResizing] = useState(false);
@@ -132,7 +142,14 @@ export function InspectorSidebar({
   );
 
   const hasSelectedNode = Boolean(
-    selectedStepData || selectedLLMData || selectedToolData || selectedMiddlewareData || selectedAgentData || selectedMemoryData || selectedOutputData || selectedStartData
+    selectedStepData ||
+      selectedLLMData ||
+      selectedToolData ||
+      selectedMiddlewareData ||
+      selectedAgentData ||
+      selectedMemoryData ||
+      selectedOutputData ||
+      selectedStartData
   );
 
   if (!hasSelectedNode) return null;
@@ -156,41 +173,54 @@ export function InspectorSidebar({
 
       {selectedStartData ? (
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {graphNodeId && <StartNodeTestCasesInspector graphNodeId={graphNodeId} inputChannels={inputChannels} stateChannels={stateChannels} graphSteps={graphSteps} graphEdges={graphEdges} graphNodeLabels={graphNodeLabels} connectedRoutes={connectedRoutes} onRunTestCase={onRunTestCase} />}
+          {graphNodeId && (
+            <LangGraphTestCasesInspector
+              graphNodeId={graphNodeId}
+              inputChannels={inputChannels}
+              stateChannels={stateChannels}
+              graphSteps={graphSteps}
+              graphEdges={graphEdges}
+              graphNodeLabels={graphNodeLabels}
+              connectedRoutes={connectedRoutes}
+              onRunTestCase={onRunTestCase}
+            />
+          )}
         </div>
-      ) : <InspectorTabContent
-        selectedStepData={selectedStepData}
-        selectedLLMData={selectedLLMData}
-        selectedToolData={selectedToolData}
-        selectedMiddlewareData={selectedMiddlewareData}
-        selectedAgentData={selectedAgentData}
-        selectedMemoryData={selectedMemoryData}
-        selectedOutputData={selectedOutputData}
-        connectedToolsCount={connectedToolsCount}
-        connectedMiddlewareCount={connectedMiddlewareCount}
-        availableLLMNodes={availableLLMNodes}
-        availableToolNodes={availableToolNodes}
-        availableMiddlewareNodes={availableMiddlewareNodes}
-        availableMemoryNodes={availableMemoryNodes}
-        connectedRoutes={connectedRoutes}
-        connectedLLMId={connectedLLMId}
-        connectedToolIds={connectedToolIds}
-        connectedMiddlewareIds={connectedMiddlewareIds}
-        connectedMemoryIds={connectedMemoryIds}
-        onSelectLLM={onSelectLLM}
-        onToggleTool={onToggleTool}
-        onToggleMiddleware={onToggleMiddleware}
-        onToggleMemory={onToggleMemory}
-        onDeleteStep={onDeleteStep}
-        onUpdateStep={onUpdateStep}
-        onUpdateLLM={onUpdateLLM}
-        onUpdateTool={onUpdateTool}
-        onUpdateMiddleware={onUpdateMiddleware}
-        onUpdateAgent={onUpdateAgent}
-        onUpdateMemory={onUpdateMemory}
-        onUpdateOutput={onUpdateOutput}
-        stateChannels={stateChannels}
-      />}
+      ) : (
+        <InspectorTabContent
+          selectedStepData={selectedStepData}
+          selectedLLMData={selectedLLMData}
+          selectedToolData={selectedToolData}
+          selectedMiddlewareData={selectedMiddlewareData}
+          selectedAgentData={selectedAgentData}
+          selectedMemoryData={selectedMemoryData}
+          selectedOutputData={selectedOutputData}
+          connectedToolsCount={connectedToolsCount}
+          connectedMiddlewareCount={connectedMiddlewareCount}
+          availableLLMNodes={availableLLMNodes}
+          availableToolNodes={availableToolNodes}
+          availableMiddlewareNodes={availableMiddlewareNodes}
+          availableMemoryNodes={availableMemoryNodes}
+          connectedRoutes={connectedRoutes}
+          connectedLLMId={connectedLLMId}
+          connectedToolIds={connectedToolIds}
+          connectedMiddlewareIds={connectedMiddlewareIds}
+          connectedMemoryIds={connectedMemoryIds}
+          onSelectLLM={onSelectLLM}
+          onToggleTool={onToggleTool}
+          onToggleMiddleware={onToggleMiddleware}
+          onToggleMemory={onToggleMemory}
+          onDeleteStep={onDeleteStep}
+          onUpdateStep={onUpdateStep}
+          onUpdateLLM={onUpdateLLM}
+          onUpdateTool={onUpdateTool}
+          onUpdateMiddleware={onUpdateMiddleware}
+          onUpdateAgent={onUpdateAgent}
+          onUpdateMemory={onUpdateMemory}
+          onUpdateOutput={onUpdateOutput}
+          stateChannels={stateChannels}
+        />
+      )}
     </div>
   );
 }

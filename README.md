@@ -68,26 +68,26 @@ graph TD
 
 ## 📱 Applications (`/apps`)
 
-| App Directory | Core Stack | Port | Description |
-| :--- | :--- | :--- | :--- |
-| [**`apps/web`**](./apps/web) | Next.js 16 (Turbopack), React 19, Tailwind v4, `@xyflow/react`, Tldraw, Clerk, Creem, Framer Motion | `3000` | **Interactive Frontend Canvas & App Portal**: Multi-tenant protected user portal with workspace folders, drag-and-drop system design canvas using React Flow & Tldraw, embedded AI chat panel, and API Key/billing administration. |
-| [**`apps/system-design-engine`**](./apps/system-design-engine) | Express.js, `@langchain/langgraph`, LangChain Core, MCP SDK, Groq SDK, Convex Client | Custom | **High-Performance AI System Design Engine**: Computes system design analysis using LangGraph state machines, coordinates architecture node generation, MCP tools, and custom API limiters. |
-| [**`apps/workflow-engine`**](./apps/workflow-engine) | Express.js, `@langchain/langgraph`, LangChain Core, Inngest SDK, Upstash Redis & Realtime, Convex Client | `3001` | **Secondary Background Orchestration Service**: Handles background job execution, event queues, and Redis state streaming. |
-| [**`apps/docs`**](./apps/docs) | Next.js 16, React 19, Fumadocs UI / Core / MDX, Tailwind v4 | `3500` | **Technical Documentation Portal**: Integrated developer documentation site covering system design architecture, setup guides, and monorepo scripts. |
-| [**`apps/inngest-dev`**](./apps/inngest-dev) | `inngest-cli` | CLI | **Inngest Task Dev Server**: CLI runner for background queue testing (`http://localhost:3001/inngest`). |
-| [**`apps/mcp-inspector-dev`**](./apps/mcp-inspector-dev) | `@modelcontextprotocol/inspector` | CLI / UI | **MCP Dev Console**: Interactive tool interface enabling validation and testing of Model Context Protocol configurations. |
+| App Directory                                                  | Core Stack                                                                                               | Port     | Description                                                                                                                                                                                                                        |
+| :------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**`apps/web`**](./apps/web)                                   | Next.js 16 (Turbopack), React 19, Tailwind v4, `@xyflow/react`, Tldraw, Clerk, Creem, Framer Motion      | `3000`   | **Interactive Frontend Canvas & App Portal**: Multi-tenant protected user portal with workspace folders, drag-and-drop system design canvas using React Flow & Tldraw, embedded AI chat panel, and API Key/billing administration. |
+| [**`apps/system-design-engine`**](./apps/system-design-engine) | Express.js, `@langchain/langgraph`, LangChain Core, MCP SDK, Groq SDK, Convex Client                     | Custom   | **High-Performance AI System Design Engine**: Computes system design analysis using LangGraph state machines, coordinates architecture node generation, MCP tools, and custom API limiters.                                        |
+| [**`apps/workflow-engine`**](./apps/workflow-engine)           | Express.js, `@langchain/langgraph`, LangChain Core, Inngest SDK, Upstash Redis & Realtime, Convex Client | `3001`   | **Secondary Background Orchestration Service**: Handles background job execution, event queues, and Redis state streaming.                                                                                                         |
+| [**`apps/docs`**](./apps/docs)                                 | Next.js 16, React 19, Fumadocs UI / Core / MDX, Tailwind v4                                              | `3500`   | **Technical Documentation Portal**: Integrated developer documentation site covering system design architecture, setup guides, and monorepo scripts.                                                                               |
+| [**`apps/inngest-dev`**](./apps/inngest-dev)                   | `inngest-cli`                                                                                            | CLI      | **Inngest Task Dev Server**: CLI runner for background queue testing (`http://localhost:3001/inngest`).                                                                                                                            |
+| [**`apps/mcp-inspector-dev`**](./apps/mcp-inspector-dev)       | `@modelcontextprotocol/inspector`                                                                        | CLI / UI | **MCP Dev Console**: Interactive tool interface enabling validation and testing of Model Context Protocol configurations.                                                                                                          |
 
 ---
 
 ## 📦 Packages (`/packages`)
 
-| Package Directory | Core Technologies | Description |
-| :--- | :--- | :--- |
-| [**`packages/backend`**](./packages/backend) | Convex, TypeScript, Svix, Zod, Cron Parser | **Core Database & Backend Layer**: Type-safe Convex schemas, database indexes, Clerk auth webhooks, API key validators, and Creem subscription billing managers. |
-| [**`packages/canvas`**](./packages/canvas) | Zod, TypeScript | **Shared Pure Domain Models**: Pure domain models and Zod schemas for canvas nodes, edges, state transitions, and system design structures. |
-| [**`packages/ui`**](./packages/ui) | React 19, Tailwind CSS v4, Radix Primitives, Lucide Icons | **Shared Design System**: Reusable React component package built using Tailwind CSS v4 and shadcn/ui primitives. |
-| [**`packages/eslint-config`**](./packages/eslint-config) | ESLint 9 | Monorepo-wide code style configurations. |
-| [**`packages/typescript-config`**](./packages/typescript-config) | TypeScript 5 | Monorepo-wide strict TypeScript compiler settings. |
+| Package Directory                                                | Core Technologies                                         | Description                                                                                                                                                      |
+| :--------------------------------------------------------------- | :-------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**`packages/backend`**](./packages/backend)                     | Convex, TypeScript, Svix, Zod, Cron Parser                | **Core Database & Backend Layer**: Type-safe Convex schemas, database indexes, Clerk auth webhooks, API key validators, and Creem subscription billing managers. |
+| [**`packages/canvas`**](./packages/canvas)                       | Zod, TypeScript                                           | **Shared Pure Domain Models**: Pure domain models and Zod schemas for canvas nodes, edges, state transitions, and system design structures.                      |
+| [**`packages/ui`**](./packages/ui)                               | React 19, Tailwind CSS v4, Radix Primitives, Lucide Icons | **Shared Design System**: Reusable React component package built using Tailwind CSS v4 and shadcn/ui primitives.                                                 |
+| [**`packages/eslint-config`**](./packages/eslint-config)         | ESLint 9                                                  | Monorepo-wide code style configurations.                                                                                                                         |
+| [**`packages/typescript-config`**](./packages/typescript-config) | TypeScript 5                                              | Monorepo-wide strict TypeScript compiler settings.                                                                                                               |
 
 ---
 
@@ -127,6 +127,7 @@ Ensure you have the following installed on your machine:
 Create copies of environment files for each layer:
 
 #### `packages/backend/.env.local`
+
 ```env
 CONVEX_DEPLOYMENT=your-convex-deployment-url
 CLERK_SECRET_KEY=your-clerk-secret
@@ -135,6 +136,7 @@ CREEM_API_KEY=your-creem-key
 ```
 
 #### `apps/system-design-engine/.env`
+
 ```env
 PORT=3001
 CORS_ORIGIN=http://localhost:3000
@@ -145,6 +147,7 @@ GROQ_API_KEY=your-groq-api-key
 ```
 
 #### `apps/web/.env.local`
+
 ```env
 NEXT_PUBLIC_CONVEX_URL=your-convex-deployment-url
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
@@ -168,6 +171,7 @@ pnpm dev
 ```
 
 This command spins up:
+
 - Next.js Web Portal (`http://localhost:3000`)
 - AI System Design Engine (`http://localhost:3001`)
 - Technical Documentation Portal (`http://localhost:3500`)
@@ -179,14 +183,14 @@ This command spins up:
 
 ### Global Scripts
 
-| Command | Action |
-| :--- | :--- |
-| `pnpm dev` | Starts development services. |
-| `pnpm build` | Production build across all workspace targets. |
-| `pnpm lint` | Runs ESLint across all apps and packages. |
-| `pnpm format` | Formats all files with Prettier. |
-| `pnpm test` | Runs unit and integration tests. |
-| `pnpm test:e2e` | Runs Playwright E2E browser tests. |
+| Command         | Action                                         |
+| :-------------- | :--------------------------------------------- |
+| `pnpm dev`      | Starts development services.                   |
+| `pnpm build`    | Production build across all workspace targets. |
+| `pnpm lint`     | Runs ESLint across all apps and packages.      |
+| `pnpm format`   | Formats all files with Prettier.               |
+| `pnpm test`     | Runs unit and integration tests.               |
+| `pnpm test:e2e` | Runs Playwright E2E browser tests.             |
 
 ### Workspace Filtering
 
@@ -243,4 +247,3 @@ import { Button } from "@workspace/ui/components/button";
 This project is licensed under an **Open Source Non-Compete License**. You are free to inspect, fork, learn from, and build non-competing personal or educational projects with this codebase. However, hosting, deploying, or distributing this software as a direct commercial competitor to **Dezign2App** is strictly prohibited.
 
 For complete terms, please read the [LICENSE.md](./LICENSE.md). Created by **Subhash Nayak**.
-

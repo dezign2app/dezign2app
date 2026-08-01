@@ -1,0 +1,659 @@
+import type {
+  BackendEdge,
+  BackendNode,
+  BackendNodeType,
+  Endpoint,
+  JSONValue,
+  SimulationTestCase,
+  UIEventItem,
+} from "@/types/canvas";
+import type {
+  SimulationResult,
+  SimulationTestCaseResult,
+  SimulationTraceEntry,
+} from "./types";
+import { clone, findEndpoint, findEventName, is2xxStatus } from "./utils";
+import { simulateEndpoint } from "./endpoint";
+
+/** Execute a named client test case through every endpoint connected by endpoint-out -> endpoint-in edges. */
+export async function simulateTestCase(args: {
+  client: BackendNode;
+  event: UIEventItem;
+  testCase: SimulationTestCase;
+  nodes: BackendNode[];
+  edges: BackendEdge[];
+  endpoints?: Array<Endpoint & { nodeId: string }>;
+}): Promise<SimulationTestCaseResult> {
+  // Follow pageload-in chains: when the event connects to a pageload-in handle
+  // on another WebClient, walk the chain until we reach an actual endpoint.
+  const chainEdges: BackendEdge[] = [];
+  const chainNodes: BackendNode[] = [args.client];
+
+  let currentEdge = args.edges.find(
+    (edge) =>
+      edge.source === args.client.id &&
+      edge.sourceHandle === `events-${args.event.id}`,
+  );
+  let depth = 0;
+
+  const isIncomingHandle = (handle?: string | null) =>
+    handle?.startsWith("pageload-in-") ||
+    handle?.startsWith("sse-in-") ||
+    handle?.startsWith("websocket-in-") ||
+    handle?.startsWith("ws-in-");
+
+  while (
+    currentEdge &&
+    isIncomingHandle(currentEdge.targetHandle) &&
+    depth < 10
+  ) {
+    chainEdges.push(currentEdge);
+    const targetNode = args.nodes.find((n) => n.id === currentEdge!.target);
+    if (targetNode) chainNodes.push(targetNode);
+
+    const linkedEventId = currentEdge.targetHandle!.replace(
+      /^(pageload|sse|websocket|ws)-in-/,
+      "",
+    );
+    const nextEdge = args.edges.find(
+      (edge) =>
+        edge.source === currentEdge!.target &&
+        edge.sourceHandle === `events-${linkedEventId}`,
+    );
+    if (!nextEdge) break;
+    currentEdge = nextEdge;
+    depth++;
+  }
+
+  if (currentEdge) {
+    chainEdges.push(currentEdge);
+  }
+
+  const finalEdge = currentEdge;
+  const firstEndpointId = finalEdge?.targetHandle?.includes(":")
+    ? finalEdge.targetHandle.split(":").pop()
+    : finalEdge?.targetHandle?.split("-in-").pop();
+  const first =
+    finalEdge && firstEndpointId
+      ? findEndpoint(
+          args.nodes,
+          finalEdge.target,
+          firstEndpointId,
+          args.endpoints,
+        )
+      : undefined;
+  if (!first) {
+    return {
+      testCaseId: args.testCase.id,
+      testCaseName: args.testCase.name,
+      status: 422,
+      statusText: "Simulation Failed",
+      headers: { "x-simulated": "true" },
+      body: { error: "Client event is not connected to an endpoint." },
+      trace: [
+        {
+          id: `${args.testCase.id}-error`,
+          kind: "response",
+          label: "Simulation failed",
+          status: "failed",
+          detail: "Client event is not connected to an endpoint.",
+        },
+      ],
+      assertions: [
+        { name: "client event has a connected endpoint", passed: false },
+      ],
+    };
+  }
+
+  const connectedEdge = finalEdge!;
+
+  // Check if target is a Kafka / messaging broker node
+  const messagingTypes: BackendNodeType[] = [
+    "kafka",
+    "sqs",
+    "redis-streams",
+    "redis-pubsub",
+    "pubsub",
+    "eventstream",
+    "queue",
+  ];
+  if (messagingTypes.includes(first.service.type)) {
+    const targetNode = first.service;
+    const trace: SimulationTraceEntry[] = [
+      {
+        id: `${args.testCase.id}-client`,
+        kind: "client",
+        label: `Test case: ${args.testCase.name}`,
+        status: "completed",
+        nodeId: args.client.id,
+        edgeId: chainEdges[0]?.id,
+        input: clone(args.testCase.request?.body),
+      },
+    ];
+
+    for (let i = 0; i < chainEdges.length - 1; i++) {
+      const navNode = chainNodes[i + 1];
+      const nextEdge = chainEdges[i + 1];
+      trace.push({
+        id: `${args.testCase.id}-nav-${i}`,
+        kind: "client",
+        label: `Page Load: ${navNode?.data?.label || "Web Client"}`,
+        status: "completed",
+        nodeId: navNode?.id,
+        edgeId: nextEdge?.id,
+      });
+    }
+
+    const eventLabel =
+      first.endpoint.name || targetNode.data.label || "Kafka Topic";
+
+    trace.push({
+      id: `msg-${connectedEdge.id}`,
+      kind: "messaging",
+      label: `${targetNode.data.label ?? targetNode.type} ← ${eventLabel}`,
+      status: "completed",
+      nodeId: targetNode.id,
+      edgeId: connectedEdge.id,
+      output: clone(args.testCase.request?.body),
+    });
+
+    const consumeEdges = args.edges.filter(
+      (edge) =>
+        edge.source === targetNode.id &&
+        (edge.targetHandle?.startsWith("consumedEvents-in-") ||
+          edge.targetHandle?.includes(":")),
+    );
+
+    for (const consumeEdge of consumeEdges) {
+      const consumerService = args.nodes.find(
+        (n) => n.id === consumeEdge.target && n.type === "service",
+      );
+      if (!consumerService) continue;
+
+      const consumedEventId = consumeEdge.targetHandle?.replace(
+        "consumedEvents-in-",
+        "",
+      );
+      const consumedEventName = consumedEventId
+        ? findEventName(consumedEventId, consumerService, args.nodes)
+        : undefined;
+
+      const pubTopicId = connectedEdge.targetHandle?.split(":").pop();
+      const subTopicId = consumeEdge.sourceHandle?.split(":").pop();
+      if (pubTopicId && subTopicId && pubTopicId !== subTopicId) continue;
+      if (
+        consumedEventName &&
+        eventLabel &&
+        consumedEventName.trim().toLowerCase() !==
+          eventLabel.trim().toLowerCase()
+      )
+        continue;
+
+      const consumerEndpoint: Endpoint | undefined =
+        (args.endpoints ?? []).find(
+          (ep) => ep.nodeId === consumerService.id && ep.id === consumedEventId,
+        ) ??
+        consumerService.data.endpoints?.find(
+          (ep: Endpoint) => ep.id === consumedEventId,
+        ) ??
+        (
+          consumerService.data.routeGroups?.flatMap(
+            (g: any) => g.endpoints,
+          ) as Endpoint[]
+        )?.find((ep: Endpoint) => ep.id === consumedEventId);
+
+      let consumerBody: unknown = clone(args.testCase.request?.body);
+
+      if (consumerEndpoint) {
+        const consumerResult = await simulateEndpoint({
+          service: consumerService,
+          endpoint: consumerEndpoint,
+          nodes: args.nodes,
+          edges: args.edges,
+          request: {
+            method: consumerEndpoint.type || "EVENT",
+            path: consumerEndpoint.name || eventLabel,
+            headers: {},
+            params: {},
+            body: consumerBody,
+          },
+          resolvedIngressEdge: consumeEdge,
+          mocks: args.testCase.mocks,
+        });
+        trace.push(...consumerResult.trace);
+        consumerBody = clone(consumerResult.body);
+      } else {
+        trace.push({
+          id: `msg-consume-${consumeEdge.id}`,
+          kind: "messaging",
+          label: `${consumerService.data.label ?? "Service"} ← ${eventLabel}`,
+          status: "completed",
+          nodeId: consumerService.id,
+          edgeId: consumeEdge.id,
+          output: clone(consumerBody),
+        });
+      }
+
+      const pushEdges = args.edges.filter((edge) => {
+        if (edge.source !== consumerService.id) return false;
+        return args.nodes.some(
+          (n) => n.id === edge.target && n.type === "webClient",
+        );
+      });
+
+      for (const pushEdge of pushEdges) {
+        const clientNode = args.nodes.find(
+          (n) => n.id === pushEdge.target && n.type === "webClient",
+        );
+        if (!clientNode) continue;
+
+        const th = pushEdge.targetHandle ?? "";
+        let pushKind = "SSE";
+        if (th.startsWith("websocket-in-") || th.startsWith("ws-in-"))
+          pushKind = "WebSocket";
+        else if (th.startsWith("webrtc-in-")) pushKind = "WebRTC";
+
+        const targetEventId = th.replace(
+          /^(sse|websocket|ws|webrtc|events)-in-/,
+          "",
+        );
+        const clientEvent = clientNode.data.events?.find(
+          (ev: any) => ev.id === targetEventId,
+        );
+        const eventSuffix = clientEvent?.name ? ` (${clientEvent.name})` : "";
+
+        trace.push({
+          id: `push-${pushEdge.id}`,
+          kind: "push",
+          label: `${pushKind} → ${clientNode.data.label ?? "Client"}${eventSuffix}`,
+          status: "completed",
+          nodeId: clientNode.id,
+          edgeId: pushEdge.id,
+          output: clone(consumerBody),
+        });
+      }
+    }
+
+    return {
+      status: 200,
+      statusText: "OK",
+      headers: { "x-simulated": "true" },
+      body: clone(
+        args.testCase.request?.body ?? { status: "Message Published to Kafka" },
+      ),
+      trace,
+      testCaseId: args.testCase.id,
+      testCaseName: args.testCase.name,
+      assertions: [
+        {
+          name: "message published to messaging broker",
+          passed: true,
+          detail: `Published to ${targetNode.data?.label || "Kafka"}`,
+        },
+      ],
+    };
+  }
+
+  // Build trace steps for client navigation chain
+  const trace: SimulationTraceEntry[] = [
+    {
+      id: `${args.testCase.id}-client`,
+      kind: "client",
+      label: `Test case: ${args.testCase.name}`,
+      status: "completed",
+      nodeId: args.client.id,
+      edgeId: chainEdges[0]?.id,
+      input: clone(args.testCase.request?.body),
+    },
+  ];
+
+  // Add intermediate page load steps in the trace
+  for (let i = 0; i < chainEdges.length - 1; i++) {
+    const navNode = chainNodes[i + 1];
+    const nextEdge = chainEdges[i + 1];
+    trace.push({
+      id: `${args.testCase.id}-nav-${i}`,
+      kind: "client",
+      label: `Page Load: ${navNode?.data?.label || "Web Client"}`,
+      status: "completed",
+      nodeId: navNode?.id,
+      edgeId: nextEdge?.id,
+    });
+  }
+  let current: { service: BackendNode; endpoint: Endpoint } | undefined = first;
+  let body: unknown = clone(args.testCase.request?.body ?? null);
+  let result: SimulationResult | undefined;
+  const visited = new Set<string>();
+
+  // Build the effective mocks map: merge test case mocks with the expectedBody/expectedStatus
+  // for the initial (target) endpoint so the simulation uses the configured output directly.
+  const buildMocks = (
+    endpointId: string,
+  ): Record<string, { returnData: JSONValue; status: number }> | undefined => {
+    const base = args.testCase.mocks ?? {};
+    if (args.testCase.expectedBody !== undefined && !(endpointId in base)) {
+      return {
+        ...base,
+        [endpointId]: {
+          returnData: args.testCase.expectedBody,
+          status: args.testCase.expectedStatus ?? 200,
+        },
+      };
+    }
+    return Object.keys(base).length > 0 ? base : undefined;
+  };
+
+  // Track the outgoing edge from the previous hop so it can be passed as the
+  // ingress edge when simulateEndpoint runs for the next chained service.
+  let ingressEdgeForNext: BackendEdge | undefined = connectedEdge;
+
+  while (
+    current &&
+    !visited.has(`${current.service.id}:${current.endpoint.id}`)
+  ) {
+    const step: { service: BackendNode; endpoint: Endpoint } = current;
+    visited.add(`${step.service.id}:${step.endpoint.id}`);
+    const isFirst = visited.size === 1;
+
+    result = await simulateEndpoint({
+      service: step.service,
+      endpoint: step.endpoint,
+      nodes: args.nodes,
+      edges: args.edges,
+      request: {
+        method: step.endpoint.type || "GET",
+        path: step.endpoint.name || "/",
+        headers: args.testCase.request?.headers ?? {},
+        params: args.testCase.request?.params ?? {},
+        body,
+      },
+      // First hop: use sourceNodeId/sourceEventId so simulateEndpoint derives the
+      // client→service edge via the `events-{id}` handle pattern.
+      // Subsequent hops: pass the already-resolved service→service edge directly
+      // so the trace entry carries the correct edgeId and the arrow animates.
+      sourceNodeId: isFirst ? args.client.id : undefined,
+      sourceEventId: isFirst ? args.event.id : undefined,
+      resolvedIngressEdge: isFirst ? undefined : ingressEdgeForNext,
+      mocks: isFirst ? buildMocks(step.endpoint.id) : args.testCase.mocks,
+    });
+    trace.push(...result.trace);
+    body = clone(result.body);
+    if (!is2xxStatus(result.status)) break;
+
+    // ── Direct service-to-service hop (HTTP) ──────────────────────────────
+    const outgoing: BackendEdge | undefined = args.edges.find(
+      (edge) =>
+        edge.source === step.service.id &&
+        edge.sourceHandle === `endpoint-out-${step.endpoint.id}` &&
+        edge.targetHandle?.startsWith("endpoint-in-"),
+    );
+    const nextEndpointId = outgoing?.targetHandle?.split("-in-").pop();
+
+    // Carry this outgoing edge forward so the next iteration can reference it
+    // as its own ingress edge (the arrow that flows into the next service node)
+    ingressEdgeForNext = outgoing;
+
+    current =
+      outgoing && nextEndpointId
+        ? findEndpoint(
+            args.nodes,
+            outgoing.target,
+            nextEndpointId,
+            args.endpoints,
+          )
+        : undefined;
+
+    // ── Messaging path: publishedEvents-out-* → broker → consumedEvents-in-* ──
+    // Collect published events specifically belonging to the executing endpoint (step.endpoint).
+    const endpointPublishedEvents = step.endpoint.publishedEvents ?? [];
+    const allowedEventIds = new Set(endpointPublishedEvents.map((e) => e.id));
+
+    const publishEdges = args.edges.filter((edge) => {
+      if (edge.source !== step.service.id) return false;
+      if (!edge.sourceHandle?.startsWith("publishedEvents-out-")) return false;
+      const eventId = edge.sourceHandle.replace("publishedEvents-out-", "");
+      return allowedEventIds.has(eventId);
+    });
+
+    for (const pubEdge of publishEdges) {
+      const brokerNode = args.nodes.find((n) => n.id === pubEdge.target);
+      if (!brokerNode) continue;
+
+      const messagingTypes: BackendNodeType[] = [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ];
+      if (!messagingTypes.includes(brokerNode.type)) continue;
+
+      // Find the event name from the service's published events or endpoint
+      const publishedEventId = pubEdge.sourceHandle?.replace(
+        "publishedEvents-out-",
+        "",
+      );
+      const publishedEventName = publishedEventId
+        ? findEventName(publishedEventId, step.service, args.nodes)
+        : undefined;
+      const eventLabel = publishedEventName ?? publishedEventId ?? "event";
+
+      // Trace: broker node receives the event
+      trace.push({
+        id: `msg-${pubEdge.id}`,
+        kind: "messaging",
+        label: `${brokerNode.data.label ?? brokerNode.type} ← ${eventLabel}`,
+        status: "completed",
+        nodeId: brokerNode.id,
+        edgeId: pubEdge.id,
+        output: clone(body),
+      });
+
+      // Find consumer services whose consumed event name matches the published topic name.
+      const consumeEdges = args.edges.filter(
+        (edge) =>
+          edge.source === brokerNode.id &&
+          edge.targetHandle?.startsWith("consumedEvents-in-"),
+      );
+
+      for (const consumeEdge of consumeEdges) {
+        const consumerService = args.nodes.find(
+          (n) => n.id === consumeEdge.target && n.type === "service",
+        );
+        if (!consumerService) continue;
+
+        const consumedEventId = consumeEdge.targetHandle?.replace(
+          "consumedEvents-in-",
+          "",
+        );
+        const consumedEventName = consumedEventId
+          ? findEventName(consumedEventId, consumerService, args.nodes)
+          : undefined;
+
+        // ── Topic matching guard ─────────────────────────────────────────────
+        // 1. If both edges explicitly reference a broker topic handle (e.g. topics:in:id / topics:out:id), require matching topic ID
+        const pubTopicId = pubEdge.targetHandle?.split(":").pop();
+        const subTopicId = consumeEdge.sourceHandle?.split(":").pop();
+        if (pubTopicId && subTopicId && pubTopicId !== subTopicId) {
+          continue;
+        }
+
+        // 2. If event/topic names are resolved on both sides, require topic name match
+        if (consumedEventName && eventLabel) {
+          if (
+            consumedEventName.trim().toLowerCase() !==
+            eventLabel.trim().toLowerCase()
+          ) {
+            continue;
+          }
+        }
+
+        // Find the consumer endpoint (the handler for this consumed event).
+        const consumerEndpoint: Endpoint | undefined =
+          (args.endpoints ?? []).find(
+            (ep) =>
+              ep.nodeId === consumerService.id && ep.id === consumedEventId,
+          ) ??
+          consumerService.data.endpoints?.find(
+            (ep) => ep.id === consumedEventId,
+          ) ??
+          consumerService.data.routeGroups
+            ?.flatMap((g) => g.endpoints)
+            .find((ep) => ep.id === consumedEventId);
+
+        let consumerBody = clone(body);
+
+        if (consumerEndpoint) {
+          // Simulate the consumer endpoint if it has an endpoint handler
+          const consumerResult = await simulateEndpoint({
+            service: consumerService,
+            endpoint: consumerEndpoint,
+            nodes: args.nodes,
+            edges: args.edges,
+            request: {
+              method: consumerEndpoint.type || "EVENT",
+              path: consumerEndpoint.name || eventLabel,
+              headers: {},
+              params: {},
+              body,
+            },
+            resolvedIngressEdge: consumeEdge,
+            mocks: args.testCase.mocks,
+          });
+          trace.push(...consumerResult.trace);
+          consumerBody = clone(consumerResult.body);
+        } else {
+          // Still show the consumer service receiving the message
+          trace.push({
+            id: `msg-consume-${consumeEdge.id}`,
+            kind: "messaging",
+            label: `${consumerService.data.label ?? "Service"} ← ${eventLabel}`,
+            status: "completed",
+            nodeId: consumerService.id,
+            edgeId: consumeEdge.id,
+            output: clone(body),
+          });
+        }
+
+        // ── SSE / WebSocket / WebRTC push back to clients ─────────────────
+        // Only follow push edges originating from the specific consumed event / endpoint handle
+        const pushEdges = args.edges.filter((edge) => {
+          if (edge.source !== consumerService.id) return false;
+          const isWebClientTarget = args.nodes.some(
+            (n) => n.id === edge.target && n.type === "webClient",
+          );
+          if (!isWebClientTarget) return false;
+
+          // If sourceHandle is specified (e.g. consumedEvents-out-{id}, endpoint-out-{id}),
+          // it must match the active consumedEventId or consumerEndpoint.id!
+          if (edge.sourceHandle) {
+            const sh = edge.sourceHandle;
+            const matchesConsumed = Boolean(
+              consumedEventId && sh.includes(consumedEventId),
+            );
+            const matchesEndpoint = Boolean(
+              consumerEndpoint && sh.includes(consumerEndpoint.id),
+            );
+            if (!matchesConsumed && !matchesEndpoint) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        for (const pushEdge of pushEdges) {
+          const clientNode = args.nodes.find(
+            (n) => n.id === pushEdge.target && n.type === "webClient",
+          );
+          if (!clientNode) continue;
+
+          // Determine push mechanism from targetHandle
+          const th = pushEdge.targetHandle ?? "";
+          let pushKind = "SSE";
+          if (th.startsWith("websocket-in-") || th.startsWith("ws-in-"))
+            pushKind = "WebSocket";
+          else if (th.startsWith("webrtc-in-")) pushKind = "WebRTC";
+
+          // Find target event name on webClient if available
+          const targetEventId = th.replace(
+            /^(sse|websocket|ws|webrtc|events)-in-/,
+            "",
+          );
+          const clientEvents = clientNode.data.events ?? [];
+          const clientEvent = clientEvents.find(
+            (ev) => ev.id === targetEventId,
+          );
+          const eventSuffix = clientEvent?.name ? ` (${clientEvent.name})` : "";
+
+          trace.push({
+            id: `push-${pushEdge.id}`,
+            kind: "push",
+            label: `${pushKind} → ${clientNode.data.label ?? "Client"}${eventSuffix}`,
+            status: "completed",
+            nodeId: clientNode.id,
+            edgeId: pushEdge.id,
+            output: clone(consumerBody),
+          });
+        }
+      }
+    }
+  } // end while
+
+  if (!result) {
+    throw new Error("Simulation did not execute an endpoint.");
+  }
+  const uniqueActualPath = trace
+    .map((t) => t.nodeId)
+    .filter(
+      (id, i, arr): id is string => id !== undefined && id !== arr[i - 1],
+    );
+  const pathPassed =
+    args.testCase.expectedPath === undefined ||
+    JSON.stringify(args.testCase.expectedPath) ===
+      JSON.stringify(uniqueActualPath);
+
+  const assertions = [
+    {
+      name: "expected status",
+      passed:
+        args.testCase.expectedStatus === undefined ||
+        args.testCase.expectedStatus === result.status,
+      detail:
+        args.testCase.expectedStatus === undefined
+          ? undefined
+          : `Expected ${args.testCase.expectedStatus}, received ${result.status}`,
+    },
+    {
+      name: "expected body",
+      passed:
+        args.testCase.expectedBody === undefined ||
+        JSON.stringify(args.testCase.expectedBody) ===
+          JSON.stringify(result.body),
+      detail:
+        args.testCase.expectedBody === undefined
+          ? undefined
+          : "Response body differs from expected body",
+    },
+    {
+      name: "expected path",
+      passed: pathPassed,
+      detail:
+        args.testCase.expectedPath === undefined
+          ? undefined
+          : `Expected path ${JSON.stringify(args.testCase.expectedPath)}, but executed ${JSON.stringify(uniqueActualPath)}`,
+    },
+  ];
+  const passed = assertions.every((assertion) => assertion.passed);
+  return {
+    ...result,
+    trace,
+    testCaseId: args.testCase.id,
+    testCaseName: args.testCase.name,
+    assertions,
+    status: passed ? result.status : 422,
+    statusText: passed ? result.statusText : "Assertion Failed",
+  };
+}

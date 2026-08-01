@@ -7,6 +7,7 @@ on:
 
 jobs:
   deploy:
+    if: github.repository == 'dezign2app/dezign2app-prod'
     runs-on: ubuntu-latest
 
     steps:

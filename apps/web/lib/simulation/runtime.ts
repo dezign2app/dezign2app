@@ -1,4 +1,13 @@
-import type { BackendEdge, BackendNode, BackendNodeType, Endpoint, Schema, SimulationTestCase, UIEventItem, JSONValue } from "@/types/canvas";
+import type {
+  BackendEdge,
+  BackendNode,
+  BackendNodeType,
+  Endpoint,
+  Schema,
+  SimulationTestCase,
+  UIEventItem,
+  JSONValue,
+} from "@/types/canvas";
 import { getSimulationTable, saveSimulationTable } from "./database";
 
 export type SimulationRequest = {
@@ -11,7 +20,14 @@ export type SimulationRequest = {
 
 export type SimulationTraceEntry = {
   id: string;
-  kind: "client" | "endpoint" | "step" | "database" | "response" | "messaging" | "push";
+  kind:
+    | "client"
+    | "endpoint"
+    | "step"
+    | "database"
+    | "response"
+    | "messaging"
+    | "push";
   label: string;
   status: "completed" | "failed";
   nodeId?: string;
@@ -46,7 +62,14 @@ export function getStatusText(status: number): string {
     503: "Service Unavailable",
     504: "Gateway Timeout",
   };
-  return statusTexts[status] ?? (status >= 200 && status < 300 ? "OK" : status >= 400 && status < 500 ? "Client Error" : "Server Error");
+  return (
+    statusTexts[status] ??
+    (status >= 200 && status < 300
+      ? "OK"
+      : status >= 400 && status < 500
+        ? "Client Error"
+        : "Server Error")
+  );
 }
 
 export function is2xxStatus(status: number): boolean {
@@ -67,19 +90,33 @@ export type SimulationTestCaseResult = SimulationResult & {
   assertions: Array<{ name: string; passed: boolean; detail?: string }>;
 };
 
-function evaluateRouterBranch(branch: { field: string; operator: string; value?: string }, state: Record<string, unknown>): boolean {
+function evaluateRouterBranch(
+  branch: { field: string; operator: string; value?: string },
+  state: Record<string, unknown>,
+): boolean {
   const actual = getPath(state, branch.field.replace(/^state\./, ""));
   const expected = branch.value;
   switch (branch.operator) {
-    case "eq": return String(actual) === String(expected);
-    case "neq": return String(actual) !== String(expected);
-    case "gt": return Number(actual) > Number(expected);
-    case "gte": return Number(actual) >= Number(expected);
-    case "lt": return Number(actual) < Number(expected);
-    case "lte": return Number(actual) <= Number(expected);
-    case "contains": return Array.isArray(actual) ? actual.includes(expected) : String(actual ?? "").includes(String(expected ?? ""));
-    case "is_not_null": return actual !== null && actual !== undefined;
-    default: return false;
+    case "eq":
+      return String(actual) === String(expected);
+    case "neq":
+      return String(actual) !== String(expected);
+    case "gt":
+      return Number(actual) > Number(expected);
+    case "gte":
+      return Number(actual) >= Number(expected);
+    case "lt":
+      return Number(actual) < Number(expected);
+    case "lte":
+      return Number(actual) <= Number(expected);
+    case "contains":
+      return Array.isArray(actual)
+        ? actual.includes(expected)
+        : String(actual ?? "").includes(String(expected ?? ""));
+    case "is_not_null":
+      return actual !== null && actual !== undefined;
+    default:
+      return false;
   }
 }
 
@@ -91,27 +128,57 @@ export async function simulateLangGraphTestCase(args: {
   const data = args.graph.data;
   const steps = data.graphSteps ?? [];
   const graphEdges = data.graphEdges ?? [];
+  const stepOrder = new Map(steps.map((step, index) => [step.id, index]));
   const state: Record<string, unknown> = {
     ...(args.testCase.initialState ?? {}),
-    ...((args.testCase.request?.body as Record<string, unknown> | undefined) ?? {}),
+    ...((args.testCase.request?.body as Record<string, unknown> | undefined) ??
+      {}),
   };
-  const trace: SimulationTraceEntry[] = [{
-    id: `${args.testCase.id}-start`, kind: "step", label: "START", status: "completed", nodeId: "START", edgeId: args.testCase.targetRouteId, input: clone(state),
-  }];
+  const trace: SimulationTraceEntry[] = [
+    {
+      id: `${args.testCase.id}-start`,
+      kind: "step",
+      label: "START",
+      status: "completed",
+      nodeId: "START",
+      edgeId: args.testCase.targetRouteId,
+      input: clone(state),
+    },
+  ];
   const assertions: SimulationTestCaseResult["assertions"] = [];
   const visited = new Set<string>();
   const actualPath: string[] = ["START"];
   let executionStatus = 200;
-  const firstEdge = graphEdges.find((edge) => edge.source === "START");
+  const firstEdge = graphEdges
+    .filter((edge) => edge.source === "START")
+    .sort(
+      (left, right) =>
+        (stepOrder.get(left.targets?.[0]?.id ?? "") ??
+          Number.MAX_SAFE_INTEGER) -
+          (stepOrder.get(right.targets?.[0]?.id ?? "") ??
+            Number.MAX_SAFE_INTEGER) ||
+        (left.targets?.[0]?.id ?? "").localeCompare(
+          right.targets?.[0]?.id ?? "",
+          undefined,
+          { numeric: true },
+        ) ||
+        (left.sourceHandle ?? "").localeCompare(right.sourceHandle ?? ""),
+    )[0];
   let currentId = firstEdge?.targets?.[0]?.id;
   let incomingEdge = firstEdge;
   let guard = 0;
 
-  while (currentId && currentId !== "END" && guard++ < steps.length + graphEdges.length + 5) {
+  while (
+    currentId &&
+    currentId !== "END" &&
+    guard++ < steps.length + graphEdges.length + 5
+  ) {
     if (visited.has(currentId)) break;
     visited.add(currentId);
     const step = steps.find((candidate) => candidate.id === currentId);
-    const agent = data.agentDefinitions?.find((candidate) => (candidate.id || candidate.agentId) === currentId);
+    const agent = data.agentDefinitions?.find(
+      (candidate) => (candidate.id || candidate.agentId) === currentId,
+    );
     const resource = [
       ...(data.customLlmNodes ?? []),
       ...(data.toolDefinitions ?? []),
@@ -119,12 +186,23 @@ export async function simulateLangGraphTestCase(args: {
       ...(data.memoryDefinitions ?? []),
       ...(data.outputChannels ?? []),
     ].find((candidate) => candidate.id === currentId);
-    if (!step && !agent && !resource && !graphEdges.some((edge) => edge.source === currentId)) break;
+    if (
+      !step &&
+      !agent &&
+      !resource &&
+      !graphEdges.some((edge) => edge.source === currentId)
+    )
+      break;
     actualPath.push(currentId);
     const nodeTrace: SimulationTraceEntry = {
       id: `${args.testCase.id}-${currentId}`,
       kind: "step",
-      label: step?.name || agent?.name || (resource as { label?: string; name?: string } | undefined)?.label || (resource as { label?: string; name?: string } | undefined)?.name || currentId,
+      label:
+        step?.name ||
+        agent?.name ||
+        (resource as { label?: string; name?: string } | undefined)?.label ||
+        (resource as { label?: string; name?: string } | undefined)?.name ||
+        currentId,
       status: "completed",
       nodeId: currentId,
       edgeId: incomingEdge?.id,
@@ -138,7 +216,11 @@ export async function simulateLangGraphTestCase(args: {
     if (configuredOutput) {
       nodeTrace.output = clone(configuredOutput.returnData);
       executionStatus = configuredOutput.status ?? 200;
-      if (configuredOutput.returnData && typeof configuredOutput.returnData === "object" && !Array.isArray(configuredOutput.returnData)) {
+      if (
+        configuredOutput.returnData &&
+        typeof configuredOutput.returnData === "object" &&
+        !Array.isArray(configuredOutput.returnData)
+      ) {
         Object.assign(state, configuredOutput.returnData);
       }
       if (executionStatus >= 400) {
@@ -150,36 +232,125 @@ export async function simulateLangGraphTestCase(args: {
     for (const update of step?.stateUpdates ?? []) {
       let value: unknown = update.value;
       if (typeof value === "string") {
-        try { value = JSON.parse(value); } catch { /* keep plain text state updates */ }
+        try {
+          value = JSON.parse(value);
+        } catch {
+          /* keep plain text state updates */
+        }
       }
-      state[update.channelKey] = update.mode === "append" && Array.isArray(state[update.channelKey])
-        ? [...(state[update.channelKey] as unknown[]), value]
-        : value;
+      state[update.channelKey] =
+        update.mode === "append" && Array.isArray(state[update.channelKey])
+          ? [...(state[update.channelKey] as unknown[]), value]
+          : value;
     }
 
     const outgoing = graphEdges.filter((edge) => edge.source === currentId);
-    let nextEdge = outgoing[0];
+    const orderedOutgoing = [...outgoing].sort((left, right) => {
+      const leftOrder =
+        stepOrder.get(left.targets?.[0]?.id ?? "") ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder =
+        stepOrder.get(right.targets?.[0]?.id ?? "") ?? Number.MAX_SAFE_INTEGER;
+      return (
+        leftOrder - rightOrder ||
+        (left.targets?.[0]?.id ?? "").localeCompare(
+          right.targets?.[0]?.id ?? "",
+          undefined,
+          { numeric: true },
+        ) ||
+        (left.sourceHandle ?? "").localeCompare(right.sourceHandle ?? "")
+      );
+    });
+    let nextEdge = orderedOutgoing[0];
     if (step?.type === "router" && outgoing.length > 0) {
       const selectedBranchId = args.testCase.routerChoices?.[step.id];
-      const selectedBranch = step.routerConfig?.branches?.find((branch) => branch.id === selectedBranchId);
-      const matchingBranch = selectedBranch || step.routerConfig?.branches?.find((branch) => branch.isDefault || evaluateRouterBranch(branch, state));
-      nextEdge = outgoing.find((edge) => edge.sourceHandle === matchingBranch?.id) || nextEdge;
-      trace.push({ id: `${args.testCase.id}-${step.id}-route`, kind: "step", label: `Router → ${matchingBranch?.label || "default"}`, status: "completed", nodeId: step.id, edgeId: nextEdge?.id, input: clone(state) });
+      const selectedBranch = step.routerConfig?.branches?.find(
+        (branch) => branch.id === selectedBranchId,
+      );
+      const matchingBranch =
+        selectedBranch ||
+        step.routerConfig?.branches?.find(
+          (branch) => branch.isDefault || evaluateRouterBranch(branch, state),
+        );
+      nextEdge =
+        outgoing.find((edge) => edge.sourceHandle === matchingBranch?.id) ||
+        nextEdge;
+      trace.push({
+        id: `${args.testCase.id}-${step.id}-route`,
+        kind: "step",
+        label: `Router → ${matchingBranch?.label || "default"}`,
+        status: "completed",
+        nodeId: step.id,
+        edgeId: nextEdge?.id,
+        input: clone(state),
+      });
     }
     incomingEdge = nextEdge;
     currentId = nextEdge?.targets?.[0]?.id;
   }
 
-  if (currentId === "END" || incomingEdge?.targets?.some((target) => target.kind === "end" || target.id === "END")) {
+  if (
+    currentId === "END" ||
+    incomingEdge?.targets?.some(
+      (target) => target.kind === "end" || target.id === "END",
+    )
+  ) {
     actualPath.push("END");
-    trace.push({ id: `${args.testCase.id}-end`, kind: "step", label: "END", status: "completed", nodeId: "END", edgeId: incomingEdge?.id, output: clone(state) });
+    trace.push({
+      id: `${args.testCase.id}-end`,
+      kind: "step",
+      label: "END",
+      status: "completed",
+      nodeId: "END",
+      edgeId: incomingEdge?.id,
+      output: clone(state),
+    });
   }
 
-  assertions.push({ name: "expected status", passed: args.testCase.expectedStatus === undefined || args.testCase.expectedStatus === executionStatus, detail: args.testCase.expectedStatus === undefined ? undefined : `Expected ${args.testCase.expectedStatus}, received ${executionStatus}` });
-  assertions.push({ name: "expected final state", passed: args.testCase.expectedState === undefined || JSON.stringify(args.testCase.expectedState) === JSON.stringify(state), detail: args.testCase.expectedState === undefined ? undefined : "Final graph state differs from expected state" });
-  assertions.push({ name: "expected graph path", passed: args.testCase.expectedPath === undefined || JSON.stringify(args.testCase.expectedPath) === JSON.stringify(actualPath), detail: args.testCase.expectedPath === undefined ? undefined : `Expected ${JSON.stringify(args.testCase.expectedPath)}, received ${JSON.stringify(actualPath)}` });
+  assertions.push({
+    name: "expected status",
+    passed:
+      args.testCase.expectedStatus === undefined ||
+      args.testCase.expectedStatus === executionStatus,
+    detail:
+      args.testCase.expectedStatus === undefined
+        ? undefined
+        : `Expected ${args.testCase.expectedStatus}, received ${executionStatus}`,
+  });
+  assertions.push({
+    name: "expected final state",
+    passed:
+      args.testCase.expectedState === undefined ||
+      JSON.stringify(args.testCase.expectedState) === JSON.stringify(state),
+    detail:
+      args.testCase.expectedState === undefined
+        ? undefined
+        : "Final graph state differs from expected state",
+  });
+  assertions.push({
+    name: "expected graph path",
+    passed:
+      args.testCase.expectedPath === undefined ||
+      JSON.stringify(args.testCase.expectedPath) === JSON.stringify(actualPath),
+    detail:
+      args.testCase.expectedPath === undefined
+        ? undefined
+        : `Expected ${JSON.stringify(args.testCase.expectedPath)}, received ${JSON.stringify(actualPath)}`,
+  });
   const passed = assertions.every((assertion) => assertion.passed);
-  return { status: passed ? executionStatus : 422, statusText: passed ? (executionStatus >= 400 ? "Node Output Failed" : "OK") : "Assertion Failed", headers: { "x-simulated": "true" }, body: clone(state), trace, testCaseId: args.testCase.id, testCaseName: args.testCase.name, assertions };
+  return {
+    status: passed ? executionStatus : 422,
+    statusText: passed
+      ? executionStatus >= 400
+        ? "Node Output Failed"
+        : "OK"
+      : "Assertion Failed",
+    headers: { "x-simulated": "true" },
+    body: clone(state),
+    trace,
+    testCaseId: args.testCase.id,
+    testCaseName: args.testCase.name,
+    assertions,
+  };
 }
 
 type RuntimeContext = {
@@ -189,16 +360,19 @@ type RuntimeContext = {
   response?: { status?: number; body?: unknown };
 };
 
-const clone = <T,>(value: T): T => {
+const clone = <T>(value: T): T => {
   if (value === undefined) return value;
   return JSON.parse(JSON.stringify(value)) as T;
 };
 
 function getPath(root: unknown, path: string): unknown {
-  return path.split(".").filter(Boolean).reduce<unknown>((value, key) => {
-    if (value === null || value === undefined) return undefined;
-    return (value as Record<string, unknown>)[key];
-  }, root);
+  return path
+    .split(".")
+    .filter(Boolean)
+    .reduce<unknown>((value, key) => {
+      if (value === null || value === undefined) return undefined;
+      return (value as Record<string, unknown>)[key];
+    }, root);
 }
 
 function setPath(root: Record<string, unknown>, path: string, value: unknown) {
@@ -217,16 +391,25 @@ function resolveValue(value: unknown, context: RuntimeContext): unknown {
   if (typeof value !== "string") return clone(value);
   if (!value.startsWith("$")) return value;
   if (value === "$data") return context.data;
-  if (value.startsWith("$request.")) return getPath(context.request, value.slice(9));
-  if (value.startsWith("$variables.")) return getPath(context.variables, value.slice(11));
-  if (value.startsWith("$response.")) return getPath(context.response, value.slice(10));
+  if (value.startsWith("$request."))
+    return getPath(context.request, value.slice(9));
+  if (value.startsWith("$variables."))
+    return getPath(context.variables, value.slice(11));
+  if (value.startsWith("$response."))
+    return getPath(context.response, value.slice(10));
   return value;
 }
 
 function resolveObject(value: unknown, context: RuntimeContext): unknown {
-  if (Array.isArray(value)) return value.map((item) => resolveObject(item, context));
+  if (Array.isArray(value))
+    return value.map((item) => resolveObject(item, context));
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveObject(item, context)]));
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        resolveObject(item, context),
+      ]),
+    );
   }
   return resolveValue(value, context);
 }
@@ -235,7 +418,11 @@ function validateSchema(value: unknown, schema?: Schema): string[] {
   return [];
 }
 
-function findEventName(id: string, serviceNode: BackendNode, allNodes: BackendNode[]): string | undefined {
+function findEventName(
+  id: string,
+  serviceNode: BackendNode,
+  allNodes: BackendNode[],
+): string | undefined {
   const pe = serviceNode.data.publishedEvents?.find((e) => e.id === id);
   if (pe?.name) return pe.name;
   const ce = serviceNode.data.consumedEvents?.find((e) => e.id === id);
@@ -277,20 +464,37 @@ function findEventName(id: string, serviceNode: BackendNode, allNodes: BackendNo
   return undefined;
 }
 
-function findEndpointDatabaseRefs(serviceId: string, endpoint: Endpoint, nodes: BackendNode[], edges: BackendEdge[]) {
+function findEndpointDatabaseRefs(
+  serviceId: string,
+  endpoint: Endpoint,
+  nodes: BackendNode[],
+  edges: BackendEdge[],
+) {
   const declared = new Set([
     ...(endpoint.databaseNodeIds ?? []),
     ...(endpoint.databaseNodeId ? [endpoint.databaseNodeId] : []),
   ]);
   const connected = edges
-    .filter((edge) => edge.source === serviceId && (
-      edge.sourceHandle === `endpoint-out-${endpoint.id}` ||
-      edge.sourceHandle === `endpoints-out-${endpoint.id}`
-    ) && (edge.targetHandle === "database-target" || edge.targetHandle === "database-source"))
+    .filter(
+      (edge) =>
+        edge.source === serviceId &&
+        (edge.sourceHandle === `endpoint-out-${endpoint.id}` ||
+          edge.sourceHandle === `endpoints-out-${endpoint.id}`) &&
+        (edge.targetHandle === "database-target" ||
+          edge.targetHandle === "database-source"),
+    )
     .map((edge) => edge.target);
   const ids = declared.size > 0 ? [...declared] : connected;
   return ids
-    .map((id) => nodes.find((node) => node.id === id && (node.type === "database" || node.type === "db_ref" || node.type === "vector_db_ref")))
+    .map((id) =>
+      nodes.find(
+        (node) =>
+          node.id === id &&
+          (node.type === "database" ||
+            node.type === "db_ref" ||
+            node.type === "vector_db_ref"),
+      ),
+    )
     .filter((node): node is BackendNode => Boolean(node));
 }
 
@@ -309,12 +513,18 @@ export async function simulateEndpoint(args: {
 }): Promise<SimulationResult> {
   const { service, endpoint, nodes, edges, request, mocks } = args;
   const trace: SimulationTraceEntry[] = [];
-  const context: RuntimeContext = { request, data: clone(request.body), variables: {} };
+  const context: RuntimeContext = {
+    request,
+    data: clone(request.body),
+    variables: {},
+  };
   const entitySeeds: Record<string, Array<Record<string, unknown>>> = {};
 
   for (const node of nodes) {
     if (node.type === "entity") {
-      const seededRows = Array.isArray(node.data.seedRows) ? clone(node.data.seedRows) : [];
+      const seededRows = Array.isArray(node.data.seedRows)
+        ? clone(node.data.seedRows)
+        : [];
       entitySeeds[node.id] = seededRows;
     }
   }
@@ -323,22 +533,35 @@ export async function simulateEndpoint(args: {
   // For client→service edges the sourceHandle pattern is `events-{eventId}`.
   // For service→service chained hops the caller already holds the edge, so
   // accept it directly via `resolvedIngressEdge` to avoid a failed lookup.
-  const ingressEdge: BackendEdge | undefined = args.resolvedIngressEdge ??
+  const ingressEdge: BackendEdge | undefined =
+    args.resolvedIngressEdge ??
     (args.sourceNodeId
-      ? edges.find((edge) => edge.source === args.sourceNodeId && edge.target === service.id && edge.sourceHandle === `events-${args.sourceEventId}`)
+      ? edges.find(
+          (edge) =>
+            edge.source === args.sourceNodeId &&
+            edge.target === service.id &&
+            edge.sourceHandle === `events-${args.sourceEventId}`,
+        )
       : undefined);
 
   const databaseFor = async (config: Record<string, unknown>) => {
     const requested = resolveValue(config.tableRef, context);
-    const ref = refs.find((node) => node.id === requested || node.data.tableRef === requested) ?? refs[0];
-    if (!ref) throw new Error("This endpoint has no connected database reference.");
+    const ref =
+      refs.find(
+        (node) => node.id === requested || node.data.tableRef === requested,
+      ) ?? refs[0];
+    if (!ref)
+      throw new Error("This endpoint has no connected database reference.");
     const tableId = ref.data.tableRef || ref.id;
     const rows = await getSimulationTable(tableId, entitySeeds[tableId] ?? []);
-    const edge = edges.find((candidate) =>
-      candidate.source === service.id &&
-      candidate.target === ref.id &&
-      (candidate.sourceHandle === `endpoint-out-${endpoint.id}` || candidate.sourceHandle === `endpoints-out-${endpoint.id}`) &&
-      (candidate.targetHandle === "database-target" || candidate.targetHandle === "database-source")
+    const edge = edges.find(
+      (candidate) =>
+        candidate.source === service.id &&
+        candidate.target === ref.id &&
+        (candidate.sourceHandle === `endpoint-out-${endpoint.id}` ||
+          candidate.sourceHandle === `endpoints-out-${endpoint.id}`) &&
+        (candidate.targetHandle === "database-target" ||
+          candidate.targetHandle === "database-source"),
     );
     return { ref, rows, tableId, edge };
   };
@@ -366,14 +589,25 @@ export async function simulateEndpoint(args: {
       const status = endpointMock.status || 200;
       const isSuccess = is2xxStatus(status);
       const statusText = getStatusText(status);
-      trace.push({ id: endpoint.id, kind: "endpoint", label: `${endpoint.type} ${endpoint.name}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, edgeId: ingressEdge?.id, input: clone(context.data), output: body });
-      
+      trace.push({
+        id: endpoint.id,
+        kind: "endpoint",
+        label: `${endpoint.type} ${endpoint.name}`,
+        status: isSuccess ? "completed" : "failed",
+        nodeId: service.id,
+        edgeId: ingressEdge?.id,
+        input: clone(context.data),
+        output: body,
+      });
+
       if (isSuccess) {
         for (const ref of refs) {
-          const dbEdge = edges.find((e) =>
-            e.source === service.id &&
-            e.target === ref.id &&
-            (e.sourceHandle === `endpoint-out-${endpoint.id}` || e.sourceHandle === `endpoints-out-${endpoint.id}`)
+          const dbEdge = edges.find(
+            (e) =>
+              e.source === service.id &&
+              e.target === ref.id &&
+              (e.sourceHandle === `endpoint-out-${endpoint.id}` ||
+                e.sourceHandle === `endpoints-out-${endpoint.id}`),
           );
           trace.push({
             id: `${ref.id}-db`,
@@ -387,11 +621,35 @@ export async function simulateEndpoint(args: {
         }
       }
 
-      trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `[MOCKED] ${status} ${statusText}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, output: clone(body), detail: !isSuccess ? `Mock returned HTTP ${status} ${statusText}` : undefined });
-      return { status, statusText, headers: { "content-type": "application/json", "x-simulated": "true" }, body, trace };
+      trace.push({
+        id: `${endpoint.id}-response`,
+        kind: "response",
+        label: `[MOCKED] ${status} ${statusText}`,
+        status: isSuccess ? "completed" : "failed",
+        nodeId: service.id,
+        output: clone(body),
+        detail: !isSuccess
+          ? `Mock returned HTTP ${status} ${statusText}`
+          : undefined,
+      });
+      return {
+        status,
+        statusText,
+        headers: { "content-type": "application/json", "x-simulated": "true" },
+        body,
+        trace,
+      };
     }
 
-    trace.push({ id: endpoint.id, kind: "endpoint", label: `${endpoint.type} ${endpoint.name}`, status: "completed", nodeId: service.id, edgeId: ingressEdge?.id, input: clone(context.data) });
+    trace.push({
+      id: endpoint.id,
+      kind: "endpoint",
+      label: `${endpoint.type} ${endpoint.name}`,
+      status: "completed",
+      nodeId: service.id,
+      edgeId: ingressEdge?.id,
+      input: clone(context.data),
+    });
 
     for (const step of steps) {
       const input = clone(context.data);
@@ -403,80 +661,168 @@ export async function simulateEndpoint(args: {
       } else if (operation === "validate") {
         const required = Array.isArray(config.required) ? config.required : [];
         for (const path of required) {
-          if (resolveValue(`$${String(path)}`, context) === undefined) throw new Error(`Missing required value: ${String(path)}`);
+          if (resolveValue(`$${String(path)}`, context) === undefined)
+            throw new Error(`Missing required value: ${String(path)}`);
         }
       } else if (operation === "pick") {
         const fields = Array.isArray(config.fields) ? config.fields : [];
-        const source: Record<string, unknown> = context.data !== null && typeof context.data === "object" ? { ...context.data as Record<string, unknown> } : {};
-        context.data = Object.fromEntries(fields.map((field) => [String(field), source[String(field)]]));
+        const source: Record<string, unknown> =
+          context.data !== null && typeof context.data === "object"
+            ? { ...(context.data as Record<string, unknown>) }
+            : {};
+        context.data = Object.fromEntries(
+          fields.map((field) => [String(field), source[String(field)]]),
+        );
       } else if (operation === "omit") {
-        const source: Record<string, unknown> = context.data !== null && typeof context.data === "object" ? { ...context.data as Record<string, unknown> } : {};
-        for (const field of Array.isArray(config.fields) ? config.fields : []) delete source[String(field)];
+        const source: Record<string, unknown> =
+          context.data !== null && typeof context.data === "object"
+            ? { ...(context.data as Record<string, unknown>) }
+            : {};
+        for (const field of Array.isArray(config.fields) ? config.fields : [])
+          delete source[String(field)];
         context.data = source;
       } else if (operation === "rename") {
-        const source: Record<string, unknown> = context.data !== null && typeof context.data === "object" ? { ...context.data as Record<string, unknown> } : {};
+        const source: Record<string, unknown> =
+          context.data !== null && typeof context.data === "object"
+            ? { ...(context.data as Record<string, unknown>) }
+            : {};
         for (const [from, to] of Object.entries(config.fields ?? {})) {
-          if (from in source) { source[String(to)] = source[from]; delete source[from]; }
+          if (from in source) {
+            source[String(to)] = source[from];
+            delete source[from];
+          }
         }
         context.data = source;
       } else if (operation === "set") {
-        const target: Record<string, unknown> = context.data !== null && typeof context.data === "object" ? { ...context.data as Record<string, unknown> } : {};
-        setPath(target, String(config.path ?? ""), resolveObject(config.value, context));
+        const target: Record<string, unknown> =
+          context.data !== null && typeof context.data === "object"
+            ? { ...(context.data as Record<string, unknown>) }
+            : {};
+        setPath(
+          target,
+          String(config.path ?? ""),
+          resolveObject(config.value, context),
+        );
         context.data = target;
       } else if (operation === "filter" || operation === "map") {
-        if (!Array.isArray(context.data)) throw new Error(`${operation} requires an array payload.`);
+        if (!Array.isArray(context.data))
+          throw new Error(`${operation} requires an array payload.`);
         const field = String(config.field ?? "");
         const expected = resolveValue(config.equals, context);
-        context.data = operation === "filter"
-          ? context.data.filter((item) => getPath(item, field) === expected)
-          : context.data.map((item) => getPath(item, field));
+        context.data =
+          operation === "filter"
+            ? context.data.filter((item) => getPath(item, field) === expected)
+            : context.data.map((item) => getPath(item, field));
       } else if (operation.startsWith("db_")) {
         const database = await databaseFor(config);
         const resolved = resolveObject(config.where ?? {}, context);
-        const where: Record<string, unknown> = resolved !== null && typeof resolved === "object" && !Array.isArray(resolved) ? resolved as Record<string, unknown> : {};
-        
+        const where: Record<string, unknown> =
+          resolved !== null &&
+          typeof resolved === "object" &&
+          !Array.isArray(resolved)
+            ? (resolved as Record<string, unknown>)
+            : {};
+
         let result: unknown;
         const mock = mocks?.[database.ref.id];
-        
+
         if (mock) {
           result = clone(mock.returnData);
         } else {
-          const matches = (row: Record<string, unknown>) => Object.entries(where).every(([key, value]) => row[key] === value);
-          if (operation === "db_get") result = database.rows.find(matches) ?? null;
-          if (operation === "db_get_many") result = database.rows.filter(matches);
-          if (operation === "db_insert") { const rowResolved = resolveObject(config.value ?? context.data, context); const row: Record<string, unknown> = rowResolved !== null && typeof rowResolved === "object" && !Array.isArray(rowResolved) ? rowResolved as Record<string, unknown> : {}; database.rows.push(clone(row)); result = row; }
-          if (operation === "db_update") { const row = database.rows.find(matches); if (!row) throw new Error("No matching database row found."); Object.assign(row, resolveObject(config.value ?? context.data, context)); result = row; }
-          if (operation === "db_delete") { const index = database.rows.findIndex(matches); result = index >= 0 ? database.rows.splice(index, 1)[0] : null; }
-          if (operation === "db_insert" || operation === "db_update" || operation === "db_delete") {
+          const matches = (row: Record<string, unknown>) =>
+            Object.entries(where).every(([key, value]) => row[key] === value);
+          if (operation === "db_get")
+            result = database.rows.find(matches) ?? null;
+          if (operation === "db_get_many")
+            result = database.rows.filter(matches);
+          if (operation === "db_insert") {
+            const rowResolved = resolveObject(
+              config.value ?? context.data,
+              context,
+            );
+            const row: Record<string, unknown> =
+              rowResolved !== null &&
+              typeof rowResolved === "object" &&
+              !Array.isArray(rowResolved)
+                ? (rowResolved as Record<string, unknown>)
+                : {};
+            database.rows.push(clone(row));
+            result = row;
+          }
+          if (operation === "db_update") {
+            const row = database.rows.find(matches);
+            if (!row) throw new Error("No matching database row found.");
+            Object.assign(
+              row,
+              resolveObject(config.value ?? context.data, context),
+            );
+            result = row;
+          }
+          if (operation === "db_delete") {
+            const index = database.rows.findIndex(matches);
+            result = index >= 0 ? database.rows.splice(index, 1)[0] : null;
+          }
+          if (
+            operation === "db_insert" ||
+            operation === "db_update" ||
+            operation === "db_delete"
+          ) {
             await saveSimulationTable(database.tableId, database.rows);
           }
         }
-        
+
         context.data = clone(result);
         const assignTo = config.assignTo ? String(config.assignTo) : undefined;
         if (assignTo) context.variables[assignTo] = clone(result);
-        trace.push({ id: `${step.id}-db`, kind: "database", label: `${mock ? "[MOCKED] " : ""}${operation} ${database.ref.data.label ?? database.tableId}`, status: "completed", nodeId: database.ref.id, edgeId: database.edge?.id, input: where, output: clone(result) });
+        trace.push({
+          id: `${step.id}-db`,
+          kind: "database",
+          label: `${mock ? "[MOCKED] " : ""}${operation} ${database.ref.data.label ?? database.tableId}`,
+          status: "completed",
+          nodeId: database.ref.id,
+          edgeId: database.edge?.id,
+          input: where,
+          output: clone(result),
+        });
         continue;
       } else if (operation === "return") {
-        context.response = { status: Number(config.status ?? 200), body: resolveObject(config.body ?? context.data, context) };
+        context.response = {
+          status: Number(config.status ?? 200),
+          body: resolveObject(config.body ?? context.data, context),
+        };
       }
 
-      trace.push({ id: step.id, kind: "step", label: step.text || operation, status: "completed", nodeId: service.id, input, output: clone(context.data) });
+      trace.push({
+        id: step.id,
+        kind: "step",
+        label: step.text || operation,
+        status: "completed",
+        nodeId: service.id,
+        input,
+        output: clone(context.data),
+      });
     }
 
     const body = context.response?.body ?? endpoint.simulationOutput ?? null;
-    const status = context.response?.status ?? (endpoint.type === "POST" ? 201 : 200);
+    const status =
+      context.response?.status ?? (endpoint.type === "POST" ? 201 : 200);
     const schemaErrors = validateSchema(body, endpoint.responseBody);
     if (schemaErrors.length) throw new Error(schemaErrors.join(" "));
     const isSuccess = is2xxStatus(status);
     const statusText = getStatusText(status);
 
-    if (isSuccess && !trace.some((t) => t.kind === "database") && refs.length > 0) {
+    if (
+      isSuccess &&
+      !trace.some((t) => t.kind === "database") &&
+      refs.length > 0
+    ) {
       for (const ref of refs) {
-        const dbEdge = edges.find((e) =>
-          e.source === service.id &&
-          e.target === ref.id &&
-          (e.sourceHandle === `endpoint-out-${endpoint.id}` || e.sourceHandle === `endpoints-out-${endpoint.id}`)
+        const dbEdge = edges.find(
+          (e) =>
+            e.source === service.id &&
+            e.target === ref.id &&
+            (e.sourceHandle === `endpoint-out-${endpoint.id}` ||
+              e.sourceHandle === `endpoints-out-${endpoint.id}`),
         );
         trace.push({
           id: `${ref.id}-db`,
@@ -490,28 +836,82 @@ export async function simulateEndpoint(args: {
       }
     }
 
-    trace.push({ id: `${endpoint.id}-response`, kind: "response", label: `${status} ${statusText}`, status: isSuccess ? "completed" : "failed", nodeId: service.id, output: clone(body), detail: !isSuccess ? `HTTP ${status} ${statusText}` : undefined });
-    return { status, statusText, headers: { "content-type": "application/json", "x-simulated": "true" }, body, trace };
+    trace.push({
+      id: `${endpoint.id}-response`,
+      kind: "response",
+      label: `${status} ${statusText}`,
+      status: isSuccess ? "completed" : "failed",
+      nodeId: service.id,
+      output: clone(body),
+      detail: !isSuccess ? `HTTP ${status} ${statusText}` : undefined,
+    });
+    return {
+      status,
+      statusText,
+      headers: { "content-type": "application/json", "x-simulated": "true" },
+      body,
+      trace,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    trace.push({ id: `${endpoint.id}-error`, kind: "response", label: "Simulation failed", status: "failed", nodeId: service.id, detail: message, output: clone(context.data) });
-    return { status: 422, statusText: "Simulation Failed", headers: { "content-type": "application/json", "x-simulated": "true" }, body: { error: message }, trace };
+    trace.push({
+      id: `${endpoint.id}-error`,
+      kind: "response",
+      label: "Simulation failed",
+      status: "failed",
+      nodeId: service.id,
+      detail: message,
+      output: clone(context.data),
+    });
+    return {
+      status: 422,
+      statusText: "Simulation Failed",
+      headers: { "content-type": "application/json", "x-simulated": "true" },
+      body: { error: message },
+      trace,
+    };
   }
 }
 
-function findEndpoint(nodes: BackendNode[], nodeId: string, endpointId: string, endpoints: Array<Endpoint & { nodeId: string }> = []): { service: BackendNode; endpoint: Endpoint } | undefined {
+function findEndpoint(
+  nodes: BackendNode[],
+  nodeId: string,
+  endpointId: string,
+  endpoints: Array<Endpoint & { nodeId: string }> = [],
+): { service: BackendNode; endpoint: Endpoint } | undefined {
   const service = nodes.find((node) => node.id === nodeId);
   if (!service) return undefined;
-  let endpoint = endpoints.find((item) => item.nodeId === nodeId && item.id === endpointId)
-    ?? service.data.endpoints?.find((item) => item.id === endpointId)
-    ?? service.data.routeGroups?.flatMap((group) => group.endpoints).find((item) => item.id === endpointId);
+  let endpoint =
+    endpoints.find(
+      (item) => item.nodeId === nodeId && item.id === endpointId,
+    ) ??
+    service.data.endpoints?.find((item) => item.id === endpointId) ??
+    service.data.routeGroups
+      ?.flatMap((group) => group.endpoints)
+      .find((item) => item.id === endpointId);
 
   if (!endpoint) {
-    const messagingTypes: BackendNodeType[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+    const messagingTypes: BackendNodeType[] = [
+      "kafka",
+      "sqs",
+      "redis-streams",
+      "redis-pubsub",
+      "pubsub",
+      "eventstream",
+      "queue",
+    ];
     if (messagingTypes.includes(service.type)) {
-      const resourceId = endpointId.includes(":") ? endpointId.split(":").pop() : endpointId.split("-in-").pop();
-      const resourceList = service.data.topics || service.data.queues || service.data.streams || service.data.channels || [];
-      const resource = resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+      const resourceId = endpointId.includes(":")
+        ? endpointId.split(":").pop()
+        : endpointId.split("-in-").pop();
+      const resourceList =
+        service.data.topics ||
+        service.data.queues ||
+        service.data.streams ||
+        service.data.channels ||
+        [];
+      const resource =
+        resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
       const name = resource?.name || service.data.label || "Topic";
       endpoint = {
         id: resource?.id || endpointId,
@@ -519,8 +919,12 @@ function findEndpoint(nodes: BackendNode[], nodeId: string, endpointId: string, 
         type: service.type.toUpperCase(),
       };
     } else {
-      const consumedEv = service.data.consumedEvents?.find((e: any) => e.id === endpointId);
-      const publishedEv = service.data.publishedEvents?.find((e: any) => e.id === endpointId);
+      const consumedEv = service.data.consumedEvents?.find(
+        (e: any) => e.id === endpointId,
+      );
+      const publishedEv = service.data.publishedEvents?.find(
+        (e: any) => e.id === endpointId,
+      );
       const ev = consumedEv || publishedEv;
       if (ev) {
         endpoint = {
@@ -549,19 +953,37 @@ export async function simulateTestCase(args: {
   const chainEdges: BackendEdge[] = [];
   const chainNodes: BackendNode[] = [args.client];
 
-  let currentEdge = args.edges.find((edge) => edge.source === args.client.id && edge.sourceHandle === `events-${args.event.id}`);
+  let currentEdge = args.edges.find(
+    (edge) =>
+      edge.source === args.client.id &&
+      edge.sourceHandle === `events-${args.event.id}`,
+  );
   let depth = 0;
 
-  const isIncomingHandle = (handle?: string | null) => 
-    handle?.startsWith("pageload-in-") || handle?.startsWith("sse-in-") || handle?.startsWith("websocket-in-") || handle?.startsWith("ws-in-");
+  const isIncomingHandle = (handle?: string | null) =>
+    handle?.startsWith("pageload-in-") ||
+    handle?.startsWith("sse-in-") ||
+    handle?.startsWith("websocket-in-") ||
+    handle?.startsWith("ws-in-");
 
-  while (currentEdge && isIncomingHandle(currentEdge.targetHandle) && depth < 10) {
+  while (
+    currentEdge &&
+    isIncomingHandle(currentEdge.targetHandle) &&
+    depth < 10
+  ) {
     chainEdges.push(currentEdge);
     const targetNode = args.nodes.find((n) => n.id === currentEdge!.target);
     if (targetNode) chainNodes.push(targetNode);
 
-    const linkedEventId = currentEdge.targetHandle!.replace(/^(pageload|sse|websocket|ws)-in-/, "");
-    const nextEdge = args.edges.find((edge) => edge.source === currentEdge!.target && edge.sourceHandle === `events-${linkedEventId}`);
+    const linkedEventId = currentEdge.targetHandle!.replace(
+      /^(pageload|sse|websocket|ws)-in-/,
+      "",
+    );
+    const nextEdge = args.edges.find(
+      (edge) =>
+        edge.source === currentEdge!.target &&
+        edge.sourceHandle === `events-${linkedEventId}`,
+    );
     if (!nextEdge) break;
     currentEdge = nextEdge;
     depth++;
@@ -572,8 +994,18 @@ export async function simulateTestCase(args: {
   }
 
   const finalEdge = currentEdge;
-  const firstEndpointId = finalEdge?.targetHandle?.includes(":") ? finalEdge.targetHandle.split(":").pop() : finalEdge?.targetHandle?.split("-in-").pop();
-  const first = finalEdge && firstEndpointId ? findEndpoint(args.nodes, finalEdge.target, firstEndpointId, args.endpoints) : undefined;
+  const firstEndpointId = finalEdge?.targetHandle?.includes(":")
+    ? finalEdge.targetHandle.split(":").pop()
+    : finalEdge?.targetHandle?.split("-in-").pop();
+  const first =
+    finalEdge && firstEndpointId
+      ? findEndpoint(
+          args.nodes,
+          finalEdge.target,
+          firstEndpointId,
+          args.endpoints,
+        )
+      : undefined;
   if (!first) {
     return {
       testCaseId: args.testCase.id,
@@ -582,26 +1014,46 @@ export async function simulateTestCase(args: {
       statusText: "Simulation Failed",
       headers: { "x-simulated": "true" },
       body: { error: "Client event is not connected to an endpoint." },
-      trace: [{ id: `${args.testCase.id}-error`, kind: "response", label: "Simulation failed", status: "failed", detail: "Client event is not connected to an endpoint." }],
-      assertions: [{ name: "client event has a connected endpoint", passed: false }],
+      trace: [
+        {
+          id: `${args.testCase.id}-error`,
+          kind: "response",
+          label: "Simulation failed",
+          status: "failed",
+          detail: "Client event is not connected to an endpoint.",
+        },
+      ],
+      assertions: [
+        { name: "client event has a connected endpoint", passed: false },
+      ],
     };
   }
 
   const connectedEdge = finalEdge!;
 
   // Check if target is a Kafka / messaging broker node
-  const messagingTypes: BackendNodeType[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+  const messagingTypes: BackendNodeType[] = [
+    "kafka",
+    "sqs",
+    "redis-streams",
+    "redis-pubsub",
+    "pubsub",
+    "eventstream",
+    "queue",
+  ];
   if (messagingTypes.includes(first.service.type)) {
     const targetNode = first.service;
-    const trace: SimulationTraceEntry[] = [{
-      id: `${args.testCase.id}-client`,
-      kind: "client",
-      label: `Test case: ${args.testCase.name}`,
-      status: "completed",
-      nodeId: args.client.id,
-      edgeId: chainEdges[0]?.id,
-      input: clone(args.testCase.request?.body),
-    }];
+    const trace: SimulationTraceEntry[] = [
+      {
+        id: `${args.testCase.id}-client`,
+        kind: "client",
+        label: `Test case: ${args.testCase.name}`,
+        status: "completed",
+        nodeId: args.client.id,
+        edgeId: chainEdges[0]?.id,
+        input: clone(args.testCase.request?.body),
+      },
+    ];
 
     for (let i = 0; i < chainEdges.length - 1; i++) {
       const navNode = chainNodes[i + 1];
@@ -616,7 +1068,8 @@ export async function simulateTestCase(args: {
       });
     }
 
-    const eventLabel = first.endpoint.name || targetNode.data.label || "Kafka Topic";
+    const eventLabel =
+      first.endpoint.name || targetNode.data.label || "Kafka Topic";
 
     trace.push({
       id: `msg-${connectedEdge.id}`,
@@ -628,27 +1081,50 @@ export async function simulateTestCase(args: {
       output: clone(args.testCase.request?.body),
     });
 
-    const consumeEdges = args.edges.filter((edge) =>
-      edge.source === targetNode.id &&
-      (edge.targetHandle?.startsWith("consumedEvents-in-") || edge.targetHandle?.includes(":"))
+    const consumeEdges = args.edges.filter(
+      (edge) =>
+        edge.source === targetNode.id &&
+        (edge.targetHandle?.startsWith("consumedEvents-in-") ||
+          edge.targetHandle?.includes(":")),
     );
 
     for (const consumeEdge of consumeEdges) {
-      const consumerService = args.nodes.find((n) => n.id === consumeEdge.target && n.type === "service");
+      const consumerService = args.nodes.find(
+        (n) => n.id === consumeEdge.target && n.type === "service",
+      );
       if (!consumerService) continue;
 
-      const consumedEventId = consumeEdge.targetHandle?.replace("consumedEvents-in-", "");
-      const consumedEventName = consumedEventId ? findEventName(consumedEventId, consumerService, args.nodes) : undefined;
+      const consumedEventId = consumeEdge.targetHandle?.replace(
+        "consumedEvents-in-",
+        "",
+      );
+      const consumedEventName = consumedEventId
+        ? findEventName(consumedEventId, consumerService, args.nodes)
+        : undefined;
 
       const pubTopicId = connectedEdge.targetHandle?.split(":").pop();
       const subTopicId = consumeEdge.sourceHandle?.split(":").pop();
       if (pubTopicId && subTopicId && pubTopicId !== subTopicId) continue;
-      if (consumedEventName && eventLabel && consumedEventName.trim().toLowerCase() !== eventLabel.trim().toLowerCase()) continue;
+      if (
+        consumedEventName &&
+        eventLabel &&
+        consumedEventName.trim().toLowerCase() !==
+          eventLabel.trim().toLowerCase()
+      )
+        continue;
 
       const consumerEndpoint: Endpoint | undefined =
-        (args.endpoints ?? []).find((ep) => ep.nodeId === consumerService.id && ep.id === consumedEventId) ??
-        consumerService.data.endpoints?.find((ep: Endpoint) => ep.id === consumedEventId) ??
-        (consumerService.data.routeGroups?.flatMap((g: any) => g.endpoints) as Endpoint[])?.find((ep: Endpoint) => ep.id === consumedEventId);
+        (args.endpoints ?? []).find(
+          (ep) => ep.nodeId === consumerService.id && ep.id === consumedEventId,
+        ) ??
+        consumerService.data.endpoints?.find(
+          (ep: Endpoint) => ep.id === consumedEventId,
+        ) ??
+        (
+          consumerService.data.routeGroups?.flatMap(
+            (g: any) => g.endpoints,
+          ) as Endpoint[]
+        )?.find((ep: Endpoint) => ep.id === consumedEventId);
 
       let consumerBody: unknown = clone(args.testCase.request?.body);
 
@@ -684,20 +1160,30 @@ export async function simulateTestCase(args: {
 
       const pushEdges = args.edges.filter((edge) => {
         if (edge.source !== consumerService.id) return false;
-        return args.nodes.some((n) => n.id === edge.target && n.type === "webClient");
+        return args.nodes.some(
+          (n) => n.id === edge.target && n.type === "webClient",
+        );
       });
 
       for (const pushEdge of pushEdges) {
-        const clientNode = args.nodes.find((n) => n.id === pushEdge.target && n.type === "webClient");
+        const clientNode = args.nodes.find(
+          (n) => n.id === pushEdge.target && n.type === "webClient",
+        );
         if (!clientNode) continue;
 
         const th = pushEdge.targetHandle ?? "";
         let pushKind = "SSE";
-        if (th.startsWith("websocket-in-") || th.startsWith("ws-in-")) pushKind = "WebSocket";
+        if (th.startsWith("websocket-in-") || th.startsWith("ws-in-"))
+          pushKind = "WebSocket";
         else if (th.startsWith("webrtc-in-")) pushKind = "WebRTC";
 
-        const targetEventId = th.replace(/^(sse|websocket|ws|webrtc|events)-in-/, "");
-        const clientEvent = clientNode.data.events?.find((ev: any) => ev.id === targetEventId);
+        const targetEventId = th.replace(
+          /^(sse|websocket|ws|webrtc|events)-in-/,
+          "",
+        );
+        const clientEvent = clientNode.data.events?.find(
+          (ev: any) => ev.id === targetEventId,
+        );
         const eventSuffix = clientEvent?.name ? ` (${clientEvent.name})` : "";
 
         trace.push({
@@ -716,26 +1202,34 @@ export async function simulateTestCase(args: {
       status: 200,
       statusText: "OK",
       headers: { "x-simulated": "true" },
-      body: clone(args.testCase.request?.body ?? { status: "Message Published to Kafka" }),
+      body: clone(
+        args.testCase.request?.body ?? { status: "Message Published to Kafka" },
+      ),
       trace,
       testCaseId: args.testCase.id,
       testCaseName: args.testCase.name,
       assertions: [
-        { name: "message published to messaging broker", passed: true, detail: `Published to ${targetNode.data?.label || "Kafka"}` },
+        {
+          name: "message published to messaging broker",
+          passed: true,
+          detail: `Published to ${targetNode.data?.label || "Kafka"}`,
+        },
       ],
     };
   }
 
   // Build trace steps for client navigation chain
-  const trace: SimulationTraceEntry[] = [{
-    id: `${args.testCase.id}-client`,
-    kind: "client",
-    label: `Test case: ${args.testCase.name}`,
-    status: "completed",
-    nodeId: args.client.id,
-    edgeId: chainEdges[0]?.id,
-    input: clone(args.testCase.request?.body),
-  }];
+  const trace: SimulationTraceEntry[] = [
+    {
+      id: `${args.testCase.id}-client`,
+      kind: "client",
+      label: `Test case: ${args.testCase.name}`,
+      status: "completed",
+      nodeId: args.client.id,
+      edgeId: chainEdges[0]?.id,
+      input: clone(args.testCase.request?.body),
+    },
+  ];
 
   // Add intermediate page load steps in the trace
   for (let i = 0; i < chainEdges.length - 1; i++) {
@@ -757,7 +1251,9 @@ export async function simulateTestCase(args: {
 
   // Build the effective mocks map: merge test case mocks with the expectedBody/expectedStatus
   // for the initial (target) endpoint so the simulation uses the configured output directly.
-  const buildMocks = (endpointId: string): Record<string, { returnData: JSONValue; status: number }> | undefined => {
+  const buildMocks = (
+    endpointId: string,
+  ): Record<string, { returnData: JSONValue; status: number }> | undefined => {
     const base = args.testCase.mocks ?? {};
     if (args.testCase.expectedBody !== undefined && !(endpointId in base)) {
       return {
@@ -775,7 +1271,10 @@ export async function simulateTestCase(args: {
   // ingress edge when simulateEndpoint runs for the next chained service.
   let ingressEdgeForNext: BackendEdge | undefined = connectedEdge;
 
-  while (current && !visited.has(`${current.service.id}:${current.endpoint.id}`)) {
+  while (
+    current &&
+    !visited.has(`${current.service.id}:${current.endpoint.id}`)
+  ) {
     const step: { service: BackendNode; endpoint: Endpoint } = current;
     visited.add(`${step.service.id}:${step.endpoint.id}`);
     const isFirst = visited.size === 1;
@@ -806,10 +1305,11 @@ export async function simulateTestCase(args: {
     if (!is2xxStatus(result.status)) break;
 
     // ── Direct service-to-service hop (HTTP) ──────────────────────────────
-    const outgoing: BackendEdge | undefined = args.edges.find((edge) =>
-      edge.source === step.service.id &&
-      edge.sourceHandle === `endpoint-out-${step.endpoint.id}` &&
-      edge.targetHandle?.startsWith("endpoint-in-"),
+    const outgoing: BackendEdge | undefined = args.edges.find(
+      (edge) =>
+        edge.source === step.service.id &&
+        edge.sourceHandle === `endpoint-out-${step.endpoint.id}` &&
+        edge.targetHandle?.startsWith("endpoint-in-"),
     );
     const nextEndpointId = outgoing?.targetHandle?.split("-in-").pop();
 
@@ -817,7 +1317,15 @@ export async function simulateTestCase(args: {
     // as its own ingress edge (the arrow that flows into the next service node)
     ingressEdgeForNext = outgoing;
 
-    current = outgoing && nextEndpointId ? findEndpoint(args.nodes, outgoing.target, nextEndpointId, args.endpoints) : undefined;
+    current =
+      outgoing && nextEndpointId
+        ? findEndpoint(
+            args.nodes,
+            outgoing.target,
+            nextEndpointId,
+            args.endpoints,
+          )
+        : undefined;
 
     // ── Messaging path: publishedEvents-out-* → broker → consumedEvents-in-* ──
     // Collect published events specifically belonging to the executing endpoint (step.endpoint).
@@ -835,12 +1343,25 @@ export async function simulateTestCase(args: {
       const brokerNode = args.nodes.find((n) => n.id === pubEdge.target);
       if (!brokerNode) continue;
 
-      const messagingTypes: BackendNodeType[] = ["kafka", "sqs", "redis-streams", "redis-pubsub", "pubsub", "eventstream", "queue"];
+      const messagingTypes: BackendNodeType[] = [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ];
       if (!messagingTypes.includes(brokerNode.type)) continue;
 
       // Find the event name from the service's published events or endpoint
-      const publishedEventId = pubEdge.sourceHandle?.replace("publishedEvents-out-", "");
-      const publishedEventName = publishedEventId ? findEventName(publishedEventId, step.service, args.nodes) : undefined;
+      const publishedEventId = pubEdge.sourceHandle?.replace(
+        "publishedEvents-out-",
+        "",
+      );
+      const publishedEventName = publishedEventId
+        ? findEventName(publishedEventId, step.service, args.nodes)
+        : undefined;
       const eventLabel = publishedEventName ?? publishedEventId ?? "event";
 
       // Trace: broker node receives the event
@@ -855,9 +1376,10 @@ export async function simulateTestCase(args: {
       });
 
       // Find consumer services whose consumed event name matches the published topic name.
-      const consumeEdges = args.edges.filter((edge) =>
-        edge.source === brokerNode.id &&
-        edge.targetHandle?.startsWith("consumedEvents-in-"),
+      const consumeEdges = args.edges.filter(
+        (edge) =>
+          edge.source === brokerNode.id &&
+          edge.targetHandle?.startsWith("consumedEvents-in-"),
       );
 
       for (const consumeEdge of consumeEdges) {
@@ -866,8 +1388,13 @@ export async function simulateTestCase(args: {
         );
         if (!consumerService) continue;
 
-        const consumedEventId = consumeEdge.targetHandle?.replace("consumedEvents-in-", "");
-        const consumedEventName = consumedEventId ? findEventName(consumedEventId, consumerService, args.nodes) : undefined;
+        const consumedEventId = consumeEdge.targetHandle?.replace(
+          "consumedEvents-in-",
+          "",
+        );
+        const consumedEventName = consumedEventId
+          ? findEventName(consumedEventId, consumerService, args.nodes)
+          : undefined;
 
         // ── Topic matching guard ─────────────────────────────────────────────
         // 1. If both edges explicitly reference a broker topic handle (e.g. topics:in:id / topics:out:id), require matching topic ID
@@ -879,16 +1406,26 @@ export async function simulateTestCase(args: {
 
         // 2. If event/topic names are resolved on both sides, require topic name match
         if (consumedEventName && eventLabel) {
-          if (consumedEventName.trim().toLowerCase() !== eventLabel.trim().toLowerCase()) {
+          if (
+            consumedEventName.trim().toLowerCase() !==
+            eventLabel.trim().toLowerCase()
+          ) {
             continue;
           }
         }
 
         // Find the consumer endpoint (the handler for this consumed event).
         const consumerEndpoint: Endpoint | undefined =
-          (args.endpoints ?? []).find((ep) => ep.nodeId === consumerService.id && ep.id === consumedEventId) ??
-          consumerService.data.endpoints?.find((ep) => ep.id === consumedEventId) ??
-          consumerService.data.routeGroups?.flatMap((g) => g.endpoints).find((ep) => ep.id === consumedEventId);
+          (args.endpoints ?? []).find(
+            (ep) =>
+              ep.nodeId === consumerService.id && ep.id === consumedEventId,
+          ) ??
+          consumerService.data.endpoints?.find(
+            (ep) => ep.id === consumedEventId,
+          ) ??
+          consumerService.data.routeGroups
+            ?.flatMap((g) => g.endpoints)
+            .find((ep) => ep.id === consumedEventId);
 
         let consumerBody = clone(body);
 
@@ -928,15 +1465,21 @@ export async function simulateTestCase(args: {
         // Only follow push edges originating from the specific consumed event / endpoint handle
         const pushEdges = args.edges.filter((edge) => {
           if (edge.source !== consumerService.id) return false;
-          const isWebClientTarget = args.nodes.some((n) => n.id === edge.target && n.type === "webClient");
+          const isWebClientTarget = args.nodes.some(
+            (n) => n.id === edge.target && n.type === "webClient",
+          );
           if (!isWebClientTarget) return false;
 
           // If sourceHandle is specified (e.g. consumedEvents-out-{id}, endpoint-out-{id}),
           // it must match the active consumedEventId or consumerEndpoint.id!
           if (edge.sourceHandle) {
             const sh = edge.sourceHandle;
-            const matchesConsumed = Boolean(consumedEventId && sh.includes(consumedEventId));
-            const matchesEndpoint = Boolean(consumerEndpoint && sh.includes(consumerEndpoint.id));
+            const matchesConsumed = Boolean(
+              consumedEventId && sh.includes(consumedEventId),
+            );
+            const matchesEndpoint = Boolean(
+              consumerEndpoint && sh.includes(consumerEndpoint.id),
+            );
             if (!matchesConsumed && !matchesEndpoint) {
               return false;
             }
@@ -954,13 +1497,19 @@ export async function simulateTestCase(args: {
           // Determine push mechanism from targetHandle
           const th = pushEdge.targetHandle ?? "";
           let pushKind = "SSE";
-          if (th.startsWith("websocket-in-") || th.startsWith("ws-in-")) pushKind = "WebSocket";
+          if (th.startsWith("websocket-in-") || th.startsWith("ws-in-"))
+            pushKind = "WebSocket";
           else if (th.startsWith("webrtc-in-")) pushKind = "WebRTC";
 
           // Find target event name on webClient if available
-          const targetEventId = th.replace(/^(sse|websocket|ws|webrtc|events)-in-/, "");
+          const targetEventId = th.replace(
+            /^(sse|websocket|ws|webrtc|events)-in-/,
+            "",
+          );
           const clientEvents = clientNode.data.events ?? [];
-          const clientEvent = clientEvents.find((ev) => ev.id === targetEventId);
+          const clientEvent = clientEvents.find(
+            (ev) => ev.id === targetEventId,
+          );
           const eventSuffix = clientEvent?.name ? ` (${clientEvent.name})` : "";
 
           trace.push({
@@ -975,29 +1524,60 @@ export async function simulateTestCase(args: {
         }
       }
     }
-
-
   } // end while
 
   if (!result) {
     throw new Error("Simulation did not execute an endpoint.");
   }
-  const uniqueActualPath = trace.map(t => t.nodeId).filter((id, i, arr): id is string => id !== undefined && id !== arr[i - 1]);
-  const pathPassed = args.testCase.expectedPath === undefined || JSON.stringify(args.testCase.expectedPath) === JSON.stringify(uniqueActualPath);
+  const uniqueActualPath = trace
+    .map((t) => t.nodeId)
+    .filter(
+      (id, i, arr): id is string => id !== undefined && id !== arr[i - 1],
+    );
+  const pathPassed =
+    args.testCase.expectedPath === undefined ||
+    JSON.stringify(args.testCase.expectedPath) ===
+      JSON.stringify(uniqueActualPath);
 
-  const assertions = [{
-    name: "expected status",
-    passed: args.testCase.expectedStatus === undefined || args.testCase.expectedStatus === result.status,
-    detail: args.testCase.expectedStatus === undefined ? undefined : `Expected ${args.testCase.expectedStatus}, received ${result.status}`,
-  }, {
-    name: "expected body",
-    passed: args.testCase.expectedBody === undefined || JSON.stringify(args.testCase.expectedBody) === JSON.stringify(result.body),
-    detail: args.testCase.expectedBody === undefined ? undefined : "Response body differs from expected body",
-  }, {
-    name: "expected path",
-    passed: pathPassed,
-    detail: args.testCase.expectedPath === undefined ? undefined : `Expected path ${JSON.stringify(args.testCase.expectedPath)}, but executed ${JSON.stringify(uniqueActualPath)}`,
-  }];
+  const assertions = [
+    {
+      name: "expected status",
+      passed:
+        args.testCase.expectedStatus === undefined ||
+        args.testCase.expectedStatus === result.status,
+      detail:
+        args.testCase.expectedStatus === undefined
+          ? undefined
+          : `Expected ${args.testCase.expectedStatus}, received ${result.status}`,
+    },
+    {
+      name: "expected body",
+      passed:
+        args.testCase.expectedBody === undefined ||
+        JSON.stringify(args.testCase.expectedBody) ===
+          JSON.stringify(result.body),
+      detail:
+        args.testCase.expectedBody === undefined
+          ? undefined
+          : "Response body differs from expected body",
+    },
+    {
+      name: "expected path",
+      passed: pathPassed,
+      detail:
+        args.testCase.expectedPath === undefined
+          ? undefined
+          : `Expected path ${JSON.stringify(args.testCase.expectedPath)}, but executed ${JSON.stringify(uniqueActualPath)}`,
+    },
+  ];
   const passed = assertions.every((assertion) => assertion.passed);
-  return { ...result, trace, testCaseId: args.testCase.id, testCaseName: args.testCase.name, assertions, status: passed ? result.status : 422, statusText: passed ? result.statusText : "Assertion Failed" };
+  return {
+    ...result,
+    trace,
+    testCaseId: args.testCase.id,
+    testCaseName: args.testCase.name,
+    assertions,
+    status: passed ? result.status : 422,
+    statusText: passed ? result.statusText : "Assertion Failed",
+  };
 }

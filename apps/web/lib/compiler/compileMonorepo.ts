@@ -235,7 +235,7 @@ dist
       folderName,
     });
 
-    const lgResult = compileLangGraphNode(lgNode, { edges, nodes, endpoints, events });
+    const lgResult = compileLangGraphNode(lgNode, { edges, nodes, endpoints, events, testCases });
     lgResult.files.forEach((f) => {
       files.push({
         filename: `apps/${folderName}/${f.filename}`,

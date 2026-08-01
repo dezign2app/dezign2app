@@ -37,6 +37,8 @@ interface LangGraphStudioViewProps {
 export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps) {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const connectedRoutes = useConnectedRoutes(node.id);
+  const allTestCases = useSimulationStore((state) => state.testCases);
+  const graphTestCases = useMemo(() => allTestCases.filter((testCase) => testCase.targetNodeId === node.id), [allTestCases, node.id]);
 
   const {
     nodes,
@@ -123,7 +125,10 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
     .filter((canvasNode) => canvasNode.type === "step")
     .map((canvasNode) => {
       const data = canvasNode.data as unknown as { stepId: string; label: string; stepType: LangGraphStepConfig["type"]; routerConfig?: LangGraphStepConfig["routerConfig"]; stateUpdates?: LangGraphStepConfig["stateUpdates"]; modelConfig?: LangGraphStepConfig["modelConfig"]; customCode?: LangGraphStepConfig["customCode"] };
-      return { id: data.stepId, name: data.label, type: data.stepType, routerConfig: data.routerConfig, stateUpdates: data.stateUpdates, modelConfig: data.modelConfig, customCode: data.customCode };
+      // Runtime traversal follows React Flow edge source/target ids. Keep the
+      // step config keyed by the canvas node id as well, including legacy
+      // graphs where data.stepId can differ from the node id.
+      return { id: canvasNode.id, name: data.label, type: data.stepType, routerConfig: data.routerConfig, stateUpdates: data.stateUpdates, modelConfig: data.modelConfig, customCode: data.customCode };
     }), [nodes]);
   const graphPathEdges = useMemo(() => edges.map((edge) => ({ source: edge.source, sourceHandle: edge.sourceHandle, target: edge.target })), [edges]);
   const graphNodeLabels = useMemo(() => Object.fromEntries(nodes.map((canvasNode) => [canvasNode.id, (canvasNode.data as { label?: string }).label || canvasNode.id])), [nodes]);
@@ -290,8 +295,9 @@ export function LangGraphStudioView({ node, onClose }: LangGraphStudioViewProps)
             nodes,
             edges,
             memoryConfig,
+            testCases: graphTestCases,
           });
-        }, [showCompileModal, node.data.label, stateChannels, inputChannels, nodes, edges, memoryConfig])}
+        }, [showCompileModal, node.data.label, stateChannels, inputChannels, nodes, edges, memoryConfig, graphTestCases])}
       />
     </div>
   );

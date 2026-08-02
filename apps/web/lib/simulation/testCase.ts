@@ -408,54 +408,91 @@ export async function simulateTestCase(args: {
     const endpointPublishedEvents = step.endpoint.publishedEvents ?? [];
     const allowedEventIds = new Set(endpointPublishedEvents.map((e) => e.id));
 
+    const messagingTypes: BackendNodeType[] = [
+      "kafka",
+      "sqs",
+      "redis-streams",
+      "redis-pubsub",
+      "pubsub",
+      "eventstream",
+      "queue",
+    ];
+
     const publishEdges = args.edges.filter((edge) => {
       if (edge.source !== step.service.id) return false;
-      if (!edge.sourceHandle?.startsWith("publishedEvents-out-")) return false;
-      const eventId = edge.sourceHandle.replace("publishedEvents-out-", "");
-      return allowedEventIds.has(eventId);
+
+      // Handle 1: explicit publishedEvents-out-{eventId} handle
+      if (edge.sourceHandle?.startsWith("publishedEvents-out-")) {
+        const eventId = edge.sourceHandle.replace("publishedEvents-out-", "");
+        return allowedEventIds.has(eventId);
+      }
+
+      // Handle 2: direct endpoint-out-{endpointId} handle connected to a messaging broker node
+      if (
+        edge.sourceHandle === `endpoint-out-${step.endpoint.id}` ||
+        edge.sourceHandle === `endpoints-out-${step.endpoint.id}`
+      ) {
+        const targetNode = args.nodes.find((n) => n.id === edge.target);
+        return targetNode && messagingTypes.includes(targetNode.type);
+      }
+
+      return false;
     });
 
     for (const pubEdge of publishEdges) {
       const brokerNode = args.nodes.find((n) => n.id === pubEdge.target);
       if (!brokerNode) continue;
-
-      const messagingTypes: BackendNodeType[] = [
-        "kafka",
-        "sqs",
-        "redis-streams",
-        "redis-pubsub",
-        "pubsub",
-        "eventstream",
-        "queue",
-      ];
       if (!messagingTypes.includes(brokerNode.type)) continue;
 
-      // Find the event name from the service's published events or endpoint
-      const publishedEventId = pubEdge.sourceHandle?.replace(
-        "publishedEvents-out-",
-        "",
-      );
-      const publishedEventName = publishedEventId
-        ? findEventName(publishedEventId, step.service, args.nodes)
-        : undefined;
-      const eventLabel = publishedEventName ?? publishedEventId ?? "event";
+      // Find the event name from the service's published events, endpoint name, or topic handle/resource
+      let eventLabel: string;
+      if (pubEdge.sourceHandle?.startsWith("publishedEvents-out-")) {
+        const publishedEventId = pubEdge.sourceHandle.replace(
+          "publishedEvents-out-",
+          "",
+        );
+        const publishedEventName = publishedEventId
+          ? findEventName(publishedEventId, step.service, args.nodes)
+          : undefined;
+        eventLabel = publishedEventName ?? publishedEventId ?? "event";
+      } else {
+        const resourceId = pubEdge.targetHandle?.includes(":")
+          ? pubEdge.targetHandle.split(":").pop()
+          : pubEdge.targetHandle?.split("-in-").pop();
+        const resourceList = (brokerNode.data.topics ||
+          brokerNode.data.queues ||
+          brokerNode.data.streams ||
+          brokerNode.data.channels ||
+          []) as any[];
+        const resource =
+          resourceList.find((r: any) => r.id === resourceId) || resourceList[0];
+        eventLabel =
+          resource?.name ||
+          step.endpoint.name ||
+          brokerNode.data.label ||
+          "event";
+      }
 
       // Trace: broker node receives the event
-      trace.push({
-        id: `msg-${pubEdge.id}`,
-        kind: "messaging",
-        label: `${brokerNode.data.label ?? brokerNode.type} ← ${eventLabel}`,
-        status: "completed",
-        nodeId: brokerNode.id,
-        edgeId: pubEdge.id,
-        output: clone(body),
-      });
+      if (!trace.some((t) => t.id === `msg-${pubEdge.id}` || t.edgeId === pubEdge.id)) {
+        trace.push({
+          id: `msg-${pubEdge.id}`,
+          kind: "messaging",
+          label: `${brokerNode.data.label ?? brokerNode.type} ← ${eventLabel}`,
+          status: "completed",
+          nodeId: brokerNode.id,
+          edgeId: pubEdge.id,
+          output: clone(body),
+        });
+      }
 
       // Find consumer services whose consumed event name matches the published topic name.
       const consumeEdges = args.edges.filter(
         (edge) =>
           edge.source === brokerNode.id &&
-          edge.targetHandle?.startsWith("consumedEvents-in-"),
+          (edge.targetHandle?.startsWith("consumedEvents-in-") ||
+            edge.targetHandle?.includes(":") ||
+            edge.targetHandle?.startsWith("endpoint-in-")),
       );
 
       for (const consumeEdge of consumeEdges) {

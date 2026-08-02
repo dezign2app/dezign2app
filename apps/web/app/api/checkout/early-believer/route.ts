@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       price: totalAmountInCents,
       currency: "USD",
       billingType: "onetime",
+      taxMode: "exclusive",
+      taxCategory: "saas",
     });
 
     // Create checkout session for the dynamically created product

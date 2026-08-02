@@ -9,6 +9,7 @@ import {
   parseResourceHandle,
 } from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
+import { Endpoint } from "@workspace/canvas/types";
 import {
   endpointSchema,
   publishedEventSchema,
@@ -35,6 +36,8 @@ import {
   Folder,
   FolderOpen,
   Loader2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { toast } from "sonner";
@@ -61,6 +64,159 @@ function getLanguageFromFilename(filename: string): string {
   if (filename.endsWith(".py")) return "python";
   if (filename.endsWith(".sh")) return "shell";
   return "plaintext";
+}
+
+function getEditableLineRange(
+  content: string,
+): { startMarkerLine: number; endMarkerLine: number } | null {
+  if (!content) return null;
+  const lines = content.split("\n");
+
+  let startMarkerLine = -1;
+  let endMarkerLine = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    const lineNumber = i + 1; // 1-indexed Monaco line number
+
+    if (
+      line.includes("// --- EDITABLE FUNCTION BODY START ---") ||
+      line.includes("// editable area")
+    ) {
+      startMarkerLine = lineNumber;
+    } else if (
+      startMarkerLine === -1 &&
+      (line.includes("// --- Business Logic Code Execution ---") ||
+        line.includes("// STEP 3:") ||
+        line.includes("// STEP 2:") ||
+        line.includes("// STEP 1:"))
+    ) {
+      startMarkerLine = lineNumber - 1;
+    }
+
+    if (
+      startMarkerLine !== -1 &&
+      endMarkerLine === -1 &&
+      (line.includes("// --- EDITABLE FUNCTION BODY END ---") ||
+        line.includes("// END of editable area") ||
+        line.includes("logger.debug(") ||
+        line.includes("return res.status(") ||
+        line.includes("return res.json(") ||
+        line.includes("} catch (error)"))
+    ) {
+      endMarkerLine = lineNumber;
+      break;
+    }
+  }
+
+  if (
+    startMarkerLine !== -1 &&
+    endMarkerLine !== -1 &&
+    startMarkerLine < endMarkerLine
+  ) {
+    return { startMarkerLine, endMarkerLine };
+  }
+  return null;
+}
+
+function isEditingKey(e: any): boolean {
+  const key = e.browserEvent?.key;
+  const isCtrlOrCmd = e.browserEvent?.ctrlKey || e.browserEvent?.metaKey;
+
+  if (key === "Backspace" || key === "Delete" || key === "Enter") {
+    return true;
+  }
+  if (isCtrlOrCmd && (key === "v" || key === "x" || key === "z" || key === "y")) {
+    return true;
+  }
+  if (key && key.length === 1 && !isCtrlOrCmd) {
+    return true;
+  }
+  return false;
+}
+
+function extractBusinessLogic(content: string): string {
+  if (!content) return "";
+
+  const startMarker = "// --- EDITABLE FUNCTION BODY START ---";
+  const endMarker = "// --- EDITABLE FUNCTION BODY END ---";
+
+  if (content.includes(startMarker) && content.includes(endMarker)) {
+    let section = content.split(startMarker)[1]?.split(endMarker)[0] || "";
+    if (section.startsWith("\r\n")) {
+      section = section.slice(2);
+    } else if (section.startsWith("\n")) {
+      section = section.slice(1);
+    }
+    if (section.endsWith("\r\n")) {
+      section = section.slice(0, -2);
+    } else if (section.endsWith("\n")) {
+      section = section.slice(0, -1);
+    }
+    return section;
+  }
+
+  const marker = "// --- Business Logic Code Execution ---";
+  if (content.includes(marker)) {
+    const afterMarker = content.split(marker)[1] || "";
+    const endMarkers = [
+      "logger.debug(",
+      "return res.status(",
+      "return res.json(",
+      "} catch (error)",
+    ];
+
+    let lowestEndIndex = afterMarker.length;
+    for (const em of endMarkers) {
+      const idx = afterMarker.indexOf(em);
+      if (idx !== -1 && idx < lowestEndIndex) {
+        lowestEndIndex = idx;
+      }
+    }
+
+    return afterMarker.substring(0, lowestEndIndex).trim();
+  }
+
+  return content;
+}
+
+function checkIsRouteFile(filename?: string): boolean {
+  if (!filename) return false;
+  return (
+    filename.includes("/src/routes/") ||
+    filename.startsWith("src/routes/") ||
+    filename.includes("routes/")
+  );
+}
+
+function findEndpointForFile(
+  filename: string,
+  endpoints: (Endpoint & { nodeId: string })[]
+) {
+  if (!checkIsRouteFile(filename)) return null;
+
+  const routeFileName =
+    filename.split(/[\/\\]routes[\/\\]/).pop()?.replace(/\.ts$/, "").toLowerCase() || "";
+
+  for (const ep of endpoints) {
+    const method = (ep.type || "GET").toLowerCase();
+    const rawName = (ep.name || ep.id || "")
+      .replace(/^\//, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "_");
+
+    if (
+      rawName &&
+      (routeFileName === rawName || routeFileName === `${method}_${rawName}`)
+    ) {
+      return ep;
+    }
+    if (ep.id && routeFileName.includes(ep.id.toLowerCase())) {
+      return ep;
+    }
+  }
+
+  return null;
 }
 
 export default function CompilerPage({
@@ -274,27 +430,125 @@ export default function CompilerPage({
 
   const activeFile = files.find((f) => f.filename === selectedFilename) || files[0];
 
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const activeFileRef = React.useRef(activeFile);
+  const editorRef = React.useRef<any>(null);
+  const monacoRef = React.useRef<any>(null);
+  const decorationsRef = React.useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    activeFileRef.current = activeFile;
+    if (editorRef.current && monacoRef.current && activeFile) {
+      const isRouteFile = checkIsRouteFile(activeFile.filename);
+      const liveContent =
+        editorRef.current.getModel()?.getValue() || activeFile.content;
+      const range = isRouteFile ? getEditableLineRange(liveContent) : null;
+
+      if (
+        range &&
+        isRouteFile &&
+        range.startMarkerLine + 1 <= range.endMarkerLine - 1
+      ) {
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          [
+            {
+              range: new monacoRef.current.Range(
+                range.startMarkerLine + 1,
+                1,
+                range.endMarkerLine - 1,
+                1,
+              ),
+              options: {
+                isWholeLine: true,
+                className: "bg-emerald-500/10 border-l-2 border-emerald-500",
+              },
+            },
+          ],
+        );
+      } else {
+        decorationsRef.current = editorRef.current.deltaDecorations(
+          decorationsRef.current,
+          [],
+        );
+      }
+    }
+  }, [activeFile]);
+
+  const handleEditorMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    editor.onKeyDown((e: any) => {
+      const currentFile = activeFileRef.current;
+      if (!currentFile) return;
+
+      const isRouteFile = checkIsRouteFile(currentFile.filename);
+      if (!isRouteFile) {
+        if (isEditingKey(e)) {
+          e.preventDefault();
+          e.stopPropagation();
+          toast.info("🔒 Generated project configuration & server files are read-only.");
+        }
+        return;
+      }
+
+      // Live model content query to prevent stale range calculations during typing/Enters
+      const liveContent = editor.getModel()?.getValue() || currentFile.content;
+      const range = getEditableLineRange(liveContent);
+      if (!range) return;
+
+      const selection = editor.getSelection();
+      if (!selection) return;
+
+      const isInsideZone =
+        selection.startLineNumber > range.startMarkerLine &&
+        selection.endLineNumber < range.endMarkerLine;
+
+      if (!isInsideZone && isEditingKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.warning(
+          "🔒 Function signature, types, and return handlers are locked. Edit only inside the function body.",
+        );
+      }
+    });
+  };
+
   // Handle Monaco code edit
   const handleEditorChange = (newContent: string | undefined) => {
     if (newContent === undefined || !activeFile) return;
 
-    // Find if this file corresponds to an endpoint or service node logic
-    const activeFn = activeFile.filename;
+    const matchedEndpoint = findEndpointForFile(activeFile.filename, endpoints);
+    if (!matchedEndpoint) return;
 
-    // Search endpoints for a match by filename or endpoint name
-    const matchedEndpoint = endpoints.find((ep) => {
-      const nameSanitized = (ep.name || ep.id).toLowerCase().replace(/[^a-z0-9]/g, "");
-      const fnSanitized = activeFn.toLowerCase().replace(/[^a-z0-9]/g, "");
-      return nameSanitized && fnSanitized.includes(nameSanitized);
-    });
+    const extractedLogic = extractBusinessLogic(newContent);
 
-    if (matchedEndpoint) {
-      updateEndpoint(matchedEndpoint.id, {
-        body: newContent,
-        code: newContent,
-      });
-      toast.success(`Updated logic for endpoint [${matchedEndpoint.name}]`);
+    if (
+      extractedLogic === matchedEndpoint.body ||
+      extractedLogic === matchedEndpoint.code
+    ) {
+      return;
     }
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      updateEndpoint(matchedEndpoint.id, {
+        body: extractedLogic,
+        code: extractedLogic,
+      });
+    }, 800);
   };
 
   const handleCopy = () => {
@@ -460,7 +714,16 @@ export default function CompilerPage({
           <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-border/40 text-xs font-mono select-none">
             <div className="flex items-center gap-2 text-slate-300 truncate">
               <FileCode className="w-4 h-4 text-primary shrink-0" />
-              <span className="truncate">{activeFile?.filename}</span>
+              <span className="truncate font-semibold">{activeFile?.filename}</span>
+              {checkIsRouteFile(activeFile?.filename) ? (
+                <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-mono flex items-center gap-1 shrink-0">
+                  <Lock className="w-3 h-3 text-amber-400" /> Signature & Types Locked • 🔓 Body Editable
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800/80 text-slate-400 border border-slate-700 font-mono flex items-center gap-1 shrink-0">
+                  <Lock className="w-3 h-3 text-slate-400" /> Read-Only Generated File
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
@@ -499,6 +762,7 @@ export default function CompilerPage({
                 language={getLanguageFromFilename(activeFile.filename)}
                 value={activeFile.content}
                 theme="vs-dark"
+                onMount={handleEditorMount}
                 onChange={handleEditorChange}
                 options={{
                   fontSize: 13,
@@ -527,8 +791,19 @@ export default function CompilerPage({
           onClose={() => setAiChatOpen(false)}
           activeFile={activeFile}
           onApplyCode={(suggestedCode) => {
-            handleEditorChange(suggestedCode);
-            toast.success("Applied code to function body & updated canvas!");
+            const matchedEndpoint = findEndpointForFile(
+              activeFile?.filename || "",
+              endpoints,
+            );
+            if (matchedEndpoint) {
+              updateEndpoint(matchedEndpoint.id, {
+                body: suggestedCode,
+                code: suggestedCode,
+              });
+              toast.success("Applied code to function body & updated canvas!");
+            } else {
+              toast.info("Could not match active file to a canvas endpoint");
+            }
           }}
         />
       </div>

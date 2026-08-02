@@ -19,7 +19,7 @@ import { useLangGraphCanvasState } from "./langgraph-canvas/hooks/useLangGraphCa
 import { LangGraphCanvasHeader } from "./langgraph-canvas/components/LangGraphCanvasHeader";
 import { ToolsSidebar } from "./langgraph-canvas/components/ToolsSidebar";
 import { InspectorSidebar } from "./langgraph-canvas/components/InspectorSidebar";
-import { CompilerModal } from "../../../CompilerModal";
+import { CompilerDialog } from "../../../compiler";
 import { compileLangGraph } from "@/lib/compiler";
 import { simulateLangGraphTestCase } from "@/lib/simulation/runtime";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
@@ -471,8 +471,8 @@ export function LangGraphStudioView({
         />
       </div>
 
-      {/* Compiled Code Modal */}
-      <CompilerModal
+      {/* Compiled Code Dialog */}
+      <CompilerDialog
         open={showCompileModal}
         onOpenChange={setShowCompileModal}
         projectName={node.data.label || "LangGraph Agent Project"}

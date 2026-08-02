@@ -26,7 +26,6 @@ import { useAuth } from "@clerk/nextjs";
 import { Label } from "@workspace/ui/components/label";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { FlaskConical } from "lucide-react";
-import { CompilerModal } from "./CompilerModal";
 
 interface CanvasToolbarProps {
   projectName: string;
@@ -47,7 +46,6 @@ export function CanvasToolbar({
 }: CanvasToolbarProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const [compilerOpen, setCompilerOpen] = useState(false);
   const { getToken } = useAuth();
 
   const handleSync = async () => {

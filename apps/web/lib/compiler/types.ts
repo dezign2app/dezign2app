@@ -14,6 +14,10 @@ export interface CompiledDatabaseResult {
   files: CompiledFile[];
 }
 
+export interface CompiledKafkaResult {
+  files: CompiledFile[];
+}
+
 export interface CompiledWebClientResult {
   webClientId: string;
   webClientName: string;

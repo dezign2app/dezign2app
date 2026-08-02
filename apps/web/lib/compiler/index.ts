@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./utils";
 export * from "./traceResolver";
 export * from "./compileDatabaseNodes";
+export * from "./compileKafkaNodes";
 export * from "./compileServiceNode";
 export * from "./compileLangGraphNode";
 export * from "./compileWebClientNode";
@@ -16,6 +17,8 @@ export * from "./databases/sqlite/drizzle";
 export * from "./langgraph/typescript/v1";
 
 // Legacy / Utility Generators
+export * from "./generators/rootFilesGenerator";
+export * from "./generators/readmeGenerator";
 export * from "./generators/routeGenerator";
 export * from "./generators/consumerGenerator";
 export * from "./generators/producerGenerator";

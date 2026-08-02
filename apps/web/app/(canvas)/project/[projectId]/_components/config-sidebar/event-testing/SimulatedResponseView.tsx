@@ -2,7 +2,6 @@ import React from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Loader2, Trash, ChevronRight } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
-import type { JSONValue } from "@/types/canvas";
 import type { SimulationTraceEntry } from "@/lib/simulation/runtime";
 import { is2xxStatus } from "@/lib/simulation/runtime";
 
@@ -10,7 +9,7 @@ export interface SimulatedResponseData {
   headers?: Record<string, string>;
   status?: number;
   statusText?: string;
-  body?: JSONValue;
+  body?: unknown;
   trace?: SimulationTraceEntry[];
 }
 

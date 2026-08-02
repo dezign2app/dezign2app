@@ -16,7 +16,7 @@ export interface MockableItem {
 export function resolveEndpoint(
   targetNode: BackendNode | undefined,
   endpointId: string,
-  endpoints: (Endpoint & { nodeId?: string })[],
+  endpoints: Array<Endpoint & { nodeId?: string }>,
 ): Endpoint | undefined {
   const messagingTypes: readonly string[] = [
     "kafka",
@@ -83,7 +83,7 @@ export function getDownstreamMocks(
   targetNode: BackendNode | undefined,
   nodes: BackendNode[],
   edges: BackendEdge[],
-  endpoints: Endpoint[],
+  endpoints: Array<Endpoint & { nodeId?: string }>,
 ): MockableItem[] {
   if (!endpoint || !targetNode) return [];
 

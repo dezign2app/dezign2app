@@ -12,57 +12,10 @@ This platform combines visual canvas editors, stateful AI graph execution, Model
 [![Clerk](https://img.shields.io/badge/Auth-Clerk-6C47FF?style=flat-square&logo=clerk)](https://clerk.com/)
 [![Fumadocs](https://img.shields.io/badge/Docs-Fumadocs-blueviolet?style=flat-square)](https://fumadocs.vercel.app)
 
----
 
 ## 🏗️ Monorepo Architecture
 
 This repository is powered by a high-performance **pnpm Workspace** and **Turborepo**, optimizing dependency sharing, task caching, and parallel execution across specialized applications and shared packages.
-
-```mermaid
-graph TD
-    %% Frontend & Docs
-    subgraph Frontend["Client & Docs Layer"]
-        Web["💻 Next.js Web App (apps/web)<br/><i>Port 3000</i>"]
-        Docs["📚 Fumadocs Documentation (apps/docs)<br/><i>Port 3500</i>"]
-    end
-
-    %% Canvas & UI Components
-    subgraph WebComponents["Web App Features"]
-        Canvas["🎨 React Flow & Tldraw System Design Canvas"]
-        Chat["💬 Real-Time AI Chat Window"]
-    end
-
-    Web --> Canvas
-    Web --> Chat
-
-    %% Backend Services
-    subgraph ServiceLayer["Execution & Backend Services"]
-        DesignEng["🚀 Express AI System Design Engine (apps/system-design-engine)"]
-        WorkflowEng["⚡ Express Workflow Engine (apps/workflow-engine)<br/><i>Port 3001</i>"]
-        MCPDev["🔌 MCP Inspector (apps/mcp-inspector-dev)"]
-    end
-
-    %% Shared Packages & Database
-    subgraph SharedPackages["Shared Packages & Database"]
-        ConvexDB["🔥 Convex Database & Backend (packages/backend)"]
-        CanvasDomain["📐 Canvas Domain Models (packages/canvas)"]
-        SharedUI["🎨 Shared UI Design System (packages/ui)"]
-    end
-
-    %% System Connections
-    Web <-->|Mutations / Queries| ConvexDB
-    Web <-->|REST / SSE API| DesignEng
-    Web <-->|REST API| WorkflowEng
-
-    DesignEng <-->|Designs & History| ConvexDB
-    DesignEng <-->|Tool Protocols| MCPDev
-    WorkflowEng <-->|Mutations / Queries| ConvexDB
-
-    Web -.->|Uses| SharedUI
-    Web -.->|Uses| CanvasDomain
-    DesignEng -.->|Uses| CanvasDomain
-    ConvexDB -.->|Uses| CanvasDomain
-```
 
 ---
 

@@ -13,30 +13,41 @@ const faqs: FaqItem[] = [
     question: "What is the Early Believer Program?",
     answer: (
       <p>
-        The Early Believer Program is an exclusive early-backer initiative for supporters who contribute upfront to fuel dezign2app&apos;s product development. In exchange, backers receive upfront subscription access (6 months or 1 year per seat) plus a permanent lifetime discount (5% or 10%) applied to all future workspace renewal bills.
+        The Early Believer Program is an exclusive early-backer initiative for
+        supporters who contribute upfront to fuel dezign2app&apos;s product
+        development. In exchange, backers receive upfront subscription access (6
+        months or 1 year per seat) plus a permanent lifetime discount (5% or
+        10%) applied to all future workspace renewal bills.
       </p>
     ),
   },
   {
-    question: "How do the 10% ($100K cap) and 5% ($50K cap) discount caps work over time?",
+    question:
+      "How do the 10% ($100K cap) and 5% ($50K cap) discount caps work over time?",
     answer: (
       <div className="flex flex-col gap-2">
         <p>
-          Your lifetime discount percentage (10% for the $1,000 tier, 5% for the $500 tier) automatically reduces every future recurring invoice for your workspace (including annual renewals, additional seat additions, and core subscription upgrades).
+          Your lifetime discount percentage (10% for the $1,000 tier, 5% for the
+          $500 tier) automatically reduces every future recurring invoice for
+          your workspace (including annual renewals, additional seat additions,
+          and core subscription upgrades).
         </p>
-        <p>
-          To maintain fair usage at scale, lifetime savings are capped at:
-        </p>
+        <p>To maintain fair usage at scale, lifetime savings are capped at:</p>
         <ul className="list-disc pl-5 flex flex-col gap-1 text-gray-600">
           <li>
-            <strong>$1,000 Tier (10% OFF):</strong> Total cumulative discount capped at <strong>$100,000 in savings</strong> on your account over the years.
+            <strong>$1,000 Tier (10% OFF):</strong> Total cumulative discount
+            capped at <strong>$100,000 in savings</strong> on your account over
+            the years.
           </li>
           <li>
-            <strong>$500 Tier (5% OFF):</strong> Total cumulative discount capped at <strong>$50,000 in savings</strong> on your account over the years.
+            <strong>$500 Tier (5% OFF):</strong> Total cumulative discount
+            capped at <strong>$50,000 in savings</strong> on your account over
+            the years.
           </li>
         </ul>
         <p>
-          Once your workspace saves the full capped amount ($100k or $50k), standard non-discounted billing resumes automatically.
+          Once your workspace saves the full capped amount ($100k or $50k),
+          standard non-discounted billing resumes automatically.
         </p>
       </div>
     ),
@@ -46,19 +57,30 @@ const faqs: FaqItem[] = [
     answer: (
       <div className="flex flex-col gap-2">
         <p>
-          You can select anywhere between 1 to 100 seats during checkout. The total upfront cost is calculated as <code>Tier Price × Number of Seats</code>.
+          You can select anywhere between 1 to 100 seats during checkout. The
+          total upfront cost is calculated as{" "}
+          <code>Tier Price × Number of Seats</code>.
         </p>
         <p>
-          Each seat grants full workspace membership and allocates either 1 Year (for the $1,000 tier) or 6 Months (for the $500 tier) of subscription access per seat.
+          Each seat grants full workspace membership and allocates either 1 Year
+          (for the $1,000 tier) or 6 Months (for the $500 tier) of subscription
+          access per seat.
         </p>
       </div>
     ),
   },
   {
-    question: "How does the Beta phase work and will future AI features require a plan upgrade?",
+    question:
+      "How does the Beta phase work and will future AI features require a plan upgrade?",
     answer: (
       <p>
-        dezign2app is currently in Beta with core platform features enabled. All plans (including annual subscription packs and Early Believer tiers) grant complete access to our Beta platform capabilities. As advanced AI features roll out in the future, accessing those advanced AI capabilities may require upgrading your plan — and your locked-in 5% or 10% lifetime discount will automatically apply to any future plan upgrades or add-on packages!
+        dezign2app is currently in Beta with core platform features enabled. All
+        plans (including annual subscription packs and Early Believer tiers)
+        grant complete access to our Beta platform capabilities. As advanced AI
+        features roll out in the future, accessing those advanced AI
+        capabilities may require upgrading your plan — and your locked-in 5% or
+        10% lifetime discount will automatically apply to any future plan
+        upgrades or add-on packages!
       </p>
     ),
   },
@@ -66,7 +88,9 @@ const faqs: FaqItem[] = [
     question: "Can I add more seats later or change my workspace seats?",
     answer: (
       <p>
-        Yes! You can manage and add seats anytime from your workspace settings. Any additional seats added to your workspace in the future will automatically receive your locked-in 5% or 10% lifetime discount.
+        Yes! You can manage and add seats anytime from your workspace settings.
+        Any additional seats added to your workspace in the future will
+        automatically receive your locked-in 5% or 10% lifetime discount.
       </p>
     ),
   },
@@ -75,10 +99,17 @@ const faqs: FaqItem[] = [
     answer: (
       <div className="flex flex-col gap-2">
         <p>
-          The discount cap is allocated per purchased seat. For example, in the $1,000 tier (10% OFF), each seat carries a $100,000 cumulative discount allowance ($50,000 for the $500 tier).
+          The discount cap is allocated per purchased seat. For example, in the
+          $1,000 tier (10% OFF), each seat carries a $100,000 cumulative
+          discount allowance ($50,000 for the $500 tier).
         </p>
         <p>
-          If the lifetime discount savings on your 1st seat are exhausted over time, your workspace automatically rolls over to avail the 10% discount against your 2nd seat&apos;s discount pool, then your 3rd seat, and so on. For instance, purchasing 2 seats at the $1,000 tier grants your workspace a total cumulative discount cap of <strong>$200,000</strong>!
+          If the lifetime discount savings on your 1st seat are exhausted over
+          time, your workspace automatically rolls over to avail the 10%
+          discount against your 2nd seat&apos;s discount pool, then your 3rd
+          seat, and so on. For instance, purchasing 2 seats at the $1,000 tier
+          grants your workspace a total cumulative discount cap of{" "}
+          <strong>$200,000</strong>!
         </p>
       </div>
     ),
@@ -87,18 +118,29 @@ const faqs: FaqItem[] = [
     question: "What capabilities and automation does dezign2app provide?",
     answer: (
       <p>
-        dezign2app delivers end-to-end software development automation by unifying <strong>system architecture design, code generation, automated testing, CI/CD pipelines, cloud infrastructure provisioning, real-time monitoring, and system maintenance</strong> into a single seamless platform.
+        dezign2app delivers end-to-end software development automation by
+        unifying{" "}
+        <strong>
+          system architecture design, code generation, automated testing, CI/CD
+          pipelines, cloud infrastructure provisioning, real-time monitoring,
+          and system maintenance
+        </strong>{" "}
+        into a single seamless platform.
       </p>
     ),
   },
   {
-    question: "Can lifetime discounts be combined with other promotional codes?",
+    question:
+      "Can lifetime discounts be combined with other promotional codes?",
     answer: (
       <p>
-        Your Early Believer discount represents our best possible recurring workspace rate. While it cannot be stacked on top of limited-time seasonal promos, the Early Believer discount applies automatically to your standard subscription renewals for years to come.
+        Your Early Believer discount represents our best possible recurring
+        workspace rate. While it cannot be stacked on top of limited-time
+        seasonal promos, the Early Believer discount applies automatically to
+        your standard subscription renewals for years to come.
       </p>
     ),
-  }
+  },
 ];
 
 export function EarlyBelieverFaq() {

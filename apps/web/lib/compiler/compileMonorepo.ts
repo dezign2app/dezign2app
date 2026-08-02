@@ -4,10 +4,16 @@ import { CompiledFile, CompiledMonorepoResult } from "./types";
 import { compileServiceNode } from "./compileServiceNode";
 import { compileLangGraphNode } from "./compileLangGraphNode";
 import { compileDatabaseNodes } from "./compileDatabaseNodes";
+import { compileKafkaNodes } from "./compileKafkaNodes";
 import { compileWebClientNodes } from "./compileWebClientNode";
 import { compileUiPackage } from "./compileUiPackage";
 import { generateLoggerPackage } from "./generators/loggerGenerator";
 import { generateTypesPackage } from "./generators/typesGenerator";
+import {
+  generateRootFiles,
+  generateTypescriptConfigPackage,
+} from "./generators/rootFilesGenerator";
+import { generateRootReadme } from "./generators/readmeGenerator";
 
 /**
  * Compiles the entire system architecture canvas into a production-ready
@@ -38,136 +44,11 @@ export function compileMonorepo(
   const servicesInfo: { id: string; name: string; folderName: string }[] = [];
   const webClientsInfo: { id: string; name: string; folderName: string }[] = [];
 
-  // 1. Generate Root Files
-  const rootPackageJson = JSON.stringify(
-    {
-      name: projectName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-      version: "0.0.1",
-      private: true,
-      scripts: {
-        build: "turbo build",
-        dev: "turbo dev",
-        test: "turbo test",
-        lint: "turbo lint",
-        "check-types": "turbo check-types",
-        format: 'prettier --write "**/*.{ts,tsx,md}"',
-      },
-      devDependencies: {
-        "@workspace/typescript-config": "workspace:*",
-        prettier: "^3.7.4",
-        turbo: "^2.6.3",
-        typescript: "5.7.3",
-        vitest: "^1.6.0",
-      },
-      packageManager: "pnpm@10.4.1",
-      engines: {
-        node: ">=20",
-      },
-    },
-    null,
-    2,
-  );
-  files.push({
-    filename: "package.json",
-    language: "json",
-    content: rootPackageJson,
-  });
+  // 1. Generate Root Manifest Files (package.json, pnpm-workspace.yaml, turbo.json, .gitignore)
+  files.push(...generateRootFiles(projectName));
 
-  files.push({
-    filename: "pnpm-workspace.yaml",
-    language: "yaml",
-    content: `packages:\n  - "apps/*"\n  - "packages/*"\n`,
-  });
-
-  const turboJson = JSON.stringify(
-    {
-      $schema: "https://turbo.build/schema.json",
-      ui: "tui",
-      tasks: {
-        build: {
-          dependsOn: ["^build"],
-          outputs: [".next/**", "dist/**"],
-        },
-        dev: {
-          cache: false,
-          persistent: true,
-        },
-        test: {},
-        lint: {},
-        "check-types": {
-          dependsOn: ["^check-types"],
-        },
-      },
-    },
-    null,
-    2,
-  );
-  files.push({
-    filename: "turbo.json",
-    language: "json",
-    content: turboJson,
-  });
-
-  const rootGitignore = `node_modules
-dist
-.turbo
-.next
-.env
-*.log
-.DS_Store
-`;
-  files.push({
-    filename: ".gitignore",
-    language: "gitignore",
-    content: rootGitignore,
-  });
-
-  // 2. Generate Shared Package: packages/typescript-config
-  const tsConfigPackageJson = JSON.stringify(
-    {
-      name: "@workspace/typescript-config",
-      version: "0.0.0",
-      private: true,
-      license: "MIT",
-    },
-    null,
-    2,
-  );
-  files.push({
-    filename: "packages/typescript-config/package.json",
-    language: "json",
-    content: tsConfigPackageJson,
-  });
-
-  const tsConfigBase = JSON.stringify(
-    {
-      $schema: "https://json.schemastore.org/tsconfig",
-      display: "Default",
-      compilerOptions: {
-        declaration: true,
-        declarationMap: true,
-        esModuleInterop: true,
-        incremental: false,
-        isolatedModules: true,
-        lib: ["es2022", "DOM", "DOM.Iterable"],
-        module: "NodeNext",
-        moduleDetection: "force",
-        moduleResolution: "NodeNext",
-        noUncheckedIndexedAccess: true,
-        resolveJsonModule: true,
-        skipLibCheck: true,
-        strict: true,
-        target: "ES2022",
-      },
-    },
-    null,
-    2,
-  );
-  files.push({
-    filename: "packages/typescript-config/base.json",
-    language: "json",
-    content: tsConfigBase,
-  });
+  // 2. Generate Shared Package: packages/typescript-config (@workspace/typescript-config)
+  files.push(...generateTypescriptConfigPackage());
 
   // 3. Generate Shared Package: packages/ui (@workspace/ui - Shadcn UI)
   const compiledUi = compileUiPackage();
@@ -204,6 +85,16 @@ dist
   compiledTypes.forEach((f) => {
     files.push({
       filename: `packages/types/${f.filename}`,
+      language: f.language,
+      content: f.content,
+    });
+  });
+
+  // 4.7 Generate Shared Package: packages/kafka (@workspace/kafka)
+  const compiledKafka = compileKafkaNodes(nodes, edges);
+  compiledKafka.files.forEach((f) => {
+    files.push({
+      filename: `packages/kafka/${f.filename}`,
       language: f.language,
       content: f.content,
     });
@@ -301,6 +192,7 @@ dist
     { path: "packages/db" },
     { path: "packages/logger" },
     { path: "packages/types" },
+    ...(compiledKafka.files.length > 0 ? [{ path: "packages/kafka" }] : []),
     ...servicesInfo.map((s) => ({ path: `apps/${s.folderName}` })),
     ...webClientsInfo.map((w) => ({ path: `apps/${w.folderName}` })),
   ];
@@ -319,57 +211,17 @@ dist
   });
 
   // 8. Generate Root README.md
-  const readmeContent = `# ${projectName} Workspace
-
-Generated Turborepo + pnpm monorepo architecture containing ${serviceNodes.length} backend service(s), ${webClientNodes.length} web client page(s), and ${entityNodes.length} database entity table(s).
-
-## Workspace Structure
-
-- **Shared TS Config**: \`packages/typescript-config\` (\`@workspace/typescript-config\`)
-- **Shared Types & Schemas**: \`packages/types\` (\`@workspace/types\`)
-- **Shared UI Package (Shadcn UI)**: \`packages/ui\` (\`@workspace/ui\`)
-- **Database Package**: \`packages/db\` (\`@workspace/db\`)
-- **Logger Package**: \`packages/logger\` (\`@workspace/logger\`)
-${servicesInfo.map((s) => `- **${s.name}**: \`apps/${s.folderName}\``).join("\n")}
-${webClientsInfo.map((w) => `- **${w.name} (Next.js App)**: \`apps/${w.folderName}\``).join("\n")}
-
-## Shared Types & API Contracts
-
-All API request/response contracts, route params, and event schemas are stored in \`packages/types\` (\`@workspace/types\`).
-Microservices and frontend applications import shared types directly:
-
-\`\`\`typescript
-import { GetUsersResponse, PostCreateUserBody, postCreateUserBodySchema } from "@workspace/types";
-\`\`\`
-
-## Getting Started
-
-1. **Install dependencies**:
-   \`\`\`bash
-   pnpm install
-   \`\`\`
-
-2. **Run all microservices and web client in parallel**:
-   \`\`\`bash
-   pnpm dev
-   \`\`\`
-
-3. **Build all apps and packages**:
-   \`\`\`bash
-   pnpm build
-   \`\`\`
-
-4. **Database Schema Management**:
-   \`\`\`bash
-   cd packages/db
-   pnpm push
-   \`\`\`
-`;
-  files.push({
-    filename: "README.md",
-    language: "markdown",
-    content: readmeContent,
-  });
+  files.push(
+    generateRootReadme(
+      projectName,
+      serviceNodes.length,
+      webClientNodes.length,
+      entityNodes.length,
+      servicesInfo,
+      webClientsInfo,
+      compiledKafka.files.length > 0,
+    ),
+  );
 
   return {
     projectName,

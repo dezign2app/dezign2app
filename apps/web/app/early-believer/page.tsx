@@ -41,10 +41,11 @@ export default function EarlyBelieverPage() {
 
           <p className="text-gray-600 text-base md:text-lg leading-relaxed">
             By joining as an Early Believer, you provide crucial early support
-            to our mission of automating the entire software development lifecycle — combining
-            system architecture design, code generation, automated testing, CI/CD pipelines,
-            cloud infrastructure, real-time monitoring & maintenance into one platform. In return,
-            we lock in permanent, lifetime discount privileges for your entire workspace.
+            to our mission of automating the entire software development
+            lifecycle — combining system architecture design, code generation,
+            automated testing, CI/CD pipelines, cloud infrastructure, real-time
+            monitoring & maintenance into one platform. In return, we lock in
+            permanent, lifetime discount privileges for your entire workspace.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
@@ -107,7 +108,8 @@ export default function EarlyBelieverPage() {
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    <strong>1 Year (Annual)</strong> subscription included per seat{" "}
+                    <strong>1 Year (Annual)</strong> subscription included per
+                    seat{" "}
                     <span className="font-normal text-gray-500">
                       (AI features may require plan upgrades in the future)
                     </span>
@@ -116,12 +118,15 @@ export default function EarlyBelieverPage() {
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    <strong>10% OFF forever</strong> on all future product renewals & team seats
+                    <strong>10% OFF forever</strong> on all future product
+                    renewals & team seats
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
-                  <span>Full access to System Design suite & Beta platform tools</span>
+                  <span>
+                    Full access to System Design suite & Beta platform tools
+                  </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
@@ -184,16 +189,21 @@ export default function EarlyBelieverPage() {
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    <strong>5% OFF forever</strong> on all future product renewals & team seats
+                    <strong>5% OFF forever</strong> on all future product
+                    renewals & team seats
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
-                  <span>Full access to System Design suite & Beta platform tools</span>
+                  <span>
+                    Full access to System Design suite & Beta platform tools
+                  </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
-                  <span>Standard early supporter status & priority support</span>
+                  <span>
+                    Standard early supporter status & priority support
+                  </span>
                 </li>
               </ul>
             </div>
@@ -218,7 +228,8 @@ export default function EarlyBelieverPage() {
               How the Early Believer Plan Works
             </h2>
             <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
-              Here is everything you need to know about purchasing seats, how total discount caps work, and future AI upgrades.
+              Here is everything you need to know about purchasing seats, how
+              total discount caps work, and future AI upgrades.
             </p>
           </div>
 
@@ -231,7 +242,11 @@ export default function EarlyBelieverPage() {
                 Seat Allocation & Rollover
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                Each seat carries its own discount cap allowance ($100k for 10% tier / $50k for 5% tier). If the discount savings allowance on seat #1 is exhausted over the years, your workspace automatically rolls over to avail the discount with seat #2, seat #3, and beyond!
+                Each seat carries its own discount cap allowance ($100k for 10%
+                tier / $50k for 5% tier). If the discount savings allowance on
+                seat #1 is exhausted over the years, your workspace
+                automatically rolls over to avail the discount with seat #2,
+                seat #3, and beyond!
               </p>
             </div>
 
@@ -243,7 +258,13 @@ export default function EarlyBelieverPage() {
                 End-to-End Platform Automation
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                dezign2app delivers unified automation combining <strong>system architecture design, code generation, automated testing, CI/CD pipelines, cloud infrastructure, real-time monitoring & maintenance</strong> into one platform.
+                dezign2app delivers unified automation combining{" "}
+                <strong>
+                  system architecture design, code generation, automated
+                  testing, CI/CD pipelines, cloud infrastructure, real-time
+                  monitoring & maintenance
+                </strong>{" "}
+                into one platform.
               </p>
             </div>
 
@@ -255,10 +276,11 @@ export default function EarlyBelieverPage() {
                 Beta Status & Future AI Upgrades
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                dezign2app is currently in Beta with core platform features enabled.
-                As we roll out advanced AI capabilities in the future, accessing those advanced AI features
-                may require upgrading your plan. Your locked-in 5% or 10% lifetime discount will automatically apply
-                to all future plan upgrades & add-ons!
+                dezign2app is currently in Beta with core platform features
+                enabled. As we roll out advanced AI capabilities in the future,
+                accessing those advanced AI features may require upgrading your
+                plan. Your locked-in 5% or 10% lifetime discount will
+                automatically apply to all future plan upgrades & add-ons!
               </p>
             </div>
           </div>
@@ -275,8 +297,8 @@ export default function EarlyBelieverPage() {
               Frequently Asked Questions
             </h2>
             <p className="text-sm text-gray-600 max-w-xl">
-              Everything you need to know about the Early Believer backing program,
-              lifetime discounts, caps, and billing.
+              Everything you need to know about the Early Believer backing
+              program, lifetime discounts, caps, and billing.
             </p>
           </div>
 

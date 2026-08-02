@@ -192,8 +192,9 @@ export const Intro = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 text-sm md:text-base text-[#5B6472] leading-relaxed max-w-2xl font-normal mt-5"
         >
-          Automating the entire software development lifecycle — combining system architecture design,
-          code generation, automated testing, CI/CD pipelines, cloud infrastructure, real-time monitoring & maintenance
+          Automating the entire software development lifecycle — combining
+          system architecture design, code generation, automated testing, CI/CD
+          pipelines, cloud infrastructure, real-time monitoring & maintenance
           into one unified platform.
         </motion.p>
 

@@ -84,36 +84,42 @@ const Pricing = ({
           return;
         }
 
-        const mappedPlans: Plan[] = items.map((item: CreemProductItem) => ({
-          id: item.id,
-          name: item.name,
-          desc: item.description || "Simple description for this plan.",
-          price: item.price ? item.price / 100 : 0,
-          billingPeriod: normalizeBillingPeriod(item),
-          featured: item.metadata?.featured === "true",
-          features: item.metadata?.features
-            ? item.metadata.features.split(",")
-            : [],
-        }));
+        const mappedPlans: Plan[] = items.map((item: CreemProductItem) => {
+          let featuresList: string[] = item.metadata?.features
+            ? item.metadata.features
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
 
-        const hasAnnual = mappedPlans.some(
-          (p) => p.billingPeriod === "every-year",
-        );
-        if (!hasAnnual) {
-          const generatedAnnualPlans: Plan[] = mappedPlans.map((plan) => ({
-            ...plan,
-            id: `${plan.id}-annual`,
-            name: plan.name.includes("Annual")
-              ? plan.name
-              : `${plan.name} Annual`,
-            price: plan.price ? Math.round(plan.price * 10) : 0,
-            billingPeriod: "every-year",
-            features: plan.features.includes("2 Months Free")
-              ? plan.features
-              : [...plan.features, "2 Months Free"],
-          }));
-          mappedPlans.push(...generatedAnnualPlans);
-        }
+          if (featuresList.length === 0) {
+            featuresList = [
+              "Full-Stack Monorepo Code Generation",
+              "Visual Architecture Graph to Code Compiler",
+              "Data Flow Simulation (Load test system designs before shipping)",
+              "Priority Implementation of Your Custom Stack & Products",
+            ];
+          }
+
+          const rawDesc = item.description || "";
+          const isLongOrBulleted =
+            rawDesc.includes("\n") ||
+            rawDesc.includes("Features") ||
+            rawDesc.length > 80;
+          const cleanDesc = isLongOrBulleted
+            ? "Everything you need to compile system architecture into production code."
+            : rawDesc || "Everything you need to compile system architecture into production code.";
+
+          return {
+            id: item.id,
+            name: item.name,
+            desc: cleanDesc,
+            price: item.price ? item.price / 100 : 0,
+            billingPeriod: normalizeBillingPeriod(item),
+            featured: item.metadata?.featured === "true",
+            features: featuresList,
+          };
+        });
 
         setPlans(mappedPlans.sort((a, b) => (a.price || 0) - (b.price || 0)));
       } catch (error) {

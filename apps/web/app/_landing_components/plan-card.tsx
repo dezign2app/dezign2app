@@ -111,11 +111,13 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
 
       {/* CTA */}
       <SubscribeButton productId={id} />
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3 mt-6 border-t border-gray-100 pt-5">
         {features.map((f) => (
-          <li key={f} className="flex items-center gap-2 text-xs">
-            <CheckCircle />
-            {f}
+          <li key={f} className="flex items-start text-start gap-2.5 text-xs text-gray-700 font-medium leading-snug">
+            <div className="mt-0.5">
+              <CheckCircle />
+            </div>
+            <span>{f}</span>
           </li>
         ))}
       </ul>

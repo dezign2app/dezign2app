@@ -24,7 +24,6 @@ import {
 import {
   simulateEndpoint,
   simulateTestCase,
-  SimulationTraceEntry,
 } from "@/lib/simulation/runtime";
 
 import { EventTestingHeader } from "./event-testing/EventTestingHeader";
@@ -39,6 +38,19 @@ export interface EventTestingConfigProps {
   targetNodeId: string;
   endpointId: string;
   initialTab?: "trigger" | "test-cases";
+}
+
+function isJSONValue(val: unknown): val is JSONValue {
+  if (val === null || typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+    return true;
+  }
+  if (Array.isArray(val)) {
+    return val.every(isJSONValue);
+  }
+  if (typeof val === "object" && val !== null) {
+    return Object.values(val).every(isJSONValue);
+  }
+  return false;
 }
 
 export const EventTestingConfig: React.FC<EventTestingConfigProps> = ({
@@ -195,7 +207,10 @@ export const EventTestingConfig: React.FC<EventTestingConfigProps> = ({
     let parsedBody = body;
     try {
       if (typeof body === "string" && body.trim().startsWith("{")) {
-        parsedBody = JSON.parse(body) as JSONValue;
+        const jsonResult: unknown = JSON.parse(body);
+        if (isJSONValue(jsonResult)) {
+          parsedBody = jsonResult;
+        }
       }
     } catch (e) {
       console.warn("Failed to parse body as JSON", e);
@@ -289,11 +304,14 @@ export const EventTestingConfig: React.FC<EventTestingConfigProps> = ({
     }
 
     let expectedBody: JSONValue | undefined;
-    if (endpoint.simulationOutput !== undefined) {
+    if (isJSONValue(endpoint.simulationOutput)) {
       expectedBody = endpoint.simulationOutput;
     } else if (endpoint.responseBody?.rawJson) {
       try {
-        expectedBody = JSON.parse(endpoint.responseBody.rawJson) as JSONValue;
+        const parsed: unknown = JSON.parse(endpoint.responseBody.rawJson);
+        if (isJSONValue(parsed)) {
+          expectedBody = parsed;
+        }
       } catch {
         expectedBody = undefined;
       }
@@ -348,7 +366,7 @@ export const EventTestingConfig: React.FC<EventTestingConfigProps> = ({
   if (!event || !endpoint) return null;
 
   const eventName = event.name;
-  const eventEvent = typeof event.event === "string" ? event.event : undefined;
+  const eventEvent = "event" in event && typeof event.event === "string" ? event.event : undefined;
 
   return (
     <div className="flex flex-col gap-6 mt-6 pb-12 font-sans">

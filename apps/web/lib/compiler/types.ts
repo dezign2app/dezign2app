@@ -18,6 +18,10 @@ export interface CompiledKafkaResult {
   files: CompiledFile[];
 }
 
+export interface CompiledRedisResult {
+  files: CompiledFile[];
+}
+
 export interface CompiledWebClientResult {
   webClientId: string;
   webClientName: string;

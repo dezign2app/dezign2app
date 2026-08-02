@@ -8,14 +8,26 @@ export function generateRootReadme(
   services: { id: string; name: string; folderName: string }[],
   webClients: { id: string; name: string; folderName: string }[],
   hasKafka: boolean = false,
+  hasRedis: boolean = false,
 ): CompiledFile {
   const kafkaSection = hasKafka
     ? `- **Kafka Broker Package**: \`packages/kafka\` (\`@workspace/kafka\`)\n`
     : "";
 
+  const redisSection = hasRedis
+    ? `- **Redis Package**: \`packages/redis\` (\`@workspace/redis\`)\n`
+    : "";
+
   const kafkaUsage = hasKafka
     ? `\n### Kafka Event Broker\n\nThe workspace includes \`@workspace/kafka\` for messaging and event streaming.\nTo launch local Kafka & Zookeeper / KRaft services:\n\`\`\`bash
 cd packages/kafka
+docker compose up -d
+\`\`\`\n`
+    : "";
+
+  const redisUsage = hasRedis
+    ? `\n### Redis Cache & Pub/Sub\n\nThe workspace includes \`@workspace/redis\` for caching, pub/sub, and event streams.\nTo launch local Redis service:\n\`\`\`bash
+cd packages/redis
 docker compose up -d
 \`\`\`\n`
     : "";
@@ -31,7 +43,7 @@ Generated Turborepo + pnpm monorepo architecture containing ${serviceNodesCount}
 - **Shared UI Package (Shadcn UI)**: \`packages/ui\` (\`@workspace/ui\`)
 - **Database Package**: \`packages/db\` (\`@workspace/db\`)
 - **Logger Package**: \`packages/logger\` (\`@workspace/logger\`)
-${kafkaSection}${services.map((s) => `- **${s.name}**: \`apps/${s.folderName}\``).join("\n")}
+${kafkaSection}${redisSection}${services.map((s) => `- **${s.name}**: \`apps/${s.folderName}\``).join("\n")}
 ${webClients.map((w) => `- **${w.name} (Next.js App)**: \`apps/${w.folderName}\``).join("\n")}
 
 ## Shared Types & API Contracts
@@ -42,7 +54,7 @@ Microservices and frontend applications import shared types directly:
 \`\`\`typescript
 import { GetUsersResponse, PostCreateUserBody, postCreateUserBodySchema } from "@workspace/types";
 \`\`\`
-${kafkaUsage}
+${kafkaUsage}${redisUsage}
 ## Getting Started
 
 1. **Install dependencies**:

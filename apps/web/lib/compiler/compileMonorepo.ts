@@ -5,6 +5,7 @@ import { compileServiceNode } from "./compileServiceNode";
 import { compileLangGraphNode } from "./compileLangGraphNode";
 import { compileDatabaseNodes } from "./compileDatabaseNodes";
 import { compileKafkaNodes } from "./compileKafkaNodes";
+import { compileRedisNodes } from "./compileRedisNodes";
 import { compileWebClientNodes } from "./compileWebClientNode";
 import { compileUiPackage } from "./compileUiPackage";
 import { generateLoggerPackage } from "./generators/loggerGenerator";
@@ -95,6 +96,16 @@ export function compileMonorepo(
   compiledKafka.files.forEach((f) => {
     files.push({
       filename: `packages/kafka/${f.filename}`,
+      language: f.language,
+      content: f.content,
+    });
+  });
+
+  // 4.8 Generate Shared Package: packages/redis (@workspace/redis)
+  const compiledRedis = compileRedisNodes(nodes, edges);
+  compiledRedis.files.forEach((f) => {
+    files.push({
+      filename: `packages/redis/${f.filename}`,
       language: f.language,
       content: f.content,
     });
@@ -193,6 +204,7 @@ export function compileMonorepo(
     { path: "packages/logger" },
     { path: "packages/types" },
     ...(compiledKafka.files.length > 0 ? [{ path: "packages/kafka" }] : []),
+    ...(compiledRedis.files.length > 0 ? [{ path: "packages/redis" }] : []),
     ...servicesInfo.map((s) => ({ path: `apps/${s.folderName}` })),
     ...webClientsInfo.map((w) => ({ path: `apps/${w.folderName}` })),
   ];
@@ -220,6 +232,7 @@ export function compileMonorepo(
       servicesInfo,
       webClientsInfo,
       compiledKafka.files.length > 0,
+      compiledRedis.files.length > 0,
     ),
   );
 

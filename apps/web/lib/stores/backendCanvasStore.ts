@@ -432,6 +432,26 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         const eventId = edge.targetHandle.replace("consumedEvents-in-", "");
         get().updateEvent(eventId, { brokerNodeId: "" });
       }
+
+      if (edge.sourceHandle?.startsWith("endpoint-out-")) {
+        const endpointId = edge.sourceHandle.replace("endpoint-out-", "");
+        const targetNode = get().nodes.find((n) => n?.id === edge.target);
+        if (
+          targetNode &&
+          (targetNode.type === "db_ref" || targetNode.type === "database")
+        ) {
+          const endpoint = get().endpoints.find((e) => e.id === endpointId);
+          if (endpoint && endpoint.databaseNodeIds?.includes(edge.target)) {
+            const newDbIds = endpoint.databaseNodeIds.filter(
+              (id) => id !== edge.target,
+            );
+            get().updateEndpoint(endpointId, {
+              databaseNodeIds: newDbIds,
+              databaseNodeId: newDbIds[0] || "none",
+            });
+          }
+        }
+      }
     });
 
     set({
@@ -495,6 +515,12 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       resourceType,
     };
 
+    const next = addEdge(newEdge, get().edges);
+    set({
+      edges: next,
+      pendingEdgeUpserts: [...get().pendingEdgeUpserts, newEdge],
+    });
+
     // Update targetNodeId on service events if connected via messaging handles
     if (isPublishedConnect && connection.sourceHandle) {
       const eventId = connection.sourceHandle.replace(
@@ -511,6 +537,32 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
       get().updateEvent(eventId, {
         brokerNodeId: connection.source ?? undefined,
       });
+    }
+
+    const isEndpointConnect = connection.sourceHandle?.startsWith("endpoint-out-");
+    if (isEndpointConnect && connection.sourceHandle && connection.target) {
+      const endpointId = connection.sourceHandle.replace("endpoint-out-", "");
+      const targetNode = get().nodes.find((n) => n.id === connection.target);
+      if (
+        targetNode &&
+        (targetNode.type === "db_ref" || targetNode.type === "database")
+      ) {
+        const endpoint = get().endpoints.find((e) => e.id === endpointId);
+        if (endpoint) {
+          const currentDbIds =
+            endpoint.databaseNodeIds ||
+            (endpoint.databaseNodeId && endpoint.databaseNodeId !== "none"
+              ? [endpoint.databaseNodeId]
+              : []);
+          if (!currentDbIds.includes(connection.target)) {
+            const newDbIds = [...currentDbIds, connection.target];
+            get().updateEndpoint(endpointId, {
+              databaseNodeIds: newDbIds,
+              databaseNodeId: newDbIds[0] || "none",
+            });
+          }
+        }
+      }
     }
 
     // Update source node's column to isForeignKey: true if it's a foreign key edge
@@ -530,12 +582,6 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         }
       }
     }
-
-    const next = addEdge(newEdge, get().edges);
-    set({
-      edges: next,
-      pendingEdgeUpserts: [...get().pendingEdgeUpserts, newEdge],
-    });
   },
 
   addNode: (nodeWithoutIndex) => {
@@ -832,54 +878,70 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
         }
       }
 
-      // Sync database table reference edges for this endpoint
-      const targetDbNodeIds = new Set<string>();
-      if (updated.databaseNodeIds) {
-        updated.databaseNodeIds.forEach(
-          (dbId) => dbId && targetDbNodeIds.add(dbId),
+      // Sync database table reference edges for this endpoint ONLY IF databaseNodeIds or databaseNodeId is in changes
+      const hasDbChanges =
+        "databaseNodeIds" in changes || "databaseNodeId" in changes;
+      if (hasDbChanges) {
+        const targetDbNodeIds = new Set<string>();
+        if (updated.databaseNodeIds) {
+          updated.databaseNodeIds.forEach(
+            (dbId) => dbId && targetDbNodeIds.add(dbId),
+          );
+        } else if (updated.databaseNodeId && updated.databaseNodeId !== "none") {
+          targetDbNodeIds.add(updated.databaseNodeId);
+        }
+
+        const epSourceHandle = `endpoint-out-${updated.id}`;
+        const existingDbEdges = nextEdges.filter(
+          (e) =>
+            e && e.source === updated.nodeId && e.sourceHandle === epSourceHandle,
         );
-      } else if (updated.databaseNodeId && updated.databaseNodeId !== "none") {
-        targetDbNodeIds.add(updated.databaseNodeId);
+
+        // 1. Remove edges ONLY to DB nodes no longer in targetDbNodeIds
+        existingDbEdges.forEach((edge) => {
+          if (edge) {
+            const targetNode = get().nodes.find((n) => n?.id === edge.target);
+            const isDbNode =
+              targetNode &&
+              (targetNode.type === "db_ref" || targetNode.type === "database");
+            if (isDbNode && !targetDbNodeIds.has(edge.target)) {
+              nextEdges = nextEdges.filter((e) => e && e.id !== edge.id);
+              removedEdgeIds.push(edge.id);
+            }
+          }
+        });
+
+        // 2. Add missing edges for DB nodes in targetDbNodeIds
+        targetDbNodeIds.forEach((targetDbId) => {
+          const hasEdge = nextEdges.some(
+            (e) =>
+              e &&
+              e.source === updated.nodeId &&
+              e.sourceHandle === epSourceHandle &&
+              e.target === targetDbId,
+          );
+          const targetNode = get().nodes.find((n) => n?.id === targetDbId);
+          if (
+            !hasEdge &&
+            targetNode &&
+            (targetNode.type === "db_ref" || targetNode.type === "database")
+          ) {
+            const lastEdgeIndex = getLastIndex(nextEdges);
+            const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
+            const newEdge: BackendEdge = {
+              id: `edge-${Date.now()}-${updated.id}-${targetDbId}`,
+              source: updated.nodeId,
+              target: targetDbId,
+              type: "connection",
+              sourceHandle: epSourceHandle,
+              targetHandle: "database-target",
+              fractionalIndex,
+            };
+            nextEdges.push(newEdge);
+            addedEdges.push(newEdge);
+          }
+        });
       }
-
-      const epSourceHandle = `endpoint-out-${updated.id}`;
-      const existingDbEdges = nextEdges.filter(
-        (e) =>
-          e && e.source === updated.nodeId && e.sourceHandle === epSourceHandle,
-      );
-
-      // 1. Remove edges to DB nodes no longer in targetDbNodeIds
-      existingDbEdges.forEach((edge) => {
-        if (edge && !targetDbNodeIds.has(edge.target)) {
-          nextEdges = nextEdges.filter((e) => e && e.id !== edge.id);
-          removedEdgeIds.push(edge.id);
-        }
-      });
-
-      // 2. Add missing edges for DB nodes in targetDbNodeIds
-      targetDbNodeIds.forEach((targetDbId) => {
-        const hasEdge = existingDbEdges.some((e) => e.target === targetDbId);
-        const targetNode = get().nodes.find((n) => n?.id === targetDbId);
-        if (
-          !hasEdge &&
-          targetNode &&
-          (targetNode.type === "db_ref" || targetNode.type === "database")
-        ) {
-          const lastEdgeIndex = getLastIndex(nextEdges);
-          const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
-          const newEdge: BackendEdge = {
-            id: `edge-${Date.now()}-${updated.id}-${targetDbId}`,
-            source: updated.nodeId,
-            target: targetDbId,
-            type: "connection",
-            sourceHandle: epSourceHandle,
-            targetHandle: "database-target",
-            fractionalIndex,
-          };
-          nextEdges.push(newEdge);
-          addedEdges.push(newEdge);
-        }
-      });
 
       set({
         endpoints: next,

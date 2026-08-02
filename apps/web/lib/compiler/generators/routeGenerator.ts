@@ -156,35 +156,35 @@ export async function ${handlerName}(
 
       routeHandlerCode += `    // =========================================================================\n`;
       routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
-      routeHandlerCode += `    // Implement endpoint domain logic for: ${ep.type || "GET"} ${path}\n`;
-      routeHandlerCode += `    // Description: ${summary}\n`;
-      routeHandlerCode += `    //\n`;
-      routeHandlerCode += `    // 📥 CONNECTED INCOMING NODE(S):\n`;
+      if (ep.summary && !ep.summary.startsWith("Handler for ")) {
+        routeHandlerCode += `    // Goal: ${ep.summary.trim()}\n`;
+      }
+
       if (trace.incoming.length > 0) {
+        routeHandlerCode += `    //\n    // 📥 INBOUND TRIGGER / CALLER:\n`;
         trace.incoming.forEach((inc) => {
-          routeHandlerCode += `    // - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          routeHandlerCode += `    // - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
           if (inc.dataContext)
             routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
         });
-      } else {
-        routeHandlerCode += `    // - Direct API request (Method: ${ep.type || "GET"}, Path: ${path})\n`;
       }
-      routeHandlerCode += `    //\n`;
-      routeHandlerCode += `    // 📤 CONNECTED OUTGOING NODE(S):\n`;
+
       if (trace.outgoing.length > 0) {
+        routeHandlerCode += `    //\n    // 🔗 RESOURCE DEPENDENCIES:\n`;
         trace.outgoing.forEach((out) => {
-          routeHandlerCode += `    // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          routeHandlerCode += `    // - ${out.nodeType}: "${out.nodeName}"\n`;
           if (out.dataContext)
-            routeHandlerCode += `    //   Data Context: ${out.dataContext}\n`;
+            routeHandlerCode += `    //   ${out.dataContext}\n`;
         });
-      } else {
-        routeHandlerCode += `    // - Returns HTTP ${ep.type === "POST" ? 201 : 200} JSON response\n`;
       }
 
       if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
-        routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
-        for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
-          if (ops && ops.length > 0) {
+        const activeOps = Object.entries(ep.crudOperations).filter(
+          ([_, ops]) => ops && ops.length > 0,
+        );
+        if (activeOps.length > 0) {
+          routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
+          for (const [tableId, ops] of activeOps) {
             const tableNode = allNodes.find((n) => n.id === tableId);
             const tableName =
               tableNode?.data?.label ||

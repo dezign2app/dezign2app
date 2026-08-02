@@ -270,35 +270,35 @@ ${pydanticModelCode}@router.${method}("${path}", status_code=${statusCode}, tags
       routeCode += `    ${summary}\n`;
       routeCode += `    \n`;
       routeCode += `    🤖 AI CODING AGENT DIRECTIVE:\n`;
-      routeCode += `    Implement domain logic for: ${ep.type || "GET"} ${path}\n`;
-      routeCode += `    Description: ${summary}\n`;
-      routeCode += `    \n`;
-      routeCode += `    📥 CONNECTED INCOMING NODE(S):\n`;
+      if (ep.summary && !ep.summary.startsWith("Handler for ")) {
+        routeCode += `    Goal: ${ep.summary.trim()}\n`;
+      }
+
       if (trace.incoming.length > 0) {
+        routeCode += `    \n    📥 INBOUND TRIGGER / CALLER:\n`;
         trace.incoming.forEach((inc) => {
-          routeCode += `    - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          routeCode += `    - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
           if (inc.dataContext)
             routeCode += `      Data Context: ${inc.dataContext}\n`;
         });
-      } else {
-        routeCode += `    - Direct HTTP Client\n`;
       }
-      routeCode += `    \n`;
-      routeCode += `    📤 CONNECTED OUTGOING NODE(S):\n`;
+
       if (trace.outgoing.length > 0) {
+        routeCode += `    \n    🔗 RESOURCE DEPENDENCIES:\n`;
         trace.outgoing.forEach((out) => {
-          routeCode += `    - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          routeCode += `    - ${out.nodeType}: "${out.nodeName}"\n`;
           if (out.dataContext)
-            routeCode += `      Data Context: ${out.dataContext}\n`;
+            routeCode += `      ${out.dataContext}\n`;
         });
-      } else {
-        routeCode += `    - Returns HTTP response\n`;
       }
 
       if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
-        routeCode += `    \n    🗄️ DATABASE OPERATIONS REQUIRED:\n`;
-        for (const [tableId, ops] of Object.entries(ep.crudOperations)) {
-          if (ops && ops.length > 0) {
+        const activeOps = Object.entries(ep.crudOperations).filter(
+          ([_, ops]) => ops && ops.length > 0,
+        );
+        if (activeOps.length > 0) {
+          routeCode += `    \n    🗄️ DATABASE OPERATIONS REQUIRED:\n`;
+          for (const [tableId, ops] of activeOps) {
             const tableNode = allNodes.find((n) => n.id === tableId);
             const tableName =
               tableNode?.data?.label ||
@@ -419,27 +419,21 @@ async def ${handlerName}(raw_payload: Dict[str, Any]) -> None:
     Description: ${ev.description || "Processes incoming event payload"}
 
     🤖 AI CODING AGENT DIRECTIVE:
-    Process consumed event: "${ev.name}"
-    Handler Logic: ${ev.handlerLogic || "Process event payload"}
-
-    📥 CONNECTED INCOMING EVENT NODE(S):
+    Action: Process Event "${ev.name}"
+    Purpose: ${ev.description || "Processes incoming event payload"}
 `;
       if (trace.incoming.length > 0) {
+        consumerCode += `\n    📥 EVENT SOURCE:\n`;
         trace.incoming.forEach((inc) => {
-          consumerCode += `    - Node: ${inc.nodeName} [${inc.nodeType}] (${inc.detail})\n`;
+          consumerCode += `    - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
         });
-      } else {
-        consumerCode += `    - Topic/Channel: ${ev.name}\n`;
       }
-      consumerCode += `
-    📤 CONNECTED OUTGOING IMPACT NODE(S):
-`;
+
       if (trace.outgoing.length > 0) {
+        consumerCode += `\n    🔗 RESOURCE DEPENDENCIES / SIDE EFFECTS:\n`;
         trace.outgoing.forEach((out) => {
-          consumerCode += `    - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          consumerCode += `    - ${out.nodeType}: "${out.nodeName}" (${out.detail})\n`;
         });
-      } else {
-        consumerCode += `    - Domain side-effects for ${ev.name}\n`;
       }
       consumerCode += `    """
     try:
@@ -516,16 +510,13 @@ async def ${publishName}(payload: Dict[str, Any]) -> None:
     Description: ${ev.description || "Publishes event to message broker"}
 
     🤖 AI CODING AGENT DIRECTIVE:
-    Publish event: "${ev.name}"
-
-    📤 DESTINATION BROKER/CONSUMERS:
+    Action: Publish Event "${ev.name}"
 `;
       if (trace.outgoing.length > 0) {
+        producerCode += `\n    📤 TARGET DESTINATIONS:\n`;
         trace.outgoing.forEach((out) => {
-          producerCode += `    - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          producerCode += `    - ${out.nodeType}: "${out.nodeName}" (${out.detail})\n`;
         });
-      } else {
-        producerCode += `    - Message Broker Channel: ${ev.name}\n`;
       }
       producerCode += `    """
     try:

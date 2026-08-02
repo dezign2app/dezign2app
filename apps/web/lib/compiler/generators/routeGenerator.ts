@@ -154,6 +154,7 @@ export async function ${handlerName}(
         routeHandlerCode += `    const query = queryParsed.data;\n\n`;
       }
 
+      routeHandlerCode += `    // --- EDITABLE FUNCTION BODY START ---\n`;
       routeHandlerCode += `    // =========================================================================\n`;
       routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
       if (ep.summary && !ep.summary.startsWith("Handler for ")) {
@@ -229,7 +230,14 @@ export async function ${handlerName}(
           routeHandlerCode += `    ${line}\n`;
         });
         routeHandlerCode += `\n`;
+      } else {
+        routeHandlerCode += `\n`;
+        routeHandlerCode += `    // 💡 Write custom business logic below:\n`;
+        routeHandlerCode += `    \n`;
+        routeHandlerCode += `    \n`;
+        routeHandlerCode += `    \n`;
       }
+      routeHandlerCode += `    // --- EDITABLE FUNCTION BODY END ---\n`;
 
       const statusCode = ep.type === "POST" ? 201 : 200;
       routeHandlerCode += `\n    logger.debug("Successfully generated response for ${path}");\n`;

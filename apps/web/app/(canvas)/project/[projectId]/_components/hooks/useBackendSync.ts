@@ -259,11 +259,6 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     }
 
     const timer = setTimeout(() => {
-      console.log(
-        "BackendCanvas sync loop: pendingNodeUpserts",
-        pendingNodeUpserts,
-      );
-
       const pid = projectId as Id<"projects">;
 
       // Capture the exact references being synced so we can clear only them

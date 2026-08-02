@@ -155,6 +155,10 @@ export async function ${handlerName}(
       }
 
       routeHandlerCode += `    // --- EDITABLE FUNCTION BODY START ---\n`;
+
+      const promptText = (ep.businessLogic || ep.prompt || "").trim();
+      const codeBlock = (ep.body || ep.code || "").trim();
+
       routeHandlerCode += `    // =========================================================================\n`;
       routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
       if (ep.summary && !ep.summary.startsWith("Handler for ")) {
@@ -206,10 +210,6 @@ export async function ${handlerName}(
 
       routeHandlerCode += `    // =========================================================================\n`;
 
-      const promptText = (ep.businessLogic || ep.prompt || "").trim();
-      const codeBlock = (ep.body || ep.code || "").trim();
-
-      // Section 1: Natural Language / Instruction (commented out steps)
       if (promptText) {
         routeHandlerCode += `    // --- Natural Language Instructions ---\n`;
         promptText.split("\n").forEach((line: string, idx: number) => {
@@ -221,17 +221,15 @@ export async function ${handlerName}(
         routeHandlerCode += `    // STEP 1: Validate request payload and params\n`;
         routeHandlerCode += `    // STEP 2: Execute database query/mutation\n`;
         routeHandlerCode += `    // STEP 3: Return structured JSON response\n`;
+        routeHandlerCode += `\n`;
       }
 
-      // Section 2: Code Block / Actual Code (formatted, UNCOMMENTED code)
       if (codeBlock) {
-        routeHandlerCode += `    // --- Business Logic Code Execution ---\n`;
         codeBlock.split("\n").forEach((line: string) => {
           routeHandlerCode += `    ${line}\n`;
         });
         routeHandlerCode += `\n`;
       } else {
-        routeHandlerCode += `\n`;
         routeHandlerCode += `    // 💡 Write custom business logic below:\n`;
         routeHandlerCode += `    \n`;
         routeHandlerCode += `    \n`;

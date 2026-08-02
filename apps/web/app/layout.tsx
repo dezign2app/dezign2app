@@ -23,9 +23,99 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dezign2app.com";
+
 export const metadata: Metadata = {
-  title: "Dezign 2 App",
-  description: "Project by subhash",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "Dezign 2 App | AI-Powered System Design & Software Engineering Platform",
+    template: "%s | Dezign 2 App",
+  },
+  description:
+    "System design as a programming language. Automate your entire software development lifecycle — turning PRDs, architecture topologies, and data schemas into full-stack code, microservices, load tests, and cloud deployments with AI.",
+  keywords: [
+    "system design as a programming language",
+    "AI software engineering",
+    "system design platform",
+    "architecture to code",
+    "full-stack code generator",
+    "monorepo compiler",
+    "kafka node compiler",
+    "redis node compiler",
+    "autonomous SDLC",
+    "dezign2app",
+    "dezign 2 app",
+  ],
+  authors: [{ name: "Dezign 2 App Team" }],
+  creator: "subhash",
+  publisher: "Dezign 2 App",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: baseUrl,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: baseUrl,
+    siteName: "Dezign 2 App",
+    title: "Dezign 2 App | Describe the system. Ship the product.",
+    description:
+      "Automating the entire software development lifecycle — combining system architecture design, code generation, automated testing, CI/CD pipelines, and cloud infrastructure into one unified AI platform.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dezign 2 App | System Design as the Programming Language",
+    description:
+      "Transform PRDs and architecture topologies into production-ready full-stack microservices, tests, and cloud infrastructure.",
+    creator: "@dezign2app",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${baseUrl}/#organization`,
+      name: "Dezign 2 App",
+      url: baseUrl,
+      logo: `${baseUrl}/favicon.ico`,
+      description: "AI-Powered Software Engineering & System Design Platform.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${baseUrl}/#website`,
+      url: baseUrl,
+      name: "Dezign 2 App",
+      description: "System Design as a Programming Language — AI-Powered Software Architecture & Monorepo Code Compilation.",
+      publisher: {
+        "@id": `${baseUrl}/#organization`,
+      },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "Dezign 2 App",
+      operatingSystem: "Web",
+      applicationCategory: "DeveloperApplication",
+      description:
+        "An AI platform that treats system design as a programming language, compiling specifications, topologies, and schemas into full-stack code, load tests, and cloud deployments.",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -39,6 +129,12 @@ export default function RootLayout({
       className={`${ubuntu.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

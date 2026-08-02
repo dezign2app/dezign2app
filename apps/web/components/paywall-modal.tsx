@@ -75,17 +75,20 @@ export const PaywallModal = ({ children }: { children: React.ReactNode }) => {
   const [hasDismissedInitialModal, setHasDismissedInitialModal] =
     useState(false);
 
-  // Default to premium-only if no route matched
-  const currentAccess =
-    Object.entries(ROUTE_CONFIG).find(([route]) =>
-      pathname.startsWith(route),
-    )?.[1] || "premium-only";
+  // Default access for route
+  const matchedRouteKey = Object.keys(ROUTE_CONFIG)
+    .sort((a, b) => b.length - a.length)
+    .find((route) =>
+      route === "/"
+        ? pathname === "/"
+        : pathname === route || pathname.startsWith(route + "/"),
+    );
 
-  useEffect(() => {
-    // Reset dismissal status on route change ONLY if we leave a readonly route
-    // Optional: maybe we don't want to reset it on every route change.
-    // Let's keep it simple: dismissal persists until full reload.
-  }, [pathname]);
+  const currentAccess = matchedRouteKey
+    ? ROUTE_CONFIG[matchedRouteKey]
+    : pathname === "/"
+      ? "free"
+      : "free"; // Public routes free by default unless in protected path
 
   useEffect(() => {
     // We must wait for Clerk to be fully loaded before making any redirection decisions.
@@ -161,43 +164,45 @@ export const PaywallModal = ({ children }: { children: React.ReactNode }) => {
     isSignedIn,
   ]);
 
-  if (!isClerkLoaded || subscriptionStatus === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#1f1f1f]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+  // Public/free pages render IMMEDIATELY without waiting for Clerk or Convex queries!
+  if (currentAccess !== "free" && pathname !== "/") {
+    if (!isClerkLoaded || subscriptionStatus === undefined) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-[#1f1f1f]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+      );
+    }
 
-  // Handle transient sync states by staying in loader
-  if (
-    isSignedIn &&
-    (subscriptionStatus.status === "unauthenticated" ||
-      subscriptionStatus.status === "user_not_found")
-  ) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#1f1f1f]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-        <p className="mt-4 text-gray-400">Synchronizing your session...</p>
-      </div>
-    );
-  }
+    // Handle transient sync states by staying in loader
+    if (
+      isSignedIn &&
+      (subscriptionStatus.status === "unauthenticated" ||
+        subscriptionStatus.status === "user_not_found")
+    ) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-[#1f1f1f]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <p className="mt-4 text-gray-400">Synchronizing your session...</p>
+        </div>
+      );
+    }
 
-  // Handle immediate redirect states for non-authenticated users
-  if (
-    (currentAccess === "premium-only" || currentAccess === "premium-limited") &&
-    pathname !== "/" &&
-    !isSignedIn && // Only redirect if Clerk also says they aren't signed in
-    (subscriptionStatus.status === "no_subscription" ||
-      subscriptionStatus.status === "user_not_found" ||
-      subscriptionStatus.status === "unauthenticated")
-  ) {
-    return null;
+    // Handle immediate redirect states for non-authenticated users
+    if (
+      (currentAccess === "premium-only" || currentAccess === "premium-limited") &&
+      !isSignedIn && // Only redirect if Clerk also says they aren't signed in
+      (subscriptionStatus.status === "no_subscription" ||
+        subscriptionStatus.status === "user_not_found" ||
+        subscriptionStatus.status === "unauthenticated")
+    ) {
+      return null;
+    }
   }
 
   const isReadOnly =
     currentAccess === "premium-limited" &&
-    subscriptionStatus.status === "inactive";
+    subscriptionStatus?.status === "inactive";
 
   const handleDismiss = () => {
     setIsPaywallActive(false);

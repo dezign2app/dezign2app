@@ -43,65 +43,12 @@ import Editor from "@monaco-editor/react";
 import { IdeToolbar } from "./_components/IdeToolbar";
 import { AiChatPanel } from "./_components/AiChatPanel";
 import { Resizable } from "re-resizable";
-
-interface FileTreeNode {
-  name: string;
-  path: string;
-  isFolder: boolean;
-  children?: FileTreeNode[];
-}
-
-function buildFileTree(files: CompiledFile[]): FileTreeNode[] {
-  const root: FileTreeNode[] = [];
-
-  files.forEach((f) => {
-    const parts = f.filename.split("/");
-    let current = root;
-
-    parts.forEach((part, idx) => {
-      const isLast = idx === parts.length - 1;
-      const currentPath = parts.slice(0, idx + 1).join("/");
-      let node = current.find((n) => n.name === part);
-
-      if (!node) {
-        node = {
-          name: part,
-          path: currentPath,
-          isFolder: !isLast,
-          children: isLast ? undefined : [],
-        };
-        current.push(node);
-      }
-
-      if (!isLast && node.children) {
-        current = node.children;
-      }
-    });
-  });
-
-  const sortNodes = (nodes: FileTreeNode[]) => {
-    nodes.sort((a, b) => {
-      if (a.isFolder && !b.isFolder) return -1;
-      if (!a.isFolder && b.isFolder) return 1;
-      return a.name.localeCompare(b.name);
-    });
-    nodes.forEach((n) => {
-      if (n.children) sortNodes(n.children);
-    });
-  };
-
-  sortNodes(root);
-  return root;
-}
-
-function getParentPaths(filePath: string): string[] {
-  const parts = filePath.split("/");
-  const parents: string[] = [];
-  for (let i = 1; i < parts.length; i++) {
-    parents.push(parts.slice(0, i).join("/"));
-  }
-  return parents;
-}
+import {
+  FileTreeNode,
+  buildFileTree,
+  getParentPaths,
+  FileTreeItem,
+} from "../_components/compiler";
 
 function getLanguageFromFilename(filename: string): string {
   if (filename.endsWith(".ts") || filename.endsWith(".tsx")) return "typescript";
@@ -114,97 +61,6 @@ function getLanguageFromFilename(filename: string): string {
   if (filename.endsWith(".py")) return "python";
   if (filename.endsWith(".sh")) return "shell";
   return "plaintext";
-}
-
-function FileTreeItem({
-  node,
-  depth = 0,
-  activePath,
-  expandedPaths,
-  onToggleExpand,
-  onSelectFile,
-}: {
-  node: FileTreeNode;
-  depth?: number;
-  activePath: string;
-  expandedPaths: Set<string>;
-  onToggleExpand: (path: string) => void;
-  onSelectFile: (path: string) => void;
-}) {
-  const isExpanded = expandedPaths.has(node.path);
-  const isActive = activePath === node.path;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (node.isFolder) {
-      onToggleExpand(node.path);
-    } else {
-      onSelectFile(node.path);
-    }
-  };
-
-  const getFileIcon = (name: string) => {
-    if (name === "package.json")
-      return <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
-    if (name.endsWith(".ts") || name.endsWith(".tsx"))
-      return <FileCode className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
-    if (name.endsWith(".json") || name.endsWith(".yaml"))
-      return <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-    if (name.endsWith(".md"))
-      return <FileCode className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
-    return <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
-  };
-
-  return (
-    <div>
-      <div
-        onClick={handleClick}
-        style={{ paddingLeft: `${depth * 14 + 10}px` }}
-        className={`flex items-center gap-1.5 py-1 px-2 text-xs font-mono rounded cursor-pointer transition-colors ${
-          isActive
-            ? "bg-primary/20 text-primary font-medium border-l-2 border-primary"
-            : "hover:bg-accent/40 text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        {node.isFolder ? (
-          <>
-            {isExpanded ? (
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            )}
-            {isExpanded ? (
-              <FolderOpen className="w-3.5 h-3.5 text-amber-400/90 shrink-0" />
-            ) : (
-              <Folder className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
-            )}
-          </>
-        ) : (
-          <>
-            <span className="w-3.5 shrink-0" />
-            {getFileIcon(node.name)}
-          </>
-        )}
-        <span className="truncate">{node.name}</span>
-      </div>
-
-      {node.isFolder && isExpanded && node.children && (
-        <div>
-          {node.children.map((child) => (
-            <FileTreeItem
-              key={child.path}
-              node={child}
-              depth={depth + 1}
-              activePath={activePath}
-              expandedPaths={expandedPaths}
-              onToggleExpand={onToggleExpand}
-              onSelectFile={onSelectFile}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function CompilerPage({

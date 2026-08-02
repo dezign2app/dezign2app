@@ -49,21 +49,14 @@ const logger = createLogger("${serviceName}:Producer:${ev.name}");
 export async function ${funcName}(eventData: ${payloadInterfaceName}): Promise<void> {
   // =========================================================================
   // 🤖 AI CODING AGENT DIRECTIVE:
-  // Publish event: "${ev.name}"
-  //
-  // 📥 CONNECTED TRIGGER NODE:
-  // - Triggered by route handler or domain logic within ${serviceNode?.data?.label || serviceName}
-  //
-  // 📤 CONNECTED OUTGOING DESTINATION NODE(S):
 `;
       if (trace.outgoing.length > 0) {
+        producerCode += `  //\n  // 📤 TARGET DESTINATIONS:\n`;
         trace.outgoing.forEach((out) => {
-          producerCode += `  // - Node: ${out.nodeName} [${out.nodeType}] (${out.detail})\n`;
+          producerCode += `  // - ${out.nodeType}: "${out.nodeName}" (${out.detail})\n`;
           if (out.dataContext)
             producerCode += `  //   Details: ${out.dataContext}\n`;
         });
-      } else {
-        producerCode += `  // - Publishes topic/event "${ev.name}"\n`;
       }
       producerCode += `  // =========================================================================\n`;
       producerCode += `  logger.info(\`Publishing event [${ev.name}]\`, eventData);\n`;

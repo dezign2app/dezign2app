@@ -79,10 +79,36 @@ export async function ${handlerName}(rawPayload: unknown): Promise<void> {
         consumerCode += `      logger.error(\`Invalid payload format for event [${ev.name}]:\`, parsed.error.flatten());\n`;
         consumerCode += `      return;\n`;
         consumerCode += `    }\n`;
-        consumerCode += `    const payload = parsed.data;\n`;
+        consumerCode += `    const payload = parsed.data;\n\n`;
       } else {
-        consumerCode += `    const payload = rawPayload as ${payloadInterfaceName};\n`;
+        consumerCode += `    const payload = rawPayload as ${payloadInterfaceName};\n\n`;
       }
+
+      consumerCode += `    // =========================================================================\n`;
+      consumerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
+      if (ev.description && ev.description.trim() !== "Processes incoming event payload") {
+        consumerCode += `    // Goal: ${ev.description.trim()}\n`;
+      }
+
+      if (trace.incoming.length > 0) {
+        consumerCode += `    //\n    // 📥 EVENT SOURCE:\n`;
+        trace.incoming.forEach((inc) => {
+          consumerCode += `    // - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
+          if (inc.dataContext)
+            consumerCode += `    //   Details: ${inc.dataContext}\n`;
+        });
+      }
+
+      if (trace.outgoing.length > 0) {
+        consumerCode += `    //\n    // 🔗 RESOURCE DEPENDENCIES / SIDE EFFECTS:\n`;
+        trace.outgoing.forEach((out) => {
+          consumerCode += `    // - ${out.nodeType}: "${out.nodeName}" (${out.detail})\n`;
+          if (out.dataContext)
+            consumerCode += `    //   Details: ${out.dataContext}\n`;
+        });
+      }
+
+      consumerCode += `    // =========================================================================\n`;
 
       const promptText = (ev.handlerLogic || ev.description || "").trim();
       const codeBlock = (ev.body || ev.code || ev.functionBody || "").trim();

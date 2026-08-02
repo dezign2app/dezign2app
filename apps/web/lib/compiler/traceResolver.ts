@@ -221,7 +221,7 @@ export function resolveEndpointTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: "WebClient Page Node",
+        nodeType: "WebClient Page",
         detail: eventDetail,
         dataContext: formatEndpointPayloadContext(endpoint),
       });
@@ -239,8 +239,8 @@ export function resolveEndpointTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: "Database Entity Node",
-        detail: `Database Table "${tableName}"`,
+        nodeType: "Database Table",
+        detail: `Table "${tableName}"`,
         dataContext: formatDatabaseColumnsContext(srcNode, allNodes),
       });
     }
@@ -249,7 +249,7 @@ export function resolveEndpointTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: "Microservice Node",
+        nodeType: "Microservice",
         detail: `HTTP Client call to ${epMethod} ${epPath}`,
         dataContext: `Calls Port ${(serviceNode.data as any)?.port || "8080"}`,
       });
@@ -273,7 +273,7 @@ export function resolveEndpointTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: `${srcNode.type} Node`,
+        nodeType: srcNode.type,
         detail: `Incoming connection from ${srcName}`,
         dataContext: formatEndpointPayloadContext(endpoint),
       });
@@ -325,8 +325,8 @@ export function resolveEndpointTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Database Entity Node",
-        detail: `Database Table "${tableName}"`,
+        nodeType: "Database Table",
+        detail: `Table "${tableName}"`,
         dataContext: formatDatabaseColumnsContext(tgtNode, allNodes),
       });
     }
@@ -342,7 +342,7 @@ export function resolveEndpointTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Microservice Node",
+        nodeType: "Microservice",
         detail: targetEpInfo,
         dataContext: `Base URL: http://localhost:${nodeData?.port || "8080"}`,
       });
@@ -362,7 +362,7 @@ export function resolveEndpointTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Message Broker Node",
+        nodeType: "Message Broker",
         detail: `Publish event / message to ${tgtName} (${tgtNode.type})`,
         dataContext: `Broker topic/queue event stream`,
       });
@@ -372,7 +372,7 @@ export function resolveEndpointTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: `${tgtNode.type} Node`,
+        nodeType: tgtNode.type,
         detail: `Outgoing connection to ${tgtName}`,
       });
     }
@@ -424,7 +424,7 @@ export function resolveConsumerTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: "Publisher Microservice Node",
+        nodeType: "Publisher Service",
         detail: `Published by ${srcName}`,
         dataContext: consumedEvent.payloadSchema?.rawJson
           ? `Payload: ${consumedEvent.payloadSchema.rawJson.replace(/\s+/g, " ")}`
@@ -444,7 +444,7 @@ export function resolveConsumerTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: "Message Broker Node",
+        nodeType: "Message Broker",
         detail: `Consumes topic/channel "${evtName}" from ${srcName}`,
         dataContext: consumedEvent.payloadSchema?.rawJson
           ? `Payload: ${consumedEvent.payloadSchema.rawJson.replace(/\s+/g, " ")}`
@@ -454,7 +454,7 @@ export function resolveConsumerTrace(
       incoming.push({
         nodeId: srcNode.id,
         nodeName: srcName,
-        nodeType: `${srcNode.type} Node`,
+        nodeType: srcNode.type,
         detail: `Event source from ${srcName}`,
       });
     }
@@ -464,7 +464,7 @@ export function resolveConsumerTrace(
     incoming.push({
       nodeId: "event-bus",
       nodeName: "Event Bus / Message Queue",
-      nodeType: "Messaging Broker",
+      nodeType: "Message Broker",
       detail: `Consumes topic/event "${evtName}"`,
       dataContext: consumedEvent.payloadSchema?.rawJson
         ? `Payload Schema: ${consumedEvent.payloadSchema.rawJson.replace(/\s+/g, " ")}`
@@ -493,14 +493,14 @@ export function resolveConsumerTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Database Entity Node",
+        nodeType: "Database Table",
         detail: `Mutates/Saves to Table "${tableName}"`,
       });
     } else if (tgtNode.type === "service") {
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Microservice Node",
+        nodeType: "Microservice",
         detail: `Triggers downstream call to ${tgtName}`,
       });
     }
@@ -576,7 +576,7 @@ export function resolveProducerTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Message Broker Node",
+        nodeType: "Message Broker",
         detail: `Publishes topic/channel "${evtName}" to ${tgtName}`,
         dataContext:
           downstreamConsumers.length > 0
@@ -587,14 +587,14 @@ export function resolveProducerTrace(
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: "Consumer Microservice Node",
+        nodeType: "Consumer Service",
         detail: `Consumed directly by ${tgtName}`,
       });
     } else {
       outgoing.push({
         nodeId: tgtNode.id,
         nodeName: tgtName,
-        nodeType: `${tgtNode.type} Node`,
+        nodeType: tgtNode.type,
         detail: `Target destination ${tgtName}`,
       });
     }

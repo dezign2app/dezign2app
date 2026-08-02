@@ -23,6 +23,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.4",
+    "@monaco-editor/react": "^4.7.0",
     "@stackblitz/sdk": "^1.11.1",
     "@types/dagre": "^0.7.54",
     "@types/jszip": "^3.4.1",

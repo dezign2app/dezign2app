@@ -154,31 +154,26 @@ export function CanvasToolbar({
               variant={"secondary"}
               size="sm"
               className="py-3.5"
-              onClick={() => setCompilerOpen(true)}
+              asChild
             >
-              <Hammer className="w-4 h-4 mr-1 text-primary" />
-              Build
+              <Link href={`/project/${projectId}/compiler`}>
+                <Hammer className="w-4 h-4 mr-1 text-primary" />
+                Build
+              </Link>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-64 p-3">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 font-semibold text-xs text-background">
                 <Hammer className="w-3.5 h-3.5" />
-                <span>Monorepo Code Generator</span>
+                <span>Monorepo IDE & Compiler</span>
               </div>
               <p className="text-[11px] text-background/80 leading-relaxed">
-                Generates complete monorepo boilerplate & services architecture.
-                Full AI business logic generation is under active development.
+                Open full IDE page with Monaco editor, terminal, and AI agent to edit function bodies.
               </p>
             </div>
           </TooltipContent>
         </Tooltip>
-        <CompilerModal
-          open={compilerOpen}
-          onOpenChange={setCompilerOpen}
-          projectName={projectName}
-          projectId={projectId}
-        />
 
         <Button
           variant={"secondary"}

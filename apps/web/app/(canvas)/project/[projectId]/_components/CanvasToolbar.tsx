@@ -156,7 +156,7 @@ export function CanvasToolbar({
             >
               <Link href={`/project/${projectId}/compiler`}>
                 <Hammer className="w-4 h-4 mr-1 text-primary" />
-                Build
+                Compile
               </Link>
             </Button>
           </TooltipTrigger>

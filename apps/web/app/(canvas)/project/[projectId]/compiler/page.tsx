@@ -52,6 +52,7 @@ import {
   getParentPaths,
   FileTreeItem,
 } from "../_components/compiler";
+import { useBackendSync } from "../_components/hooks/useBackendSync";
 
 function getLanguageFromFilename(filename: string): string {
   if (filename.endsWith(".ts") || filename.endsWith(".tsx")) return "typescript";
@@ -180,6 +181,55 @@ function extractBusinessLogic(content: string): string {
   return content;
 }
 
+function parseEditableSection(section: string): {
+  code: string;
+  businessLogic: string;
+  fullSection: string;
+} {
+  const lines = section.split("\n");
+  const codeLines: string[] = [];
+  const instructionLines: string[] = [];
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+
+    if (
+      trimmed.startsWith("// ===") ||
+      trimmed.startsWith("// 🤖 AI CODING AGENT DIRECTIVE") ||
+      trimmed.startsWith("// 💡 Write custom business logic below:") ||
+      trimmed.startsWith("// --- Business Logic Code Execution ---") ||
+      trimmed.startsWith("// --- Natural Language Instructions ---")
+    ) {
+      continue;
+    }
+
+    if (trimmed.startsWith("//")) {
+      const commentContent = trimmed.replace(/^\/\/\s*/, "");
+      if (commentContent) {
+        instructionLines.push(commentContent);
+      }
+    } else if (trimmed === "") {
+      codeLines.push("");
+    } else {
+      let cleanedLine = rawLine;
+      if (cleanedLine.startsWith("    ")) {
+        cleanedLine = cleanedLine.slice(4);
+      }
+      codeLines.push(cleanedLine);
+    }
+  }
+
+  // Trim trailing empty lines but preserve internal ones
+  let code = codeLines.join("\n").trimEnd();
+  const businessLogic = instructionLines.join("\n");
+
+  return {
+    code,
+    businessLogic,
+    fullSection: section,
+  };
+}
+
 function checkIsRouteFile(filename?: string): boolean {
   if (!filename) return false;
   return (
@@ -196,22 +246,21 @@ function findEndpointForFile(
   if (!checkIsRouteFile(filename)) return null;
 
   const routeFileName =
-    filename.split(/[\/\\]routes[\/\\]/).pop()?.replace(/\.ts$/, "").toLowerCase() || "";
+    filename.split(/[\/\\]routes[\/\\]/).pop()?.replace(/\.ts$/, "").toLowerCase().replace(/[^a-z0-9]/g, "") || "";
 
   for (const ep of endpoints) {
     const method = (ep.type || "GET").toLowerCase();
     const rawName = (ep.name || ep.id || "")
-      .replace(/^\//, "")
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, "_");
+      .replace(/[^a-z0-9]/g, "");
 
     if (
       rawName &&
-      (routeFileName === rawName || routeFileName === `${method}_${rawName}`)
+      (routeFileName === rawName || routeFileName === `${method}${rawName}`)
     ) {
       return ep;
     }
-    if (ep.id && routeFileName.includes(ep.id.toLowerCase())) {
+    if (ep.id && routeFileName.includes(ep.id.toLowerCase().replace(/[^a-z0-9]/g, ""))) {
       return ep;
     }
   }
@@ -225,6 +274,9 @@ export default function CompilerPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = React.use(params);
+
+  // Mount Convex backend sync hook so editor changes are automatically flushed to DB
+  useBackendSync(projectId, "graph");
 
   // Store state
   const storeProjectId = useBackendCanvasStore((s) => s.projectId);
@@ -525,16 +577,21 @@ export default function CompilerPage({
 
   // Handle Monaco code edit
   const handleEditorChange = (newContent: string | undefined) => {
-    if (newContent === undefined || !activeFile) return;
+    if (newContent === undefined || !activeFile) {
+      return;
+    }
 
     const matchedEndpoint = findEndpointForFile(activeFile.filename, endpoints);
-    if (!matchedEndpoint) return;
+    if (!matchedEndpoint) {
+      return;
+    }
 
     const extractedLogic = extractBusinessLogic(newContent);
+    const parsed = parseEditableSection(extractedLogic);
 
     if (
-      extractedLogic === matchedEndpoint.body ||
-      extractedLogic === matchedEndpoint.code
+      parsed.fullSection === matchedEndpoint.body ||
+      parsed.code === matchedEndpoint.code
     ) {
       return;
     }
@@ -544,9 +601,20 @@ export default function CompilerPage({
     }
 
     debounceTimerRef.current = setTimeout(() => {
+      const updatedCode = parsed.code || parsed.fullSection;
+      
+      // If parsed.businessLogic is empty string, it means they deleted the comments.
+      // We should only fallback if it was actually undefined, but here we can just sync what they typed.
+      // However, if they just haven't typed comments, we might not want to delete the prompt.
+      // Wait, if they are editing the file, parsed.businessLogic contains what's in the file.
+      // If they deleted it, it should be empty!
+      const updatedLogic = parsed.businessLogic;
+
       updateEndpoint(matchedEndpoint.id, {
-        body: extractedLogic,
-        code: extractedLogic,
+        body: updatedCode,
+        code: updatedCode,
+        businessLogic: updatedLogic,
+        prompt: updatedLogic,
       });
     }, 800);
   };

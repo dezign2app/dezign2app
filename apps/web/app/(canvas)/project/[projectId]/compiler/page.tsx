@@ -3,9 +3,23 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
-import { Id } from "@workspace/backend/_generated/dataModel";
-import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
+import { Id, Doc } from "@workspace/backend/_generated/dataModel";
+import {
+  useBackendCanvasStore,
+  parseResourceHandle,
+} from "@/lib/stores/backendCanvasStore";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
+import {
+  endpointSchema,
+  publishedEventSchema,
+  consumedEventSchema,
+  identityProviderSchema,
+} from "@workspace/canvas/schemas";
+import { z } from "zod";
+import {
+  BackendNode,
+  BackendEdge,
+} from "@/types/canvas";
 import {
   compileMonorepo,
   CompiledMonorepoResult,
@@ -27,7 +41,6 @@ import { toast } from "sonner";
 import sdk from "@stackblitz/sdk";
 import Editor from "@monaco-editor/react";
 import { IdeToolbar } from "./_components/IdeToolbar";
-import { TerminalPanel, TerminalLog } from "./_components/TerminalPanel";
 import { AiChatPanel } from "./_components/AiChatPanel";
 import { Resizable } from "re-resizable";
 
@@ -202,6 +215,7 @@ export default function CompilerPage({
   const { projectId } = React.use(params);
 
   // Store state
+  const storeProjectId = useBackendCanvasStore((s) => s.projectId);
   const nodes = useBackendCanvasStore((s) => s.nodes);
   const endpoints = useBackendCanvasStore((s) => s.endpoints);
   const events = useBackendCanvasStore((s) => s.events);
@@ -209,10 +223,82 @@ export default function CompilerPage({
   const updateEndpoint = useBackendCanvasStore((s) => s.updateEndpoint);
   const testCases = useSimulationStore((s) => s.testCases);
 
-  // Convex project query
+  // Convex queries
   const project = useQuery(api.projects.getProjectById, {
     projectId: projectId as Id<"projects">,
   });
+
+  // Query canvas elements — needed to hydrate the store when the compiler
+  // page is opened via direct URL or hard refresh (useBackendSync only runs
+  // on the canvas page, so the Zustand store can be empty here).
+  const canvasElements = useQuery(api.canvas.getBackendElements, {
+    projectId: projectId as Id<"projects">,
+  });
+
+  // Hydrate the store from Convex if it hasn't been populated for this project
+  useEffect(() => {
+    if (canvasElements === undefined) return; // still loading
+    if (storeProjectId === projectId) return;  // already hydrated for this project
+
+    const rawNodes: BackendNode[] = (canvasElements.nodes ?? []).map(
+      (row: Doc<"canvas_backend_nodes">) => {
+        const pos = row.data?.position ?? row.position;
+        return {
+          id: row.nodeId,
+          type: row.type as BackendNode["type"],
+          position: pos,
+          data: { ...row.data, position: pos },
+          fractionalIndex: row.fractionalIndex,
+          parentId: row.data?.parentId,
+        } as BackendNode;
+      }
+    );
+
+    const rawEdges: BackendEdge[] = (canvasElements.edges ?? []).map(
+      (row: Doc<"canvas_backend_edges">) => {
+        const src = parseResourceHandle(row.sourceHandle);
+        const tgt = parseResourceHandle(row.targetHandle);
+        return {
+          id: row.edgeId,
+          source: row.source,
+          target: row.target,
+          type: row.type as BackendEdge["type"],
+          sourceHandle: row.sourceHandle ?? undefined,
+          targetHandle: row.targetHandle ?? undefined,
+          sourceResourceId: src?.resourceId,
+          targetResourceId: tgt?.resourceId,
+          resourceType: tgt?.resourceType ?? src?.resourceType,
+          data: row.data,
+          fractionalIndex: row.fractionalIndex,
+        };
+      }
+    );
+
+    const fullEndpointSchema = endpointSchema.extend({ nodeId: z.string() });
+    const fullEventSchema = z.union([
+      publishedEventSchema.extend({ nodeId: z.string(), variant: z.literal("publish") }),
+      consumedEventSchema.extend({ nodeId: z.string(), variant: z.literal("consume") }),
+    ]);
+    const fullIdpSchema = identityProviderSchema.extend({ nodeId: z.string() });
+
+    const parsedEndpoints = z.array(fullEndpointSchema).parse(canvasElements.endpoints || []);
+    const parsedEvents = z.array(fullEventSchema).parse(canvasElements.events || []);
+    const parsedProviders = z.array(fullIdpSchema).parse(canvasElements.identityProviders || []);
+
+    useBackendCanvasStore.getState().setNodesAndEdges(
+      rawNodes,
+      rawEdges,
+      parsedEndpoints,
+      parsedEvents,
+      parsedProviders,
+      projectId,
+    );
+
+    useSimulationStore
+      .getState()
+      .setTestCases((canvasElements.testCases || []) as any);
+  }, [canvasElements, storeProjectId, projectId]);
+
 
   const projectName = project?.name || "Blueprint";
 
@@ -247,21 +333,6 @@ export default function CompilerPage({
 
   // IDE Shell panels state
   const [aiChatOpen, setAiChatOpen] = useState<boolean>(false);
-  const [terminalOpen, setTerminalOpen] = useState<boolean>(true);
-  const [terminalLogs, setTerminalLogs] = useState<TerminalLog[]>([
-    {
-      id: "1",
-      timestamp: new Date().toLocaleTimeString(),
-      type: "system",
-      text: "Compiler Engine initialized successfully.",
-    },
-    {
-      id: "2",
-      timestamp: new Date().toLocaleTimeString(),
-      type: "info",
-      text: `Monorepo workspace parsed: ${files.length} compiled files generated.`,
-    },
-  ]);
 
   // Restore file selection state from local storage
   useEffect(() => {
@@ -366,15 +437,7 @@ export default function CompilerPage({
         body: newContent,
         code: newContent,
       });
-      setTerminalLogs((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          timestamp: new Date().toLocaleTimeString(),
-          type: "success",
-          text: `Updated function logic for endpoint [${matchedEndpoint.name}] (${matchedEndpoint.id})`,
-        },
-      ]);
+      toast.success(`Updated logic for endpoint [${matchedEndpoint.name}]`);
     }
   };
 
@@ -465,29 +528,23 @@ export default function CompilerPage({
   };
 
   const handleRunLocalhost = () => {
-    setTerminalOpen(true);
-    setTerminalLogs((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        timestamp: new Date().toLocaleTimeString(),
-        type: "info",
-        text: "Starting local development server on http://localhost:8080...",
-      },
-      {
-        id: Math.random().toString(),
-        timestamp: new Date().toLocaleTimeString(),
-        type: "success",
-        text: "⚡ Localhost server listening & watching for endpoint logic changes.",
-      },
-    ]);
-    toast.success("Simulated local server running! Check terminal output.");
+    handleRunInCloud();
   };
 
-  if (project === undefined) {
+  // Show spinner while Convex data is loading OR while store hydration hasn't
+  // kicked in yet (storeProjectId !== projectId means useEffect hasn't run).
+  const isHydrating =
+    project === undefined ||
+    canvasElements === undefined ||
+    storeProjectId !== projectId;
+
+  if (isHydrating) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#0d1117]">
+      <div className="flex h-screen w-screen items-center justify-center bg-[#0d1117] flex-col gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-xs text-slate-400 font-mono">
+          {canvasElements === undefined ? "Loading project canvas..." : "Compiling monorepo..."}
+        </span>
       </div>
     );
   }
@@ -505,8 +562,6 @@ export default function CompilerPage({
         onRunLocalhost={handleRunLocalhost}
         aiChatOpen={aiChatOpen}
         onToggleAiChat={() => setAiChatOpen(!aiChatOpen)}
-        terminalOpen={terminalOpen}
-        onToggleTerminal={() => setTerminalOpen(!terminalOpen)}
       />
 
       {/* Main IDE Workspace (File Explorer + Monaco Editor + Terminal + AI Chat) */}
@@ -543,7 +598,7 @@ export default function CompilerPage({
           </div>
         </Resizable>
 
-        {/* Center Panel (Monaco Editor + Terminal Panel) */}
+        {/* Center Panel: Monaco Editor */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#0d1117]">
           {/* File Header Bar */}
           <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-border/40 text-xs font-mono select-none">
@@ -608,14 +663,6 @@ export default function CompilerPage({
               />
             ) : null}
           </div>
-
-          {/* Collapsible Terminal Panel at Bottom of Center */}
-          <TerminalPanel
-            logs={terminalLogs}
-            onClearLogs={() => setTerminalLogs([])}
-            isOpen={terminalOpen}
-            onToggleOpen={() => setTerminalOpen(!terminalOpen)}
-          />
         </div>
 
         {/* Right-side AI Chat Agent Panel */}

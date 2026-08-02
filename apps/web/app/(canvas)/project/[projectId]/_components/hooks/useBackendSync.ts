@@ -43,13 +43,19 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
 
   const storeProjectId = useBackendCanvasStore((s) => s.projectId);
   const hasHydrated = useRef(false);
+  const needsReset = storeProjectId !== projectId;
 
-  // If switching projects or store hasn't been initialized for this project, reset state immediately
-  if (storeProjectId !== projectId) {
-    hasHydrated.current = false;
-    useBackendCanvasStore.getState().reset(projectId);
-    useSimulationStore.setState({ testCases: [], selectedCaseId: undefined });
-  }
+  // Reset must happen in a useEffect, NOT in the render body.
+  // Calling set() during render triggers "Cannot update a component while
+  // rendering a different component" because Zustand's set() schedules a
+  // React state update synchronously.
+  useEffect(() => {
+    if (needsReset) {
+      hasHydrated.current = false;
+      useBackendCanvasStore.getState().reset(projectId);
+      useSimulationStore.setState({ testCases: [], selectedCaseId: undefined });
+    }
+  }, [needsReset, projectId]);
 
   const initialElements = useQuery(api.canvas.getBackendElements, {
     projectId: projectId as Id<"projects">,

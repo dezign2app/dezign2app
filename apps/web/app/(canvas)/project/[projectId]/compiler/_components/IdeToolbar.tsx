@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Play,
   Sparkles,
-  Terminal,
   Cpu,
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
@@ -24,8 +23,6 @@ interface IdeToolbarProps {
   onRunLocalhost: () => void;
   aiChatOpen: boolean;
   onToggleAiChat: () => void;
-  terminalOpen: boolean;
-  onToggleTerminal: () => void;
 }
 
 export function IdeToolbar({
@@ -38,14 +35,17 @@ export function IdeToolbar({
   onRunLocalhost,
   aiChatOpen,
   onToggleAiChat,
-  terminalOpen,
-  onToggleTerminal,
 }: IdeToolbarProps) {
   return (
     <div className="flex items-center justify-between h-13 px-4 bg-[#161b22] border-b border-border/40 shrink-0 text-slate-200 select-none">
-      {/* Left section: Navigation & Title */}
+      {/* Left: Navigation & Title */}
       <div className="flex items-center space-x-3">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800">
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800"
+        >
           <Link href={`/project/${projectId}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -55,17 +55,17 @@ export function IdeToolbar({
             <Cpu className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-xs text-slate-100 flex items-center gap-1.5">
+            <span className="font-semibold text-xs text-slate-100">
               {displayTitle}
             </span>
             <span className="text-[10px] text-slate-400 font-mono">
-              IDE & Code Editor Panel
+              IDE & Code Editor
             </span>
           </div>
         </div>
       </div>
 
-      {/* Middle section: Action controls */}
+      {/* Middle: Primary actions */}
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"
@@ -74,7 +74,7 @@ export function IdeToolbar({
           className="h-8 gap-1.5 text-xs bg-emerald-950/40 text-emerald-400 border-emerald-800/50 hover:bg-emerald-900/60 hover:text-emerald-300"
         >
           <Play className="w-3.5 h-3.5 fill-emerald-400" />
-          <span>Run Localhost</span>
+          <span>Run in StackBlitz</span>
         </Button>
 
         <Button
@@ -90,23 +90,9 @@ export function IdeToolbar({
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>AI Agent</span>
         </Button>
-
-        <Button
-          variant={terminalOpen ? "secondary" : "outline"}
-          size="sm"
-          onClick={onToggleTerminal}
-          className={`h-8 gap-1.5 text-xs ${
-            terminalOpen
-              ? "bg-slate-800 text-white border-slate-600"
-              : "bg-slate-800/40 text-slate-300 border-slate-700 hover:bg-slate-800"
-          }`}
-        >
-          <Terminal className="w-3.5 h-3.5" />
-          <span>Terminal</span>
-        </Button>
       </div>
 
-      {/* Right section: Export & StackBlitz IDE */}
+      {/* Right: Export */}
       <div className="flex items-center space-x-2">
         <Button
           onClick={onDownloadZip}
@@ -125,7 +111,7 @@ export function IdeToolbar({
           className="h-8 gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Code className="w-3.5 h-3.5" />
-          <span>StackBlitz</span>
+          <span>StackBlitz IDE</span>
           <ExternalLink className="w-3 h-3 opacity-80" />
         </Button>
       </div>

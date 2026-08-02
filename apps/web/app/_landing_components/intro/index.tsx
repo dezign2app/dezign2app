@@ -190,11 +190,11 @@ export const Intro = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative z-10 text-sm text-[#5B6472] leading-relaxed max-w-lg font-normal mt-5"
+          className="relative z-10 text-sm md:text-base text-[#5B6472] leading-relaxed max-w-2xl font-normal mt-5"
         >
-          Write requirements in plain English. Autonomous agents compile
-          production code, load-test it under simulated traffic, and deploy it
-          to Kubernetes — no engineer in the loop.
+          Automating the entire software development lifecycle — combining system architecture design,
+          code generation, automated testing, CI/CD pipelines, cloud infrastructure, real-time monitoring & maintenance
+          into one unified platform.
         </motion.p>
 
         <motion.div

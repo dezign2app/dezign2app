@@ -115,6 +115,35 @@ const jsonLd = {
         priceCurrency: "USD",
       },
     },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What is Dezign 2 App?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Dezign 2 App is an AI-powered software engineering platform that treats system design as a programming language. It transforms product requirements (PRDs), architecture topologies, and data schemas into production-ready full-stack monorepo code, microservices, automated load tests, and cloud infrastructure.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does Dezign 2 App turn system design into full-stack code?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Dezign 2 App compiles visually designed software architecture graphs and PRD specifications into executable monorepos. Autonomous AI agents write frontends (Next.js, React), backend APIs (FastAPI, Node.js), message queues (Kafka), caching layers (Redis), database schemas (PostgreSQL), and infrastructure manifests (Docker, Kubernetes, Terraform).",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What technologies does Dezign 2 App compile?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Dezign 2 App compiles Next.js, React, Node.js, Python FastAPI, Apache Kafka event streaming, Redis in-memory caching, PostgreSQL, Docker containers, and Kubernetes manifests.",
+          },
+        },
+      ],
+    },
   ],
 };
 

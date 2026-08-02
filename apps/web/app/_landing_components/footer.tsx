@@ -32,9 +32,9 @@ export const Footer = () => {
                 </span>
               </Link>
               <p className="text-[11px] text-gray-500 leading-relaxed mt-2 md:pr-4">
-                dezign2app empowers teams to transform raw data into clear,
-                compelling visuals — making insights easier to share,
-                understand, and act on.
+                dezign2app treats system design as a programming language —
+                transforming PRDs, architecture topologies, and data schemas into
+                production-ready full-stack code, microservices, and cloud infrastructure.
               </p>
               <div className="flex items-center gap-1.5 text-[11px] text-gray-600 font-medium">
                 <span>Support:</span>

@@ -361,6 +361,40 @@ export async function simulateEndpoint(args: {
       }
     }
 
+    if (isSuccess) {
+      const messagingTypes = [
+        "kafka",
+        "sqs",
+        "redis-streams",
+        "redis-pubsub",
+        "pubsub",
+        "eventstream",
+        "queue",
+      ];
+      const messagingEdges = edges.filter(
+        (e) =>
+          e.source === service.id &&
+          (e.sourceHandle === `endpoint-out-${endpoint.id}` ||
+            e.sourceHandle === `endpoints-out-${endpoint.id}`),
+      );
+      for (const msgEdge of messagingEdges) {
+        const targetNode = nodes.find(
+          (n) => n.id === msgEdge.target && messagingTypes.includes(n.type),
+        );
+        if (targetNode && !trace.some((t) => t.nodeId === targetNode.id)) {
+          trace.push({
+            id: `msg-${msgEdge.id}`,
+            kind: "messaging",
+            label: `${targetNode.data.label ?? targetNode.type} ← ${endpoint.name}`,
+            status: "completed",
+            nodeId: targetNode.id,
+            edgeId: msgEdge.id,
+            output: body,
+          });
+        }
+      }
+    }
+
     trace.push({
       id: `${endpoint.id}-response`,
       kind: "response",

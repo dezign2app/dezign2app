@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Info } from "lucide-react";
+import Link from "next/link";
 
 function CheckCircle() {
   return (
@@ -100,12 +101,22 @@ export function EarlyBelieverCard() {
 
       {/* Plan name + desc */}
       <div className="flex items-center justify-between mb-1">
-        <p
-          className="text-xl font-bold"
-          style={{ fontFamily: "'Syne', sans-serif" }}
-        >
-          Early Believer
-        </p>
+        <div className="flex items-center gap-2">
+          <p
+            className="text-xl font-bold"
+            style={{ fontFamily: "'Syne', sans-serif" }}
+          >
+            Early Believer
+          </p>
+          <Link
+            href="/early-believer"
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium hover:text-black bg-gray-100 rounded-md transition-colors"
+            title="Read plan details and FAQ"
+          >
+            <span>read</span>
+            <Info className="w-3 h-3" />
+          </Link>
+        </div>
         <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-green-100 text-green-700 uppercase tracking-wider">
           {discountPercent}% OFF
         </span>
@@ -227,11 +238,14 @@ export function EarlyBelieverCard() {
 
       {/* Features List */}
       <ul className="flex flex-col gap-2 mt-5 text-xs">
-        <li className="flex items-center gap-2">
+        <li className="flex items-start text-start gap-2">
           <CheckCircle />
           <span className="font-semibold">
             Includes {tier === 1000 ? "1 Year (Annual)" : "6 Months"}{" "}
-            subscription pack
+            subscription pack{" "}
+            <span className="font-normal text-gray-500">
+              (AI features may require plan upgrades in the future)
+            </span>
           </span>
         </li>
 
@@ -245,7 +259,7 @@ export function EarlyBelieverCard() {
           <ul className="pl-6 pt-1.5 flex flex-col gap-1.5 text-[11px] text-gray-600">
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-black shrink-0 mt-1.5" />
-              <span>Full System Design suite & AI Tools access</span>
+              <span>Full System Design suite & Beta access</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-black shrink-0 mt-1.5" />

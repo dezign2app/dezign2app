@@ -8,7 +8,11 @@ import {
 } from "../traceResolver";
 
 export function generateLibFiles(): CompiledFile[] {
-  const libIndexCode = `export { db, schema } from "@workspace/db";
+  const libIndexCode = `/**
+ * Shared lib helpers for this service.
+ * DB access goes through @workspace/db/helpers — injection-safe prepared statements.
+ */
+export * from "@workspace/db/helpers";
 
 export function formatResponse<T>(data: T, message = "Success") {
   return {
@@ -122,14 +126,11 @@ export function generateConfigFiles(
         cors: "^2.8.5",
         dotenv: "^16.4.5",
         zod: "^3.24.2",
-        "drizzle-orm": "^0.30.0",
-        "better-sqlite3": "^11.3.0",
       },
       devDependencies: {
         "@workspace/typescript-config": "workspace:*",
         "@types/express": "^4.17.21",
         "@types/cors": "^2.8.17",
-        "@types/better-sqlite3": "^7.6.11",
         "@types/node": "^20.11.0",
         "ts-node-dev": "^2.0.0",
         typescript: "^5.3.3",

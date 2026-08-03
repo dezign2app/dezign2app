@@ -339,5 +339,5 @@ export default {
     content: drizzleConfig,
   });
 
-  return { files };
+  return { files, reusableFunctions: [] };
 }

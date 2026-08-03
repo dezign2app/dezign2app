@@ -5,12 +5,11 @@ import Editor from "@monaco-editor/react";
 import { Copy, Check, Download, FileCode, Lock } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { CompiledFile } from "@/lib/compiler";
-import { getLanguageFromFilename, checkIsRouteFile } from "../_lib/editorUtils";
+import { getLanguageFromFilename } from "../_lib/editorUtils";
 
 export interface MonacoEditorPaneProps {
   activeFile: CompiledFile | undefined;
   onMount: (editor: any, monaco: any) => void;
-  onChange: (content: string | undefined) => void;
   onCopy: () => void;
   onDownload: () => void;
   copied: boolean;
@@ -24,12 +23,10 @@ export interface MonacoEditorPaneProps {
 export function MonacoEditorPane({
   activeFile,
   onMount,
-  onChange,
   onCopy,
   onDownload,
   copied,
 }: MonacoEditorPaneProps) {
-  const isRouteFile = checkIsRouteFile(activeFile?.filename);
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-[#0d1117]">
@@ -38,15 +35,9 @@ export function MonacoEditorPane({
         <div className="flex items-center gap-2 text-slate-300 truncate">
           <FileCode className="w-4 h-4 text-primary shrink-0" />
           <span className="truncate font-semibold">{activeFile?.filename}</span>
-          {isRouteFile ? (
-            <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-mono flex items-center gap-1 shrink-0">
-              <Lock className="w-3 h-3 text-amber-400" /> Signature &amp; Types Locked &bull; 🔓 Body Editable
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800/80 text-slate-400 border border-slate-700 font-mono flex items-center gap-1 shrink-0">
-              <Lock className="w-3 h-3 text-slate-400" /> Read-Only Generated File
-            </span>
-          )}
+          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800/80 text-slate-400 border border-slate-700 font-mono flex items-center gap-1 shrink-0">
+            <Lock className="w-3 h-3 text-slate-400" /> Read-Only · Edit via System Design
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -86,7 +77,6 @@ export function MonacoEditorPane({
             defaultValue={activeFile.content}
             theme="vs-dark"
             onMount={onMount}
-            onChange={onChange}
             options={{
               fontSize: 13,
               fontFamily: "JetBrains Mono, Menlo, Monaco, Consolas, monospace",
@@ -102,6 +92,8 @@ export function MonacoEditorPane({
               padding: { top: 12, bottom: 12 },
               smoothScrolling: true,
               cursorBlinking: "smooth",
+              readOnly: true,
+              readOnlyMessage: { value: "Edit via the System Design canvas" },
             }}
           />
         ) : null}

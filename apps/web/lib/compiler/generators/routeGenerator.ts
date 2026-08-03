@@ -154,88 +154,75 @@ export async function ${handlerName}(
         routeHandlerCode += `    const query = queryParsed.data;\n\n`;
       }
 
-      routeHandlerCode += `    // --- EDITABLE FUNCTION BODY START ---\n`;
-
       const promptText = (ep.businessLogic || ep.prompt || "").trim();
       const codeBlock = (ep.body || ep.code || "").trim();
 
-      routeHandlerCode += `    // =========================================================================\n`;
-      routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
-      if (ep.summary && !ep.summary.startsWith("Handler for ")) {
-        routeHandlerCode += `    // Goal: ${ep.summary.trim()}\n`;
-      }
+      if (promptText) {
+        routeHandlerCode += `    // =========================================================================\n`;
+        routeHandlerCode += `    // 🤖 AI CODING AGENT DIRECTIVE:\n`;
+        if (ep.summary && !ep.summary.startsWith("Handler for ")) {
+          routeHandlerCode += `    // Goal: ${ep.summary.trim()}\n`;
+        }
 
-      if (trace.incoming.length > 0) {
-        routeHandlerCode += `    //\n    // 📥 INBOUND TRIGGER / CALLER:\n`;
-        trace.incoming.forEach((inc) => {
-          routeHandlerCode += `    // - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
-          if (inc.dataContext)
-            routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
-        });
-      }
+        if (trace.incoming.length > 0) {
+          routeHandlerCode += `    //\n    // 📥 INBOUND TRIGGER / CALLER:\n`;
+          trace.incoming.forEach((inc) => {
+            routeHandlerCode += `    // - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
+            if (inc.dataContext)
+              routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
+          });
+        }
 
-      if (trace.outgoing.length > 0) {
-        routeHandlerCode += `    //\n    // 🔗 RESOURCE DEPENDENCIES:\n`;
-        trace.outgoing.forEach((out) => {
-          routeHandlerCode += `    // - ${out.nodeType}: "${out.nodeName}"\n`;
-          if (out.dataContext)
-            routeHandlerCode += `    //   ${out.dataContext}\n`;
-        });
-      }
+        if (trace.outgoing.length > 0) {
+          routeHandlerCode += `    //\n    // 🔗 RESOURCE DEPENDENCIES:\n`;
+          trace.outgoing.forEach((out) => {
+            routeHandlerCode += `    // - ${out.nodeType}: "${out.nodeName}"\n`;
+            if (out.dataContext)
+              routeHandlerCode += `    //   ${out.dataContext}\n`;
+          });
+        }
 
-      if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
-        const activeOps = Object.entries(ep.crudOperations).filter(
-          ([_, ops]) => ops && ops.length > 0,
-        );
-        if (activeOps.length > 0) {
-          routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
-          for (const [tableId, ops] of activeOps) {
-            const tableNode = allNodes.find((n) => n.id === tableId);
-            const tableName =
-              tableNode?.data?.label ||
-              tableNode?.data?.tableRef ||
-              "Unknown Table";
-            routeHandlerCode += `    // - Table [${tableName}]: ${ops.map((o) => o.toUpperCase()).join(", ")}\n`;
-            if (ep.crudExplanations && ep.crudExplanations[tableId]) {
-              for (const op of ops) {
-                const explanation = ep.crudExplanations[tableId][op];
-                if (explanation) {
-                  routeHandlerCode += `    //   * ${op.toUpperCase()} Context: ${explanation.replace(/\n/g, "\n    //     ")}\n`;
+        if (ep.crudOperations && Object.keys(ep.crudOperations).length > 0) {
+          const activeOps = Object.entries(ep.crudOperations).filter(
+            ([_, ops]) => ops && ops.length > 0,
+          );
+          if (activeOps.length > 0) {
+            routeHandlerCode += `    //\n    // 🗄️ DATABASE OPERATIONS REQUIRED:\n`;
+            for (const [tableId, ops] of activeOps) {
+              const tableNode = allNodes.find((n) => n.id === tableId);
+              const tableName =
+                tableNode?.data?.label ||
+                tableNode?.data?.tableRef ||
+                "Unknown Table";
+              routeHandlerCode += `    // - Table [${tableName}]: ${ops.map((o) => o.toUpperCase()).join(", ")}\n`;
+              if (ep.crudExplanations && ep.crudExplanations[tableId]) {
+                for (const op of ops) {
+                  const explanation = ep.crudExplanations[tableId][op];
+                  if (explanation) {
+                    routeHandlerCode += `    //   * ${op.toUpperCase()} Context: ${explanation.replace(/\n/g, "\n    //     ")}\n`;
+                  }
                 }
               }
             }
           }
         }
-      }
 
-      routeHandlerCode += `    // =========================================================================\n`;
+        routeHandlerCode += `    // =========================================================================\n`;
 
-      if (promptText) {
-        routeHandlerCode += `    // --- Natural Language Instructions ---\n`;
         promptText.split("\n").forEach((line: string, idx: number) => {
           if (line.trim())
             routeHandlerCode += `    // STEP ${idx + 1}: ${line.trim()}\n`;
         });
         routeHandlerCode += `\n`;
-      } else if (!codeBlock) {
-        routeHandlerCode += `    // STEP 1: Validate request payload and params\n`;
-        routeHandlerCode += `    // STEP 2: Execute database query/mutation\n`;
-        routeHandlerCode += `    // STEP 3: Return structured JSON response\n`;
-        routeHandlerCode += `\n`;
       }
 
+      routeHandlerCode += `    // --- Business Logic ---\n`;
       if (codeBlock) {
         codeBlock.split("\n").forEach((line: string) => {
           routeHandlerCode += `    ${line}\n`;
         });
-        routeHandlerCode += `\n`;
-      } else {
-        routeHandlerCode += `    // 💡 Write custom business logic below:\n`;
-        routeHandlerCode += `    \n`;
-        routeHandlerCode += `    \n`;
-        routeHandlerCode += `    \n`;
       }
-      routeHandlerCode += `    // --- EDITABLE FUNCTION BODY END ---\n`;
+      routeHandlerCode += `\n`;
 
       const statusCode = ep.type === "POST" ? 201 : 200;
       routeHandlerCode += `\n    logger.debug("Successfully generated response for ${path}");\n`;

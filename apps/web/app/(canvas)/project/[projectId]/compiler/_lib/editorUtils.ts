@@ -202,6 +202,13 @@ export function isGeneratorAnnotationComment(commentContent: string): boolean {
 //                     -> generator re-wraps -> "// STEP 1: STEP 1: Validate..."
 //   New behaviour:    businessLogic = "Validate user ID and role"
 //                     -> generator wraps -> "// STEP 1: Validate user ID and role" OK
+//
+// FIX (Bug 4 — redundant directive block): The generator wraps every endpoint's
+// metadata inside a `// === ... ===` fence. Previously only the fence lines
+// themselves were skipped; all the bullet lines inside (e.g.
+// `// - Message Broker: "Kafka"`, `//   Broker topic/queue event stream`) were
+// saved into businessLogic and re-emitted on every compile, causing the block
+// to grow exponentially. We now skip the ENTIRE fence block as a unit.
 // ---------------------------------------------------------------------------
 
 export function parseEditableSection(section: string): {
@@ -213,8 +220,23 @@ export function parseEditableSection(section: string): {
   const codeLines: string[] = [];
   const instructionLines: string[] = [];
 
+  // Track whether we are inside a // === ... === generator directive block.
+  let insideDirectiveBlock = false;
+
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
+
+    // Detect the opening / closing `// ===` fence.
+    if (trimmed.startsWith("// ===")) {
+      // Toggle: first occurrence opens the block, second closes it.
+      insideDirectiveBlock = !insideDirectiveBlock;
+      continue; // always skip the fence line itself
+    }
+
+    // Skip every line that is inside a directive block.
+    if (insideDirectiveBlock) {
+      continue;
+    }
 
     // Skip entire generator structural lines
     if (isGeneratorStructuralLine(trimmed)) {
@@ -225,7 +247,8 @@ export function parseEditableSection(section: string): {
       // Extract the comment body (strip leading `// `)
       const commentContent = trimmed.replace(/^\/\/\s*/, "");
 
-      // Skip generator trace annotation lines
+      // Skip generator trace annotation lines (belt-and-suspenders, in case
+      // any annotation appears outside a fence block).
       if (isGeneratorAnnotationComment(commentContent)) {
         continue;
       }

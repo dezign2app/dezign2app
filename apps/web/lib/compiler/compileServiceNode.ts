@@ -1,6 +1,6 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledServiceResult } from "./types";
+import { CompiledServiceResult, ReusableFunction } from "./types";
 import { compileExpressV4Service } from "./services/express/v4";
 import { compileFastAPIService } from "./services/fastapi/v0";
 
@@ -17,9 +17,10 @@ export function compileServiceNode(
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
   testCases: SimulationTestCase[] = [],
+  dbFunctions: ReusableFunction[] = [],
+  kafkaFunctions: ReusableFunction[] = [],
 ): CompiledServiceResult {
   const techStack = node.data.techStack || "express";
-  const techVersion = node.data.techVersion || "4.x";
 
   switch (techStack) {
     case "fastapi":
@@ -40,6 +41,8 @@ export function compileServiceNode(
         allNodes,
         allEdges,
         testCases,
+        dbFunctions,
+        kafkaFunctions,
       );
   }
 }

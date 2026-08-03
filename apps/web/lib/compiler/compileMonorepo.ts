@@ -1,6 +1,6 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile, CompiledMonorepoResult } from "./types";
+import { CompiledFile, CompiledMonorepoResult, ReusableFunction } from "./types";
 import { compileServiceNode } from "./compileServiceNode";
 import { compileLangGraphNode } from "./compileLangGraphNode";
 import { compileDatabaseNodes } from "./compileDatabaseNodes";
@@ -91,15 +91,19 @@ export function compileMonorepo(
     });
   });
 
-  // 4.7 Generate Shared Package: packages/kafka (@workspace/kafka)
+  // 4.7 Generate Shared Package: packages/<kafkaNodeLabel> (@workspace/<kafkaNodeLabel>)
   const compiledKafka = compileKafkaNodes(nodes, edges);
   compiledKafka.files.forEach((f) => {
     files.push({
-      filename: `packages/kafka/${f.filename}`,
+      filename: `packages/${compiledKafka.packageFolder}/${f.filename}`,
       language: f.language,
       content: f.content,
     });
   });
+
+  // Collect reusable functions from db + kafka packages for service route generation
+  const dbFunctions: ReusableFunction[] = compiledDb.reusableFunctions ?? [];
+  const kafkaFunctions: ReusableFunction[] = compiledKafka.reusableFunctions ?? [];
 
   // 4.8 Generate Shared Package: packages/redis (@workspace/redis)
   const compiledRedis = compileRedisNodes(nodes, edges);
@@ -128,6 +132,8 @@ export function compileMonorepo(
       nodes,
       edges,
       testCases,
+      dbFunctions,
+      kafkaFunctions,
     );
     srvResult.files.forEach((f) => {
       files.push({
@@ -203,7 +209,7 @@ export function compileMonorepo(
     { path: "packages/db" },
     { path: "packages/logger" },
     { path: "packages/types" },
-    ...(compiledKafka.files.length > 0 ? [{ path: "packages/kafka" }] : []),
+    ...(compiledKafka.files.length > 0 ? [{ path: `packages/${compiledKafka.packageFolder}` }] : []),
     ...(compiledRedis.files.length > 0 ? [{ path: "packages/redis" }] : []),
     ...servicesInfo.map((s) => ({ path: `apps/${s.folderName}` })),
     ...webClientsInfo.map((w) => ({ path: `apps/${w.folderName}` })),

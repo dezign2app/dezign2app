@@ -1,6 +1,6 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile, CompiledServiceResult } from "../../../types";
+import { CompiledFile, CompiledServiceResult, ReusableFunction } from "../../../types";
 import { generateRoutes } from "../../../generators/routeGenerator";
 import { generateConsumers } from "../../../generators/consumerGenerator";
 import { generateProducers } from "../../../generators/producerGenerator";
@@ -24,6 +24,8 @@ export function compileExpressV4Service(
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
   testCases: SimulationTestCase[] = [],
+  dbFunctions: ReusableFunction[] = [],
+  kafkaFunctions: ReusableFunction[] = [],
 ): CompiledServiceResult {
   const serviceName = node.data.label || "Service";
   const sanitizedName = serviceName.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -73,6 +75,9 @@ export function compileExpressV4Service(
       allNodes,
       allEdges,
       endpoints,
+      dbFunctions,
+      kafkaFunctions,
+      nodePublishedEvents,
     ),
     ...generateConsumers(
       serviceName,

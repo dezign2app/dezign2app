@@ -256,6 +256,9 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         crudConfig={crudConfig}
         onCrudConfigChange={handleCrudConfigChange}
         availableTableNodes={availableTableNodes}
+        publishedEvents={item.publishedEvents || []}
+        endpointMethod={item.type || "POST"}
+        endpointPath={item.name || "/"}
         onGenerateCode={() => {
           if (item.businessLogic && !item.body) {
             updateEndpoint(item.id, {

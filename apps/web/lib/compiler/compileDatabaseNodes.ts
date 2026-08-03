@@ -1,23 +1,16 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
 import { CompiledDatabaseResult } from "./types";
-import { compileSqliteDrizzleDatabase } from "./databases/sqlite/drizzle";
+import { compileRawSqliteDatabase } from "./databases/sqlite/raw";
 
 /**
- * Compiles database nodes based on dbEngine and ORM selected
+ * Compiles database nodes into packages/db using raw SQL prepared statements.
+ * ORM-free by design — see databases/sqlite/raw/index.ts.
  */
 export function compileDatabaseNodes(
   allNodes: BackendNode[],
   allEdges: BackendEdge[],
 ): CompiledDatabaseResult {
-  const firstDbNode = allNodes.find(
-    (n) => n.type === "entity" || n.type === "db_ref",
-  );
-  const dbEngine = firstDbNode?.data.dbEngine || "sqlite";
-  const orm = firstDbNode?.data.orm || "drizzle";
-
-  switch (orm) {
-    case "drizzle":
-    default:
-      return compileSqliteDrizzleDatabase(allNodes, allEdges);
-  }
+  // Single driver for now: raw better-sqlite3.
+  // To restore Drizzle ORM: import { compileSqliteDrizzleDatabase } from "./databases/sqlite/drizzle"
+  return compileRawSqliteDatabase(allNodes, allEdges);
 }

@@ -520,6 +520,10 @@ export default function CompilerPage({
   // editor model when the user SWITCHES files, not on every recompile of the
   // same file (which would reset the cursor and trigger the locked-zone toast).
   const lastAppliedFilenameRef = React.useRef<string | null>(null);
+  // Tracks the last content string pushed into Monaco for the current file.
+  // Used to detect external changes (e.g. BusinessLogicBlock sidebar edits)
+  // so we can push them into Monaco without fighting in-Monaco user edits.
+  const lastAppliedContentRef = React.useRef<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -534,13 +538,24 @@ export default function CompilerPage({
     if (editorRef.current && monacoRef.current && activeFile) {
       const isRouteFile = checkIsRouteFile(activeFile.filename);
 
-      // Only push new content into Monaco when the user switches to a different
-      // file. While editing the SAME file, the Monaco model already has the
-      // live content with the user's cursor intact — overwriting it would reset
-      // the cursor to line 1 and trigger the "locked zone" toast on Enter.
       if (lastAppliedFilenameRef.current !== activeFile.filename) {
+        // User switched to a different file — always reset the editor model.
         editorRef.current.getModel()?.setValue(activeFile.content);
         lastAppliedFilenameRef.current = activeFile.filename;
+        lastAppliedContentRef.current = activeFile.content;
+      } else if (
+        // Same file but content was changed externally (e.g. BusinessLogicBlock
+        // sidebar edit) AND the user is NOT currently mid-keystroke in Monaco
+        // (debounce timer inactive). Push the external update so the compiler
+        // view stays in sync with sidebar changes in real-time.
+        lastAppliedContentRef.current !== activeFile.content &&
+        debounceTimerRef.current === null
+      ) {
+        const monacoValue = editorRef.current.getModel()?.getValue();
+        if (monacoValue !== activeFile.content) {
+          editorRef.current.getModel()?.setValue(activeFile.content);
+          lastAppliedContentRef.current = activeFile.content;
+        }
       }
 
       const liveContent =
@@ -659,6 +674,13 @@ export default function CompilerPage({
         businessLogic: updatedLogic,
         prompt: updatedLogic,
       });
+
+      // Mark the debounce as settled so the activeFile useEffect can push any
+      // subsequent external changes (e.g. further sidebar edits) into Monaco.
+      debounceTimerRef.current = null;
+      // Record what Monaco has now so the useEffect doesn't immediately
+      // re-push the same content on the next recompile triggered by this update.
+      lastAppliedContentRef.current = editorRef.current?.getModel()?.getValue() ?? null;
     }, 800);
   };
 

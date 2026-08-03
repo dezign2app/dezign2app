@@ -238,7 +238,6 @@ export default function CompilerPage({
         <MonacoEditorPane
           activeFile={activeFile}
           onMount={handleEditorMount}
-          onChange={handleEditorChange}
           onCopy={handleCopy}
           onDownload={handleDownload}
           copied={copied}

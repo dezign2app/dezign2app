@@ -901,9 +901,6 @@ export const EffortlessSection = () => {
               </button>
             ))}
           </div>
-          <p className="mt-3 text-xs text-green-600 font-semibold z-50">
-            🎉 2 months free with annual billing
-          </p>
         </div>
 
         {/* Floating Elements & Backgrounds */}

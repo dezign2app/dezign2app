@@ -65,6 +65,125 @@ function pickDbFunction(
   return { fn, callExpr };
 }
 
+interface TargetDbOperation {
+  fn: ReusableFunction;
+  callExpr: string;
+  operationKind: "read" | "create" | "update" | "delete";
+  tableNodeId?: string;
+}
+
+/**
+ * Resolves all database functions requested for an endpoint based on attached db_ref nodes
+ * and the user's explicit crudOperations selection.
+ */
+function pickDbFunctionsForEndpoint(
+  ep: Endpoint,
+  dbFunctions: ReusableFunction[],
+  allNodes: BackendNode[],
+  path: string,
+): TargetDbOperation[] {
+  if (dbFunctions.length === 0) return [];
+
+  const method = (ep.type || "GET").toLowerCase();
+  const isIdRoute = path.includes(":id") || path.includes("{id}");
+
+  const dbNodeIds =
+    ep.databaseNodeIds ||
+    (ep.databaseNodeId && ep.databaseNodeId !== "none" ? [ep.databaseNodeId] : []);
+
+  const results: TargetDbOperation[] = [];
+
+  const targetNodeIds =
+    dbNodeIds.length > 0
+      ? dbNodeIds
+      : ep.crudOperations && Object.keys(ep.crudOperations).length > 0
+        ? Object.keys(ep.crudOperations)
+        : [];
+
+  if (targetNodeIds.length === 0) {
+    const fallback = pickDbFunction(method, dbFunctions, path);
+    if (fallback) {
+      results.push({
+        fn: fallback.fn,
+        callExpr: fallback.callExpr,
+        operationKind:
+          method === "post"
+            ? "create"
+            : method === "put" || method === "patch"
+              ? "update"
+              : method === "delete"
+                ? "delete"
+                : "read",
+      });
+    }
+    return results;
+  }
+
+  for (const tableNodeId of targetNodeIds) {
+    const tableNode = allNodes.find((n) => n.id === tableNodeId);
+    const rawTableName = tableNode?.data?.label || tableNode?.data?.tableRef || "";
+    const cleanTableName = rawTableName.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    const tableFns = dbFunctions.filter((f) => {
+      const targetClean = (f.targetName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const fnNameClean = f.name.toLowerCase();
+      return (
+        targetClean === cleanTableName ||
+        (cleanTableName && fnNameClean.includes(cleanTableName)) ||
+        (targetClean && cleanTableName.includes(targetClean))
+      );
+    });
+
+    const fnsToUse = tableFns.length > 0 ? tableFns : dbFunctions;
+
+    const rawOps = ep.crudOperations?.[tableNodeId];
+    const ops: ("read" | "create" | "update" | "delete")[] =
+      Array.isArray(rawOps) && rawOps.length > 0
+        ? rawOps
+        : [
+            method === "post"
+              ? "create"
+              : method === "put" || method === "patch"
+                ? "update"
+                : method === "delete"
+                  ? "delete"
+                  : "read",
+          ];
+
+    for (const op of ops) {
+      let fn: ReusableFunction | undefined;
+      let callExpr = "";
+
+      if (op === "read") {
+        if (isIdRoute) {
+          fn = fnsToUse.find((f) => f.kind === "findById") || fnsToUse.find((f) => f.kind === "findAll");
+          callExpr = fn ? `${fn.name}(req.params.id)` : "";
+        } else {
+          fn = fnsToUse.find((f) => f.kind === "findAll") || fnsToUse.find((f) => f.kind === "findById");
+          callExpr = fn ? `${fn.name}()` : "";
+        }
+      } else if (op === "create") {
+        fn = fnsToUse.find((f) => f.kind === "create");
+        callExpr = fn ? `${fn.name}(PAYLOAD_VAR)` : "";
+      } else if (op === "update") {
+        fn = fnsToUse.find((f) => f.kind === "update");
+        callExpr = fn ? `${fn.name}(req.params.id, PAYLOAD_VAR)` : "";
+      } else if (op === "delete") {
+        fn = fnsToUse.find((f) => f.kind === "delete");
+        callExpr = fn ? `${fn.name}(req.params.id)` : "";
+      }
+
+      if (fn && callExpr) {
+        if (!results.some((r) => r.fn.name === fn!.name)) {
+          results.push({ fn, callExpr, operationKind: op, tableNodeId });
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
 /**
  * Pick a Kafka publish function when the endpoint has published events or
  * the route name suggests an event-producing action.
@@ -84,6 +203,140 @@ function toKafkaTopicKey(eventName: string): string {
     .trim()
     .replace(/[^a-zA-Z0-9]+/g, "_")
     .toUpperCase();
+}
+
+function buildResponsePayloadCode(
+  ep: Endpoint,
+  statusCode: number,
+  path: string,
+  pickedDbOps: TargetDbOperation[],
+  targetVarMap: Map<string, string>,
+  responseData: string,
+): string {
+  const mode = ep.responseMode || "schema_builder";
+
+  if (mode === "custom_expression" && ep.responseExpression?.trim()) {
+    return ep.responseExpression.trim();
+  }
+
+  if (mode === "inferred") {
+    if (pickedDbOps.length > 0) {
+      const lastOp = pickedDbOps[pickedDbOps.length - 1];
+      const primaryVar = lastOp ? `${lastOp.fn.name}Result` : "result";
+      return `{ success: true, data: ${primaryVar}, timestamp: new Date().toISOString() }`;
+    }
+    return responseData;
+  }
+
+  // mode === "schema_builder"
+  if (ep.responseFields && ep.responseFields.length > 0) {
+    const fieldEntries: string[] = [];
+
+    for (const f of ep.responseFields) {
+      const fieldName = f.name || "field";
+      if (!fieldName) continue;
+
+      if (fieldName === "status" || fieldName === "statusCode") {
+        fieldEntries.push(`      ${fieldName}: ${statusCode}`);
+        continue;
+      }
+      if (fieldName === "message") {
+        fieldEntries.push(`      ${fieldName}: "Successfully executed ${ep.type || "GET"} ${path}"`);
+        continue;
+      }
+      if (fieldName === "timestamp") {
+        fieldEntries.push(`      ${fieldName}: new Date().toISOString()`);
+        continue;
+      }
+
+      // Resolve variable name for DB field or entity payload
+      let targetVar: string | null = null;
+      if (f.type && f.type.startsWith("db:")) {
+        const parts = f.type.split(":");
+        const tableNodeId = parts[1];
+        if (tableNodeId && targetVarMap.has(tableNodeId)) {
+          targetVar = targetVarMap.get(tableNodeId)!;
+        }
+      }
+
+      if (!targetVar && pickedDbOps.length > 0) {
+        const cleanName = fieldName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const matchedOp = pickedDbOps.find((op) => {
+          const targetClean = (op.fn.targetName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const fnClean = op.fn.name.toLowerCase();
+          return (
+            (cleanName && targetClean && (cleanName.includes(targetClean) || targetClean.includes(cleanName))) ||
+            (cleanName && fnClean.includes(cleanName))
+          );
+        });
+
+        if (matchedOp) {
+          targetVar = `${matchedOp.fn.name}Result`;
+        } else if (cleanName === "data" || cleanName === "payload" || cleanName === "result") {
+          const lastOp = pickedDbOps[pickedDbOps.length - 1];
+          const firstOp = pickedDbOps[0];
+          const primaryOp =
+            pickedDbOps.find((op) => op.operationKind === "create" || op.operationKind === "update") || lastOp;
+          targetVar = primaryOp ? `${primaryOp.fn.name}Result` : firstOp ? `${firstOp.fn.name}Result` : "result";
+        }
+      }
+
+      if (f.type && f.type.startsWith("db:")) {
+        const isPartial = f.type.includes(":partial");
+        const cols: string[] = f.selectedColumns || [];
+
+        if (targetVar) {
+          if (isPartial && cols.length > 0) {
+            const pickProps = cols.map((c) => `${c}: item.${c}`).join(", ");
+            fieldEntries.push(
+              `      ${fieldName}: Array.isArray(${targetVar}) ? ${targetVar}.map((item) => ({ ${pickProps} })) : ${targetVar} ? ({ ${cols.map((c) => `${c}: ${targetVar}.${c}`).join(", ")} }) : null`,
+            );
+          } else {
+            fieldEntries.push(`      ${fieldName}: ${targetVar}`);
+          }
+        } else {
+          fieldEntries.push(`      ${fieldName}: null`);
+        }
+        continue;
+      }
+
+      if (targetVar && (fieldName === "data" || fieldName === "payload" || fieldName === "result")) {
+        fieldEntries.push(`      ${fieldName}: ${targetVar}`);
+        continue;
+      }
+
+      switch (f.type) {
+        case "string":
+          fieldEntries.push(`      ${fieldName}: "success"`);
+          break;
+        case "number":
+          fieldEntries.push(`      ${fieldName}: 0`);
+          break;
+        case "boolean":
+          fieldEntries.push(`      ${fieldName}: true`);
+          break;
+        case "array":
+          fieldEntries.push(`      ${fieldName}: []`);
+          break;
+        case "object":
+          fieldEntries.push(`      ${fieldName}: {}`);
+          break;
+        default:
+          fieldEntries.push(`      ${fieldName}: null`);
+      }
+    }
+
+    if (fieldEntries.length > 0) {
+      return `{\n${fieldEntries.join(",\n")}\n    }`;
+    }
+  }
+
+  if (pickedDbOps.length > 0) {
+    const lastOp = pickedDbOps[pickedDbOps.length - 1];
+    const primaryVar = lastOp ? `${lastOp.fn.name}Result` : "result";
+    return `{ status: ${statusCode}, message: "Successfully executed ${ep.type || "GET"} ${path}", data: ${primaryVar} }`;
+  }
+  return responseData;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,7 +440,7 @@ ${defaultDbCall}}
         : { incoming: [], outgoing: [] };
 
       // --- Resolve reusable function imports ---
-      const pickedDb = pickDbFunction(method, dbFunctions, path);
+      const pickedDbOps = pickDbFunctionsForEndpoint(ep, dbFunctions, allNodes, path);
       const pickedKafka =
         method === "post" && kafkaFunctions.length > 0
           ? pickKafkaPublishFunction(kafkaFunctions)
@@ -195,12 +448,12 @@ ${defaultDbCall}}
 
       // Build the extra import lines (de-duped by importPath)
       const extraImports: Map<string, Set<string>> = new Map();
-      if (pickedDb) {
-        if (!extraImports.has(pickedDb.fn.importPath)) {
-          extraImports.set(pickedDb.fn.importPath, new Set());
+      pickedDbOps.forEach((op) => {
+        if (!extraImports.has(op.fn.importPath)) {
+          extraImports.set(op.fn.importPath, new Set());
         }
-        extraImports.get(pickedDb.fn.importPath)!.add(pickedDb.fn.name);
-      }
+        extraImports.get(op.fn.importPath)!.add(op.fn.name);
+      });
       if (pickedKafka) {
         if (!extraImports.has(pickedKafka.importPath)) {
           extraImports.set(pickedKafka.importPath, new Set());
@@ -340,26 +593,33 @@ export async function ${handlerName}(
         }
       }
 
+      // Business Logic
+      routeHandlerCode += `    // --- Business Logic ---\n\n`;
+
       // Payload reference for DB and Messaging operations
       const payloadVar = hasValidatedBody ? "body" : "req.body";
 
       // 3. DB Call
-      if (pickedDb) {
-        routeHandlerCode += `    // --- Database Operation (via @workspace/db prepared statement) ---\n`;
-        if (method === "get") {
-          routeHandlerCode += `    const result = ${pickedDb.callExpr};\n`;
-          routeHandlerCode += `    if (result === undefined || result === null) {\n`;
-          routeHandlerCode += `      return res.status(404).json({ error: "Not found" });\n`;
-          routeHandlerCode += `    }\n\n`;
-        } else if (method === "post") {
-          const postCallExpr = pickedDb.callExpr.replace("req.body", payloadVar);
-          routeHandlerCode += `    ${postCallExpr};\n\n`;
-        } else if (method === "put" || method === "patch") {
-          const updateCallExpr = pickedDb.callExpr.replace("req.body", payloadVar);
-          routeHandlerCode += `    ${updateCallExpr};\n\n`;
-        } else if (method === "delete") {
-          routeHandlerCode += `    ${pickedDb.callExpr};\n\n`;
-        }
+      const targetVarMap = new Map<string, string>();
+      if (pickedDbOps.length > 0) {
+        routeHandlerCode += `    // --- Database Operation(s) (via @workspace/db prepared statement) ---\n`;
+        pickedDbOps.forEach((op) => {
+          const callExpr = op.callExpr.replace("PAYLOAD_VAR", payloadVar);
+          const varName = `${op.fn.name}Result`;
+
+          if (op.tableNodeId) {
+            targetVarMap.set(op.tableNodeId, varName);
+          }
+
+          if (op.operationKind === "read" && (path.includes(":id") || path.includes("{id}"))) {
+            routeHandlerCode += `    const ${varName} = ${callExpr};\n`;
+            routeHandlerCode += `    if (${varName} === undefined || ${varName} === null) {\n`;
+            routeHandlerCode += `      return res.status(404).json({ error: "Not found" });\n`;
+            routeHandlerCode += `    }\n\n`;
+          } else {
+            routeHandlerCode += `    const ${varName} = ${callExpr};\n\n`;
+          }
+        });
       }
 
       // 4. Kafka Publish Call
@@ -383,24 +643,34 @@ export async function ${handlerName}(
         routeHandlerCode += `    );\n\n`;
       }
 
-      // 5. Business Logic (Editable User/AI Code Block)
-      routeHandlerCode += `    // --- Business Logic ---\n`;
       if (codeBlock) {
         codeBlock.split("\n").forEach((line: string) => {
           routeHandlerCode += `    ${line}\n`;
         });
       }
-      routeHandlerCode += `\n`;
 
-      // Final response â€” use 'result' if we have a DB findAll/findById result
-      const statusCode = ep.type === "POST" ? 201 : 200;
-      const responsePayload =
-        pickedDb && method === "get"
-          ? `{ success: true, data: result, timestamp: new Date().toISOString() }`
-          : responseData;
+      // Check if custom code already handles sending a response
+      const hasCustomResponse =
+        Boolean(codeBlock) &&
+        (codeBlock.includes("res.json(") ||
+          codeBlock.includes("res.send(") ||
+          codeBlock.includes("return res.") ||
+          codeBlock.includes("res.end("));
 
-      routeHandlerCode += `\n    logger.debug("Successfully generated response for ${path}");\n`;
-      routeHandlerCode += `    return res.status(${statusCode}).json(${responsePayload});\n`;
+      if (!hasCustomResponse) {
+        const statusCode = ep.type === "POST" ? 201 : 200;
+        const responsePayload = buildResponsePayloadCode(
+          ep,
+          statusCode,
+          path,
+          pickedDbOps,
+          targetVarMap,
+          responseData,
+        );
+
+        routeHandlerCode += `    logger.debug("Successfully generated response for ${path}");\n`;
+        routeHandlerCode += `    return res.status(${statusCode}).json(${responsePayload});\n`;
+      }
       routeHandlerCode += `  } catch (err) {\n`;
       routeHandlerCode += `    const message = err instanceof Error ? err.message : String(err);\n`;
       routeHandlerCode += `    logger.error("Error in ${method.toUpperCase()} ${path}:", message);\n`;

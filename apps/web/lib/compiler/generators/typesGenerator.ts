@@ -9,6 +9,85 @@ import {
   schemaToZodSchema,
 } from "./schemaToTypeScript";
 
+function generateResponseInterface(
+  interfaceName: string,
+  responseFields: any[] = [],
+  legacyResponseBody: any,
+  nodes: BackendNode[],
+): { code: string; dbImports: Set<string> } {
+  const dbImports = new Set<string>();
+
+  if (!responseFields || responseFields.length === 0) {
+    const legacy = schemaToTsInterface(interfaceName, legacyResponseBody);
+    if (legacy.hasContent) return { code: legacy.code, dbImports };
+    return {
+      code: `export interface ${interfaceName} {\n  status: number;\n  message: string;\n  data?: unknown;\n}\n`,
+      dbImports,
+    };
+  }
+
+  const props: string[] = [];
+
+  for (const field of responseFields) {
+    const isRequired = field.required !== false;
+    const propName = field.name || "field";
+    let tsType = "unknown";
+
+    if (field.type && field.type.startsWith("db:")) {
+      const parts = field.type.split(":");
+      const tableNodeId = parts[1];
+      const category = parts[2] || "single";
+      const tableNode = nodes.find((n) => n.id === tableNodeId);
+      const rawTableName =
+        tableNode?.data?.label || tableNode?.data?.tableRef || "Entity";
+      const pascalEntity = toPascalCase(rawTableName);
+
+      dbImports.add(pascalEntity);
+
+      const cols: string[] = field.selectedColumns || [];
+      const hasPick = category.startsWith("partial") && cols.length > 0;
+      const pickUnion = hasPick ? cols.map((c) => `"${c}"`).join(" | ") : "";
+
+      if (category === "single") {
+        tsType = pascalEntity;
+      } else if (category === "array") {
+        tsType = `${pascalEntity}[]`;
+      } else if (category === "partial_single") {
+        tsType = hasPick ? `Pick<${pascalEntity}, ${pickUnion}>` : pascalEntity;
+      } else if (category === "partial_array") {
+        tsType = hasPick ? `Pick<${pascalEntity}, ${pickUnion}>[]` : `${pascalEntity}[]`;
+      }
+    } else {
+      switch (field.type) {
+        case "string":
+        case "UUID":
+        case "timestamp":
+          tsType = "string";
+          break;
+        case "number":
+          tsType = "number";
+          break;
+        case "boolean":
+          tsType = "boolean";
+          break;
+        case "object":
+          tsType = "Record<string, unknown>";
+          break;
+        case "array":
+          tsType = "unknown[]";
+          break;
+        default:
+          tsType = "string";
+      }
+    }
+
+    props.push(`  ${propName}${isRequired ? "" : "?"}: ${tsType};`);
+  }
+
+  const code = `export interface ${interfaceName} {\n${props.join("\n")}\n}\n`;
+  return { code, dbImports };
+}
+
 export function generateTypesPackage(
   nodes: BackendNode[],
   endpoints: (Endpoint & { nodeId: string })[] = [],
@@ -142,9 +221,11 @@ export function generateTypesPackage(
           `${pascalName}Body`,
           ep.requestBody,
         );
-        const responseTypeRes = schemaToTsInterface(
+        const responseResInfo = generateResponseInterface(
           `${pascalName}Response`,
+          ep.responseFields,
           ep.responseBody,
+          nodes,
         );
 
         const queryZodRes = parametersToZodSchema(
@@ -157,7 +238,12 @@ export function generateTypesPackage(
           ep.requestBody,
         );
 
-        let singleRouteCode = `import { z } from "zod";\n\n`;
+        const dbImportStatement =
+          responseResInfo.dbImports.size > 0
+            ? `import type { ${Array.from(responseResInfo.dbImports).join(", ")} } from "@workspace/db";\n`
+            : "";
+
+        let singleRouteCode = `import { z } from "zod";\n${dbImportStatement}\n`;
         singleRouteCode += `/**\n * ${ep.type || "GET"} ${ep.name || "/"}\n * Service: ${rawServiceName}\n * ${ep.summary || "Route Schema"}\n */\n`;
         singleRouteCode += `// --- Input Schemas ---\n`;
         singleRouteCode += paramsTypeRes.code + "\n";
@@ -169,7 +255,7 @@ export function generateTypesPackage(
         }
 
         singleRouteCode += `// --- Output Schema ---\n`;
-        singleRouteCode += responseTypeRes.code + "\n";
+        singleRouteCode += responseResInfo.code + "\n";
 
         singleRouteCode += `// --- Zod Validation Schemas ---\n`;
         if (queryTypeRes.hasContent) {

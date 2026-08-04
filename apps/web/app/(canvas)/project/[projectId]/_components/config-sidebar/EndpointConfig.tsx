@@ -4,6 +4,7 @@ import {
   ParameterEditor,
   SchemaEditor,
 } from "../backend-nodes/graph-nodes/Editors";
+import { ResponseSchemaEditor } from "./ResponseSchemaEditor";
 import {
   MessagingResourceList,
   LocalInput,
@@ -283,10 +284,16 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         />
       </div>
 
-      <SchemaEditor
-        title="Response Schema"
-        schema={item.responseBody}
-        onChange={(responseBody) => updateEndpoint(item.id, { responseBody })}
+      <ResponseSchemaEditor
+        mode={item.responseMode || "schema_builder"}
+        onModeChange={(responseMode) => updateEndpoint(item.id, { responseMode })}
+        fields={item.responseFields || []}
+        onFieldsChange={(responseFields) => updateEndpoint(item.id, { responseFields })}
+        expression={item.responseExpression || ""}
+        onExpressionChange={(responseExpression) => updateEndpoint(item.id, { responseExpression })}
+        availableTableNodes={availableTableNodes}
+        allNodes={allNodes}
+        endpointMethod={item.type}
       />
     </div>
   );

@@ -16,6 +16,14 @@ export const parameterInputSchema = parameterSchema.extend({
   id: z.string().optional(),
 });
 
+export const responseFieldSchema = parameterSchema.extend({
+  selectedColumns: z.array(z.string()).optional(),
+});
+
+export const responseFieldInputSchema = responseFieldSchema.extend({
+  id: z.string().optional(),
+});
+
 export const schemaModelSchema = z.object({
   id: z.string(),
   rawJson: z.string().optional(),

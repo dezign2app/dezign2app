@@ -2,6 +2,8 @@ import { z } from "zod";
 import { EndpointInputType } from "../types";
 import {
   parameterSchema,
+  responseFieldSchema,
+  responseFieldInputSchema,
   schemaModelSchema,
   processingStepSchema,
   architectureMetadataSchema,
@@ -46,6 +48,9 @@ export const endpointSchema = z.object({
   crudExplanations: z
     .record(z.string(), z.record(z.string(), z.string()))
     .optional(),
+  responseMode: z.enum(["schema_builder", "custom_expression", "inferred"]).optional(),
+  responseFields: z.array(responseFieldSchema).optional(),
+  responseExpression: z.string().optional(),
   output: z.string().optional(),
 });
 export type Endpoint = z.infer<typeof endpointSchema>;
@@ -212,4 +217,10 @@ export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
       "Single db_ref node ID this endpoint uses; prefer databaseNodeIds when there is more than one.",
     ),
   publishedEvents: z.array(publishedEventInputSchema).optional(),
+  responseMode: z.enum(["schema_builder", "custom_expression", "inferred"]).optional(),
+  responseFields: z.array(responseFieldInputSchema).optional(),
+  responseExpression: z
+    .string()
+    .optional()
+    .describe("Dynamic expression or variable to return as response payload (e.g. dbResult, createdUser)."),
 }) as z.ZodType<EndpointInputType>;

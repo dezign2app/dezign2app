@@ -287,7 +287,7 @@ export function BusinessLogicBlock({
           <div className="flex flex-col gap-2">
             {crudConfig.map((configItem, idx) => (
               <div
-                key={idx}
+                key={`${configItem.tableNodeId || "table"}_${idx}`}
                 className="flex flex-col gap-3 p-2.5 bg-background/60 rounded-lg border border-border/50 shadow-sm"
               >
                 <div className="flex items-center justify-between gap-2 text-xs">
@@ -446,7 +446,7 @@ export function BusinessLogicBlock({
 
           <div className="flex flex-col gap-2.5 bg-background/90 p-3 rounded-lg border border-border/60 font-mono text-[11px] leading-relaxed shadow-inner">
             {/* Database Prepared Statements Preview */}
-            {crudConfig.map((configItem) => {
+            {crudConfig.map((configItem, idx) => {
               if (
                 !configItem.tableNodeId ||
                 configItem.operations.length === 0
@@ -465,7 +465,7 @@ export function BusinessLogicBlock({
 
               return (
                 <div
-                  key={configItem.tableNodeId}
+                  key={`${configItem.tableNodeId}_${idx}`}
                   className="flex flex-col gap-1.5 pb-2 border-b border-border/30 last:border-0 last:pb-0"
                 >
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold">

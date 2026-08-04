@@ -166,9 +166,6 @@ const Pricing = ({
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-green-600 font-medium">
-              🎉 2 months free with annual billing
-            </p>
           </>
         )}
       </div>

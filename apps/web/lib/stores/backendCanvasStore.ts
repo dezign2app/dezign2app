@@ -338,6 +338,182 @@ interface BackendCanvasState {
   reset: (projectId?: string | null) => void;
 }
 
+function cleanupDeletedNodesState(
+  currentState: BackendCanvasState,
+  initialIdsToDelete: string[],
+): Partial<BackendCanvasState> {
+  const getChildrenIds = (parentId: string): string[] => {
+    const children = currentState.nodes
+      .filter((n) => n && n.parentId === parentId)
+      .map((n) => n.id);
+    let allIds = [...children];
+    for (const childId of children) {
+      allIds = [...allIds, ...getChildrenIds(childId)];
+    }
+    return allIds;
+  };
+
+  const allIdsSet = new Set<string>();
+  initialIdsToDelete.forEach((id) => {
+    if (id) {
+      allIdsSet.add(id);
+      getChildrenIds(id).forEach((childId) => allIdsSet.add(childId));
+    }
+  });
+
+  const idsToDeleteArray = Array.from(allIdsSet);
+  if (idsToDeleteArray.length === 0) return {};
+
+  // 1. Next Nodes
+  const nextNodes = currentState.nodes.filter((n) => !allIdsSet.has(n.id));
+
+  // 2. Endpoints to remove
+  const endpointsToDelete = currentState.endpoints.filter((e) =>
+    allIdsSet.has(e.nodeId),
+  );
+  const deletedEndpointIds = new Set(endpointsToDelete.map((e) => e.id));
+  const nextEndpoints = currentState.endpoints
+    .filter((e) => !allIdsSet.has(e.nodeId))
+    .map((ep) => {
+      let changed = false;
+      let newDbIds = ep.databaseNodeIds;
+      let newDbId = ep.databaseNodeId;
+      let newCrudOps = ep.crudOperations;
+      let newCrudExp = ep.crudExplanations;
+
+      if (newDbIds && newDbIds.some((id) => allIdsSet.has(id))) {
+        newDbIds = newDbIds.filter((id) => !allIdsSet.has(id));
+        newDbId = newDbIds[0] || "none";
+        changed = true;
+      }
+      if (newDbId && allIdsSet.has(newDbId)) {
+        newDbId = "none";
+        changed = true;
+      }
+      if (newCrudOps) {
+        const cleanedOps: NonNullable<Endpoint["crudOperations"]> = {};
+        for (const [key, val] of Object.entries(newCrudOps)) {
+          if (!allIdsSet.has(key)) cleanedOps[key] = val;
+          else changed = true;
+        }
+        if (changed) newCrudOps = cleanedOps;
+      }
+      if (newCrudExp) {
+        const cleanedExp: NonNullable<Endpoint["crudExplanations"]> = {};
+        for (const [key, val] of Object.entries(newCrudExp)) {
+          if (!allIdsSet.has(key)) cleanedExp[key] = val;
+          else changed = true;
+        }
+        if (changed) newCrudExp = cleanedExp;
+      }
+
+      return changed
+        ? {
+            ...ep,
+            databaseNodeIds: newDbIds,
+            databaseNodeId: newDbId,
+            crudOperations: newCrudOps,
+            crudExplanations: newCrudExp,
+          }
+        : ep;
+    });
+
+  // 3. Events to remove (publishers & consumers)
+  const eventsToDelete = currentState.events.filter((ev) =>
+    allIdsSet.has(ev.nodeId),
+  );
+  const deletedEventIds = new Set(eventsToDelete.map((ev) => ev.id));
+  const nextEvents = currentState.events
+    .filter((ev) => !allIdsSet.has(ev.nodeId))
+    .map((ev) => {
+      if (ev.brokerNodeId && allIdsSet.has(ev.brokerNodeId)) {
+        return { ...ev, brokerNodeId: "" };
+      }
+      return ev;
+    });
+
+  // 4. Identity Providers to remove
+  const providersToDelete = currentState.identityProviders.filter((p) =>
+    allIdsSet.has(p.nodeId),
+  );
+  const nextProviders = currentState.identityProviders.filter(
+    (p) => !allIdsSet.has(p.nodeId),
+  );
+
+  // 5. Edges to remove
+  const removedEdges = currentState.edges.filter((e) => {
+    if (!e) return false;
+    if (allIdsSet.has(e.source) || allIdsSet.has(e.target)) return true;
+    if (e.sourceHandle) {
+      for (const epId of deletedEndpointIds) {
+        if (e.sourceHandle.includes(epId)) return true;
+      }
+      for (const evId of deletedEventIds) {
+        if (e.sourceHandle.includes(evId)) return true;
+      }
+    }
+    if (e.targetHandle) {
+      for (const epId of deletedEndpointIds) {
+        if (e.targetHandle.includes(epId)) return true;
+      }
+      for (const evId of deletedEventIds) {
+        if (e.targetHandle.includes(evId)) return true;
+      }
+    }
+    return false;
+  });
+  const removedEdgeIds = removedEdges.map((e) => e.id);
+  const removedEdgeSet = new Set(removedEdgeIds);
+  const nextEdges = currentState.edges.filter((e) => !removedEdgeSet.has(e.id));
+
+  // 6. Config sidebar reset
+  let nextActiveConfigItem = currentState.activeConfigItem;
+  if (nextActiveConfigItem) {
+    if (
+      allIdsSet.has(nextActiveConfigItem.nodeId) ||
+      deletedEndpointIds.has(nextActiveConfigItem.id) ||
+      deletedEventIds.has(nextActiveConfigItem.id)
+    ) {
+      nextActiveConfigItem = null;
+    }
+  }
+
+  return {
+    nodes: nextNodes,
+    edges: nextEdges,
+    endpoints: nextEndpoints,
+    events: nextEvents,
+    identityProviders: nextProviders,
+    activeConfigItem: nextActiveConfigItem,
+    pendingNodeRemovals: [
+      ...currentState.pendingNodeRemovals,
+      ...idsToDeleteArray,
+    ],
+    pendingEdgeRemovals: [
+      ...currentState.pendingEdgeRemovals,
+      ...removedEdgeIds,
+    ],
+    pendingEndpointRemovals: [
+      ...currentState.pendingEndpointRemovals,
+      ...endpointsToDelete.map((ep) => ({
+        nodeId: ep.nodeId,
+        endpointId: ep.id,
+      })),
+    ],
+    pendingEventRemovals: [
+      ...currentState.pendingEventRemovals,
+      ...eventsToDelete.map((ev) => ({ nodeId: ev.nodeId, eventId: ev.id })),
+    ],
+    pendingIdentityProviderRemovals: [
+      ...currentState.pendingIdentityProviderRemovals,
+      ...providersToDelete.map((p) => ({
+        nodeId: p.nodeId,
+        providerId: p.id,
+      })),
+    ],
+  };
+}
+
 export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   projectId: null,
   nodes: [],
@@ -362,45 +538,61 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   setNodesPendingDeletion: (nodes) => set({ nodesPendingDeletion: nodes }),
 
   onNodesChange: (changes) => {
-    const rawNext = applyNodeChanges<BackendNode>(changes, get().nodes);
-    // Defensive: filter out any undefined/null entries that React Flow may produce
-    const next = rawNext.filter((n): n is BackendNode => Boolean(n?.id));
-
     const removedIds: string[] = changes
       .filter((c) => c.type === "remove")
       .map((c) => c.id);
 
-    // Filter changes that are persistent (e.g. position change, manual resizing, node add/replace)
-    // Ignore purely ephemeral changes like initial measurement (dimensions without resizing) or selection changes
-    const persistentChangedNodeIds = new Set(
-      changes
-        .filter((c) => {
-          if (
-            c.type === "position" ||
-            c.type === "add" ||
-            c.type === "replace"
-          ) {
-            return true;
-          }
-          if (
-            c.type === "dimensions" &&
-            "resizing" in c &&
-            Boolean((c as { resizing?: boolean }).resizing)
-          ) {
-            return true;
-          }
-          return false;
-        })
-        .map((c) => c.id),
-    );
+    const nonRemoveChanges = changes.filter((c) => c.type !== "remove");
 
-    const upserts = next.filter((n) => persistentChangedNodeIds.has(n.id));
+    let currentState = get();
+    let updates: Partial<BackendCanvasState> = {};
 
-    set({
-      nodes: next,
-      pendingNodeUpserts: [...get().pendingNodeUpserts, ...upserts],
-      pendingNodeRemovals: [...get().pendingNodeRemovals, ...removedIds],
-    });
+    if (removedIds.length > 0) {
+      updates = cleanupDeletedNodesState(currentState, removedIds);
+      currentState = { ...currentState, ...updates };
+    }
+
+    if (nonRemoveChanges.length > 0) {
+      const rawNext = applyNodeChanges<BackendNode>(
+        nonRemoveChanges,
+        currentState.nodes,
+      );
+      const next = rawNext.filter((n): n is BackendNode => Boolean(n?.id));
+
+      const persistentChangedNodeIds = new Set(
+        nonRemoveChanges
+          .filter((c) => {
+            if (
+              c.type === "position" ||
+              c.type === "add" ||
+              c.type === "replace"
+            ) {
+              return true;
+            }
+            if (
+              c.type === "dimensions" &&
+              "resizing" in c &&
+              Boolean((c as { resizing?: boolean }).resizing)
+            ) {
+              return true;
+            }
+            return false;
+          })
+          .map((c) => c.id),
+      );
+
+      const upserts = next.filter((n) => persistentChangedNodeIds.has(n.id));
+
+      updates.nodes = next;
+      updates.pendingNodeUpserts = [
+        ...currentState.pendingNodeUpserts,
+        ...upserts,
+      ];
+    }
+
+    if (Object.keys(updates).length > 0) {
+      set(updates);
+    }
   },
 
   onEdgesChange: (changes) => {
@@ -800,27 +992,8 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   },
 
   deleteNode: (id) => {
-    const getChildrenIds = (parentId: string): string[] => {
-      const children = get()
-        .nodes.filter((n) => n.parentId === parentId)
-        .map((n) => n.id);
-      let allIds = [...children];
-      for (const childId of children) {
-        allIds = [...allIds, ...getChildrenIds(childId)];
-      }
-      return allIds;
-    };
-
-    const idsToDelete = [id, ...getChildrenIds(id)];
-
-    set({
-      nodes: get().nodes.filter((n) => !idsToDelete.includes(n.id)),
-      edges: get().edges.filter(
-        (e) =>
-          !idsToDelete.includes(e.source) && !idsToDelete.includes(e.target),
-      ),
-      pendingNodeRemovals: [...get().pendingNodeRemovals, ...idsToDelete],
-    });
+    const updates = cleanupDeletedNodesState(get(), [id]);
+    set(updates);
   },
 
   addEdge: (edgeWithoutIndex) => {
@@ -956,8 +1129,10 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   deleteEndpoint: (id) => {
     const endpoint = get().endpoints.find((e) => e.id === id);
     if (endpoint) {
+      const active = get().activeConfigItem;
       set({
         endpoints: get().endpoints.filter((e) => e.id !== id),
+        activeConfigItem: active?.id === id ? null : active,
         pendingEndpointRemovals: [
           ...get().pendingEndpointRemovals,
           { nodeId: endpoint.nodeId, endpointId: id },
@@ -1000,8 +1175,10 @@ export const useBackendCanvasStore = create<BackendCanvasState>((set, get) => ({
   deleteEvent: (id) => {
     const event = get().events.find((e) => e.id === id);
     if (event) {
+      const active = get().activeConfigItem;
       set({
         events: get().events.filter((e) => e.id !== id),
+        activeConfigItem: active?.id === id ? null : active,
         pendingEventRemovals: [
           ...get().pendingEventRemovals,
           { nodeId: event.nodeId, eventId: id },

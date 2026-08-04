@@ -12,58 +12,7 @@ import { resolveEndpointTrace } from "../traceResolver";
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Given the HTTP method and available DB functions, pick the most relevant
- * CRUD function for this route and return it with the import line.
- * Returns null if no DB functions are available.
- */
-function pickDbFunction(
-  method: string,
-  dbFunctions: ReusableFunction[],
-  path: string,
-): { fn: ReusableFunction; callExpr: string } | null {
-  if (dbFunctions.length === 0) return null;
 
-  const isIdRoute = path.includes(":id") || path.includes("{id}");
-
-  // Group by kind for quick lookup
-  const byKind = (kind: ReusableFunction["kind"]) =>
-    dbFunctions.filter((f) => f.kind === kind);
-
-  let fn: ReusableFunction | undefined;
-  let callExpr = "";
-
-  switch (method) {
-    case "get":
-      if (isIdRoute) {
-        fn = byKind("findById")[0];
-        callExpr = fn ? `${fn.name}(req.params.id)` : "";
-      } else {
-        fn = byKind("findAll")[0];
-        callExpr = fn ? `${fn.name}()` : "";
-      }
-      break;
-    case "post":
-      fn = byKind("create")[0];
-      callExpr = fn ? `${fn.name}(req.body)` : "";
-      break;
-    case "put":
-    case "patch":
-      fn = byKind("update")[0];
-      callExpr = fn ? `${fn.name}(req.params.id, req.body)` : "";
-      break;
-    case "delete":
-      fn = byKind("delete")[0];
-      callExpr = fn ? `${fn.name}(req.params.id)` : "";
-      break;
-    default:
-      fn = byKind("findAll")[0];
-      callExpr = fn ? `${fn.name}()` : "";
-  }
-
-  if (!fn) return null;
-  return { fn, callExpr };
-}
 
 interface TargetDbOperation {
   fn: ReusableFunction;
@@ -101,22 +50,7 @@ function pickDbFunctionsForEndpoint(
         : [];
 
   if (targetNodeIds.length === 0) {
-    const fallback = pickDbFunction(method, dbFunctions, path);
-    if (fallback) {
-      results.push({
-        fn: fallback.fn,
-        callExpr: fallback.callExpr,
-        operationKind:
-          method === "post"
-            ? "create"
-            : method === "put" || method === "patch"
-              ? "update"
-              : method === "delete"
-                ? "delete"
-                : "read",
-      });
-    }
-    return results;
+    return [];
   }
 
   for (const tableNodeId of targetNodeIds) {
@@ -594,7 +528,7 @@ export async function ${handlerName}(
       }
 
       // Business Logic
-      routeHandlerCode += `    // --- Business Logic ---\n\n`;
+      routeHandlerCode += `    // --- Business Logic ---\n`;
 
       // Payload reference for DB and Messaging operations
       const payloadVar = hasValidatedBody ? "body" : "req.body";
@@ -668,7 +602,7 @@ export async function ${handlerName}(
           responseData,
         );
 
-        routeHandlerCode += `    logger.debug("Successfully generated response for ${path}");\n`;
+        routeHandlerCode += `\n\n    logger.debug("Successfully generated response for ${path}");\n`;
         routeHandlerCode += `    return res.status(${statusCode}).json(${responsePayload});\n`;
       }
       routeHandlerCode += `  } catch (err) {\n`;

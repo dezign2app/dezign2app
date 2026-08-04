@@ -12,13 +12,29 @@ const faqs: FaqItem[] = [
   {
     question: "What is the Early Believer Program?",
     answer: (
-      <p>
-        The Early Believer Program is an exclusive early-backer initiative for
-        supporters who contribute upfront to fuel dezign2app&apos;s product
-        development. In exchange, backers receive upfront subscription access (6
-        months or 1 year per seat) plus a permanent lifetime discount (5% or
-        10%) applied to all future workspace renewal bills.
-      </p>
+      <div className="flex flex-col gap-2">
+        <p>
+          The Early Believer Program is an early-backer initiative for
+          supporters who want to directly fund dezign2app&apos;s development. Here
+          is exactly how it works:
+        </p>
+        <ul className="list-disc pl-5 flex flex-col gap-1 text-gray-600">
+          <li>
+            <strong>Current Beta access</strong> — Immediate access to all core
+            Beta platform tools &amp; System Design canvas while in Beta.
+          </li>
+          <li>
+            <strong>Automatic Plan Credit Conversion</strong> — As soon as live
+            official plans roll out, any remaining balance from your upfront payment
+            converts directly into workspace plan credit.
+          </li>
+          <li>
+            <strong>Lifetime discount (5% or 10%)</strong> — Locks in permanent
+            discount savings applied automatically across all official live plans,
+            advanced AI features, and cloud deployment bills.
+          </li>
+        </ul>
+      </div>
     ),
   },
   {
@@ -62,9 +78,10 @@ const faqs: FaqItem[] = [
           <code>Tier Price × Number of Seats</code>.
         </p>
         <p>
-          Each seat grants full workspace membership and allocates either 1 Year
-          (for the $1,000 tier) or 6 Months (for the $500 tier) of subscription
-          access per seat.
+          Each seat covers immediate Beta access. When official live pricing
+          launches, unused subscription value from your upfront payment is
+          credited directly to your workspace seats, and your 5% or 10% lifetime
+          discount applies to all ongoing invoices.
         </p>
       </div>
     ),
@@ -73,15 +90,28 @@ const faqs: FaqItem[] = [
     question:
       "How does the Beta phase work and will future AI features require a plan upgrade?",
     answer: (
-      <p>
-        dezign2app is currently in Beta with core platform features enabled. All
-        plans (including annual subscription packs and Early Believer tiers)
-        grant complete access to our Beta platform capabilities. As advanced AI
-        features roll out in the future, accessing those advanced AI
-        capabilities may require upgrading your plan — and your locked-in 5% or
-        10% lifetime discount will automatically apply to any future plan
-        upgrades or add-on packages!
-      </p>
+      <div className="flex flex-col gap-2">
+        <p>
+          dezign2app is currently in Beta with core platform features
+          — System Design canvas, architecture tools, and the base platform.
+          This is what your Early Believer payment covers right now.
+        </p>
+        <p>
+          Advanced capabilities like{" "}
+          <strong>
+            AI-assisted system design, automated testing, CI/CD pipelines, and
+            cloud services
+          </strong>{" "}
+          are planned roadmap features. When they roll out, they will have{" "}
+          <strong>their own separate pricing tiers</strong> — they are not
+          included in current Beta access.
+        </p>
+        <p>
+          The good news: your locked-in 5% or 10% Early Believer discount will
+          automatically apply to those future tier subscriptions and add-ons
+          when you choose to upgrade.
+        </p>
+      </div>
     ),
   },
   {

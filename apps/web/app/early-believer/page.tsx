@@ -40,12 +40,14 @@ export default function EarlyBelieverPage() {
           </h1>
 
           <p className="text-gray-600 text-base md:text-lg leading-relaxed">
-            By joining as an Early Believer, you provide crucial early support
-            to our mission of automating the entire software development
-            lifecycle — combining system architecture design, code generation,
-            automated testing, CI/CD pipelines, cloud infrastructure, real-time
-            monitoring & maintenance into one platform. In return, we lock in
-            permanent, lifetime discount privileges for your entire workspace.
+            By joining as an Early Believer, you make an upfront contribution
+            that directly funds dezign2app&apos;s development. Your payment covers{" "}
+            <strong>current Beta platform access</strong>. When our official live
+            version and advanced feature plans roll out, any remaining balance on
+            your upfront payment converts directly into plan credit — and your
+            locked-in <strong>5% or 10% lifetime discount</strong> applies to all
+            official subscription tiers, AI system design, automated testing, and
+            cloud services.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
@@ -84,15 +86,20 @@ export default function EarlyBelieverPage() {
               </div>
 
               <h2 className="text-xl font-bold text-gray-900 mb-2">
-                1-Year Annual Pack Tier
+                10% Lifetime Discount Tier
               </h2>
-              <p className="text-xs text-gray-600 leading-relaxed mb-6">
-                Includes 1 Full Year Subscription pack + $900 investment
-                contribution for a 10% lifetime discount on all future workspace
-                bills.
+              <p className="text-xs text-gray-600 leading-relaxed mb-3">
+                Includes <strong>$100 for product subscription</strong> +{" "}
+                <strong>$900 investment contribution</strong> for product
+                development.
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                Your <strong>10% lifetime discount</strong> applies to all future
+                product renewals, advanced AI system design, automated testing,
+                and cloud services.
               </p>
 
-              <div className="p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl mb-6">
+              <div className="text-start p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl mb-6">
                 <div className="text-xs font-bold text-emerald-950 mb-1 flex items-center gap-1.5">
                   <TrendingUp className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Discount Cap: Up to $100,000 Total Discount</span>
@@ -104,28 +111,21 @@ export default function EarlyBelieverPage() {
                 </p>
               </div>
 
-              <ul className="flex flex-col gap-3 text-xs text-gray-700 mb-8">
+              <ul className="flex flex-col gap-3 text-xs text-gray-700 mb-4">
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    <strong>1 Year (Annual)</strong> subscription included per
-                    seat{" "}
-                    <span className="font-normal text-gray-500">
-                      (AI features may require plan upgrades in the future)
-                    </span>
+                    <strong>$100 Product Subscription:</strong> Full Beta access
+                    now. Once live, any remaining amount of your Beta subscription
+                    will be added directly to your live subscription plan.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
+                    <strong>$900 Development Contribution:</strong> Locks in{" "}
                     <strong>10% OFF forever</strong> on all future product
-                    renewals & team seats
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
-                  <span>
-                    Full access to System Design suite & Beta platform tools
+                    bills &amp; feature tiers
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
@@ -133,6 +133,12 @@ export default function EarlyBelieverPage() {
                   <span>Priority early access to all new roadmap releases</span>
                 </li>
               </ul>
+
+              <p className="text-[11px] text-gray-400 italic mb-6">
+                Note: AI-assisted system design, automated testing &amp; cloud
+                services roll out with separate pricing tiers — your discount
+                will apply to all of them.
+              </p>
             </div>
 
             <Link
@@ -156,12 +162,17 @@ export default function EarlyBelieverPage() {
               </div>
 
               <h2 className="text-xl font-bold text-gray-900 mb-2">
-                6-Months Pack Tier
+                5% Lifetime Discount Tier
               </h2>
-              <p className="text-xs text-gray-600 leading-relaxed mb-6">
-                Includes 6 Months Subscription pack + $450 investment
-                contribution for a 5% lifetime discount on all future workspace
-                bills.
+              <p className="text-xs text-gray-600 leading-relaxed mb-3">
+                Includes <strong>$50 for product subscription</strong> +{" "}
+                <strong>$450 investment contribution</strong> for product
+                development.
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed mb-6">
+                Your <strong>5% lifetime discount</strong> applies to all future
+                product renewals, advanced AI system design, automated testing,
+                and cloud services.
               </p>
 
               <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-2xl mb-6">
@@ -176,36 +187,36 @@ export default function EarlyBelieverPage() {
                 </p>
               </div>
 
-              <ul className="flex flex-col gap-3 text-xs text-gray-700 mb-8">
+              <ul className="flex flex-col gap-3 text-xs text-gray-700 mb-4">
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    <strong>6 Months</strong> subscription included per seat{" "}
-                    <span className="font-normal text-gray-500">
-                      (AI features may require plan upgrades in the future)
-                    </span>
+                    <strong>$50 Product Subscription:</strong> Full Beta access
+                    now. Once live, any remaining amount of your Beta subscription
+                    will be added directly to your live subscription plan.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
+                    <strong>$450 Development Contribution:</strong> Locks in{" "}
                     <strong>5% OFF forever</strong> on all future product
-                    renewals & team seats
+                    bills &amp; feature tiers
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                   <span>
-                    Full access to System Design suite & Beta platform tools
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
-                  <span>
-                    Standard early supporter status & priority support
+                    Standard early supporter status &amp; priority support
                   </span>
                 </li>
               </ul>
+
+              <p className="text-[11px] text-gray-400 italic mb-6">
+                Note: AI-assisted system design, automated testing &amp; cloud
+                services roll out with separate pricing tiers — your discount
+                will apply to all of them.
+              </p>
             </div>
 
             <Link
@@ -239,14 +250,12 @@ export default function EarlyBelieverPage() {
                 1
               </div>
               <h3 className="font-bold text-base text-gray-900">
-                Seat Allocation & Rollover
+                Instant Beta Access
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                Each seat carries its own discount cap allowance ($100k for 10%
-                tier / $50k for 5% tier). If the discount savings allowance on
-                seat #1 is exhausted over the years, your workspace
-                automatically rolls over to avail the discount with seat #2,
-                seat #3, and beyond!
+                Your Early Believer payment grants immediate access to the
+                current Beta platform, System Design canvas, and core
+                architecture tools starting today.
               </p>
             </div>
 
@@ -255,16 +264,12 @@ export default function EarlyBelieverPage() {
                 2
               </div>
               <h3 className="font-bold text-base text-gray-900">
-                End-to-End Platform Automation
+                Automatic Plan Credit Conversion
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                dezign2app delivers unified automation combining{" "}
-                <strong>
-                  system architecture design, code generation, automated
-                  testing, CI/CD pipelines, cloud infrastructure, real-time
-                  monitoring & maintenance
-                </strong>{" "}
-                into one platform.
+                When official live plans roll out, any remaining balance from
+                your upfront payment converts directly into workspace plan credit,
+                ensuring every dollar of your contribution is honored.
               </p>
             </div>
 
@@ -273,14 +278,12 @@ export default function EarlyBelieverPage() {
                 3
               </div>
               <h3 className="font-bold text-base text-gray-900">
-                Beta Status & Future AI Upgrades
+                Lifetime Discount on Advanced Tiers
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                dezign2app is currently in Beta with core platform features
-                enabled. As we roll out advanced AI capabilities in the future,
-                accessing those advanced AI features may require upgrading your
-                plan. Your locked-in 5% or 10% lifetime discount will
-                automatically apply to all future plan upgrades & add-ons!
+                Your locked-in 5% or 10% lifetime discount automatically applies
+                to all official live subscription tiers, upcoming AI-assisted system
+                design, automated testing, and cloud deployment services.
               </p>
             </div>
           </div>

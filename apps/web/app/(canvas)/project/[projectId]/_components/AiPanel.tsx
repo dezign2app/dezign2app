@@ -144,7 +144,7 @@ export function AiPanel({ projectId, isOpen, onClose, setView }: AiPanelProps) {
         setMessages([
           {
             role: "assistant",
-            content: `Hi! I'm your AI Assistant. I can help you design your system architecture. What would you like to build?`,
+            content: `Hi! I'm your AI Assistant. Will be live soon!`,
           },
         ]);
       }

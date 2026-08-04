@@ -124,8 +124,8 @@ export function EarlyBelieverCard() {
 
       <div className="text-xs mb-4 text-gray-600 leading-normal">
         {tier === 1000
-          ? `Includes 1 Year Plan + $${900 * seats} investment for 10% lifetime discount.`
-          : `Includes 6 Months Plan + $${450 * seats} investment for 5% lifetime discount.`}
+          ? `Includes $100 for product subscription + $900 investment for product development (locks in 10% lifetime discount).`
+          : `Includes $50 for product subscription + $450 investment for product development (locks in 5% lifetime discount).`}
       </div>
 
       {/* Tier selector */}
@@ -238,38 +238,48 @@ export function EarlyBelieverCard() {
 
       {/* Features List */}
       <ul className="flex flex-col gap-2 mt-5 text-xs">
+        {/* Product Subscription Portion */}
         <li className="flex items-start text-start gap-2">
           <CheckCircle />
-          <span className="font-semibold">
-            Includes {tier === 1000 ? "1 Year (Annual)" : "6 Months"}{" "}
-            subscription pack{" "}
+          <span>
+            <span className="font-semibold">
+              ${tier === 1000 ? 100 * seats : 50 * seats} Product Subscription
+            </span>
             <span className="font-normal text-gray-500">
-              (AI features may require plan upgrades in the future)
+              {" "}— Full access to current Beta tools. Once live, any remaining amount of your Beta subscription will be added directly to your live subscription plan.
             </span>
           </span>
         </li>
 
+        {/* Investment Portion & Lifetime Discount */}
         <li>
-          <div className="flex items-center gap-2 font-semibold">
+          <div className="flex items-center gap-2 font-semibold text-start">
             <CheckCircle />
             <span>
-              {discountPercent}% OFF on all future product bills forever
+              ${tier === 1000 ? 900 * seats : 450 * seats} Development Investment
             </span>
           </div>
-          <ul className="pl-6 pt-1.5 flex flex-col gap-1.5 text-[11px] text-gray-600">
+          <ul className="pl-6 pt-1.5 flex flex-col gap-1.5 text-[11px] text-gray-600 text-start">
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-black shrink-0 mt-1.5" />
-              <span>Full System Design suite & Beta access</span>
+              <span>
+                Locks in <strong>{discountPercent}% lifetime discount</strong> on all future bills (capped at ${tier === 1000 ? "100K" : "50K"} per seat)
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-black shrink-0 mt-1.5" />
-              <span>Automated coding & cloud deployment</span>
+              <span>Applies to upcoming AI-assisted system design &amp; testing tiers</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-black shrink-0 mt-1.5" />
-              <span>Real-time monitoring & performance optimization</span>
+              <span>Applies to cloud deployment services &amp; all future subscription renewals</span>
             </li>
           </ul>
+        </li>
+
+        {/* Note */}
+        <li className="flex items-start gap-2 mt-1 text-[11px] text-gray-400 italic text-start">
+          <span>Note: AI system design, automated testing &amp; cloud services roll out with separate pricing tiers — your lifetime discount applies to all of them.</span>
         </li>
       </ul>
     </div>

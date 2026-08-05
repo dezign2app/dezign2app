@@ -66,36 +66,41 @@ export default function CompilerPage({
   const fileTree = useMemo(() => buildFileTree(files), [files]);
 
   // UI state
-  const [selectedFilename, setSelectedFilename] = useState<string>("README.md");
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [selectedFilename, setSelectedFilename] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = window.localStorage.getItem(`compiler_page_state_${projectId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.selectedFilename === "string" && parsed.selectedFilename) {
+            return parsed.selectedFilename;
+          }
+        }
+      } catch (e) {}
+    }
+    return "README.md";
+  });
+  
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = window.localStorage.getItem(`compiler_page_state_${projectId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.expandedPaths)) {
+            return new Set(parsed.expandedPaths);
+          }
+        }
+      } catch (e) {}
+    }
+    return new Set();
+  });
+
   const [copied, setCopied] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
-  // Restore file selection from localStorage
-  React.useEffect(() => {
-    const storageKey = `compiler_page_state_${projectId}`;
-    let restoredFile: string | null = null;
-    let restoredExpanded: string[] = [];
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.selectedFilename === "string") restoredFile = parsed.selectedFilename;
-        if (Array.isArray(parsed.expandedPaths)) restoredExpanded = parsed.expandedPaths;
-      }
-    } catch (e) {
-      console.error("Failed to restore compiler page state", e);
-    }
-    const fileExists = restoredFile && files.some((f) => f.filename === restoredFile);
-    const targetFile = fileExists
-      ? restoredFile!
-      : files.find((f) => f.filename.toLowerCase() === "readme.md")?.filename ??
-        files[0]?.filename ??
-        "README.md";
-    setSelectedFilename(targetFile);
-    setExpandedPaths(new Set([...restoredExpanded, ...getParentPaths(targetFile)]));
-  }, [projectId, files]);
+  const hasRestoredRef = React.useRef<string | null>(null);
 
   const savePageState = (filename: string, expanded: Set<string>) => {
     try {
@@ -108,10 +113,51 @@ export default function CompilerPage({
     }
   };
 
+  // Validate selected file & expand parent paths once Convex & store finish hydration
+  React.useEffect(() => {
+    if (!files || files.length === 0) return;
+    if (project === undefined || canvasElements === undefined || storeProjectId !== projectId) return;
+    if (hasRestoredRef.current === projectId) return;
+    hasRestoredRef.current = projectId;
+
+    const fileExists = selectedFilename && files.some((f) => f.filename === selectedFilename);
+    const targetFile = fileExists
+      ? selectedFilename
+      : files.find((f) => f.filename.toLowerCase() === "readme.md")?.filename ??
+        files[0]?.filename ??
+        "README.md";
+
+    let changed = false;
+    if (targetFile !== selectedFilename) {
+      setSelectedFilename(targetFile);
+      changed = true;
+    }
+
+    const targetParents = getParentPaths(targetFile);
+    const nextExpanded = new Set(expandedPaths);
+    let expandedChanged = false;
+    
+    targetParents.forEach(p => {
+      if (!nextExpanded.has(p)) {
+        nextExpanded.add(p);
+        expandedChanged = true;
+      }
+    });
+
+    if (expandedChanged) {
+      setExpandedPaths(nextExpanded);
+    }
+    
+    if (changed || expandedChanged) {
+      savePageState(targetFile, nextExpanded);
+    }
+  }, [projectId, files, project, canvasElements, storeProjectId, selectedFilename, expandedPaths]);
+
   const handleSelectFile = (filename: string) => {
     setSelectedFilename(filename);
     setExpandedPaths((prev) => {
-      const next = new Set([...prev, ...getParentPaths(filename)]);
+      const next = new Set(prev);
+      getParentPaths(filename).forEach((p) => next.add(p));
       savePageState(filename, next);
       return next;
     });
@@ -120,7 +166,15 @@ export default function CompilerPage({
   const handleToggleExpand = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
-      next.has(path) ? next.delete(path) : next.add(path);
+      if (next.has(path)) {
+        for (const p of Array.from(next)) {
+          if (p === path || p.startsWith(`${path}/`)) {
+            next.delete(p);
+          }
+        }
+      } else {
+        next.add(path);
+      }
       savePageState(selectedFilename, next);
       return next;
     });

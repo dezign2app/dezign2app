@@ -217,3 +217,24 @@ export type AnyMessagingResource = {
   persistence?: string;
   replication?: string;
 };
+
+export type ConfigItemData = AnyMessagingResource & {
+  variant?: string;
+  nodeId?: string;
+};
+
+export type ResourceArrayName =
+  | "topics"
+  | "streams"
+  | "queues"
+  | "channels"
+  | "caches"
+  | "buckets"
+  | "";
+
+export interface EventConfigProps {
+  id: string;
+  nodeId: string;
+}
+
+

@@ -6,11 +6,9 @@ import type {
   MiddlewareNode,
   MemoryNode,
   LangGraphAgentResponseFormatConfig,
-} from "../../types";
-import type {
   LangGraphAgentMemoryConfig,
   LangGraphStateChannel,
-} from "@/types/canvas";
+} from "@workspace/canvas";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 

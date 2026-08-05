@@ -1,7 +1,7 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { Zap } from "lucide-react";
-import type { StartNode } from "../types";
+import type { StartNode } from "@workspace/canvas";
 
 export const LangGraphCanvasStartNode = ({
   data,

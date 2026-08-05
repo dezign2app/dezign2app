@@ -1,7 +1,7 @@
 import React from "react";
 import { NodeProps } from "@xyflow/react";
 import { Database, Plus } from "lucide-react";
-import type { StateGlobalNode } from "../types";
+import type { StateGlobalNode } from "@workspace/canvas";
 
 export const LangGraphCanvasStateNode = ({
   data,

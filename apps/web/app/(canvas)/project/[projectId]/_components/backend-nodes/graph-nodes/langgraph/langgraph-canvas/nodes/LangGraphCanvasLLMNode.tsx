@@ -28,7 +28,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@workspace/ui/components/tabs";
-import type { LangGraphLLMNode, LangGraphCanvasNode } from "../types";
+import type { LangGraphLLMNode, LangGraphCanvasNode } from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_LLM,
   HANDLE_LLM_IN,

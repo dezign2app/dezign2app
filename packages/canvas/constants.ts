@@ -84,6 +84,26 @@ export const HANDLE_LLM_IN = "llm_in" as const;
 export const HANDLE_LLM_OUT = "llm_out" as const;
 export const HANDLE_TOOL_IN = "tool_in" as const;
 export const HANDLE_TOOL_OUT = "tool_out" as const;
+export const HANDLE_MIDDLEWARE_IN = "middleware_in" as const;
+export const HANDLE_MIDDLEWARE_OUT = "middleware_out" as const;
+export const HANDLE_MEMORY_IN = "memory_in" as const;
+export const HANDLE_MEMORY_OUT = "memory_out" as const;
+export const HANDLE_OUTPUT_IN = "output_in" as const;
+export const HANDLE_OUTPUT_OUT = "output_out" as const;
+
+// ─── LangGraph Canvas React Flow Node Types ────────────────────────────────────
+export const LANGGRAPH_CANVAS_NODE_STEP = "step" as const;
+export const LANGGRAPH_CANVAS_NODE_START = "start" as const;
+export const LANGGRAPH_CANVAS_NODE_END = "end" as const;
+export const LANGGRAPH_CANVAS_NODE_PORT = "port" as const;
+export const LANGGRAPH_CANVAS_NODE_STATE_GLOBAL = "state_global" as const;
+export const LANGGRAPH_CANVAS_NODE_LLM = "langgraph_llm" as const;
+export const LANGGRAPH_CANVAS_NODE_TOOL = "langgraph_tool" as const;
+export const LANGGRAPH_CANVAS_NODE_MIDDLEWARE = "langgraph_middleware" as const;
+export const LANGGRAPH_CANVAS_NODE_NODE = "langgraph_node" as const;
+export const LANGGRAPH_CANVAS_NODE_AGENT = "langgraph_agent" as const;
+export const LANGGRAPH_CANVAS_NODE_MEMORY = "langgraph_memory" as const;
+export const LANGGRAPH_CANVAS_NODE_OUTPUT = "langgraph_output" as const;
 
 // ─── Tool Sources ─────────────────────────────────────────────────────────────
 export const TOOL_SOURCE_INLINE = "inline" as const;

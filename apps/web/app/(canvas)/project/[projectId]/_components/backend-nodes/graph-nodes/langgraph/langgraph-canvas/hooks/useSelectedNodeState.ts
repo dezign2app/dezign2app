@@ -18,7 +18,7 @@ import {
   OutputNode,
   StartNode,
   getStepData,
-} from "../types";
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_LLM,

@@ -4,8 +4,6 @@ import type {
   LangGraphInputChannel,
   LangGraphMemoryConfig,
   LangGraphStepConfig,
-} from "@/types/canvas";
-import type {
   StepNodeData,
   LangGraphLLMNodeData,
   ToolNodeData,
@@ -17,7 +15,7 @@ import type {
   ToolNode,
   MiddlewareNode,
   MemoryNode,
-} from "../types";
+} from "@workspace/canvas";
 import { InspectorTabContent } from "./inspector/InspectorTabContent";
 import { LangGraphTestCasesInspector } from "./inspector/LangGraphTestCasesInspector";
 

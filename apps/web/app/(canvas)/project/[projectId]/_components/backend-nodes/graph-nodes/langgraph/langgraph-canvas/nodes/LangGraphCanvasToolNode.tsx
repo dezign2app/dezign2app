@@ -11,7 +11,7 @@ import {
   Sparkles,
   FileText,
 } from "lucide-react";
-import type { ToolNode, LangGraphCanvasNode } from "../types";
+import type { ToolNode, LangGraphCanvasNode } from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_TOOL,
   HANDLE_TOOL_OUT,

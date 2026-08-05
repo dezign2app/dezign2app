@@ -16,7 +16,7 @@ import {
   ensureLangGraphDataReachability,
   STEP_TYPE_ROUTER,
 } from "@workspace/canvas/constants";
-import {
+import type {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
   StepNode,
@@ -27,7 +27,7 @@ import {
   OutputNode,
   LangGraphLLMNode,
   EndNode,
-} from "../../types";
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_START,

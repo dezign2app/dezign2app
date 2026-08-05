@@ -1,7 +1,7 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { Layers } from "lucide-react";
-import type { PortNode } from "../types";
+import type { PortNode } from "@workspace/canvas";
 
 export const LangGraphCanvasPortNode = ({ data }: NodeProps<PortNode>) => (
   <div className="px-3 py-2 rounded-xl bg-card border-2 border-border text-foreground font-bold text-xs flex items-center gap-2 shadow-lg">

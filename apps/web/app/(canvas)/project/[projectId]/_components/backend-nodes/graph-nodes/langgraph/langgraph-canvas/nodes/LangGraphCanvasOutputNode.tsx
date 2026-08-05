@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NodeProps, Handle, Position, useReactFlow } from "@xyflow/react";
 import { Radio, Zap, Plug, Globe, Trash2 } from "lucide-react";
-import type { OutputNode, LangGraphCanvasNode } from "../types";
+import type { OutputNode, LangGraphCanvasNode } from "@workspace/canvas";
 import { LANGGRAPH_CANVAS_NODE_OUTPUT } from "../constants";
 
 const TRANSPORT_BADGES = {

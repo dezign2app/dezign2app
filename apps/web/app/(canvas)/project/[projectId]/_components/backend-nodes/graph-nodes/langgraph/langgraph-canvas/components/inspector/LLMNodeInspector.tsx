@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import type { LangGraphLLMNodeData } from "../../types";
+import type { LangGraphLLMNodeData } from "@workspace/canvas";
 import { LocalTextarea } from "../../../../common";
 import { LLM_PROVIDER_PRESETS } from "./constants";
 

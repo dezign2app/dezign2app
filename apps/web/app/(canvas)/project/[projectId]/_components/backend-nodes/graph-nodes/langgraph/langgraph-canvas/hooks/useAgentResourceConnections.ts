@@ -1,12 +1,12 @@
 import { useMemo, useCallback } from "react";
-import {
+import type {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
   LangGraphLLMNode,
   ToolNode,
   MiddlewareNode,
   MemoryNode,
-} from "../types";
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_LLM,
   LANGGRAPH_CANVAS_NODE_TOOL,

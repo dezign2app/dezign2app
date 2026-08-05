@@ -1,7 +1,7 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { CheckCircle2 } from "lucide-react";
-import type { EndNode } from "../types";
+import type { EndNode } from "@workspace/canvas";
 
 export const LangGraphCanvasEndNode = ({
   data,

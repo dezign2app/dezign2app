@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import {
+import type {
   ToolNodeData,
   ToolSource,
   ToolReturnType,
   StateUpdateMode,
   StoreOperation,
-} from "../../types";
+} from "@workspace/canvas";
 import { LocalInput, LocalTextarea } from "../../../../common";
 import {
   TOOL_SOURCE_INLINE,

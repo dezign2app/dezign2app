@@ -1,7 +1,7 @@
 import React from "react";
 import { NodeProps, Handle, Position } from "@xyflow/react";
 import { GitBranch, Trash2 } from "lucide-react";
-import type { StepNode } from "../types";
+import type { StepNode } from "@workspace/canvas";
 
 export function LangGraphCanvasRouterNode({
   data,

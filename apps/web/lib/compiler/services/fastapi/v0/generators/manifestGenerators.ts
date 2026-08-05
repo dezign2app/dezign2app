@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { Endpoint } from "@workspace/canvas/types";
-import { CompiledFile } from "../../../../types";
+import { Endpoint, CompiledFile } from "@workspace/canvas/types";
 import { resolveEndpointTrace } from "../../../../traceResolver";
 
 interface ManifestGeneratorsOptions {

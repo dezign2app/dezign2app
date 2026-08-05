@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile, CompiledServiceResult } from "../../../../types";
+import { Endpoint, AnyMessagingResource, CompiledFile, CompiledServiceResult } from "@workspace/canvas/types";
 import { generateCoreFiles } from "./coreGenerator";
 import { generateRoutes } from "./routeGenerator";
 import { generateEventConsumersAndProducers } from "./eventGenerators";

@@ -1,5 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { CompiledFile, CompiledRedisResult } from "./types";
+import { CompiledFile, CompiledRedisResult } from "@workspace/canvas/types";
 
 /**
  * Compiles Redis nodes into a shared microservices package: packages/redis (@workspace/redis)

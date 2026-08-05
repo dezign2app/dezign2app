@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile, CompiledMonorepoResult, ReusableFunction } from "./types";
+import { Endpoint, AnyMessagingResource, CompiledFile, CompiledMonorepoResult, ReusableFunction } from "@workspace/canvas/types";
 import { compileServiceNode } from "./compileServiceNode";
 import { compileLangGraphNode } from "./compileLangGraphNode";
 import { compileDatabaseNodes } from "./compileDatabaseNodes";

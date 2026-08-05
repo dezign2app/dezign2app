@@ -1,4 +1,4 @@
-import { CompiledFile } from "../../types";
+import { CompiledFile } from "@workspace/canvas/types";
 
 export function generatePackageJson(packageName: string, nodeLabel: string): CompiledFile {
   return {

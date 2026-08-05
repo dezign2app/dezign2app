@@ -1,4 +1,4 @@
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 
 /**
  * Generates the shared `@workspace/logger` package for the compiled monorepo.

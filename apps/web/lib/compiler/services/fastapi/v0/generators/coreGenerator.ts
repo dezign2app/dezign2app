@@ -1,4 +1,4 @@
-import { CompiledFile } from "../../../../types";
+import { CompiledFile } from "@workspace/canvas/types";
 
 interface CoreGeneratorOptions {
   serviceName: string;

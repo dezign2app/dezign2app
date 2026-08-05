@@ -1,6 +1,6 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 import { toVarName, toPascalCase } from "../utils";
 import { resolveLinkedEndpoint } from "../compileWebClientNode";
 

@@ -1,6 +1,5 @@
 import { BackendNode } from "@/types/canvas";
-import { Endpoint } from "@workspace/canvas/types";
-import { CompiledFile } from "../../../../types";
+import { Endpoint, CompiledFile } from "@workspace/canvas/types";
 import { convertPathParams, toPythonRouteFileName } from "./utils";
 
 interface ServerAndTestGeneratorsOptions {

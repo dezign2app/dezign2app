@@ -1,6 +1,6 @@
 import { AnyMessagingResource } from "@workspace/canvas/types";
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 import { toVarName, toPascalCase } from "../utils";
 import { resolveProducerTrace } from "../traceResolver";
 

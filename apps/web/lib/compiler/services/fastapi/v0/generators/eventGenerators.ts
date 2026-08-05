@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile } from "../../../../types";
+import { AnyMessagingResource, CompiledFile } from "@workspace/canvas/types";
 import {
   resolveConsumerTrace,
   resolveProducerTrace,

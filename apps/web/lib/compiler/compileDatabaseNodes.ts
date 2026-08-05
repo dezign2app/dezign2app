@@ -1,5 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { CompiledDatabaseResult } from "./types";
+import { CompiledDatabaseResult } from "@workspace/canvas/types";
 import { compileRawSqliteDatabase } from "./databases/sqlite/raw";
 
 /**

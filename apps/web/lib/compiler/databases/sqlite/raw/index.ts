@@ -3,7 +3,7 @@ import {
   CompiledFile,
   CompiledDatabaseResult,
   ReusableFunction,
-} from "../../../types";
+} from "@workspace/canvas/types";
 import { toTableName, toVarName } from "../../../utils";
 
 // ---------------------------------------------------------------------------

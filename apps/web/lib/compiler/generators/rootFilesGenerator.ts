@@ -1,4 +1,4 @@
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 
 /**
  * Generates root workspace files: package.json, pnpm-workspace.yaml, turbo.json, .gitignore

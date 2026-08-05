@@ -45,7 +45,7 @@ import {
   MIDDLEWARE_TYPE_SUBAGENT,
   MIDDLEWARE_TYPE_CUSTOM,
 } from "../constants";
-import { LocalInput } from "../../../common/shared";
+import { LocalInput } from "../../../common";
 
 export const LangGraphCanvasMiddlewareNode = ({
   id,

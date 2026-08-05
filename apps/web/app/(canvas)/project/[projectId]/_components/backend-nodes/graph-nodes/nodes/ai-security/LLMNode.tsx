@@ -6,7 +6,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Label } from "@workspace/ui/components/label";
 import { Switch } from "@workspace/ui/components/switch";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, EditableNodeList } from "../../common/shared";
+import { NodeHeader, EditableNodeList } from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 import {
   Select,

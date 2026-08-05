@@ -4,7 +4,7 @@ import { Key, Settings, Plus, Check, X } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, LocalInput, generateId } from "../../common/shared";
+import { NodeHeader, LocalInput, generateId } from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Button } from "@workspace/ui/components/button";
 import { IdentityProvider } from "@workspace/canvas/types";

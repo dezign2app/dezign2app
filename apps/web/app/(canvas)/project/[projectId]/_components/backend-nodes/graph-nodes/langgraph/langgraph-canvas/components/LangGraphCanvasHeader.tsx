@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 
-import { LocalInput } from "../../../common/shared";
+import { LocalInput } from "../../../common";
 
 interface LangGraphCanvasHeaderProps {
   label?: string;

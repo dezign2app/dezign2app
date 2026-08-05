@@ -31,7 +31,7 @@ import {
 } from "@workspace/ui/components/select";
 import type { MiddlewareNodeData } from "../../../types";
 import { DEFAULT_MIDDLEWARE_TYPE } from "../../../constants";
-import { LocalInput } from "../../../../../common/shared";
+import { LocalInput } from "../../../../../common";
 
 interface GeneralMiddlewareConfigProps {
   selectedMiddlewareData: MiddlewareNodeData;

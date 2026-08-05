@@ -4,7 +4,7 @@ import { Waves, ChevronDown, ChevronUp } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader } from "../../common/shared";
+import { NodeHeader } from "../../common";
 import {
   Select,
   SelectContent,

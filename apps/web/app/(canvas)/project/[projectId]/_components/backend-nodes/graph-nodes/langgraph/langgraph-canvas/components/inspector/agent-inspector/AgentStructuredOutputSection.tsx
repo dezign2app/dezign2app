@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { LocalInput, LocalTextarea } from "../../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../../common";
 import type { LangGraphAgentResponseFormatConfig } from "../../../types";
 
 interface AgentStructuredOutputSectionProps {

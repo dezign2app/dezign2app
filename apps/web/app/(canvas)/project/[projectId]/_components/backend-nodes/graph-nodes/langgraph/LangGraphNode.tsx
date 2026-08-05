@@ -23,7 +23,7 @@ import type {
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { LocalInput } from "../common/shared";
+import { LocalInput } from "../common";
 
 export interface ConnectedRouteInfo {
   edgeId: string;

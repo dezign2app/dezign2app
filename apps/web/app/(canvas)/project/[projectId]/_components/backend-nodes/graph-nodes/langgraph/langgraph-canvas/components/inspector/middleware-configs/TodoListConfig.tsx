@@ -2,7 +2,7 @@ import React from "react";
 import { ListTodo } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
-import { LocalTextarea } from "../../../../../common/shared";
+import { LocalTextarea } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function TodoListConfig({ data, onUpdate }: MiddlewareConfigProps) {

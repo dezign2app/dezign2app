@@ -22,7 +22,7 @@ import {
 import type { OutputNodeData, LangGraphLLMNode } from "../../types";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { ConnectedRouteInfo } from "../../../LangGraphNode";
-import { LocalInput } from "../../../../common/shared";
+import { LocalInput } from "../../../../common";
 
 interface OutputNodeInspectorProps {
   selectedOutputData: OutputNodeData;

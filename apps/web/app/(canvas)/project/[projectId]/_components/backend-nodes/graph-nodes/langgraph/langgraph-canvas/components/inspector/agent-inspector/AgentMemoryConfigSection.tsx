@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { LocalInput } from "../../../../../common/shared";
+import { LocalInput } from "../../../../../common";
 import type { LangGraphAgentMemoryConfig } from "@/types/canvas";
 
 interface EntityNode {

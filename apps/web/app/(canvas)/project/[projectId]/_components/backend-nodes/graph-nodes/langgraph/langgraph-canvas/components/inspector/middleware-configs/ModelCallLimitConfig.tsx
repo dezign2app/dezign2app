@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import { LocalInput } from "../../../../../common/shared";
+import { LocalInput } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function ModelCallLimitConfig({

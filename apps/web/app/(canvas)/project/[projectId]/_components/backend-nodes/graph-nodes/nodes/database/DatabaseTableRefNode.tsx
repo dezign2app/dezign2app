@@ -18,7 +18,7 @@ import {
   NodeHeader,
   useSimulationNodeState,
   getSimulationNodeBorderClass,
-} from "../../common/shared";
+} from "../../common";
 
 export const DatabaseTableRefNode = ({
   id,

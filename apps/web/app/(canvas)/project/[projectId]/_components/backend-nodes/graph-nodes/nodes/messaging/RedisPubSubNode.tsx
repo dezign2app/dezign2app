@@ -8,7 +8,7 @@ import {
   NodeHeader,
   MessagingResourceList,
   LocalInput,
-} from "../../common/shared";
+} from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 
 export const RedisPubSubNode = ({

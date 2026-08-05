@@ -11,7 +11,7 @@ import {
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
-import { LocalInput } from "../../common/shared";
+import { LocalInput } from "../../common";
 import {
   STEP_TYPE_LLM_CALL,
   STEP_TYPE_TOOL_NODE,

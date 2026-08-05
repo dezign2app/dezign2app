@@ -1,7 +1,7 @@
 import React from "react";
 import { Terminal } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { LocalInput } from "../../../../../common/shared";
+import { LocalInput } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function LlmToolEmulatorConfig({

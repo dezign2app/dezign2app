@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import type { LangGraphLLMNodeData } from "../../types";
-import { LocalTextarea } from "../../../../common/shared";
+import { LocalTextarea } from "../../../../common";
 import { LLM_PROVIDER_PRESETS } from "./constants";
 
 interface LLMNodeInspectorProps {

@@ -2,7 +2,7 @@ import React from "react";
 import { UserCheck } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
-import { LocalInput, LocalTextarea } from "../../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function HumanInTheLoopConfig({

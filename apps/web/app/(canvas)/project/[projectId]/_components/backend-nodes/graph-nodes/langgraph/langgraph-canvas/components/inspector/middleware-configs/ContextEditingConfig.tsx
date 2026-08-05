@@ -2,7 +2,7 @@ import React from "react";
 import { Scissors } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
-import { LocalInput } from "../../../../../common/shared";
+import { LocalInput } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function ContextEditingConfig({

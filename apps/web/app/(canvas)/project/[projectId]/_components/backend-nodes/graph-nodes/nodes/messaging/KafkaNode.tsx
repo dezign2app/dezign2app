@@ -9,7 +9,7 @@ import {
   MessagingResourceList,
   useSimulationNodeState,
   getSimulationNodeBorderClass,
-} from "../../common/shared";
+} from "../../common";
 import {
   Select,
   SelectContent,

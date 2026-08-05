@@ -55,7 +55,7 @@ import {
   DEFAULT_LLM_MODEL,
   DEFAULT_LLM_TEMPERATURE,
 } from "../constants";
-import { LocalInput, LocalTextarea } from "../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../common";
 
 export const LangGraphCanvasNode = ({
   id,

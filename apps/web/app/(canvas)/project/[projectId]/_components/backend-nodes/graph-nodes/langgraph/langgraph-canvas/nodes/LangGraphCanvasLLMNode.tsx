@@ -35,7 +35,7 @@ import {
   HANDLE_LLM_OUT,
 } from "../constants";
 import { LLM_PROVIDER_PRESETS } from "../components/inspector/constants";
-import { LocalInput, LocalTextarea } from "../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../common";
 
 export const LangGraphCanvasLLMNode = ({
   id,

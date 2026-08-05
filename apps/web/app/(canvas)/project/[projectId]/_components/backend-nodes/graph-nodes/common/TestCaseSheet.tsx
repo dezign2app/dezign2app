@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSimulationStore } from "@/lib/stores/simulationStore";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { generateId, getInitialBody } from "./shared";
+import { generateId, getInitialBody } from "./utils";
 import {
   Sheet,
   SheetContent,

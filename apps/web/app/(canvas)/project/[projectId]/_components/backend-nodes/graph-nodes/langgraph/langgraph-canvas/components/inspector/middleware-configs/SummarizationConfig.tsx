@@ -1,7 +1,7 @@
 import React from "react";
 import { FileText } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { LocalInput, LocalTextarea } from "../../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function SummarizationConfig({ data, onUpdate }: MiddlewareConfigProps) {

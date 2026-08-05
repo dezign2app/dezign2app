@@ -47,8 +47,38 @@ export function CompiledCodeViewer({
   const edges = useBackendCanvasStore((s) => s.edges);
   const testCases = useSimulationStore((s) => s.testCases);
 
-  const [selectedFilename, setSelectedFilename] = useState<string>("README.md");
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [selectedFilename, setSelectedFilename] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        const saved = window.localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.selectedFilename === "string" && parsed.selectedFilename) {
+            return parsed.selectedFilename;
+          }
+        }
+      } catch (e) {}
+    }
+    return "README.md";
+  });
+  
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        const saved = window.localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.expandedPaths)) {
+            return new Set(parsed.expandedPaths);
+          }
+        }
+      } catch (e) {}
+    }
+    return new Set();
+  });
+  
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
 
@@ -82,34 +112,16 @@ export function CompiledCodeViewer({
 
   const fileTree = useMemo(() => buildFileTree(files), [files]);
 
+  const hasRestoredRef = React.useRef<string | null>(null);
+
   useEffect(() => {
-    const storageKey = projectId
-      ? `compiler_modal_state_${projectId}`
-      : "compiler_modal_state";
-    let restoredFile: string | null = null;
-    let restoredExpanded: string[] = [];
+    if (!files || files.length === 0) return;
+    const keyId = projectId || "default";
+    if (hasRestoredRef.current === keyId) return;
+    hasRestoredRef.current = keyId;
 
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (
-          parsed.selectedFilename &&
-          typeof parsed.selectedFilename === "string"
-        ) {
-          restoredFile = parsed.selectedFilename;
-        }
-        if (Array.isArray(parsed.expandedPaths)) {
-          restoredExpanded = parsed.expandedPaths;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to restore compiler viewer state", e);
-    }
-
-    const fileExists =
-      restoredFile && files.some((f) => f.filename === restoredFile);
-    let targetFile = fileExists ? restoredFile! : "";
+    const fileExists = selectedFilename && files.some((f) => f.filename === selectedFilename);
+    let targetFile = fileExists ? selectedFilename : "";
 
     if (!targetFile) {
       const readme = files.find(
@@ -118,12 +130,42 @@ export function CompiledCodeViewer({
       targetFile = readme ? readme.filename : files[0]?.filename || "README.md";
     }
 
-    setSelectedFilename(targetFile);
+    let changed = false;
+    if (targetFile !== selectedFilename) {
+      setSelectedFilename(targetFile);
+      changed = true;
+    }
 
-    const parents = getParentPaths(targetFile);
-    const newExpandedSet = new Set<string>([...restoredExpanded, ...parents]);
-    setExpandedPaths(newExpandedSet);
-  }, [projectId, files]);
+    const targetParents = getParentPaths(targetFile);
+    const nextExpanded = new Set(expandedPaths);
+    let expandedChanged = false;
+
+    targetParents.forEach(p => {
+      if (!nextExpanded.has(p)) {
+        nextExpanded.add(p);
+        expandedChanged = true;
+      }
+    });
+
+    if (expandedChanged) {
+      setExpandedPaths(nextExpanded);
+    }
+
+    if (changed || expandedChanged) {
+      try {
+        const storageKey = projectId ? `compiler_modal_state_${projectId}` : "compiler_modal_state";
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            selectedFilename: targetFile,
+            expandedPaths: Array.from(nextExpanded),
+          }),
+        );
+      } catch (e) {
+        console.error("Failed to save compiler viewer state", e);
+      }
+    }
+  }, [projectId, files, selectedFilename, expandedPaths]);
 
   const handleSelectFile = (filename: string) => {
     setSelectedFilename(filename);
@@ -153,7 +195,11 @@ export function CompiledCodeViewer({
     setExpandedPaths((prev) => {
       const next = new Set(prev);
       if (next.has(path)) {
-        next.delete(path);
+        for (const p of Array.from(next)) {
+          if (p === path || p.startsWith(`${path}/`)) {
+            next.delete(p);
+          }
+        }
       } else {
         next.add(path);
       }

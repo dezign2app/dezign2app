@@ -1046,7 +1046,7 @@ export const MessagingResourceRow = ({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-all">
+              <div className={cn("flex items-center gap-1 transition-all", isPublished ? "opacity-100" : "opacity-0 group-hover/row:opacity-100")}>
                 <div
                   className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
                   onClick={(e) => {

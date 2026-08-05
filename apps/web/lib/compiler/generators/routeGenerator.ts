@@ -375,8 +375,10 @@ ${defaultDbCall}}
 
       // --- Resolve reusable function imports ---
       const pickedDbOps = pickDbFunctionsForEndpoint(ep, dbFunctions, allNodes, path);
+      const hasPublishedEvents =
+        nodePublishedEvents.length > 0 || (ep.publishedEvents && ep.publishedEvents.length > 0);
       const pickedKafka =
-        method === "post" && kafkaFunctions.length > 0
+        (hasPublishedEvents || method === "post") && kafkaFunctions.length > 0
           ? pickKafkaPublishFunction(kafkaFunctions)
           : null;
 
@@ -388,15 +390,40 @@ ${defaultDbCall}}
         }
         extraImports.get(op.fn.importPath)!.add(op.fn.name);
       });
-      if (pickedKafka) {
-        if (!extraImports.has(pickedKafka.importPath)) {
-          extraImports.set(pickedKafka.importPath, new Set());
+
+      // Scan user's manual codeBlock for DB function references
+      const codeBlockText = (ep.body || ep.code || "").trim();
+      dbFunctions.forEach((f) => {
+        if (codeBlockText.includes(f.name)) {
+          if (!extraImports.has(f.importPath)) {
+            extraImports.set(f.importPath, new Set());
+          }
+          extraImports.get(f.importPath)!.add(f.name);
         }
-        extraImports.get(pickedKafka.importPath)!.add(pickedKafka.name);
-        // Also pull in KAFKA_TOPICS constant if available
+      });
+
+      // Scan for Kafka publisher references or configured published events
+      if (
+        pickedKafka ||
+        codeBlockText.includes("publishKafkaEvent") ||
+        codeBlockText.includes("KAFKA_TOPICS")
+      ) {
+        const publishFn =
+          pickedKafka ||
+          kafkaFunctions.find((f) => f.name === "publishKafkaEvent");
+        if (publishFn) {
+          if (!extraImports.has(publishFn.importPath)) {
+            extraImports.set(publishFn.importPath, new Set());
+          }
+          extraImports.get(publishFn.importPath)!.add("publishKafkaEvent");
+        }
         const topicsConst = kafkaFunctions.find((f) => f.name === "KAFKA_TOPICS");
         if (topicsConst) {
-          extraImports.get(pickedKafka.importPath)!.add("KAFKA_TOPICS");
+          const importPath = publishFn?.importPath || topicsConst.importPath;
+          if (!extraImports.has(importPath)) {
+            extraImports.set(importPath, new Set());
+          }
+          extraImports.get(importPath)!.add("KAFKA_TOPICS");
         }
       }
 
@@ -535,7 +562,17 @@ export async function ${handlerName}(
 
       // 3. DB Call
       const targetVarMap = new Map<string, string>();
-      if (pickedDbOps.length > 0) {
+      const hasDbInCodeBlock = Boolean(
+        codeBlock &&
+          (codeBlock.includes("findAll") ||
+            codeBlock.includes("find") ||
+            codeBlock.includes("create") ||
+            codeBlock.includes("update") ||
+            codeBlock.includes("delete") ||
+            codeBlock.includes("db.")),
+      );
+
+      if (pickedDbOps.length > 0 && !hasDbInCodeBlock) {
         routeHandlerCode += `    // --- Database Operation(s) (via @workspace/db prepared statement) ---\n`;
         pickedDbOps.forEach((op) => {
           const callExpr = op.callExpr.replace("PAYLOAD_VAR", payloadVar);
@@ -557,7 +594,11 @@ export async function ${handlerName}(
       }
 
       // 4. Kafka Publish Call
-      if (pickedKafka) {
+      const hasKafkaInCodeBlock = Boolean(
+        codeBlock && codeBlock.includes("publishKafkaEvent"),
+      );
+
+      if (pickedKafka && !hasKafkaInCodeBlock) {
         const matchedEvent =
           nodePublishedEvents.find((e) =>
             rawName.toLowerCase().includes((e.name || "").toLowerCase()) ||

@@ -153,10 +153,7 @@ export const Intro = () => {
         />
 
         {/* Status badge — reads like a build tag, not a marketing sticker */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="relative z-10 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white border border-[#E4E7EC] shadow-sm mb-7"
           style={{ fontFamily: "var(--font-mono)" }}
         >
@@ -171,37 +168,28 @@ export const Intro = () => {
           <span className="text-[11px] text-[#5B6472]">
             autonomous_sdlc.run()
           </span>
-        </motion.div>
+        </div>
 
         {/* Headline — benefit-first, plain language */}
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+        <h1
           style={{ fontFamily: "var(--font-display)" }}
           className="relative z-10 text-4xl sm:text-5xl lg:text-[3.4rem] font-medium tracking-tight leading-[1.08] text-[#0B0E14] max-w-3xl"
         >
           Describe the system.
           <br />
           Ship the product.
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+        <p
           className="relative z-10 text-sm md:text-base text-[#5B6472] leading-relaxed max-w-2xl font-normal mt-5"
         >
           Automating the entire software development lifecycle — combining
           system architecture design, code generation, automated testing, CI/CD
           pipelines, cloud infrastructure, real-time monitoring & maintenance
           into one unified platform.
-        </motion.p>
+        </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+        <div
           className="relative z-10 mt-7 mb-8"
         >
           <Link
@@ -210,7 +198,7 @@ export const Intro = () => {
           >
             Get started <ArrowRight className="w-4 h-4" />
           </Link>
-        </motion.div>
+        </div>
 
         {/* ── PIPELINE DIAGRAM ─────────────────────────────────────── */}
         <div className="w-full max-w-5xl h-[460px] relative mt-4">

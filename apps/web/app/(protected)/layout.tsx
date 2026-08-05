@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
 import ProtectedSidebar from "./_components/sidebar";
 import { ThemeProvider } from "next-themes";
 import { ChatContainer } from "./_components/chat/chat-container";
-
+import "@xyflow/react/dist/style.css";
 const Layout = async ({ children }: { children: React.ReactNode }) => {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";

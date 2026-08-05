@@ -3,7 +3,6 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "@workspace/ui/globals.css";
-import "@xyflow/react/dist/style.css";
 import { Providers } from "@/providers";
 import { Metadata } from "next";
 

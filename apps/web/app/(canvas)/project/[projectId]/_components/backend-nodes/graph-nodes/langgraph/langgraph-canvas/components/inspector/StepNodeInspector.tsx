@@ -13,7 +13,7 @@ import {
 import { Switch } from "@workspace/ui/components/switch";
 import { LocalTextarea } from "../../../../common";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData } from "../../types";
+import type { StepNodeData } from "@workspace/canvas";
 import { STEP_TYPE_ROUTER, STEP_TYPE_LLM_CALL } from "../../constants";
 import { RouterNodeInspector } from "./RouterNodeInspector";
 import { BusinessLogicBlock } from "../../../../../../shared/BusinessLogicBlock";

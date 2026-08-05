@@ -1,6 +1,84 @@
-import React from "react";
-import { Wrench, HelpCircle } from "lucide-react";
-import { TOOL_PALETTE_ITEMS, LangGraphCanvasNodeAddType } from "../types";
+import {
+  Brain,
+  Cpu,
+  GitBranch,
+  Wrench,
+  Shield,
+  Bot,
+  Database,
+  CheckCircle2,
+  Radio,
+  HelpCircle,
+} from "lucide-react";
+import type { LangGraphCanvasNodeAddType } from "@workspace/canvas";
+import {
+  LANGGRAPH_CANVAS_NODE_NODE,
+  LANGGRAPH_CANVAS_NODE_END,
+  LANGGRAPH_CANVAS_NODE_LLM,
+  LANGGRAPH_CANVAS_NODE_TOOL,
+  LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+  LANGGRAPH_CANVAS_NODE_MEMORY,
+  LANGGRAPH_CANVAS_NODE_OUTPUT,
+  STEP_TYPE_ROUTER,
+} from "../constants";
+
+export type ToolPaletteItem = {
+  type: LangGraphCanvasNodeAddType;
+  label: string;
+  desc: string;
+  icon: typeof Brain;
+};
+
+export const TOOL_PALETTE_ITEMS: ToolPaletteItem[] = [
+  {
+    type: LANGGRAPH_CANVAS_NODE_NODE,
+    label: "Node",
+    desc: "LangGraph node with optional LLM, tools, middleware & memory",
+    icon: Bot,
+  },
+  {
+    type: STEP_TYPE_ROUTER,
+    label: "Conditional Router",
+    desc: "Routes execution dynamically based on comparison rules",
+    icon: GitBranch,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_END,
+    label: "END Node",
+    desc: "Terminal graph node representing __end__ execution",
+    icon: CheckCircle2,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_LLM,
+    label: "LLM config",
+    desc: "Configure an LLM provider or raw API endpoint",
+    icon: Cpu,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_TOOL,
+    label: "Tool",
+    desc: "Configure an executable tool for LLMs",
+    icon: Wrench,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
+    label: "Middleware",
+    desc: "Interceptors for Human-in-the-loop, rate limit & tracing",
+    icon: Shield,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_MEMORY,
+    label: "Memory / DB Ref",
+    desc: "Save chat history & state checkpoints per session",
+    icon: Database,
+  },
+  {
+    type: LANGGRAPH_CANVAS_NODE_OUTPUT,
+    label: "Output Channel",
+    desc: "Emit SSE, WebSocket, Event, or Webhook output",
+    icon: Radio,
+  },
+];
 
 interface ToolsSidebarProps {
   onAddStep: (type: LangGraphCanvasNodeAddType, label: string) => void;

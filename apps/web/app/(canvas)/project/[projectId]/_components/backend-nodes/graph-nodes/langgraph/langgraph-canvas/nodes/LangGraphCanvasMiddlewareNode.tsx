@@ -22,7 +22,7 @@ import {
   FolderGit2,
   Users,
 } from "lucide-react";
-import type { MiddlewareNode, LangGraphCanvasNode } from "../types";
+import type { MiddlewareNode, LangGraphCanvasNode } from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_MIDDLEWARE,
   HANDLE_MIDDLEWARE_OUT,

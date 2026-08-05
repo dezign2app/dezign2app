@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import type { MemoryNode, LangGraphCanvasNode } from "../types";
+import type { MemoryNode, LangGraphCanvasNode } from "@workspace/canvas";
 import { LANGGRAPH_CANVAS_NODE_MEMORY, HANDLE_MEMORY_OUT } from "../constants";
 import { LocalInput } from "../../../common";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";

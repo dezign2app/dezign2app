@@ -3,8 +3,6 @@ import type {
   LangGraphStepConfig,
   LangGraphEdgeConfig,
   LangGraphAgentDefinition,
-} from "@/types/canvas";
-import {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
   StepNode,
@@ -14,7 +12,7 @@ import {
   AgentNode,
   OutputNode,
   LangGraphLLMNode,
-} from "../../types";
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_START,

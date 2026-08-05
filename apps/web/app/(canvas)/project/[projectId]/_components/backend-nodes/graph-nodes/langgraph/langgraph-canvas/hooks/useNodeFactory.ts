@@ -1,7 +1,5 @@
 import { useCallback } from "react";
-import type { LangGraphStateChannel } from "@/types/canvas";
-import { STEP_TYPE_ROUTER } from "@workspace/canvas/constants";
-import {
+import type {
   LangGraphCanvasNode,
   LangGraphCanvasEdge,
   EndNode,
@@ -13,7 +11,8 @@ import {
   OutputNode,
   StepNode,
   LangGraphCanvasNodeAddType,
-} from "../types";
+  LangGraphStateChannel,
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_END,
@@ -32,6 +31,7 @@ import {
   DEFAULT_LLM_BASE_URL,
   DEFAULT_LLM_API_KEY_ENV,
   DEFAULT_LLM_TEMPERATURE,
+  STEP_TYPE_ROUTER,
 } from "../constants";
 
 interface UseNodeFactoryProps {

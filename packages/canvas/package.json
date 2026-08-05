@@ -13,7 +13,11 @@
   "dependencies": {
     "zod": "^3.25.76"
   },
+  "peerDependencies": {
+    "@xyflow/react": "^12.10.2"
+  },
   "devDependencies": {
+    "@xyflow/react": "^12.10.2",
     "typescript": "^5.9.3",
     "vitest": "^3.0.7",
     "@types/node": "^20.19.30"

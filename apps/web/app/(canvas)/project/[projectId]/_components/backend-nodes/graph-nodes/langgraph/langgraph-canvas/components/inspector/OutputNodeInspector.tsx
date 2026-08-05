@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import type { OutputNodeData, LangGraphLLMNode } from "../../types";
+import type { OutputNodeData, LangGraphLLMNode } from "@workspace/canvas";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { ConnectedRouteInfo } from "../../../LangGraphNode";
 import { LocalInput } from "../../../../common";

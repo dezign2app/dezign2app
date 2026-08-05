@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import type { LangGraphStateChannel } from "@/types/canvas";
-import type { StepNodeData } from "../../types";
+import type { StepNodeData } from "@workspace/canvas";
 
 interface RouterNodeInspectorProps {
   selectedStepData: StepNodeData;

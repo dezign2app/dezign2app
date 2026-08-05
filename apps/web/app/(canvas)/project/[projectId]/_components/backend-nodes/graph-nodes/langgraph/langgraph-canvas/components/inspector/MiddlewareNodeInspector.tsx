@@ -1,5 +1,5 @@
 import React from "react";
-import type { MiddlewareNodeData } from "../../types";
+import type { MiddlewareNodeData } from "@workspace/canvas";
 import {
   DEFAULT_MIDDLEWARE_TYPE,
   MIDDLEWARE_TYPE_HUMAN_IN_THE_LOOP,

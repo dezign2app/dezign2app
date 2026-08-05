@@ -1,8 +1,8 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
 import { TabsContent } from "@workspace/ui/components/tabs";
-import type { LangGraphStateChannel } from "@/types/canvas";
 import type {
+  LangGraphStateChannel,
   StepNodeData,
   LangGraphLLMNodeData,
   ToolNodeData,
@@ -15,7 +15,7 @@ import type {
   MiddlewareNode,
   MemoryNode,
   OutputNode,
-} from "../../types";
+} from "@workspace/canvas";
 import { LLMNodeInspector } from "./LLMNodeInspector";
 import { StepNodeInspector } from "./StepNodeInspector";
 import { ToolNodeInspector } from "./ToolNodeInspector";

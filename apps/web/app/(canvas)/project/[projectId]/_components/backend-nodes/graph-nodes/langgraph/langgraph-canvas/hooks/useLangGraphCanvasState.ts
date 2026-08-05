@@ -9,20 +9,18 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { toast } from "sonner";
-import type {
-  BackendNode,
-  LangGraphStateChannel,
-  LangGraphInputChannel,
-  LangGraphMemoryConfig,
-  LangGraphRouterBranch,
-} from "@/types/canvas";
-import { ensureLangGraphDataReachability } from "@workspace/canvas/constants";
 import {
-  LangGraphCanvasNode,
-  LangGraphCanvasEdge,
-  StepNode,
-  StateGlobalNode,
-} from "../types";
+  type BackendNode,
+  type LangGraphStateChannel,
+  type LangGraphInputChannel,
+  type LangGraphMemoryConfig,
+  type LangGraphRouterBranch,
+  type LangGraphCanvasNode,
+  type LangGraphCanvasEdge,
+  type StepNode,
+  type StateGlobalNode,
+  ensureLangGraphDataReachability,
+} from "@workspace/canvas";
 import {
   LANGGRAPH_CANVAS_NODE_STEP,
   LANGGRAPH_CANVAS_NODE_START,

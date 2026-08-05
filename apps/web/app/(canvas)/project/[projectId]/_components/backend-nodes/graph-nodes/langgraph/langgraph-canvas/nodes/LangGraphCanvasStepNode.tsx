@@ -1,6 +1,6 @@
 import React from "react";
 import { NodeProps } from "@xyflow/react";
-import type { CanvasNode, StepNode } from "../types";
+import type { CanvasNode, StepNode } from "@workspace/canvas";
 import { STEP_TYPE_ROUTER } from "../constants";
 import { LangGraphCanvasNode } from "./LangGraphCanvasNode";
 import { LangGraphCanvasRouterNode } from "./LangGraphCanvasRouterNode";

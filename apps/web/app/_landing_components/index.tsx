@@ -1,7 +1,8 @@
 import React from "react";
 import { Header } from "./header";
 import Intro from "./intro";
-import Features from "./features";
+import dynamic from "next/dynamic";
+const Features = dynamic(() => import("./features"));
 import Pricing from "./pricing";
 import { Footer } from "./footer";
 

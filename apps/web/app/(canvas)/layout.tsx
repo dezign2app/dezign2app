@@ -3,7 +3,7 @@ import { AuthenticatedProvider } from "@/providers";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import UpstashRealtimeProvider from "@/providers/upstash-realtime-provider";
-
+import "@xyflow/react/dist/style.css";
 const ProjectLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <UpstashRealtimeProvider>

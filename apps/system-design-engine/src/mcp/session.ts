@@ -23,7 +23,7 @@ import type {
   GraphNode,
   RawNodeRecord,
   RawEdgeRecord,
-} from "../graph/types.js";
+} from "@workspace/canvas";
 
 export interface Session {
   server: McpServer;

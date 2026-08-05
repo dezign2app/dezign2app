@@ -22,7 +22,7 @@ import type {
   GraphNode,
   RawNodeRecord,
   RawEdgeRecord,
-} from "../graph/types.js";
+} from "@workspace/canvas";
 
 export function createMcpServer() {
   const server = new McpServer({

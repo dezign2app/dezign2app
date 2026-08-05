@@ -1,20 +1,13 @@
-import type {
-  BackendNode,
-  BackendEdge,
-  BackendNodeType,
-  BackendEdgeType,
-  TestCaseItem,
-} from "@workspace/canvas";
-import type { Endpoint } from "@workspace/canvas";
-
-// Re-export for convenience within the graph module
-export type { BackendNodeType, BackendEdgeType };
+import type { Endpoint } from "../schemas";
+import type { BackendNode, BackendNodeType } from "./nodes";
+import type { BackendEdge, BackendEdgeType } from "./edges";
+import type { TestCaseItem } from "./simulation";
 
 // ─── Core Identity ────────────────────────────────────────────────────────────
 
 export type NodeId = string;
 
-// ─── Graph Node ───────────────────────────────────────────────────────────────
+// ─── Graph Node & Engine Edge ──────────────────────────────────────────────────
 
 export interface GraphNode {
   nodeId: NodeId;
@@ -25,9 +18,7 @@ export interface GraphNode {
   data: BackendNode["data"];
 }
 
-// ─── Graph Edge ───────────────────────────────────────────────────────────────
-
-export interface GraphEdge {
+export interface EngineGraphEdge {
   id: string;
   source: NodeId;
   target: NodeId;
@@ -38,17 +29,19 @@ export interface GraphEdge {
   label: string;
 }
 
+export type CanvasEngineGraphEdge = EngineGraphEdge;
+
 // ─── In-Memory Graph ──────────────────────────────────────────────────────────
 
 export interface CanvasGraph {
   /** All nodes keyed by their nodeId */
   nodes: Map<NodeId, GraphNode>;
   /** All edges in the graph */
-  edges: GraphEdge[];
+  edges: EngineGraphEdge[];
   /** Adjacency list: source nodeId → outgoing edges */
-  outgoing: Map<NodeId, GraphEdge[]>;
+  outgoing: Map<NodeId, EngineGraphEdge[]>;
   /** Adjacency list: target nodeId → incoming edges */
-  incoming: Map<NodeId, GraphEdge[]>;
+  incoming: Map<NodeId, EngineGraphEdge[]>;
 }
 
 // ─── Traversal Result ─────────────────────────────────────────────────────────
@@ -60,10 +53,10 @@ export interface TraversalHit {
 
 export interface NeighbourHit {
   node: GraphNode;
-  edge: GraphEdge;
+  edge: EngineGraphEdge;
 }
 
-// ─── Summarised Endpoint (for MCP output) ────────────────────────────────────
+// ─── Summarised Endpoint & Test Case (for MCP / AI output) ───────────────────
 
 export interface EndpointSummary {
   nodeId: NodeId;
@@ -75,15 +68,13 @@ export interface EndpointSummary {
   requiredRoles: string[];
 }
 
-// ─── Summarised Test Case (for MCP output) ───────────────────────────────────
-
 export interface TestCaseSummary {
   nodeId: NodeId;
   name: string;
   expectedStatus: number | undefined;
 }
 
-// ─── Raw elements returned by api.canvas.getBackendElements ──────────────────
+// ─── Raw Convex Elements ──────────────────────────────────────────────────────
 
 export interface RawNodeRecord {
   id?: string;
@@ -129,3 +120,10 @@ export interface CanvasElements {
   events?: RawEventRecord[];
   testCases: RawTestCaseRecord[];
 }
+
+// ─── Visual Canvas Node Types ─────────────────────────────────────────────────
+
+export type GraphNodeType = Exclude<
+  BackendNodeType,
+  "group" | "entity" | "database" | "langgraph_step"
+>;

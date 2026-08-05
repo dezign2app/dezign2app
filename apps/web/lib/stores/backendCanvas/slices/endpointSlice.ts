@@ -58,6 +58,9 @@ export const createEndpointSlice = (
         );
         const newPubIds = new Set(changes.publishedEvents.map((e) => e.id));
 
+        // Endpoint published events live on endpoint.publishedEvents, not background events store
+        nextEvents = nextEvents.filter((ev) => !newPubIds.has(ev.id));
+
         const removedPubIds = Array.from(oldPubIds).filter(
           (eId) => !newPubIds.has(eId),
         );

@@ -47,11 +47,19 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     }
   }, [id, data, nodes, updateNode]);
 
+  const allEndpoints = useBackendCanvasStore((s) => s.endpoints);
+  const endpointPubEventIds = new Set(
+    allEndpoints.flatMap((ep) => ep.publishedEvents?.map((pe) => pe.id) || []),
+  );
+
   const consumedEvents = useBackendCanvasStore((s) => s.events).filter(
     (e) => e.nodeId === id && e.variant === "consume",
   );
   const publishedEvents = useBackendCanvasStore((s) => s.events).filter(
-    (e) => e.nodeId === id && e.variant === "publish",
+    (e) =>
+      e.nodeId === id &&
+      e.variant === "publish" &&
+      !endpointPubEventIds.has(e.id),
   );
 
   const [configOpen, setConfigOpen] = useState(false);

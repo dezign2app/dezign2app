@@ -88,6 +88,8 @@ export const EDGE_TYPE_MAP: Record<string, string> = {
   "resource-def-out→task-in": "message",
   "task-out→resource-def-in": "message",
   "endpoint-out→task-in": "connection",
+  // Endpoint → Messaging broker (auto-creates a publisher, rewired in edgeSlice)
+  "endpoint-out→resource-def-in": "message",
   // LangGraph invocation edges
   "endpoint-out→langgraph-in": "connection",
   "consumed-event-out→langgraph-in": "message",

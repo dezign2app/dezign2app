@@ -13,6 +13,7 @@ import {
   BusinessLogicBlock,
   TableCrudConfig,
   CrudOperation,
+  generateSyncedEndpointCode,
 } from "../shared/BusinessLogicBlock";
 import {
   Select,
@@ -261,12 +262,19 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         endpointMethod={item.type || "POST"}
         endpointPath={item.name || "/"}
         onGenerateCode={() => {
-          if (item.businessLogic && !item.body) {
-            updateEndpoint(item.id, {
-              logicMode: "code",
-              body: `// Logic: ${item.businessLogic.split("\n").join("\n// ")}\nconst result = await db.query();\nreturn res.json({ success: true, result });`,
-            });
-          }
+          const generated = generateSyncedEndpointCode({
+            prompt: item.businessLogic || item.prompt || "",
+            crudConfig,
+            availableTableNodes,
+            publishedEvents: item.publishedEvents || [],
+            endpointMethod: item.type || "POST",
+            endpointPath: item.name || "/",
+          });
+          updateEndpoint(item.id, {
+            logicMode: "code",
+            body: generated,
+            code: generated,
+          });
         }}
       />
 

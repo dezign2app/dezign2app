@@ -436,6 +436,9 @@ export const WebClientNode = ({
   selected,
 }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
   const simulation = useSimulationNodeState(id);
   const borderClass = getSimulationNodeBorderClass(
     simulation,

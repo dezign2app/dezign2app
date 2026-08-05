@@ -18,6 +18,7 @@ export { KafkaNode } from "./nodes/messaging/KafkaNode";
 export { RedisStreamsNode } from "./nodes/messaging/RedisStreamsNode";
 export { SQSNode } from "./nodes/messaging/SQSNode";
 export { RedisPubSubNode } from "./nodes/messaging/RedisPubSubNode";
+export { MessagingNode } from "./nodes/messaging/MessagingNode";
 
 // Database & Storage nodes
 export { DatabaseTableRefNode } from "./nodes/database/DatabaseTableRefNode";

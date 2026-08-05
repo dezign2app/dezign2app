@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PublishedEventInputType, ConsumedEventInputType } from "../types";
+import { DEFAULT_PUBLISH_TRIGGER_CONDITION } from "../constants";
 import {
   schemaVersionEnum,
   eventCategoryEnum,
@@ -12,7 +13,7 @@ import { schemaModelSchema, architectureMetadataSchema } from "./shared";
 export const publishedEventSchema = z.object({
   id: z.string(),
   name: z.string(),
-  publishedWhen: z.string().default("after-processing"),
+  publishedWhen: z.string().default(DEFAULT_PUBLISH_TRIGGER_CONDITION),
   brokerNodeId: z.string().default(""),
   messagingResourceId: z.string().default(""),
   payloadSchema: schemaModelSchema.default({ id: "dummy" }),

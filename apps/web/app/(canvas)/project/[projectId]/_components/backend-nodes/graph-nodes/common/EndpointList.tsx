@@ -241,7 +241,7 @@ export const EndpointRow = ({
                 {item.publishedEvents.map((ev) => (
                   <div
                     key={ev.id}
-                    className="relative flex items-center w-full group/pub cursor-default"
+                    className="relative flex items-center justify-between w-full group/pub cursor-default"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <span className="text-[9px] font-medium text-muted-foreground truncate opacity-70 group-hover/pub:opacity-100 transition-opacity flex items-center gap-1">
@@ -251,6 +251,35 @@ export const EndpointRow = ({
                       </span>
                       {ev.name}
                     </span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover/pub:opacity-100 transition-all mr-2">
+                      <div
+                        className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveConfigItem({
+                            type: "event",
+                            id: ev.id,
+                            nodeId,
+                          });
+                        }}
+                      >
+                        <Settings size={12} />
+                      </div>
+                      <div
+                        className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const updatedPubs = item.publishedEvents?.filter(
+                            (p) => p.id !== ev.id,
+                          );
+                          handleUpdateItem(item.id, {
+                            publishedEvents: updatedPubs,
+                          });
+                        }}
+                      >
+                        <X size={12} />
+                      </div>
+                    </div>
                     <Handle
                       type="source"
                       position={Position.Right}

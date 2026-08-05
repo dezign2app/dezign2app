@@ -1,5 +1,11 @@
 import { BackendEdge } from "@/types/canvas";
-import { isValidConnection } from "@workspace/canvas";
+import {
+  isValidConnection,
+  MESSAGING_RESOURCE_TYPES,
+  DEFAULT_PUBLISH_TRIGGER_CONDITION,
+  DEFAULT_PUBLISHED_EVENT_DEFAULTS,
+} from "@workspace/canvas";
+import type { MessagingResourceType } from "@workspace/canvas";
 import {
   applyEdgeChanges,
   addEdge as addReactFlowEdge,
@@ -10,6 +16,12 @@ import { generateKeyBetween } from "fractional-indexing";
 import { BackendCanvasState } from "../types";
 import { cleanupDeletedEdgesState } from "../stateCleanup";
 import { getLastIndex, parseResourceHandle } from "../utils";
+
+/** Narrows a plain string to MessagingResourceType without any cast. */
+function isMessagingResourceType(value: string): value is MessagingResourceType {
+  return MESSAGING_RESOURCE_TYPES.some((t) => t === value);
+}
+
 
 export interface EdgeSlice {
   edges: BackendEdge[];
@@ -163,6 +175,81 @@ export const createEdgeSlice = (
             });
           }
         }
+      }
+
+      // ── Endpoint → Messaging node: auto-create a publisher and rewire edge ──
+      const MESSAGING_NODE_TYPES = [
+        "kafka",
+        "queue",
+        "eventstream",
+        "pubsub",
+        "redis-streams",
+        "sqs",
+        "redis-pubsub",
+      ] as const;
+      const isMessagingTarget =
+        targetNode &&
+        MESSAGING_NODE_TYPES.some((t) => t === targetNode.type);
+
+      if (isMessagingTarget && targetNode) {
+        const endpoint = get().endpoints.find((e) => e.id === endpointId);
+        if (!endpoint) return;
+
+        // Parse topic/resource ID from targetHandle, e.g. "topics:in:<topicId>"
+        const targetHandle = connection.targetHandle ?? "";
+        const resourceMatch = targetHandle.match(/^([^:]+):in:(.+)$/);
+        // Use optional chaining + nullish coalescing so both are always `string`
+        const messagingResourceId = resourceMatch?.[2] ?? "";
+        const rawResourceType = resourceMatch?.[1] ?? "";
+        const resolvedResourceType = isMessagingResourceType(rawResourceType)
+          ? rawResourceType
+          : undefined;
+
+        // Derive a human-readable publisher name
+        const endpointLabel =
+          endpoint.name || `${endpoint.type ?? "endpoint"} publisher`;
+        const topicNode = targetNode.data as {
+          topics?: { id: string; name: string }[];
+        };
+        const topicName =
+          messagingResourceId
+            ? (topicNode.topics?.find((t) => t.id === messagingResourceId)?.name ?? "")
+            : "";
+        const publisherName = topicName
+          ? `Publish ${topicName}`
+          : `${endpointLabel} publisher`;
+
+        // Build the new publisher — all fields are required strings here
+        const newEventId = `pub-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const newPublisher = {
+          id: newEventId,
+          name: publisherName,
+          publishedWhen: DEFAULT_PUBLISH_TRIGGER_CONDITION,
+          brokerNodeId: targetNode.id,
+          messagingResourceId,
+          ...DEFAULT_PUBLISHED_EVENT_DEFAULTS,
+          ...(resolvedResourceType ? { resourceType: resolvedResourceType } : {}),
+        };
+
+        // Record the direct endpoint→topic edge id so we can remove it
+        const directEdgeId = newEdge.id;
+
+        // updateEndpoint handles: endpoint upsert, event upsert, and
+        // syncConfiguredEventEdge (creates publishedEvents-out-* → topic edge).
+        get().updateEndpoint(endpointId, {
+          publishedEvents: [...(endpoint.publishedEvents ?? []), newPublisher],
+        });
+
+        // Remove the direct endpoint→topic edge that ReactFlow added before our
+        // interception. The correct publisher edge was already added by updateEndpoint.
+        set((state) => ({
+          edges: state.edges.filter((e) => e.id !== directEdgeId),
+          pendingEdgeUpserts: state.pendingEdgeUpserts.filter(
+            (e) => e.id !== directEdgeId,
+          ),
+          pendingEdgeRemovals: [...state.pendingEdgeRemovals, directEdgeId],
+        }));
+        return; // skip the column-FK check below
       }
     }
 

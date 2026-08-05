@@ -444,6 +444,10 @@ export interface BaseNodeData {
   dbEngineVersion?: DatabaseEngineVersion;
   orm?: DatabaseORM;
   ormVersion?: DatabaseOrmVersion;
+  // Client & connection properties
+  targetServerId?: string;
+  targetRouteId?: string;
+  pageSlug?: string;
   // Shared visual / misc
   authentication?: string;
   tags?: string[];

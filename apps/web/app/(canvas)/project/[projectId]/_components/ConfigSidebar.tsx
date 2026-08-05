@@ -9,7 +9,7 @@ import {
 import { ChevronLeft } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { EndpointConfig } from "./config-sidebar/EndpointConfig";
-import { ClientEventConfig } from "./config-sidebar/ClientEventConfig";
+import { WebClientEventConfig } from "./config-sidebar/WebClientEventConfig";
 import { EventConfig } from "./config-sidebar/EventConfig";
 import { TaskConfig } from "./config-sidebar/TaskConfig";
 import { SearchIndexConfig } from "./config-sidebar/SearchIndexConfig";
@@ -162,7 +162,7 @@ export const ConfigSidebar = () => {
         ) : type === "identityProvider" ? (
           <IdentityProviderConfig id={id} nodeId={nodeId} />
         ) : type === "clientEvent" ? (
-          <ClientEventConfig id={id} nodeId={nodeId} />
+          <WebClientEventConfig id={id} nodeId={nodeId} />
         ) : type === "eventTesting" ? (
           <EventTestingConfig
             id={id}

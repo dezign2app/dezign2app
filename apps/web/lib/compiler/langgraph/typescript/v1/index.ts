@@ -10,7 +10,7 @@
  *  - https://docs.langchain.com/oss/javascript/langgraph/checkpointers
  */
 
-import type { CompiledFile } from "../../../types";
+import type { CompiledFile } from "@workspace/canvas/types";
 import type { RouteEndpoint, CompileLangGraphInput } from "./types";
 import {
   buildContext,

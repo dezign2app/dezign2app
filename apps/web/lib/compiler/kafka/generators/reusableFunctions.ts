@@ -1,4 +1,4 @@
-import { ReusableFunction } from "../../types";
+import { ReusableFunction } from "@workspace/canvas/types";
 import { toPascalCase } from "../../utils";
 
 export function generateReusableFunctions(

@@ -1,4 +1,4 @@
-import { CompiledFile } from "./types";
+import { CompiledFile } from "@workspace/canvas/types";
 
 export function compileUiPackage(): { files: CompiledFile[] } {
   const files: CompiledFile[] = [];

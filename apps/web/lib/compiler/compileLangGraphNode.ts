@@ -15,7 +15,7 @@ import {
   OutputChannelConfig,
   SimulationTestCase,
 } from "@/types/canvas";
-import { CompiledServiceResult } from "./types";
+import { CompiledServiceResult } from "@workspace/canvas/types";
 import {
   compileLangGraph,
   CompileLangGraphInput,

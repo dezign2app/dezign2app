@@ -1,6 +1,6 @@
 import { BackendNode } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 import { toVarName, toPascalCase } from "../utils";
 import {
   parametersToTsInterface,

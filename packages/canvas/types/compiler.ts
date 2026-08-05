@@ -1,24 +1,9 @@
+import type { ReusableFunction } from "./nodes";
+
 export interface CompiledFile {
   filename: string;
   language: string;
   content: string;
-}
-
-/**
- * Describes a reusable function exported by a shared package (db, kafka, redis, etc.)
- * so service nodes can auto-import and call them in generated route handlers.
- */
-export interface ReusableFunction {
-  /** Human-readable function name, e.g. "findAllUsers" */
-  name: string;
-  /** Full import path, e.g. "@workspace/db/helpers/users" */
-  importPath: string;
-  /** TypeScript signature for documentation, e.g. "findAllUsers(): User[]" */
-  signature: string;
-  /** The entity/table/topic this function targets, e.g. "users" */
-  targetName: string;
-  /** CRUD operation kind or category */
-  kind: "findAll" | "findById" | "create" | "update" | "delete" | "publish" | "consume" | "custom";
 }
 
 export interface CompiledServiceResult {

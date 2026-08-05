@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { KafkaTopic } from "@workspace/canvas/types";
-import { CompiledFile, CompiledKafkaResult } from "../types";
+import { KafkaTopic, CompiledFile, CompiledKafkaResult } from "@workspace/canvas/types";
 import { toVarName } from "../utils";
 import { toFolderName, toTopicKey } from "./utils";
 import {

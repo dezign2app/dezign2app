@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { Endpoint } from "@workspace/canvas/types";
-import { CompiledFile } from "../../../../types";
+import { Endpoint, CompiledFile } from "@workspace/canvas/types";
 import { parseSchemaJson, toPascalCase } from "../../../../utils";
 import { resolveEndpointTrace } from "../../../../traceResolver";
 import { convertPathParams, toPythonRouteFileName } from "./utils";

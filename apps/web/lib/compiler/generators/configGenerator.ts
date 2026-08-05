@@ -1,4 +1,4 @@
-import { CompiledFile } from "../types";
+import { CompiledFile } from "@workspace/canvas/types";
 import { BackendNode, BackendEdge } from "@/types/canvas";
 import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
 import {

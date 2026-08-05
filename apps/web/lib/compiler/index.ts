@@ -1,4 +1,4 @@
-export * from "./types";
+export * from "@workspace/canvas/types";
 export * from "./utils";
 export * from "./traceResolver";
 export * from "./compileDatabaseNodes";

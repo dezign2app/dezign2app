@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledWebClientResult } from "./types";
+import { Endpoint, AnyMessagingResource, CompiledWebClientResult } from "@workspace/canvas/types";
 import {
   compileNextjsV16WebClient,
   resolveLinkedEndpoint,

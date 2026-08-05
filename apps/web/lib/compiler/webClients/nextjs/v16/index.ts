@@ -3,8 +3,9 @@ import {
   Endpoint,
   AnyMessagingResource,
   UIEventItem,
+  CompiledFile,
+  CompiledWebClientResult,
 } from "@workspace/canvas/types";
-import { CompiledFile, CompiledWebClientResult } from "../../../types";
 import { generateWebClientE2ETests } from "../../../generators/testGenerator";
 
 import { LinkedEndpointInfo, PageInfo } from "./types";

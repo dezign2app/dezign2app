@@ -1,6 +1,5 @@
 import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
-import { Endpoint, AnyMessagingResource } from "@workspace/canvas/types";
-import { CompiledServiceResult, ReusableFunction } from "./types";
+import { Endpoint, AnyMessagingResource, CompiledServiceResult, ReusableFunction } from "@workspace/canvas/types";
 import { compileExpressV4Service } from "./services/express/v4";
 import { compileFastAPIService } from "./services/fastapi/v0";
 

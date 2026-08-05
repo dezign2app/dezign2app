@@ -1,4 +1,4 @@
-import { CompiledFile } from "../../types";
+import { CompiledFile } from "@workspace/canvas/types";
 import { toVarName, toPascalCase } from "../../utils";
 import { toTopicKey } from "../utils";
 

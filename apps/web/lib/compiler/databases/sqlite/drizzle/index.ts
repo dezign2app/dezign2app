@@ -1,5 +1,5 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { CompiledFile, CompiledDatabaseResult } from "../../../types";
+import { CompiledFile, CompiledDatabaseResult } from "@workspace/canvas/types";
 import { toTableName, toVarName, mapToDrizzleSqliteType } from "../../../utils";
 
 function enrichEntitiesWithForeignKeys(

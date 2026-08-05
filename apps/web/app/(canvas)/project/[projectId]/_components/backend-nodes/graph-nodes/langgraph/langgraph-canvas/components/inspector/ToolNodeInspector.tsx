@@ -28,7 +28,7 @@ import {
   StateUpdateMode,
   StoreOperation,
 } from "../../types";
-import { LocalInput, LocalTextarea } from "../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../common";
 import {
   TOOL_SOURCE_INLINE,
   TOOL_SOURCE_MCP_SERVER,

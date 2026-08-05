@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { LocalTextarea } from "../../../../common/shared";
+import { LocalTextarea } from "../../../../common";
 import type { LangGraphStateChannel } from "@/types/canvas";
 import type { StepNodeData } from "../../types";
 import { STEP_TYPE_ROUTER, STEP_TYPE_LLM_CALL } from "../../constants";

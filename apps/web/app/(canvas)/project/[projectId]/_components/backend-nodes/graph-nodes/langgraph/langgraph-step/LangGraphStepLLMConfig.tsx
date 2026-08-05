@@ -3,7 +3,7 @@ import { Handle, Position, Connection } from "@xyflow/react";
 import { Brain } from "lucide-react";
 import { Switch } from "@workspace/ui/components/switch";
 import { Label } from "@workspace/ui/components/label";
-import { LocalTextarea } from "../../common/shared";
+import { LocalTextarea } from "../../common";
 import { HANDLE_LLM_IN, HANDLE_LLM_OUT } from "@workspace/canvas/constants";
 import { BackendNode } from "@/types/canvas";
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { GitFork } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { LocalTextarea } from "../../../../../common/shared";
+import { LocalTextarea } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function ModelFallbackConfig({ data, onUpdate }: MiddlewareConfigProps) {

@@ -19,7 +19,7 @@ import {
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
 import type { MemoryNodeData } from "../../types";
-import { LocalInput } from "../../../../common/shared";
+import { LocalInput } from "../../../../common";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 

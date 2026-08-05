@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import { LocalInput } from "../backend-nodes/graph-nodes/common/shared";
+import { LocalInput } from "../backend-nodes/graph-nodes/common";
 import { BackendNode } from "@/types/canvas";
 
 export interface ResponseField {

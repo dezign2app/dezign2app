@@ -4,7 +4,7 @@ import { GitBranch, ChevronDown, ChevronUp } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, MessagingResourceList } from "../../common/shared";
+import { NodeHeader, MessagingResourceList } from "../../common";
 import {
   Select,
   SelectContent,

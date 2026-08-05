@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import { LocalInput, LocalTextarea } from "../../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../../common";
 import type { MiddlewareConfigProps } from "./types";
 
 export function FilesystemConfig({ data, onUpdate }: MiddlewareConfigProps) {

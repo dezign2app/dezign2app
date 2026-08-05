@@ -4,7 +4,7 @@ import { HardDrive } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, MessagingResourceList } from "../../common/shared";
+import { NodeHeader, MessagingResourceList } from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 
 export const StorageNode = ({ id, data, selected }: NodeProps<BackendNode>) => {

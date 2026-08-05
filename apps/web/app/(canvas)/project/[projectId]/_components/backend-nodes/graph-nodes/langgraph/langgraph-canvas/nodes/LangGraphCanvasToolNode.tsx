@@ -19,7 +19,7 @@ import {
   TOOL_SOURCE_MCP_SERVER,
   TOOL_SOURCE_API_ENDPOINT,
 } from "../constants";
-import { LocalInput } from "../../../common/shared";
+import { LocalInput } from "../../../common";
 
 export const LangGraphCanvasToolNode = ({
   id,

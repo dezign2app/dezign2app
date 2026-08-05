@@ -13,7 +13,7 @@ import {
   MessagingResourceList,
   useSimulationNodeState,
   getSimulationNodeBorderClass,
-} from "../../common/shared";
+} from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { toast } from "sonner";
 

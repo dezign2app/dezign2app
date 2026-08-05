@@ -1,7 +1,7 @@
 import React from "react";
 import { Bot, Trash2, Sparkles } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
-import { LocalInput, LocalTextarea } from "../../../../../common/shared";
+import { LocalInput, LocalTextarea } from "../../../../../common";
 import type { AgentNodeData } from "../../../types";
 
 interface AgentIdentitySectionProps {

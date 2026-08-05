@@ -30,7 +30,8 @@ import {
   JSONValue,
   JSONObject,
 } from "@/types/canvas";
-import { generateId, LocalInput, LocalTextarea } from "./shared";
+import { generateId } from "./utils";
+import { LocalInput, LocalTextarea } from "./LocalInput";
 
 // --- Processing Steps Editor ---
 

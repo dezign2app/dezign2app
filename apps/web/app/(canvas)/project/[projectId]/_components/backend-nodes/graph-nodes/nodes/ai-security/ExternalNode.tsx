@@ -10,7 +10,7 @@ import {
   EditableNodeList,
   useSimulationNodeState,
   getSimulationNodeBorderClass,
-} from "../../common/shared";
+} from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 
 export const ExternalNode = ({

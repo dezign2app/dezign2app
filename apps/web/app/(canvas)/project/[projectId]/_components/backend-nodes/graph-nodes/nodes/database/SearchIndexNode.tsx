@@ -13,7 +13,7 @@ import { BackendNode, SearchSource } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, generateId } from "../../common/shared";
+import { NodeHeader, generateId } from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 import {
   Select,

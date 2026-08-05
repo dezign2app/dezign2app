@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/select";
 import type { MemoryNode, LangGraphCanvasNode } from "../types";
 import { LANGGRAPH_CANVAS_NODE_MEMORY, HANDLE_MEMORY_OUT } from "../constants";
-import { LocalInput } from "../../../common/shared";
+import { LocalInput } from "../../../common";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { useShallow } from "zustand/react/shallow";
 

@@ -5,7 +5,7 @@ import { BackendNode } from "@/types/canvas";
 import { cn } from "@workspace/ui/lib/utils";
 import { Label } from "@workspace/ui/components/label";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
-import { NodeHeader, LocalInput, generateId } from "../../common/shared";
+import { NodeHeader, LocalInput, generateId } from "../../common";
 import { Settings, Plus, X, Check } from "lucide-react";
 import { Textarea } from "@workspace/ui/components/textarea";
 import {

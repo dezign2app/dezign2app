@@ -2,7 +2,7 @@ import React from "react";
 import { Radio, Check, FileJson, Code } from "lucide-react";
 import { Label } from "@workspace/ui/components/label";
 import { Switch } from "@workspace/ui/components/switch";
-import { LocalTextarea } from "../../../../../common/shared";
+import { LocalTextarea } from "../../../../../common";
 import type { AgentNodeData } from "../../../types";
 import {
   STREAM_EVENT_TYPES,

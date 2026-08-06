@@ -105,7 +105,13 @@ export function generateEndpointRouteHandler(
     : { incoming: [], outgoing: [] };
 
   // --- Resolve reusable function imports ---
-  const pickedDbOps = pickDbFunctionsForEndpoint(ep, dbFunctions, allNodes, path);
+  const pickedDbOps = pickDbFunctionsForEndpoint(
+    ep,
+    dbFunctions,
+    allNodes,
+    path,
+    allEdges,
+  );
   const hasPublishedEvents =
     nodePublishedEvents.length > 0 || (ep.publishedEvents && ep.publishedEvents.length > 0);
   const pickedKafka =
@@ -244,17 +250,15 @@ export async function ${handlerName}(
       });
     }
 
-    const reqBody = ep.requestBody as any;
-    if (reqBody) {
-      if (Array.isArray(reqBody.fields) && reqBody.fields.length > 0) {
-        const fieldStr = reqBody.fields
-          .filter((f: any) => f && f.name)
-          .map((f: any) => `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`)
-          .join(", ");
-        if (fieldStr) {
-          routeHandlerCode += `    //\n    // CONFIGURED REQUEST BODY SCHEMA:\n`;
-          routeHandlerCode += `    // - Body: { ${fieldStr} }\n`;
-        }
+    const reqBodyFields = ep.requestBody?.fields;
+    if (Array.isArray(reqBodyFields) && reqBodyFields.length > 0) {
+      const fieldStr = reqBodyFields
+        .filter((f) => f && f.name)
+        .map((f) => `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`)
+        .join(", ");
+      if (fieldStr) {
+        routeHandlerCode += `    //\n    // CONFIGURED REQUEST BODY SCHEMA:\n`;
+        routeHandlerCode += `    // - Body: { ${fieldStr} }\n`;
       }
     }
 
@@ -325,7 +329,20 @@ export async function ${handlerName}(
     routeHandlerCode += `    // --- Database Operation(s) (via @workspace/db prepared statement) ---\n`;
     pickedDbOps.forEach((op) => {
       const callExpr = op.callExpr.replace("PAYLOAD_VAR", payloadVar);
-      const varName = `${op.fn.name}Result`;
+      const rawTableName = op.fn.targetName || "record";
+      const cleanTableName = toVarName(rawTableName.toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+      const Pascal = toPascalCase(cleanTableName);
+
+      let varName = `${op.fn.name}Result`;
+      if (op.operationKind === "create") {
+        varName = `created${Pascal || "Record"}`;
+      } else if (op.operationKind === "update") {
+        varName = `updated${Pascal || "Record"}`;
+      } else if (op.operationKind === "read") {
+        varName = (path.includes(":id") || path.includes("{id}")) ? cleanTableName : `${cleanTableName}List`;
+      } else if (op.operationKind === "delete") {
+        varName = `deleted${Pascal || "Record"}Result`;
+      }
 
       if (op.tableNodeId) {
         targetVarMap.set(op.tableNodeId, varName);

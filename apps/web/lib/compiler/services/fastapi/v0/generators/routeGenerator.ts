@@ -29,27 +29,27 @@ export function generateRoutes({
 
   if (nodeEndpoints.length === 0) {
     files.push({
-      filename: "routes/default_route.py",
+      filename: "routes/health_route.py",
       language: "python",
       content: `from fastapi import APIRouter
 from core.logger import get_logger
 from core.response import format_response
 
-logger = get_logger("${serviceName}:default_route")
+logger = get_logger("${serviceName}:health_route")
 router = APIRouter()
 
-@router.get("/example", tags=["Default"])
-async def default_handler():
-    logger.info("Executing default route handler")
+@router.get("/health", tags=["Health"])
+async def health_handler():
+    logger.info("Executing health check route handler")
     return format_response(
-        {"service": "${serviceName}"},
-        "Default FastAPI service route operational."
+        {"status": "ok", "service": "${serviceName}"},
+        "Service is healthy."
     )
 `,
     });
-    routeImports.push(`from .default_route import router as default_router`);
-    routeInclusions.push(`router.include_router(default_router)`);
-    routeFileNames.push("default_route");
+    routeImports.push(`from .health_route import router as health_router`);
+    routeInclusions.push(`router.include_router(health_router)`);
+    routeFileNames.push("health_route");
   } else {
     nodeEndpoints.forEach((ep, index) => {
       const method = (ep.type || "GET").toLowerCase();

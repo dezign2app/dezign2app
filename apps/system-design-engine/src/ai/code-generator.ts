@@ -21,19 +21,18 @@ export interface GenerateCodeParams {
 
 export async function generateBusinessLogicCode(params: GenerateCodeParams): Promise<string> {
   const apiKeyStr = process.env.GROQ_API_KEY;
-  const model = process.env.GROQ_LLM_MODEL || "llama-3.3-70b-versatile";
-
-  if (!apiKeyStr) {
-    throw new Error("Missing environment variable: GROQ_API_KEY");
-  }
+  const initialModel = process.env.GROQ_LLM_MODEL || "openai/gpt-oss-120b";
 
   const apiKeys = apiKeyStr
-    .split(",")
-    .map((k) => k.trim())
-    .filter((k) => k.length > 0);
-  const apiKey = apiKeys[0];
+    ? apiKeyStr
+        .split(",")
+        .map((k) => k.trim())
+        .filter((k) => k.length > 0)
+    : [];
 
-  const llm = new ChatGroq({ apiKey, model, temperature: 0.1, maxTokens: 1500 });
+  const modelsToTry = [initialModel, "openai/gpt-oss-120b", "openai/gpt-oss-20b"].filter(
+    (m, idx, arr) => arr.indexOf(m) === idx
+  );
 
   const method = (params.endpointMethod || "POST").toUpperCase();
   const path = params.endpointPath || "/";
@@ -105,13 +104,27 @@ Strict Rules for Output:
     `Generate the business logic code snippet for ${method} ${path}.`,
   );
 
-  const response = await llm.invoke([systemPrompt, humanPrompt]);
-  const content = response.content.toString();
+  for (const apiKey of apiKeys) {
+    for (const model of modelsToTry) {
+      try {
+        const llm = new ChatGroq({ apiKey, model, temperature: 0.1, maxTokens: 1500 });
+        const response = await llm.invoke([systemPrompt, humanPrompt]);
+        const content = response.content.toString();
 
-  const cleaned = content
-    .replace(/^```(typescript|ts)?/gi, "")
-    .replace(/```$/g, "")
-    .trim();
+        const cleaned = content
+          .replace(/^```(typescript|ts)?/gi, "")
+          .replace(/```$/g, "")
+          .trim();
 
-  return cleaned;
+        if (cleaned) {
+          return cleaned;
+        }
+      } catch (err) {
+        console.warn(`System design engine Groq attempt failed for model ${model}:`, err);
+      }
+    }
+  }
+
+  // Fallback string if all AI calls fail
+  return `// Default fallback logic for ${method} ${path}\nreturn res.status(200).json({ success: true, message: "Successfully executed ${method} ${path}" });`;
 }

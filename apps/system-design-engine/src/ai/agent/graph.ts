@@ -14,10 +14,10 @@ let apiKeyIndex = 0;
 
 export function createGraph() {
   const apiKeyStr = process.env.GROQ_API_KEY;
-  const model = process.env.GROQ_LLM_MODEL;
-  if (!apiKeyStr || !model) {
+  const model = process.env.GROQ_LLM_MODEL || "openai/gpt-oss-120b";
+  if (!apiKeyStr) {
     throw new Error(
-      "Missing environment variables: GROQ_API_KEY or GROQ_LLM_MODEL",
+      "Missing environment variable: GROQ_API_KEY",
     );
   }
 

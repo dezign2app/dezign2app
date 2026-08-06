@@ -330,16 +330,59 @@ export async function ${handlerName}(
   );
 
   if (pickedKafka && !hasKafkaInCodeBlock) {
+    const allPublished = [
+      ...(ep.publishedEvents || []),
+      ...nodePublishedEvents,
+    ];
+
     const matchedEvent =
-      nodePublishedEvents.find((e) =>
+      allPublished.find((e) =>
         rawName.toLowerCase().includes((e.name || "").toLowerCase()) ||
         (e.name || "").toLowerCase().includes(rawName.toLowerCase()),
-      ) ?? nodePublishedEvents[0];
+      ) ?? allPublished[0];
 
-    const topicKey = matchedEvent
-      ? toKafkaTopicKey(matchedEvent.name || rawName)
-      : toKafkaTopicKey(rawName);
+    let resolvedTopicName: string | undefined;
 
+    if (matchedEvent) {
+      const brokerId = (matchedEvent as { brokerNodeId?: string }).brokerNodeId;
+      const resourceId = (matchedEvent as { messagingResourceId?: string }).messagingResourceId;
+
+      if (brokerId && resourceId) {
+        const brokerNode = allNodes.find((n) => n.id === brokerId);
+        const topics = (brokerNode?.data as { topics?: Array<{ id: string; name: string }> })?.topics;
+        const topicRes = topics?.find((t) => t.id === resourceId);
+        if (topicRes?.name) {
+          resolvedTopicName = topicRes.name;
+        }
+      }
+
+      if (!resolvedTopicName && matchedEvent.name) {
+        for (const node of allNodes) {
+          const topics = (node.data as { topics?: Array<{ id: string; name: string }> })?.topics;
+          const t = topics?.find((top) => top.name === matchedEvent.name);
+          if (t?.name) {
+            resolvedTopicName = t.name;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!resolvedTopicName) {
+      for (const node of allNodes) {
+        if (node.type === "kafka") {
+          const topics = (node.data as { topics?: Array<{ id: string; name: string }> })?.topics;
+          const firstTopicName = topics?.[0]?.name;
+          if (firstTopicName) {
+            resolvedTopicName = firstTopicName;
+            break;
+          }
+        }
+      }
+    }
+
+    const topicName = resolvedTopicName || matchedEvent?.name || rawName;
+    const topicKey = toKafkaTopicKey(topicName);
     const topicRef = `KAFKA_TOPICS.${topicKey}`;
 
     routeHandlerCode += `    // --- Kafka Event Publish ---\n`;

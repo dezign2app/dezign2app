@@ -8,6 +8,14 @@ import { AnyMessagingResource, Schema } from "@/types/canvas";
 import { generateId } from "./utils";
 import { LocalInput } from "./LocalInput";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+
 export interface MessagingResourceRowProps {
   nodeId: string;
   item: AnyMessagingResource;
@@ -70,6 +78,22 @@ export const MessagingResourceRow = ({
       []
     : [];
 
+  const allAvailableBrokerTopics = messagingNodes.flatMap((n) => {
+    const brokerLabel = n.data?.label || n.type || "Broker";
+    const resources = ((n.data?.topics ||
+      n.data?.streams ||
+      n.data?.queues ||
+      n.data?.channels ||
+      []) as AnyMessagingResource[]);
+    return resources.map((r) => ({
+      brokerNodeId: n.id,
+      brokerLabel,
+      resourceId: r.id,
+      name: r.name || "Untitled Resource",
+      payloadSchema: r.payloadSchema,
+    }));
+  });
+
   const edges = useBackendCanvasStore((s) => s.edges);
   const publisherCount = edges.filter(
     (e) => e.targetResourceId === item.id,
@@ -106,8 +130,9 @@ export const MessagingResourceRow = ({
     const hasLogic = (logic?.trim().length || 0) > 0;
 
     const hasTarget = item.brokerNodeId && item.brokerNodeId !== "none";
+    const hasResource = Boolean(item.messagingResourceId);
 
-    return !hasName && !hasDesc && !hasSchema && !hasLogic && !hasTarget;
+    return !hasName && !hasDesc && !hasSchema && !hasLogic && !hasTarget && !hasResource;
   };
 
   return (
@@ -181,52 +206,110 @@ export const MessagingResourceRow = ({
       )}
       <div className="flex flex-col px-3 py-1.5 nodrag">
         {isEditing ? (
-          <div className="flex items-center gap-1 nodrag">
-            <LocalInput
-              value={editingName}
-              onChange={(e) => setEditingName(e.target.value)}
-              className="h-6 text-xs flex-1 nodrag"
-              placeholder="e.g. OrderCreated"
-              autoFocus
-              onKeyDown={(e: React.KeyboardEvent) => {
-                if (e.key === "Enter") {
+          isPublished ? (
+            <div className="flex items-center gap-1 w-full nodrag">
+              <Select
+                value={item.messagingResourceId || ""}
+                onValueChange={(val) => {
+                  if (val === "__none__") return;
+                  const found = allAvailableBrokerTopics.find(
+                    (t) => t.resourceId === val,
+                  );
+                  if (found) {
+                    handleUpdateItem(item.id, {
+                      brokerNodeId: found.brokerNodeId,
+                      messagingResourceId: found.resourceId,
+                      name: found.name,
+                      ...(found.payloadSchema
+                        ? { payloadSchema: found.payloadSchema }
+                        : {}),
+                    });
+                    setEditingId(null);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-7 text-xs bg-background flex-1 nodrag">
+                  <SelectValue placeholder="Select Topic from Broker..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allAvailableBrokerTopics.length === 0 ? (
+                    <SelectItem value="__none__" disabled className="text-xs">
+                      No topics defined on Kafka/Broker nodes
+                    </SelectItem>
+                  ) : (
+                    allAvailableBrokerTopics.map((top) => (
+                      <SelectItem
+                        key={`${top.brokerNodeId}-${top.resourceId}`}
+                        value={top.resourceId}
+                        className="text-xs"
+                      >
+                        {top.name} ({top.brokerLabel})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  if (!item.name && !item.messagingResourceId)
+                    handleDelete(item.id);
+                  setEditingId(null);
+                }}
+              >
+                <X size={14} />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 nodrag">
+              <LocalInput
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                className="h-6 text-xs flex-1 nodrag"
+                placeholder="e.g. OrderCreated"
+                autoFocus
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter") {
+                    if (!editingName.trim()) handleDelete(item.id);
+                    else {
+                      const wasEmpty = !item.name;
+                      handleUpdate(item.id, editingName.trim());
+                      if (wasEmpty)
+                        setActiveConfigItem({
+                          type: "event",
+                          id: item.id,
+                          nodeId,
+                        });
+                    }
+                    setEditingId(null);
+                  }
+                  if (e.key === "Escape") {
+                    if (!item.name) handleDelete(item.id);
+                    setEditingId(null);
+                  }
+                }}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
                   if (!editingName.trim()) handleDelete(item.id);
                   else {
                     const wasEmpty = !item.name;
                     handleUpdate(item.id, editingName.trim());
                     if (wasEmpty)
-                      setActiveConfigItem({
-                        type: "event",
-                        id: item.id,
-                        nodeId,
-                      });
+                      setActiveConfigItem({ type: "event", id: item.id, nodeId });
                   }
                   setEditingId(null);
-                }
-                if (e.key === "Escape") {
-                  if (!item.name) handleDelete(item.id);
-                  setEditingId(null);
-                }
-              }}
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                if (!editingName.trim()) handleDelete(item.id);
-                else {
-                  const wasEmpty = !item.name;
-                  handleUpdate(item.id, editingName.trim());
-                  if (wasEmpty)
-                    setActiveConfigItem({ type: "event", id: item.id, nodeId });
-                }
-                setEditingId(null);
-              }}
-            >
-              <Check size={14} />
-            </Button>
-          </div>
+                }}
+              >
+                <Check size={14} />
+              </Button>
+            </div>
+          )
         ) : (
           <div className="flex flex-col w-full">
             <div

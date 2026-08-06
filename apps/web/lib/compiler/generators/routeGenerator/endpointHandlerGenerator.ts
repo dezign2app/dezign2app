@@ -1,6 +1,7 @@
 import { Endpoint, AnyMessagingResource, CompiledFile, ReusableFunction } from "@workspace/canvas/types";
 import { BackendNode, BackendEdge } from "@/types/canvas";
-import { parseSchemaJson, toVarName, toPascalCase } from "../../utils";
+import { parseSchemaJson, toVarName, toPascalCase, toEnvVarName } from "../../utils";
+
 import {
   parametersToTsInterface,
   schemaToTsInterface,
@@ -392,7 +393,57 @@ export async function ${handlerName}(
     routeHandlerCode += `    );\n\n`;
   }
 
+  // 5. Inter-Service HTTP Call(s)
+  const outgoingServices = trace.outgoing.filter(
+    (out) => out.nodeType === "Microservice",
+  );
+  const hasFetchInCodeBlock = Boolean(
+    codeBlock && (codeBlock.includes("fetch(") || codeBlock.includes("axios")),
+  );
+
+  if (outgoingServices.length > 0 && !hasFetchInCodeBlock) {
+    outgoingServices.forEach((outService) => {
+      const targetNode = allNodes.find((n) => n.id === outService.nodeId);
+      const tgtLabel = targetNode?.data?.label || outService.nodeName || "Service";
+      const tgtPort = targetNode?.data?.port || "8080";
+      const envVarName = `${toEnvVarName(tgtLabel)}_BASE_URL`;
+      const varPrefix = toVarName(tgtLabel);
+
+      const tgtEndpoints = allEndpoints.filter(
+        (e) => e.nodeId === outService.nodeId,
+      );
+      const targetEp = tgtEndpoints[0];
+      const targetMethod = (targetEp?.type || "GET").toUpperCase();
+      const rawTargetName = targetEp?.name || "/";
+      const targetPath = rawTargetName.startsWith("/")
+        ? rawTargetName
+        : `/${rawTargetName}`;
+      const isTargetBodyMethod = ["POST", "PUT", "PATCH"].includes(targetMethod);
+
+      routeHandlerCode += `    // --- Inter-Service HTTP Call: ${tgtLabel} ---\n`;
+      routeHandlerCode += `    const ${varPrefix}BaseUrl = process.env.${envVarName} || "http://localhost:${tgtPort}";\n`;
+      routeHandlerCode += `    const ${varPrefix}Response = await fetch(\`\${${varPrefix}BaseUrl}${targetPath}\`, {\n`;
+      routeHandlerCode += `      method: "${targetMethod}",\n`;
+      routeHandlerCode += `      headers: {\n`;
+      routeHandlerCode += `        "Content-Type": "application/json",\n`;
+      routeHandlerCode += `        ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),\n`;
+      routeHandlerCode += `      },\n`;
+      if (isTargetBodyMethod) {
+        routeHandlerCode += `      body: JSON.stringify(${payloadVar}),\n`;
+      }
+      routeHandlerCode += `    });\n\n`;
+      routeHandlerCode += `    let ${varPrefix}Data: unknown = null;\n`;
+      routeHandlerCode += `    if (!${varPrefix}Response.ok) {\n`;
+      routeHandlerCode += `      logger.error("Inter-service request to ${tgtLabel} failed", { status: ${varPrefix}Response.status, statusText: ${varPrefix}Response.statusText });\n`;
+      routeHandlerCode += `    } else {\n`;
+      routeHandlerCode += `      ${varPrefix}Data = await ${varPrefix}Response.json();\n`;
+      routeHandlerCode += `      logger.info("Successfully received response from ${tgtLabel}", { data: ${varPrefix}Data });\n`;
+      routeHandlerCode += `    }\n\n`;
+    });
+  }
+
   if (codeBlock) {
+
     codeBlock.split("\n").forEach((line: string) => {
       routeHandlerCode += `    ${line}\n`;
     });

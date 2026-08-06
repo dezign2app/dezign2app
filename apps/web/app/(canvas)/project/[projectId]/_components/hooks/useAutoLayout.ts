@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useReactFlow, Node, Edge } from "@xyflow/react";
+import { useReactFlow, Node, Edge, Position } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import type { BackendNode, BackendEdge } from "@/types/canvas";
@@ -446,15 +446,47 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         return count > 0 ? sum / count : pos.y + height / 2;
       };
 
-      // --- Sweep: sort rank by barycenter, then reposition evenly ---
-      const sweepRanks = (rankOrder: number[]) => {
-        rankOrder.forEach((r) => {
+      // --- Crossing count between two adjacent rank arrays ---
+      // O(n²) per rank pair — fine for typical diagram sizes (dozens of nodes).
+      const countCrossings = (rankA: string[], rankB: string[]): number => {
+        const posB = new Map(rankB.map((id, i) => [id, i]));
+        const pairs: [number, number][] = [];
+        flowEdges.forEach((e) => {
+          const ai = rankA.indexOf(e.source);
+          const bi = posB.get(e.target);
+          if (ai !== -1 && bi !== undefined) pairs.push([ai, bi]);
+          const ai2 = rankA.indexOf(e.target);
+          const bi2 = posB.get(e.source);
+          if (ai2 !== -1 && bi2 !== undefined) pairs.push([ai2, bi2]);
+        });
+        let crossings = 0;
+        for (let i = 0; i < pairs.length; i++) {
+          for (let j = i + 1; j < pairs.length; j++) {
+            const [a1, b1] = pairs[i]!;
+            const [a2, b2] = pairs[j]!;
+            if ((a1 < a2 && b1 > b2) || (a1 > a2 && b1 < b2)) crossings++;
+          }
+        }
+        return crossings;
+      };
+
+      const totalCrossings = (): number => {
+        let total = 0;
+        for (let i = 0; i < ranks.length - 1; i++) {
+          const a = rankMap.get(ranks[i]!);
+          const b = rankMap.get(ranks[i + 1]!);
+          if (a && b) total += countCrossings(a, b);
+        }
+        return total;
+      };
+
+      // --- Reapply positions for all ranks given their current order in rankMap ---
+      const nodeGap = 80;
+      const reapplyRankPositions = () => {
+        ranks.forEach((r) => {
           const ids = rankMap.get(r);
-          if (!ids || ids.length <= 1) return;
+          if (!ids || ids.length === 0) return;
 
-          ids.sort((a, b) => computeBarycenter(a) - computeBarycenter(b));
-
-          const nodeGap = 80;
           let totalLen = 0;
           ids.forEach((id, idx) => {
             const node = flowNodes.find((n) => n.id === id)!;
@@ -466,7 +498,6 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
             ids.reduce((s, id) => s + computeBarycenter(id), 0) / ids.length;
           let cursor = avgCenter - totalLen / 2;
 
-          // Keep the secondary axis (column X) from Dagre
           const secondaryPos =
             ids.reduce((s, id) => {
               const pos = positionsMap.get(id);
@@ -490,11 +521,66 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         });
       };
 
-      // Multiple forward+backward passes for convergence
-      sweepRanks([...ranks]);
-      sweepRanks([...ranks].reverse());
-      sweepRanks([...ranks]);
-      sweepRanks([...ranks].reverse());
+      // --- Transpose refinement: swap adjacent pairs within each rank if it reduces crossings ---
+      const transposeRefine = () => {
+        let improved = true;
+        let iterations = 0;
+        while (improved && iterations < 10) {
+          improved = false;
+          iterations++;
+          ranks.forEach((r) => {
+            const ids = rankMap.get(r)!;
+            for (let i = 0; i < ids.length - 1; i++) {
+              const before = totalCrossings();
+              // Swap
+              const tmp = ids[i]!;
+              ids[i] = ids[i + 1]!;
+              ids[i + 1] = tmp;
+              const after = totalCrossings();
+              if (after < before) {
+                improved = true; // keep swap
+              } else {
+                // Revert
+                const tmp2 = ids[i]!;
+                ids[i] = ids[i + 1]!;
+                ids[i + 1] = tmp2;
+              }
+            }
+          });
+        }
+      };
+
+      // --- Sweep: sort each rank's node order by barycenter (ordering only) ---
+      const sweepRanks = (rankOrder: number[]) => {
+        rankOrder.forEach((r) => {
+          const ids = rankMap.get(r);
+          if (!ids || ids.length <= 1) return;
+          ids.sort((a, b) => computeBarycenter(a) - computeBarycenter(b));
+        });
+      };
+
+      // --- Best-of-N tracking: run 6 passes, keep the layout with fewest crossings ---
+      let bestOrder: Map<number, string[]> | null = null;
+      let bestScore = Infinity;
+
+      for (let pass = 0; pass < 6; pass++) {
+        sweepRanks(pass % 2 === 0 ? [...ranks] : [...ranks].reverse());
+        transposeRefine();
+        reapplyRankPositions();
+        const score = totalCrossings();
+        if (score < bestScore) {
+          bestScore = score;
+          bestOrder = new Map(
+            Array.from(rankMap.entries()).map(([k, v]) => [k, [...v]]),
+          );
+        }
+      }
+
+      // Restore best-scoring order and reposition
+      if (bestOrder) {
+        bestOrder.forEach((ids, r) => rankMap.set(r, ids));
+      }
+      reapplyRankPositions();
 
       // 6. Layout attached head nodes grouped by category columns above each target node
       targetNodeIds.forEach((targetId: string) => {
@@ -601,43 +687,61 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         });
       });
 
-      // 7. Map node positions and handle anchors
-      const nodeChanges: PositionNodeChange[] = nodes.map(
-        (node: LayoutNode) => {
+      // 7. Update node positions atomically
+      if (options?.onNodesChange) {
+        const nodeChanges: PositionNodeChange[] = nodes.map((node: LayoutNode) => {
           const pos = positionsMap.get(node.id) ?? {
             x: node.position.x,
             y: node.position.y,
           };
-          const isAttachedHead = attachedHeadNodeIdSet.has(node.id);
-
-          const change: PositionNodeChange = {
+          return {
             id: node.id,
             type: "position",
             position: pos,
-            sourcePosition: isAttachedHead
-              ? "bottom"
-              : isHorizontal
-                ? "right"
-                : "bottom",
-            targetPosition: isAttachedHead
-              ? "top"
-              : isHorizontal
-                ? "left"
-                : "top",
           };
-          return change;
-        },
-      );
+        });
+        options.onNodesChange(nodeChanges);
+      } else {
+        useBackendCanvasStore.setState((state) => {
+          const updatedNodes = state.nodes.map((node) => {
+            const pos = positionsMap.get(node.id);
+            if (!pos) return node;
+            const isAttachedHead = attachedHeadNodeIdSet.has(node.id);
+            return {
+              ...node,
+              position: pos,
+              sourcePosition: isAttachedHead
+                ? Position.Bottom
+                : isHorizontal
+                  ? Position.Right
+                  : Position.Bottom,
+              targetPosition: isAttachedHead
+                ? Position.Top
+                : isHorizontal
+                  ? Position.Left
+                  : Position.Top,
+            };
+          });
 
-      // Update positions via store to ensure they sync back to state/DB
-      onNodesChange(nodeChanges);
+          const movedNodeIds = new Set(positionsMap.keys());
+          const upserts = updatedNodes.filter((n) => movedNodeIds.has(n.id));
 
-      // Fit view afterwards
-      window.requestAnimationFrame(() => {
-        fitView({ duration: 800 });
-      });
+          return {
+            nodes: updatedNodes,
+            pendingNodeUpserts: [
+              ...state.pendingNodeUpserts.filter((u) => !movedNodeIds.has(u.id)),
+              ...upserts,
+            ],
+          };
+        });
+      }
+
+      // Smoothly fit view after DOM renders cleanly
+      setTimeout(() => {
+        fitView({ duration: 300, padding: 0.15 });
+      }, 50);
     },
-    [nodes, edges, fitView, onNodesChange],
+    [nodes, edges, fitView, options?.onNodesChange],
   );
 
   return { handleLayout };

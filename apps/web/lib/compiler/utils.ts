@@ -41,3 +41,11 @@ export function mapToDrizzleSqliteType(type?: string): {
     return { drizzleType: "integer", mode: '{ mode: "boolean" }' };
   return { drizzleType: "text" };
 }
+
+export function toEnvVarName(str: string): string {
+  if (!str) return "SERVICE";
+  const clean = str.replace(/[^a-zA-Z0-9]/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2");
+  const env = clean.replace(/_+/g, "_").replace(/^_+|_+$/g, "").toUpperCase();
+  return env || "SERVICE";
+}
+

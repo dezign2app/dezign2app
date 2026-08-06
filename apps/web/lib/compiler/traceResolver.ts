@@ -106,6 +106,42 @@ export function formatDatabaseColumnsContext(
 export function formatEndpointPayloadContext(endpoint: Endpoint): string {
   const parts: string[] = [];
 
+  // Headers
+  if (Array.isArray(endpoint.headers) && endpoint.headers.length > 0) {
+    const headersStr = endpoint.headers
+      .filter((h: any) => h && h.name)
+      .map(
+        (h: any) =>
+          `${h.name}${h.required === false ? "?" : ""}: ${h.type || "string"}`,
+      )
+      .join(", ");
+    if (headersStr) parts.push(`Headers: { ${headersStr} }`);
+  }
+
+  // Path params
+  if (Array.isArray(endpoint.pathParams) && endpoint.pathParams.length > 0) {
+    const pathStr = endpoint.pathParams
+      .filter((p: any) => p && p.name)
+      .map(
+        (p: any) =>
+          `${p.name}${p.required === false ? "?" : ""}: ${p.type || "string"}`,
+      )
+      .join(", ");
+    if (pathStr) parts.push(`Path Params: { ${pathStr} }`);
+  }
+
+  // Query params
+  if (Array.isArray(endpoint.queryParams) && endpoint.queryParams.length > 0) {
+    const queryStr = endpoint.queryParams
+      .filter((q: any) => q && q.name)
+      .map(
+        (q: any) =>
+          `${q.name}${q.required === false ? "?" : ""}: ${q.type || "string"}`,
+      )
+      .join(", ");
+    if (queryStr) parts.push(`Query Params: { ${queryStr} }`);
+  }
+
   // Request body fields or rawJson
   const reqBody = endpoint.requestBody as any;
   if (reqBody) {
@@ -114,7 +150,7 @@ export function formatEndpointPayloadContext(endpoint: Endpoint): string {
         .filter((f: any) => f && f.name)
         .map(
           (f: any) =>
-            `${f.name}${f.type ? `: ${f.type}` : ""}${f.required ? "!" : ""}`,
+            `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`,
         )
         .join(", ");
       if (fieldsStr) parts.push(`Body: { ${fieldsStr} }`);
@@ -127,22 +163,22 @@ export function formatEndpointPayloadContext(endpoint: Endpoint): string {
     }
   }
 
-  // Path params
-  if (Array.isArray(endpoint.pathParams) && endpoint.pathParams.length > 0) {
-    const pathStr = endpoint.pathParams
-      .filter((p: any) => p && p.name)
-      .map((p: any) => `${p.name}${p.type ? `: ${p.type}` : ""}`)
-      .join(", ");
-    if (pathStr) parts.push(`Path Params: { ${pathStr} }`);
-  }
-
-  // Query params
-  if (Array.isArray(endpoint.queryParams) && endpoint.queryParams.length > 0) {
-    const queryStr = endpoint.queryParams
-      .filter((q: any) => q && q.name)
-      .map((q: any) => `${q.name}${q.type ? `: ${q.type}` : ""}`)
-      .join(", ");
-    if (queryStr) parts.push(`Query Params: { ${queryStr} }`);
+  // Response body fields or rawJson
+  const resBody = endpoint.responseBody as any;
+  if (resBody) {
+    if (Array.isArray(resBody.fields) && resBody.fields.length > 0) {
+      const resFieldsStr = resBody.fields
+        .filter((f: any) => f && f.name)
+        .map((f: any) => `${f.name}: ${f.type || "string"}`)
+        .join(", ");
+      if (resFieldsStr) parts.push(`Response: { ${resFieldsStr} }`);
+    } else if (
+      resBody.rawJson &&
+      typeof resBody.rawJson === "string" &&
+      resBody.rawJson.trim()
+    ) {
+      parts.push(`Response: ${resBody.rawJson.replace(/\s+/g, " ").trim()}`);
+    }
   }
 
   // Legacy body string fallback
@@ -251,7 +287,7 @@ export function resolveEndpointTrace(
         nodeName: srcName,
         nodeType: "Microservice",
         detail: `HTTP Client call to ${epMethod} ${epPath}`,
-        dataContext: `Calls Port ${(serviceNode.data as any)?.port || "8080"}`,
+        dataContext: formatEndpointPayloadContext(endpoint),
       });
     }
     // D. API Gateway / Load Balancer
@@ -334,9 +370,12 @@ export function resolveEndpointTrace(
     else if (tgtNode.type === "service") {
       let targetEpInfo = `HTTP Request to Service (Port ${nodeData?.port || "8080"})`;
       const tgtEndpoints = allEndpoints.filter((e) => e.nodeId === tgtNode.id);
+      let targetDataContext = `Base URL: http://localhost:${nodeData?.port || "8080"}`;
+
       if (tgtEndpoints.length > 0) {
         const firstEp = tgtEndpoints[0]!;
         targetEpInfo = `Calls ${(firstEp.type || "GET").toUpperCase()} ${firstEp.name || "/"} on ${tgtName}`;
+        targetDataContext = formatEndpointPayloadContext(firstEp);
       }
 
       outgoing.push({
@@ -344,7 +383,7 @@ export function resolveEndpointTrace(
         nodeName: tgtName,
         nodeType: "Microservice",
         detail: targetEpInfo,
-        dataContext: `Base URL: http://localhost:${nodeData?.port || "8080"}`,
+        dataContext: targetDataContext,
       });
     }
     // C. Messaging Broker Node

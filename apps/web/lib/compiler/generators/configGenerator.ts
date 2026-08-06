@@ -6,8 +6,10 @@ import {
   resolveConsumerTrace,
   resolveProducerTrace,
 } from "../traceResolver";
+import { toEnvVarName } from "../utils";
 
 export function generateLibFiles(): CompiledFile[] {
+
   const libIndexCode = `/**
  * Shared lib helpers for this service.
  * DB access goes through @workspace/db/helpers — injection-safe prepared statements.
@@ -154,11 +156,30 @@ export function generateConfigFiles(
     2,
   );
 
+  const connectedServiceEnvLines: string[] = [];
+  const seenTargetServiceIds = new Set<string>();
+
+  allEdges.forEach((edge) => {
+    if (edge.source === node.id) {
+      const targetNode = allNodes.find(
+        (n) => n.id === edge.target && n.type === "service",
+      );
+      if (targetNode && !seenTargetServiceIds.has(targetNode.id)) {
+        seenTargetServiceIds.add(targetNode.id);
+        const tgtLabel = targetNode.data?.label || targetNode.id;
+        const tgtPort = targetNode.data?.port || "8080";
+        const envVarName = `${toEnvVarName(tgtLabel)}_BASE_URL`;
+        connectedServiceEnvLines.push(`${envVarName}=http://localhost:${tgtPort}`);
+      }
+    }
+  });
+
   const envFile = `PORT=${port}
 NODE_ENV=development
 LOG_LEVEL=info
 DATABASE_PATH=../../packages/db/sqlite.db
-`;
+${connectedServiceEnvLines.length > 0 ? connectedServiceEnvLines.join("\n") + "\n" : ""}`;
+
 
   const gitignoreFile = `node_modules
 dist

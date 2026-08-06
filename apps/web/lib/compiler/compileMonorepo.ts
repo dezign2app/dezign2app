@@ -14,6 +14,7 @@ import {
   generateTypescriptConfigPackage,
 } from "./generators/rootFilesGenerator";
 import { generateRootReadme } from "./generators/readmeGenerator";
+import { compileGrpcPackages } from "./grpc";
 
 /**
  * Compiles the entire system architecture canvas into a production-ready
@@ -114,6 +115,21 @@ export function compileMonorepo(
     });
   });
 
+  // 4.9 Generate Shared Packages: packages/grpc/<service-name>/ for gRPC inter-service calls
+  const compiledGrpc = compileGrpcPackages(nodes, edges, endpoints);
+  const grpcPackageFolders: string[] = [];
+  compiledGrpc.packagesByServiceId.forEach(({ packageFolder, files: grpcFiles }) => {
+    grpcFiles.forEach((f) => {
+      files.push({
+        filename: `packages/${f.filename}`,
+        language: f.language,
+        content: f.content,
+      });
+    });
+    grpcPackageFolders.push(`packages/${packageFolder}`);
+  });
+
+
   // 5. Generate Apps: apps/<sanitizedName> for Service Nodes
   serviceNodes.forEach((srvNode) => {
     const rawName = srvNode.data.label || "Service";
@@ -210,6 +226,7 @@ export function compileMonorepo(
     { path: "packages/types" },
     ...(compiledKafka.files.length > 0 ? [{ path: `packages/${compiledKafka.packageFolder}` }] : []),
     ...(compiledRedis.files.length > 0 ? [{ path: "packages/redis" }] : []),
+    ...grpcPackageFolders.map((folder) => ({ path: folder })),
     ...servicesInfo.map((s) => ({ path: `apps/${s.folderName}` })),
     ...webClientsInfo.map((w) => ({ path: `apps/${w.folderName}` })),
   ];

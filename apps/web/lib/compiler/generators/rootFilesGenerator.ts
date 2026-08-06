@@ -43,8 +43,9 @@ export function generateRootFiles(projectName: string): CompiledFile[] {
   files.push({
     filename: "pnpm-workspace.yaml",
     language: "yaml",
-    content: `packages:\n  - "apps/*"\n  - "packages/*"\n`,
+    content: `packages:\n  - "apps/*"\n  - "packages/*"\n  - "packages/grpc/*"\n`,
   });
+
 
   const turboJson = JSON.stringify(
     {

@@ -240,3 +240,29 @@ export const DEFAULT_PUBLISHED_EVENT_DEFAULTS = {
   ordering: "NONE" as const,
   deprecated: false,
 } as const;
+
+// ─── Inter-Service Protocol ────────────────────────────────────────────────────
+export const INTER_SERVICE_PROTOCOL_HTTP = "http" as const;
+export const INTER_SERVICE_PROTOCOL_GRPC = "grpc" as const;
+
+export const INTER_SERVICE_PROTOCOLS = {
+  HTTP: INTER_SERVICE_PROTOCOL_HTTP,
+  GRPC: INTER_SERVICE_PROTOCOL_GRPC,
+} as const;
+
+export type InterServiceProtocol =
+  (typeof INTER_SERVICE_PROTOCOLS)[keyof typeof INTER_SERVICE_PROTOCOLS];
+
+export const INTER_SERVICE_PROTOCOL_OPTIONS = [
+  { value: INTER_SERVICE_PROTOCOL_HTTP, label: "HTTP / REST" },
+  { value: INTER_SERVICE_PROTOCOL_GRPC, label: "gRPC" },
+] as const;
+
+export const ALL_INTER_SERVICE_PROTOCOL_VALUES = Object.values(
+  INTER_SERVICE_PROTOCOLS,
+) as [InterServiceProtocol, ...InterServiceProtocol[]];
+
+export const DEFAULT_INTER_SERVICE_PROTOCOL = INTER_SERVICE_PROTOCOL_HTTP;
+
+export const GRPC_DEFAULT_PORT = 50051 as const;
+

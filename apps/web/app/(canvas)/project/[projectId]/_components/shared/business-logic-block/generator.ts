@@ -132,6 +132,13 @@ export function generateSyncedEndpointCode({
 }
 
 export async function generateCodeWithAI(params: GenerateEndpointCodeParams): Promise<string> {
+  console.log("[generateCodeWithAI] Requesting code generation with params:", {
+    method: params.endpointMethod,
+    path: params.endpointPath,
+    promptLength: params.prompt?.length || 0,
+    hasCrud: (params.crudConfig?.length || 0) > 0,
+  });
+
   try {
     const res = await fetch("/api/generate-code", {
       method: "POST",
@@ -141,16 +148,23 @@ export async function generateCodeWithAI(params: GenerateEndpointCodeParams): Pr
       body: JSON.stringify(params),
     });
 
+    console.log("[generateCodeWithAI] API Response status:", res.status, res.statusText);
+
     if (res.ok) {
       const data = await res.json();
+      console.log("[generateCodeWithAI] Received JSON response source:", data.source || "unknown");
       if (data.code && typeof data.code === "string" && data.code.trim()) {
         return data.code.trim();
       }
+    } else {
+      const errText = await res.text();
+      console.error("[generateCodeWithAI] API route returned error:", res.status, errText);
     }
   } catch (err) {
-    console.warn("AI code generation request failed, falling back to schema generator:", err);
+    console.warn("[generateCodeWithAI] Request failed with exception, falling back to deterministic generator:", err);
   }
 
   // Fallback to deterministic code generator
+  console.log("[generateCodeWithAI] Executing client-side deterministic fallback generator");
   return generateSyncedEndpointCode(params);
 }

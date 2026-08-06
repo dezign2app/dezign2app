@@ -6,16 +6,9 @@ import {
   Globe,
   Server,
   Waves,
-  GitBranch,
-  Radio,
   Database,
   HardDrive,
-  Cog,
-  Search,
   Network,
-  Webhook,
-  Brain,
-  Boxes,
   Key,
 } from "lucide-react";
 import type { GraphNodeType } from "@workspace/canvas";
@@ -55,15 +48,6 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
         <Server className="w-3.5 h-3.5 mr-2" />
         Service
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("worker", "Worker")}
-      >
-        <Cog className="w-3.5 h-3.5 mr-2 text-amber-500" />
-        Worker
-      </Button>
 
       {/* MESSAGING */}
       <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">
@@ -87,24 +71,6 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
         <Waves className="w-3.5 h-3.5 mr-2 text-rose-500" />
         Redis Streams
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("redis-pubsub", "Redis Pub/Sub")}
-      >
-        <Radio className="w-3.5 h-3.5 mr-2 text-red-500" />
-        Pub/Sub
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("sqs", "Queue")}
-      >
-        <GitBranch className="w-3.5 h-3.5 mr-2 text-orange-500" />
-        Queue (SQS)
-      </Button>
 
       {/* STORAGE */}
       <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">
@@ -123,10 +89,10 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
         variant="outline"
         size="sm"
         className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("redis-cache", "Cache")}
+        onClick={() => onAddNode("redis-cache", "Redis Cache")}
       >
         <Database className="w-3.5 h-3.5 mr-2 text-red-500" />
-        Cache
+        Redis Cache
       </Button>
       <Button
         variant="outline"
@@ -146,29 +112,11 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
         <Database className="w-3.5 h-3.5 mr-2 text-violet-500" />
         Vector DB
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("search_index", "Search Index")}
-      >
-        <Search className="w-3.5 h-3.5 mr-2 text-sky-500" />
-        Search Index
-      </Button>
 
       {/* NETWORK */}
       <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">
         Network
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("api_gateway", "API Gateway")}
-      >
-        <Network className="w-3.5 h-3.5 mr-2 text-teal-500" />
-        API Gateway
-      </Button>
       <Button
         variant="outline"
         size="sm"
@@ -192,15 +140,6 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
         <Globe className="w-3.5 h-3.5 mr-2" />
         External API
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("webhook", "Webhook")}
-      >
-        <Webhook className="w-3.5 h-3.5 mr-2 text-pink-500" />
-        Webhook
-      </Button>
 
       {/* AI */}
       <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">
@@ -214,24 +153,6 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
       >
         <Network className="w-3.5 h-3.5 mr-2 text-emerald-500" />
         LangGraph Agent
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("llm", "LLM")}
-      >
-        <Brain className="w-3.5 h-3.5 mr-2 text-purple-500" />
-        LLM
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("mcp_server", "MCP Server")}
-      >
-        <Boxes className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-        MCP Server
       </Button>
     </Panel>
   );

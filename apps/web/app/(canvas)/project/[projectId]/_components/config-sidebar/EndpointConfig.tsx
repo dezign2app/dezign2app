@@ -29,6 +29,13 @@ import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";
 import { useParams } from "next/navigation";
+import {
+  INTER_SERVICE_PROTOCOL_OPTIONS,
+  INTER_SERVICE_PROTOCOL_HTTP,
+  INTER_SERVICE_PROTOCOL_GRPC,
+  DEFAULT_INTER_SERVICE_PROTOCOL,
+  GRPC_DEFAULT_PORT,
+} from "@workspace/canvas";
 
 interface EndpointConfigProps {
   id: string;
@@ -54,9 +61,17 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
   const selectTestCase = useSimulationStore((s) => s.selectTestCase);
 
   const allNodes = useBackendCanvasStore((s) => s.nodes);
+  const allEdges = useBackendCanvasStore((s) => s.edges);
 
   const item = endpoints.find((e) => e.id === id);
   if (!item) return null;
+
+  // Detect if this service has any outgoing edges to other service nodes
+  const hasOutgoingServiceEdge = allEdges.some(
+    (e) =>
+      e.source === nodeId &&
+      allNodes.find((n) => n.id === e.target)?.type === "service",
+  );
 
   const availableTableNodes = allNodes
     .filter((n) => n?.type === "db_ref" || n?.type === "database")
@@ -221,6 +236,8 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
           onChange={(e) => updateEndpoint(item.id, { summary: e.target.value })}
         />
       </div>
+
+
 
       <ParameterEditor
         title="Headers"

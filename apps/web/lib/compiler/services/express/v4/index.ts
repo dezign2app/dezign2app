@@ -93,7 +93,8 @@ export function compileExpressV4Service(
       allEdges,
     ),
     ...generateLibFiles(),
-    generateServerFile(serviceName, port, cors, corsOrigins),
+    generateServerFile(serviceName, port, cors, corsOrigins, node, allNodes, allEdges),
+
     ...generateConfigFiles(
       node,
       sanitizedName,

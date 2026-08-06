@@ -9,6 +9,8 @@ import type {
   DatabaseOrmVersion,
 } from "../techStack";
 import type { Endpoint, WorkerTask, SearchSource } from "../schemas";
+import type { InterServiceProtocol } from "../constants";
+
 import type { UIEventItem } from "./simulation";
 import type { MessagingNodeData } from "./messaging";
 import type { GatewayRoute, AuthRule } from "./auth";
@@ -117,7 +119,11 @@ export interface CanvasServiceNodeData {
   rateLimit?: string;
   timeout?: string;
   port?: string;
+  grpcPort?: string;
+  interServiceProtocol?: InterServiceProtocol;
   endpoints?: Endpoint[];
+
+
   routeGroups?: {
     id: string;
     name: string;

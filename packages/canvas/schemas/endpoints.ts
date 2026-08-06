@@ -13,6 +13,10 @@ import {
   simulationTestCaseSchema,
   simulationTestCaseInputSchema,
 } from "./simulation";
+import {
+  INTER_SERVICE_PROTOCOL_HTTP,
+  INTER_SERVICE_PROTOCOL_GRPC,
+} from "../constants";
 
 export const endpointSchema = z.object({
   id: z.string(),
@@ -52,8 +56,12 @@ export const endpointSchema = z.object({
   responseFields: z.array(responseFieldSchema).optional(),
   responseExpression: z.string().optional(),
   output: z.string().optional(),
+  interServiceProtocol: z
+    .enum([INTER_SERVICE_PROTOCOL_HTTP, INTER_SERVICE_PROTOCOL_GRPC])
+    .optional(),
 });
 export type Endpoint = z.infer<typeof endpointSchema>;
+
 
 export const endpointInputSchema: z.ZodType<EndpointInputType> = z.object({
   id: z.string().optional(),

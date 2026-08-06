@@ -7,6 +7,10 @@ import {
   resolveProducerTrace,
 } from "../traceResolver";
 import { toEnvVarName } from "../utils";
+import {
+  INTER_SERVICE_PROTOCOL_GRPC,
+  GRPC_DEFAULT_PORT,
+} from "@workspace/canvas";
 
 export function generateLibFiles(): CompiledFile[] {
 
@@ -35,13 +39,36 @@ export function formatResponse<T>(data: T, message = "Success") {
   ];
 }
 
+export function isGrpcEnabledForService(
+  node: BackendNode,
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = [],
+): boolean {
+  if (node.data?.interServiceProtocol === INTER_SERVICE_PROTOCOL_GRPC) {
+    return true;
+  }
+  return allEdges.some((edge) => {
+    if (edge.target === node.id) {
+      const sourceNode = allNodes.find((n) => n.id === edge.source && n.type === "service");
+      return sourceNode?.data?.interServiceProtocol === INTER_SERVICE_PROTOCOL_GRPC;
+    }
+    return false;
+  });
+}
+
 export function generateServerFile(
   serviceName: string,
   port: string,
   cors: boolean,
   corsOrigins: string,
+  node?: BackendNode,
+  allNodes: BackendNode[] = [],
+  allEdges: BackendEdge[] = [],
 ): CompiledFile {
-  const serverCode = `import "dotenv/config";
+  const grpcEnabled = node ? isGrpcEnabledForService(node, allNodes, allEdges) : false;
+  const grpcPort = node?.data?.grpcPort || "50051";
+
+  let serverCode = `import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { createLogger } from "@workspace/logger";
@@ -85,6 +112,26 @@ app.listen(PORT, () => {
 });
 `;
 
+  if (grpcEnabled) {
+    serverCode += `
+// --- gRPC Server Startup ---
+import * as grpc from "@grpc/grpc-js";
+const GRPC_PORT = Number(process.env.GRPC_PORT || ${grpcPort});
+const grpcServer = new grpc.Server();
+grpcServer.bindAsync(
+  \`0.0.0.0:\${GRPC_PORT}\`,
+  grpc.ServerCredentials.createInsecure(),
+  (err, boundPort) => {
+    if (err) {
+      logger.error(\`Failed to bind gRPC server on port \${GRPC_PORT}\`, { err });
+    } else {
+      logger.info(\`⚡ gRPC server for "${serviceName}" operational on port \${boundPort}\`);
+    }
+  },
+);
+`;
+  }
+
   return {
     filename: "src/index.ts",
     language: "typescript",
@@ -106,6 +153,23 @@ export function generateConfigFiles(
   allNodes: BackendNode[] = [],
   allEdges: BackendEdge[] = [],
 ): CompiledFile[] {
+  const grpcEnabled = isGrpcEnabledForService(node, allNodes, allEdges);
+
+  const dependencies: Record<string, string> = {
+    "@workspace/db": "workspace:*",
+    "@workspace/logger": "workspace:*",
+    "@workspace/types": "workspace:*",
+    express: "^4.19.2",
+    cors: "^2.8.5",
+    dotenv: "^16.4.5",
+    zod: "^3.24.2",
+  };
+
+  if (grpcEnabled) {
+    dependencies["@grpc/grpc-js"] = "^1.11.1";
+    dependencies["@grpc/proto-loader"] = "^0.7.13";
+  }
+
   const packageJson = JSON.stringify(
     {
       name: `@workspace/${sanitizedName}`,
@@ -120,15 +184,7 @@ export function generateConfigFiles(
         dev: "ts-node-dev --respawn --watch .env src/index.ts",
         test: "vitest run",
       },
-      dependencies: {
-        "@workspace/db": "workspace:*",
-        "@workspace/logger": "workspace:*",
-        "@workspace/types": "workspace:*",
-        express: "^4.19.2",
-        cors: "^2.8.5",
-        dotenv: "^16.4.5",
-        zod: "^3.24.2",
-      },
+      dependencies,
       devDependencies: {
         "@workspace/typescript-config": "workspace:*",
         "@types/express": "^4.17.21",
@@ -168,17 +224,30 @@ export function generateConfigFiles(
         seenTargetServiceIds.add(targetNode.id);
         const tgtLabel = targetNode.data?.label || targetNode.id;
         const tgtPort = targetNode.data?.port || "8080";
-        const envVarName = `${toEnvVarName(tgtLabel)}_BASE_URL`;
-        connectedServiceEnvLines.push(`${envVarName}=http://localhost:${tgtPort}`);
+        const tgtGrpcPort = targetNode.data?.grpcPort || "50051";
+
+        const usesGrpc = node.data?.interServiceProtocol === INTER_SERVICE_PROTOCOL_GRPC;
+
+        if (usesGrpc) {
+          const grpcEnvVarName = `${toEnvVarName(tgtLabel)}_GRPC_URL`;
+          connectedServiceEnvLines.push(`${grpcEnvVarName}=localhost:${tgtGrpcPort}`);
+        } else {
+          const envVarName = `${toEnvVarName(tgtLabel)}_BASE_URL`;
+          connectedServiceEnvLines.push(`${envVarName}=http://localhost:${tgtPort}`);
+        }
       }
     }
   });
 
+  const grpcPort = node.data?.grpcPort || "50051";
   const envFile = `PORT=${port}
+GRPC_PORT=${grpcPort}
 NODE_ENV=development
 LOG_LEVEL=info
 DATABASE_PATH=../../packages/db/sqlite.db
 ${connectedServiceEnvLines.length > 0 ? connectedServiceEnvLines.join("\n") + "\n" : ""}`;
+
+
 
 
   const gitignoreFile = `node_modules

@@ -12,6 +12,11 @@ import {
   resourceItemSchema,
   simpleDataSchema,
 } from "./base";
+import {
+  INTER_SERVICE_PROTOCOL_HTTP,
+  INTER_SERVICE_PROTOCOL_GRPC,
+} from "../../constants";
+
 
 export const externalDataSchema = simpleDataSchema.extend({
   baseUrl: z.string().optional(),
@@ -99,7 +104,12 @@ export const serviceDataSchema = baseNodeDataSchema
     description: z.string().optional(),
     techStack: z.string().optional(),
     port: z.string().optional(),
+    grpcPort: z.string().optional(),
+    interServiceProtocol: z
+      .enum([INTER_SERVICE_PROTOCOL_HTTP, INTER_SERVICE_PROTOCOL_GRPC])
+      .optional(),
     cors: z.boolean().optional(),
+
     corsOrigins: z.string().optional(),
     rateLimit: z.string().optional(),
     baseUrl: z.string().optional(),
@@ -128,7 +138,13 @@ export const serviceDataInputSchema = baseNodeDataSchema
     description: z.string().optional(),
     techStack: z.string().optional(),
     port: z.string().optional(),
+    grpcPort: z.string().optional(),
+    interServiceProtocol: z
+      .enum([INTER_SERVICE_PROTOCOL_HTTP, INTER_SERVICE_PROTOCOL_GRPC])
+      .optional(),
     cors: z.boolean().optional(),
+
+
     corsOrigins: z.string().optional(),
     rateLimit: z.string().optional(),
     baseUrl: z.string().optional(),

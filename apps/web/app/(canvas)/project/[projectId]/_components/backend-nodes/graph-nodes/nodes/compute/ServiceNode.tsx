@@ -16,6 +16,14 @@ import {
 } from "../../common";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { toast } from "sonner";
+import {
+  INTER_SERVICE_PROTOCOL_OPTIONS,
+  DEFAULT_INTER_SERVICE_PROTOCOL,
+  INTER_SERVICE_PROTOCOL_GRPC,
+  INTER_SERVICE_PROTOCOL_HTTP,
+} from "@workspace/canvas";
+
+
 
 export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
@@ -30,7 +38,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     Boolean(selected),
   );
 
-  // Mandatory Port Initialization
+  // Mandatory HTTP Port Initialization
   useEffect(() => {
     if (!data.port || !data.port.trim()) {
       const existingPorts = new Set(
@@ -44,6 +52,23 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         nextPort++;
       }
       updateNode(id, { data: { ...data, port: String(nextPort) } });
+    }
+  }, [id, data, nodes, updateNode]);
+
+  // Mandatory gRPC Port Initialization
+  useEffect(() => {
+    if (!data.grpcPort || !data.grpcPort.trim()) {
+      const existingGrpcPorts = new Set(
+        nodes
+          .filter((n) => n?.id !== id && n?.type === "service")
+          .map((n) => parseInt(n.data?.grpcPort?.trim() || "50051", 10))
+          .filter((p) => !isNaN(p)),
+      );
+      let nextGrpcPort = 50051;
+      while (existingGrpcPorts.has(nextGrpcPort)) {
+        nextGrpcPort++;
+      }
+      updateNode(id, { data: { ...data, grpcPort: String(nextGrpcPort) } });
     }
   }, [id, data, nodes, updateNode]);
 
@@ -65,7 +90,6 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const [configOpen, setConfigOpen] = useState(false);
 
   const currentPort = data.port?.trim() || "8080";
-
   const conflictNode = nodes.find(
     (n) =>
       n?.id !== id &&
@@ -74,12 +98,21 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   );
   const isPortOccupied = Boolean(conflictNode);
 
+  const currentGrpcPort = data.grpcPort?.trim() || "50051";
+  const grpcConflictNode = nodes.find(
+    (n) =>
+      n?.id !== id &&
+      n?.type === "service" &&
+      (n.data?.grpcPort?.trim() || "50051") === currentGrpcPort,
+  );
+  const isGrpcPortOccupied = Boolean(grpcConflictNode);
+
   // When an error exists, ensure configOpen is set to true so panel doesn't close when typing
   useEffect(() => {
-    if (isPortOccupied) {
+    if (isPortOccupied || isGrpcPortOccupied) {
       setConfigOpen(true);
     }
-  }, [isPortOccupied]);
+  }, [isPortOccupied, isGrpcPortOccupied]);
 
   const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -100,7 +133,27 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
     updateNode(id, { data: { ...data, port: val } });
   };
 
-  const isConfigExpanded = configOpen || isPortOccupied;
+  const handleGrpcPortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    const trimmedVal = val.trim();
+    if (trimmedVal) {
+      const occupiedByNode = nodes.find(
+        (n) =>
+          n?.id !== id &&
+          n?.type === "service" &&
+          (n.data?.grpcPort?.trim() || "50051") === trimmedVal,
+      );
+      if (occupiedByNode) {
+        toast.error(
+          `gRPC Port ${trimmedVal} is already occupied by ${occupiedByNode.data?.label || "another service"}!`,
+        );
+      }
+    }
+    updateNode(id, { data: { ...data, grpcPort: val } });
+  };
+
+  const isConfigExpanded = configOpen || isPortOccupied || isGrpcPortOccupied;
+
 
   return (
     <div
@@ -247,7 +300,7 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <Label className="text-xs shrink-0 text-muted-foreground">
-                    Port
+                    HTTP Port
                   </Label>
                   <Input
                     className={cn(
@@ -262,11 +315,12 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
                 </div>
                 {isPortOccupied && (
                   <span className="text-[10px] text-destructive text-right font-medium">
-                    Port {currentPort} is already in use by{" "}
+                    HTTP Port {currentPort} is already in use by{" "}
                     {conflictNode?.data?.label || "another service"}
                   </span>
                 )}
               </div>
+
               <div className="flex items-center justify-between gap-2">
                 <Label className="text-xs shrink-0 text-muted-foreground">
                   Rate Limit
@@ -282,10 +336,61 @@ export const ServiceNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
                   }
                 />
               </div>
+
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`grpc-${id}`} className="text-xs">
+                    Enable gRPC Inter-Service
+                  </Label>
+                  <Switch
+                    id={`grpc-${id}`}
+                    className="nodrag"
+                    checked={data.interServiceProtocol === INTER_SERVICE_PROTOCOL_GRPC}
+                    onCheckedChange={(enabled) =>
+                      updateNode(id, {
+                        data: {
+                          ...data,
+                          interServiceProtocol: enabled
+                            ? INTER_SERVICE_PROTOCOL_GRPC
+                            : INTER_SERVICE_PROTOCOL_HTTP,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                {data.interServiceProtocol === INTER_SERVICE_PROTOCOL_GRPC && (
+                  <div className="flex flex-col gap-1 pt-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-xs shrink-0 text-muted-foreground">
+                        gRPC Port
+                      </Label>
+                      <Input
+                        className={cn(
+                          "h-6 text-xs w-24 text-right bg-background nodrag",
+                          isGrpcPortOccupied &&
+                            "border-destructive text-destructive focus-visible:ring-destructive focus-visible:ring-1",
+                        )}
+                        placeholder="50051"
+                        value={data.grpcPort || ""}
+                        onChange={handleGrpcPortChange}
+                      />
+                    </div>
+                    {isGrpcPortOccupied && (
+                      <span className="text-[10px] text-destructive text-right font-medium">
+                        gRPC Port {currentGrpcPort} is already in use by{" "}
+                        {grpcConflictNode?.data?.label || "another service"}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+
             </div>
           </div>
         </div>
       </div>
     </div>
+
   );
 };

@@ -17,26 +17,26 @@ export function generateServiceUnitTests(
 
   if (nodeEndpoints.length === 0) {
     files.push({
-      filename: "tests/unit/defaultRoute.unit.test.ts",
+      filename: "tests/unit/healthRoute.unit.test.ts",
       language: "typescript",
       content: `import { describe, it, expect, vi } from "vitest";
-import { defaultHandler } from "../../src/routes/defaultRoute";
+import { healthHandler } from "../../src/routes/healthRoute";
 
-describe("${serviceName} Unit Test: defaultRoute", () => {
-  it("should return default status 200", async () => {
+describe("${serviceName} Unit Test: healthRoute", () => {
+  it("should return health status 200", async () => {
     const req: any = {};
     const res: any = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     };
 
-    await defaultHandler(req, res);
+    await healthHandler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        success: true,
-        message: expect.stringContaining("${serviceName}"),
+        status: "ok",
+        service: "${serviceName}",
       })
     );
   });

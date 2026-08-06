@@ -109,19 +109,19 @@ if __name__ == "__main__":
 
   if (nodeEndpoints.length === 0) {
     files.push({
-      filename: "tests/unit/test_default_route.py",
+      filename: "tests/unit/test_health_route.py",
       language: "python",
       content: `from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
 
-def test_default_route():
-    response = client.get("/example")
+def test_health_route():
+    response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert "Default FastAPI service route operational" in data["message"]
+    assert data["data"]["status"] == "ok"
 `,
     });
   } else {

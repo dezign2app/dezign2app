@@ -269,7 +269,7 @@ dist
 
   const srvEndpoints = endpoints.filter((e) => e.nodeId === node.id);
   if (srvEndpoints.length === 0) {
-    readmeLines.push(`- Default route: \`GET /example\``);
+    readmeLines.push(`- Health route: \`GET /health\``);
   } else {
     srvEndpoints.forEach((ep) => {
       const trace = resolveEndpointTrace(

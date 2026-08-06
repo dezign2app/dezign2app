@@ -127,7 +127,7 @@ testpaths = [
   ];
 
   if (nodeEndpoints.length === 0) {
-    readmeLines.push(`- Default route: \`GET /example\``);
+    readmeLines.push(`- Health route: \`GET /health\``);
   } else {
     nodeEndpoints.forEach((ep) => {
       const trace = resolveEndpointTrace(

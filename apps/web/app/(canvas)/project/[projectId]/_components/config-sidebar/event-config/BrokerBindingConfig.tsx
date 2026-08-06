@@ -68,6 +68,7 @@ export const BrokerBindingConfig: React.FC<BrokerBindingConfigProps> = ({
                 : undefined;
             handleUpdate(item.id, {
               messagingResourceId: v,
+              name: selectedResource?.name || item.name,
               ...(resourceSchema ? { payloadSchema: resourceSchema } : {}),
             });
           }}

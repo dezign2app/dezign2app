@@ -240,8 +240,22 @@ export async function ${handlerName}(
       trace.incoming.forEach((inc) => {
         routeHandlerCode += `    // - ${inc.nodeType}: "${inc.nodeName}" (${inc.detail})\n`;
         if (inc.dataContext)
-          routeHandlerCode += `    //   Data Context: ${inc.dataContext}\n`;
+          routeHandlerCode += `    //   Data Context: ${inc.dataContext.replace(/\n/g, "\n    //     ")}\n`;
       });
+    }
+
+    const reqBody = ep.requestBody as any;
+    if (reqBody) {
+      if (Array.isArray(reqBody.fields) && reqBody.fields.length > 0) {
+        const fieldStr = reqBody.fields
+          .filter((f: any) => f && f.name)
+          .map((f: any) => `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`)
+          .join(", ");
+        if (fieldStr) {
+          routeHandlerCode += `    //\n    // CONFIGURED REQUEST BODY SCHEMA:\n`;
+          routeHandlerCode += `    // - Body: { ${fieldStr} }\n`;
+        }
+      }
     }
 
     if (trace.outgoing.length > 0) {
@@ -249,7 +263,7 @@ export async function ${handlerName}(
       trace.outgoing.forEach((out) => {
         routeHandlerCode += `    // - ${out.nodeType}: "${out.nodeName}"\n`;
         if (out.dataContext)
-          routeHandlerCode += `    //   ${out.dataContext}\n`;
+          routeHandlerCode += `    //   ${out.dataContext.replace(/\n/g, "\n    //     ")}\n`;
       });
     }
 

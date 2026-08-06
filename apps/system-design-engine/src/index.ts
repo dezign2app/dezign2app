@@ -453,6 +453,7 @@ app.post("/clear-supermemory", async (req, res) => {
 });
 
 import { generateCacheConfig } from "./ai/cache-generator";
+import { generateBusinessLogicCode } from "./ai/code-generator";
 
 app.post("/test-supermemory-fetch", async (req, res) => {
   try {
@@ -486,6 +487,16 @@ app.post("/generate-cache-config", async (req, res) => {
   } catch (error) {
     console.error("Generate cache config error:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/generate-code", async (req, res) => {
+  try {
+    const code = await generateBusinessLogicCode(req.body);
+    res.json({ code });
+  } catch (error: any) {
+    console.error("Generate code error:", error);
+    res.status(500).json({ error: error?.message || "Failed to generate business logic code" });
   }
 });
 

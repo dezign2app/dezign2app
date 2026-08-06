@@ -48,6 +48,21 @@ export interface UseAutoLayoutOptions {
   onNodesChange?: (changes: PositionNodeChange[]) => void;
 }
 
+interface NodeHandleData {
+  endpoints?: Array<{ id?: string; _id?: string }>;
+  events?: Array<{ id?: string; _id?: string }>;
+  topics?: Array<{ id?: string; _id?: string; name?: string }>;
+  consumedEvents?: Array<string | { id?: string; _id?: string }>;
+  publishedEvents?: Array<string | { id?: string; _id?: string }>;
+}
+
+function getLayoutNodeData(node: LayoutNode): NodeHandleData | undefined {
+  if (!node.data || typeof node.data !== "object") {
+    return undefined;
+  }
+  return node.data as NodeHandleData;
+}
+
 function getNodeDimensions(node: LayoutNode): {
   width: number;
   height: number;
@@ -97,9 +112,103 @@ function getNodeDimensions(node: LayoutNode): {
       return { width: 140, height: 60 };
     case "port":
       return { width: 140, height: 50 };
+    case "service":
+    case "api_gateway":
+    case "express":
+    case "fastapi":
+    case "web_client_page":
+    case "kafka":
+    case "pubsub":
+    case "queue": {
+      const data = getLayoutNodeData(node);
+      const count =
+        (Array.isArray(data?.endpoints) ? data.endpoints.length : 0) +
+        (Array.isArray(data?.events) ? data.events.length : 0) +
+        (Array.isArray(data?.topics) ? data.topics.length : 0);
+      const estHeight = Math.max(180, 140 + count * 40);
+      return { width: 320, height: estHeight };
+    }
     default:
       return { width: 300, height: 200 };
   }
+}
+
+function getHandleYRatio(node: LayoutNode, handleId?: string | null): number {
+  if (!handleId) return 0.5;
+
+  const data = getLayoutNodeData(node);
+  if (!data) return 0.5;
+
+  if (Array.isArray(data.endpoints) && data.endpoints.length > 0) {
+    const idx = data.endpoints.findIndex((ep) => {
+      const id = ep?.id || ep?._id;
+      return Boolean(id && handleId.includes(String(id)));
+    });
+    if (idx !== -1) {
+      return (idx + 0.5) / data.endpoints.length;
+    }
+  }
+
+  if (Array.isArray(data.events) && data.events.length > 0) {
+    const idx = data.events.findIndex((ev) => {
+      const id = ev?.id || ev?._id;
+      return Boolean(id && handleId.includes(String(id)));
+    });
+    if (idx !== -1) {
+      return (idx + 0.5) / data.events.length;
+    }
+  }
+
+  if (Array.isArray(data.topics) && data.topics.length > 0) {
+    const idx = data.topics.findIndex((tp) => {
+      const id = tp?.id || tp?._id || tp?.name;
+      return Boolean(id && handleId.includes(String(id)));
+    });
+    if (idx !== -1) {
+      return (idx + 0.5) / data.topics.length;
+    }
+  }
+
+  if (Array.isArray(data.consumedEvents) && data.consumedEvents.length > 0) {
+    const idx = data.consumedEvents.findIndex((ev) => {
+      const id = typeof ev === "string" ? ev : ev?.id || ev?._id;
+      return Boolean(id && handleId.includes(String(id)));
+    });
+    if (idx !== -1) {
+      return (idx + 0.5) / data.consumedEvents.length;
+    }
+  }
+  if (Array.isArray(data.publishedEvents) && data.publishedEvents.length > 0) {
+    const idx = data.publishedEvents.findIndex((ev) => {
+      const id = typeof ev === "string" ? ev : ev?.id || ev?._id;
+      return Boolean(id && handleId.includes(String(id)));
+    });
+    if (idx !== -1) {
+      return (idx + 0.5) / data.publishedEvents.length;
+    }
+  }
+
+  const match = handleId.match(/(\d+)$/);
+  if (match) {
+    const parsedIdx = parseInt(match[1]!, 10);
+    if (!isNaN(parsedIdx) && parsedIdx < 10) {
+      return (parsedIdx + 0.5) / 5;
+    }
+  }
+
+  return 0.5;
+}
+
+function getHandleYOffset(node: LayoutNode, handleId?: string | null): number {
+  const { height } = getNodeDimensions(node);
+  const ratio = getHandleYRatio(node, handleId);
+  return height * ratio;
+}
+
+function getHandleXOffset(node: LayoutNode, handleId?: string | null): number {
+  const { width } = getNodeDimensions(node);
+  const ratio = getHandleYRatio(node, handleId);
+  return width * ratio;
 }
 
 export function useAutoLayout(options?: UseAutoLayoutOptions) {
@@ -109,6 +218,9 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
   const nodes: LayoutNode[] = options?.nodes ?? store.nodes;
   const edges: LayoutEdge[] = options?.edges ?? store.edges;
   const onNodesChange = options?.onNodesChange ?? store.onNodesChange;
+  // Store-level endpoint & event lists for handle-aware barycenter
+  const storeEndpoints = store.endpoints;
+  const storeEvents = store.events;
 
   const handleLayout = useCallback(
     (direction: string = "LR") => {
@@ -190,6 +302,199 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
           positionsMap.set(node.id, { x: node.position.x, y: node.position.y });
         }
       });
+
+      // 5.5. Handle-Aware Barycenter Crossing Minimization (Sugiyama-style)
+      //
+      // The key insight: when multiple nodes in rank R all connect to the SAME node
+      // in rank R+1 (just different handles/endpoints of it), a naive barycenter gives
+      // them all the same value → no reordering → crossings.
+      // Fix: resolve the actual Y offset of the specific endpoint/event handle being
+      // connected to, using the ordered lists from the store.
+
+      // --- Build endpoint Y-ratio map: epId → 0..1 ratio within its node ---
+      const endpointYRatio = new Map<string, number>(); // epId → ratio
+      const epsByNode = new Map<string, string[]>();    // nodeId → ordered [epId]
+      storeEndpoints.forEach((ep) => {
+        if (!epsByNode.has(ep.nodeId)) epsByNode.set(ep.nodeId, []);
+        epsByNode.get(ep.nodeId)!.push(ep.id);
+      });
+      epsByNode.forEach((epIds) => {
+        epIds.forEach((epId, idx) => {
+          endpointYRatio.set(epId, (idx + 0.5) / epIds.length);
+        });
+      });
+
+      // --- Build event Y-ratio map: evId → 0..1 ratio within its node ---
+      const eventYRatio = new Map<string, number>(); // evId → ratio
+      const evsByNode = new Map<string, string[]>();  // nodeId → ordered [evId]
+      storeEvents.forEach((ev) => {
+        if (!evsByNode.has(ev.nodeId)) evsByNode.set(ev.nodeId, []);
+        evsByNode.get(ev.nodeId)!.push(ev.id);
+      });
+      evsByNode.forEach((evIds) => {
+        evIds.forEach((evId, idx) => {
+          eventYRatio.set(evId, (idx + 0.5) / evIds.length);
+        });
+      });
+
+      // Resolve the absolute Y of a handle's connection point on a node.
+      // Falls back to node center if the handle isn't found in the store.
+      const resolveHandleY = (
+        neighborId: string,
+        handle: string | null | undefined,
+        neighborY: number,
+        neighborH: number,
+      ): number => {
+        if (!handle) return neighborY + neighborH / 2;
+
+        if (handle.startsWith("endpoint-in-") || handle.startsWith("endpoint-out-")) {
+          const epId = handle.replace(/^endpoint-(in|out)-/, "");
+          const ratio = endpointYRatio.get(epId);
+          if (ratio !== undefined) return neighborY + ratio * neighborH;
+        }
+        if (handle.startsWith("events-")) {
+          const evId = handle.replace("events-", "");
+          const ratio = eventYRatio.get(evId);
+          if (ratio !== undefined) return neighborY + ratio * neighborH;
+        }
+        if (handle.startsWith("publishedEvents-out-")) {
+          const evId = handle.replace("publishedEvents-out-", "");
+          const ratio = eventYRatio.get(evId);
+          if (ratio !== undefined) return neighborY + ratio * neighborH;
+        }
+        if (handle.startsWith("consumedEvents-in-")) {
+          const evId = handle.replace("consumedEvents-in-", "");
+          const ratio = eventYRatio.get(evId);
+          if (ratio !== undefined) return neighborY + ratio * neighborH;
+        }
+        return neighborY + neighborH / 2;
+      };
+
+      // Resolve the Y offset of MY own handle within myself (for ideal center calc).
+      const resolveMyHandleRatio = (handle: string | null | undefined): number => {
+        if (!handle) return 0.5;
+        if (handle.startsWith("endpoint-in-") || handle.startsWith("endpoint-out-")) {
+          const epId = handle.replace(/^endpoint-(in|out)-/, "");
+          return endpointYRatio.get(epId) ?? 0.5;
+        }
+        if (handle.startsWith("events-")) {
+          return eventYRatio.get(handle.replace("events-", "")) ?? 0.5;
+        }
+        if (handle.startsWith("publishedEvents-out-")) {
+          return eventYRatio.get(handle.replace("publishedEvents-out-", "")) ?? 0.5;
+        }
+        if (handle.startsWith("consumedEvents-in-")) {
+          return eventYRatio.get(handle.replace("consumedEvents-in-", "")) ?? 0.5;
+        }
+        return 0.5;
+      };
+
+      // --- Group nodes into ranks ---
+      const rankMap = new Map<number, string[]>();
+      flowNodes.forEach((node: LayoutNode) => {
+        const dNode = dagreGraph.node(node.id);
+        if (!dNode) return;
+        const r: number = typeof dNode.rank === "number" ? dNode.rank : 0;
+        if (!rankMap.has(r)) rankMap.set(r, []);
+        rankMap.get(r)!.push(node.id);
+      });
+
+      const ranks = Array.from(rankMap.keys()).sort((a, b) => a - b);
+
+      // --- Handle-aware barycenter ---
+      // For each node, average the resolved Y of all its edge endpoints on the NEIGHBOR side.
+      // Then subtract the Y offset of the local handle to get the ideal node center.
+      const computeBarycenter = (nodeId: string): number => {
+        const node = flowNodes.find((n) => n.id === nodeId);
+        if (!node) return 0;
+        const pos = positionsMap.get(nodeId);
+        if (!pos) return 0;
+        const { height } = getNodeDimensions(node);
+
+        const nodeEdges = flowEdges.filter(
+          (e) => e.source === nodeId || e.target === nodeId,
+        );
+        if (nodeEdges.length === 0) return pos.y + height / 2;
+
+        let sum = 0;
+        let count = 0;
+        nodeEdges.forEach((edge) => {
+          const isSrc = edge.source === nodeId;
+          const neighborId = isSrc ? edge.target : edge.source;
+          const neighborNode = flowNodes.find((n) => n.id === neighborId);
+          if (!neighborNode) return;
+          const neighborPos = positionsMap.get(neighborId);
+          if (!neighborPos) return;
+          const { height: nh } = getNodeDimensions(neighborNode);
+
+          const neighborHandle = isSrc ? edge.targetHandle : edge.sourceHandle;
+          const myHandle = isSrc ? edge.sourceHandle : edge.targetHandle;
+
+          if (isHorizontal) {
+            // Ideal center Y of this node given this edge:
+            // = (neighbor handle Y) - (my handle offset from my top) + (my height / 2)
+            const neighborHandleY = resolveHandleY(neighborId, neighborHandle, neighborPos.y, nh);
+            const myRatio = resolveMyHandleRatio(myHandle);
+            const idealCenterY = neighborHandleY - myRatio * height + height / 2;
+            sum += idealCenterY;
+          } else {
+            sum += neighborPos.x + getNodeDimensions(neighborNode).width / 2;
+          }
+          count++;
+        });
+
+        return count > 0 ? sum / count : pos.y + height / 2;
+      };
+
+      // --- Sweep: sort rank by barycenter, then reposition evenly ---
+      const sweepRanks = (rankOrder: number[]) => {
+        rankOrder.forEach((r) => {
+          const ids = rankMap.get(r);
+          if (!ids || ids.length <= 1) return;
+
+          ids.sort((a, b) => computeBarycenter(a) - computeBarycenter(b));
+
+          const nodeGap = 80;
+          let totalLen = 0;
+          ids.forEach((id, idx) => {
+            const node = flowNodes.find((n) => n.id === id)!;
+            const { width, height } = getNodeDimensions(node);
+            totalLen += (isHorizontal ? height : width) + (idx > 0 ? nodeGap : 0);
+          });
+
+          const avgCenter =
+            ids.reduce((s, id) => s + computeBarycenter(id), 0) / ids.length;
+          let cursor = avgCenter - totalLen / 2;
+
+          // Keep the secondary axis (column X) from Dagre
+          const secondaryPos =
+            ids.reduce((s, id) => {
+              const pos = positionsMap.get(id);
+              if (!pos) return s;
+              const node = flowNodes.find((n) => n.id === id)!;
+              const { width, height } = getNodeDimensions(node);
+              return s + (isHorizontal ? pos.x + width / 2 : pos.y + height / 2);
+            }, 0) / ids.length;
+
+          ids.forEach((id) => {
+            const node = flowNodes.find((n) => n.id === id)!;
+            const { width, height } = getNodeDimensions(node);
+            if (isHorizontal) {
+              positionsMap.set(id, { x: secondaryPos - width / 2, y: cursor });
+              cursor += height + nodeGap;
+            } else {
+              positionsMap.set(id, { x: cursor, y: secondaryPos - height / 2 });
+              cursor += width + nodeGap;
+            }
+          });
+        });
+      };
+
+      // Multiple forward+backward passes for convergence
+      sweepRanks([...ranks]);
+      sweepRanks([...ranks].reverse());
+      sweepRanks([...ranks]);
+      sweepRanks([...ranks].reverse());
 
       // 6. Layout attached head nodes grouped by category columns above each target node
       targetNodeIds.forEach((targetId: string) => {

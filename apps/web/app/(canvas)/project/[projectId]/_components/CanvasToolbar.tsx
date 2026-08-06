@@ -12,6 +12,7 @@ import {
   Trash2,
   Hammer,
   Router,
+  Cloud,
 } from "lucide-react";
 import { BackendCanvasView } from "@/types/canvas";
 import { Button } from "@workspace/ui/components/button";
@@ -139,10 +140,16 @@ export function CanvasToolbar({
       </div>
 
       <div className="flex items-center space-x-2">
-        <Button asChild variant={"secondary"}>
+        {/* <Button asChild variant={"secondary"}>
           <Link href={"/api-keys"}>
             <Router className="mr-1" />
             MCP
+          </Link>
+        </Button> */}
+        <Button asChild variant={"secondary"}>
+          <Link href={"#"}>
+            <Cloud className="mr-1" />
+            Deploy
           </Link>
         </Button>
 

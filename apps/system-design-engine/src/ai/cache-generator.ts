@@ -3,11 +3,11 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 export async function generateCacheConfig(description: string) {
   const apiKeyStr = process.env.GROQ_API_KEY;
-  const model = process.env.GROQ_LLM_MODEL;
+  const model = process.env.GROQ_LLM_MODEL || "openai/gpt-oss-120b";
 
-  if (!apiKeyStr || !model) {
+  if (!apiKeyStr) {
     throw new Error(
-      "Missing environment variables: GROQ_API_KEY or GROQ_LLM_MODEL",
+      "Missing environment variable: GROQ_API_KEY",
     );
   }
 

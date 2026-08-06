@@ -181,9 +181,12 @@ export function formatEndpointPayloadContext(endpoint: Endpoint): string {
     }
   }
 
-  // Legacy body string fallback
+  // Legacy body string fallback (only if JSON format, not TypeScript code)
   if (parts.length === 0 && endpoint.body && endpoint.body.trim()) {
-    parts.push(`Payload: ${endpoint.body.trim()}`);
+    const text = endpoint.body.trim();
+    if (text.startsWith("{") && text.endsWith("}") && !text.includes("return ") && !text.includes("await ") && !text.includes("const ")) {
+      parts.push(`Payload: ${text}`);
+    }
   }
 
   if (parts.length > 0) {

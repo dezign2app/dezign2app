@@ -21,7 +21,7 @@ export function BusinessLogicBlock({
   code = "",
   onCodeChange,
   onGenerateCode,
-  isGenerating = false,
+  isGenerating: externalIsGenerating = false,
   title = "Business Logic",
   description,
   promptPlaceholder,
@@ -36,13 +36,29 @@ export function BusinessLogicBlock({
   endpointPath = "/",
 }: BusinessLogicBlockProps) {
   const [internalMode, setInternalMode] = useState<LogicMode>(mode);
+  const [internalIsGenerating, setInternalIsGenerating] = useState(false);
+
   const activeMode = onModeChange ? mode : internalMode;
+  const isGenerating = externalIsGenerating || internalIsGenerating;
 
   const handleModeSwitch = (newMode: LogicMode) => {
     if (onModeChange) {
       onModeChange(newMode);
     } else {
       setInternalMode(newMode);
+    }
+  };
+
+  const handleGenerateCodeAction = async () => {
+    if (!onGenerateCode || isGenerating) return;
+    try {
+      setInternalIsGenerating(true);
+      await onGenerateCode();
+      handleModeSwitch("code");
+    } catch (err) {
+      console.error("Error generating code:", err);
+    } finally {
+      setInternalIsGenerating(false);
     }
   };
 
@@ -53,7 +69,7 @@ export function BusinessLogicBlock({
       <HeaderToolbar
         title={title}
         description={description}
-        onGenerateCode={onGenerateCode}
+        onGenerateCode={onGenerateCode ? handleGenerateCodeAction : undefined}
         isGenerating={isGenerating}
       />
 
@@ -90,4 +106,3 @@ export function BusinessLogicBlock({
     </div>
   );
 }
-

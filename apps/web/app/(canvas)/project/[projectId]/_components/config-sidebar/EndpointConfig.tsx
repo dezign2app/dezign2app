@@ -13,7 +13,7 @@ import {
   BusinessLogicBlock,
   TableCrudConfig,
   CrudOperation,
-  generateSyncedEndpointCode,
+  generateCodeWithAI,
 } from "../shared/BusinessLogicBlock";
 import {
   Select,
@@ -278,14 +278,15 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         publishedEvents={item.publishedEvents || []}
         endpointMethod={item.type || "POST"}
         endpointPath={item.name || "/"}
-        onGenerateCode={() => {
-          const generated = generateSyncedEndpointCode({
+        onGenerateCode={async () => {
+          const generated = await generateCodeWithAI({
             prompt: item.businessLogic || item.prompt || "",
             crudConfig,
             availableTableNodes,
             publishedEvents: item.publishedEvents || [],
             endpointMethod: item.type || "POST",
             endpointPath: item.name || "/",
+            requestBody: item.requestBody,
           });
           updateEndpoint(item.id, {
             logicMode: "code",

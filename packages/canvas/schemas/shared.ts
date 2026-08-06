@@ -26,11 +26,13 @@ export const responseFieldInputSchema = responseFieldSchema.extend({
 
 export const schemaModelSchema = z.object({
   id: z.string(),
+  fields: z.array(parameterSchema).optional(),
   rawJson: z.string().optional(),
 });
 
 export const schemaModelInputSchema = z.object({
   id: z.string().optional(),
+  fields: z.array(parameterInputSchema).optional(),
   rawJson: z.string().optional(),
 });
 

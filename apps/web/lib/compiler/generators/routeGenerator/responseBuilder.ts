@@ -17,7 +17,12 @@ export function buildResponsePayloadCode(
   if (mode === "inferred") {
     if (pickedDbOps.length > 0) {
       const lastOp = pickedDbOps[pickedDbOps.length - 1];
-      const primaryVar = lastOp ? `${lastOp.fn.name}Result` : "result";
+      const primaryVar =
+        lastOp && lastOp.tableNodeId && targetVarMap.get(lastOp.tableNodeId)
+          ? targetVarMap.get(lastOp.tableNodeId)!
+          : lastOp
+            ? `${lastOp.fn.name}Result`
+            : "result";
       return `{ success: true, data: ${primaryVar}, timestamp: new Date().toISOString() }`;
     }
     return responseData;
@@ -69,13 +74,17 @@ export function buildResponsePayloadCode(
         });
 
         if (matchedOp) {
-          targetVar = `${matchedOp.fn.name}Result`;
+          targetVar = (matchedOp.tableNodeId && targetVarMap.get(matchedOp.tableNodeId)) || `${matchedOp.fn.name}Result`;
         } else if (cleanName === "data" || cleanName === "payload" || cleanName === "result") {
           const lastOp = pickedDbOps[pickedDbOps.length - 1];
           const firstOp = pickedDbOps[0];
           const primaryOp =
             pickedDbOps.find((op) => op.operationKind === "create" || op.operationKind === "update") || lastOp;
-          targetVar = primaryOp ? `${primaryOp.fn.name}Result` : firstOp ? `${firstOp.fn.name}Result` : "result";
+          targetVar = primaryOp
+            ? (primaryOp.tableNodeId && targetVarMap.get(primaryOp.tableNodeId)) || `${primaryOp.fn.name}Result`
+            : firstOp
+              ? (firstOp.tableNodeId && targetVarMap.get(firstOp.tableNodeId)) || `${firstOp.fn.name}Result`
+              : "result";
         }
       }
 
@@ -131,7 +140,12 @@ export function buildResponsePayloadCode(
 
   if (pickedDbOps.length > 0) {
     const lastOp = pickedDbOps[pickedDbOps.length - 1];
-    const primaryVar = lastOp ? `${lastOp.fn.name}Result` : "result";
+    const primaryVar =
+      lastOp && lastOp.tableNodeId && targetVarMap.get(lastOp.tableNodeId)
+        ? targetVarMap.get(lastOp.tableNodeId)!
+        : lastOp
+          ? `${lastOp.fn.name}Result`
+          : "result";
     return `{ status: ${statusCode}, message: "Successfully executed ${ep.type || "GET"} ${path}", data: ${primaryVar} }`;
   }
   return responseData;

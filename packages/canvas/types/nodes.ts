@@ -23,6 +23,7 @@ import type {
   UserCustomField,
   AuthHookConfig,
   PaymentsPlanConfig,
+  AdditionalAuthTableConfig,
 } from "./auth";
 import type {
   CanvasLangGraphNodeData,
@@ -262,6 +263,10 @@ export interface CanvasAuthNodeData {
   baseUrl?: string;
   version?: BetterAuthVersion | string;
   dbAdapter?: "sqlite-raw" | "custom";
+  userEntityId?: string;
+  userSchemaId?: string;
+  additionalUserTables?: AdditionalAuthTableConfig[];
+  additionalTables?: AdditionalAuthTableConfig[];
   providers?: {
     emailPassword?: { enabled: boolean; requireVerification: boolean; minLength: number };
     oauth?: OAuthProviderConfig[];
@@ -277,6 +282,9 @@ export interface CanvasAuthNodeData {
     teams?: boolean;
     multiOrg?: boolean;
     invitations?: boolean;
+    schemaId?: string;
+    entityId?: string;
+    additionalTables?: AdditionalAuthTableConfig[];
   };
   customFields?: UserCustomField[];
   hooks?: AuthHookConfig[];

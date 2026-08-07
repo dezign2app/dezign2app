@@ -310,6 +310,119 @@ export const createNodeSlice = (
       });
     }
 
+    if (updatedNode.type === "entity" && changes.data?.columns) {
+      const currentCols = changes.data.columns;
+      const allEntityNodes = get().nodes.filter((n) => n.type === "entity");
+
+      currentCols.forEach((col, colIdx) => {
+        const existingEdgeIndices: number[] = [];
+        nextEdges.forEach((e, idx) => {
+          if (
+            e.type === "foreign-key" &&
+            ((e.target === id && e.targetHandle === `target-${colIdx}`) ||
+              (e.source === id && e.sourceHandle === `source-${colIdx}`))
+          ) {
+            existingEdgeIndices.push(idx);
+          }
+        });
+
+        if (
+          col.isForeignKey &&
+          col.references?.table &&
+          col.references?.column
+        ) {
+          const targetNode = allEntityNodes.find(
+            (n) => n.data.label === col.references?.table,
+          );
+          if (targetNode && targetNode.data.columns) {
+            const targetColIdx = targetNode.data.columns.findIndex(
+              (c) => c.name === col.references?.column,
+            );
+            if (targetColIdx !== -1) {
+              const expectedSourceHandle = `source-${targetColIdx}`;
+              const expectedTargetHandle = `target-${colIdx}`;
+
+              if (existingEdgeIndices.length > 0) {
+                const primaryEdgeIdx = existingEdgeIndices[0]!;
+                const existingEdge = nextEdges[primaryEdgeIdx]!;
+
+                if (
+                  existingEdge.source !== targetNode.id ||
+                  existingEdge.target !== id ||
+                  existingEdge.sourceHandle !== expectedSourceHandle ||
+                  existingEdge.targetHandle !== expectedTargetHandle
+                ) {
+                  const updatedEdge: BackendEdge = {
+                    ...existingEdge,
+                    source: targetNode.id,
+                    target: id,
+                    sourceHandle: expectedSourceHandle,
+                    targetHandle: expectedTargetHandle,
+                  };
+                  nextEdges[primaryEdgeIdx] = updatedEdge;
+                  edgesChanged = true;
+                  set({
+                    pendingEdgeUpserts: [
+                      ...get().pendingEdgeUpserts,
+                      updatedEdge,
+                    ],
+                  });
+                }
+
+                for (let i = 1; i < existingEdgeIndices.length; i++) {
+                  const staleIdx = existingEdgeIndices[i]!;
+                  const staleEdge = nextEdges[staleIdx];
+                  if (staleEdge) {
+                    nextEdges = nextEdges.filter((e) => e.id !== staleEdge.id);
+                    set({
+                      pendingEdgeRemovals: [
+                        ...get().pendingEdgeRemovals,
+                        staleEdge.id,
+                      ],
+                    });
+                    edgesChanged = true;
+                  }
+                }
+              } else {
+                const lastEdgeIndex = getLastIndex(nextEdges);
+                const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
+                const newEdge: BackendEdge = {
+                  id: `edge-${Date.now()}-${colIdx}`,
+                  source: targetNode.id,
+                  target: id,
+                  type: "foreign-key",
+                  sourceHandle: expectedSourceHandle,
+                  targetHandle: expectedTargetHandle,
+                  fractionalIndex,
+                };
+                nextEdges.push(newEdge);
+                edgesChanged = true;
+                set({
+                  pendingEdgeUpserts: [...get().pendingEdgeUpserts, newEdge],
+                });
+              }
+            }
+          }
+        } else {
+          if (existingEdgeIndices.length > 0) {
+            existingEdgeIndices.forEach((edgeIdx) => {
+              const edgeToRemove = nextEdges[edgeIdx];
+              if (edgeToRemove) {
+                nextEdges = nextEdges.filter((e) => e.id !== edgeToRemove.id);
+                set({
+                  pendingEdgeRemovals: [
+                    ...get().pendingEdgeRemovals,
+                    edgeToRemove.id,
+                  ],
+                });
+              }
+            });
+            edgesChanged = true;
+          }
+        }
+      });
+    }
+
     const update: Partial<BackendCanvasState> = {
       nodes: next,
       pendingNodeUpserts: [...get().pendingNodeUpserts, updated],

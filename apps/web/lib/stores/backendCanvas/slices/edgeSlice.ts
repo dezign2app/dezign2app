@@ -253,75 +253,85 @@ export const createEdgeSlice = (
       }
     }
 
-    // Update source node's column to isForeignKey: true and populate references if it's a foreign key edge
+    // Update source/target node's column to isForeignKey: true and populate references if it's a foreign key edge
     if (isColumnToColumn) {
-      let fkNode = sourceNode;
-      let fkColIndex: number | undefined;
-      let refNode = targetNode;
-      let refColIndex: number | undefined;
+      let sourceColIndex: number | undefined;
+      let targetColIndex: number | undefined;
 
       if (connection.sourceHandle?.startsWith("source-")) {
-        fkNode = sourceNode;
-        fkColIndex = parseInt(
+        sourceColIndex = parseInt(
           connection.sourceHandle.replace("source-", ""),
           10,
         );
-        refNode = targetNode;
-        if (connection.targetHandle?.startsWith("target-")) {
-          refColIndex = parseInt(
-            connection.targetHandle.replace("target-", ""),
-            10,
-          );
-        }
+      } else if (connection.sourceHandle?.startsWith("target-")) {
+        targetColIndex = parseInt(
+          connection.sourceHandle.replace("target-", ""),
+          10,
+        );
+      }
+
+      if (connection.targetHandle?.startsWith("target-")) {
+        targetColIndex = parseInt(
+          connection.targetHandle.replace("target-", ""),
+          10,
+        );
       } else if (connection.targetHandle?.startsWith("source-")) {
-        fkNode = targetNode;
-        fkColIndex = parseInt(
+        sourceColIndex = parseInt(
           connection.targetHandle.replace("source-", ""),
           10,
         );
-        refNode = sourceNode;
-        if (connection.sourceHandle?.startsWith("target-")) {
-          refColIndex = parseInt(
-            connection.sourceHandle.replace("target-", ""),
-            10,
-          );
-        }
       }
 
       if (
-        fkNode &&
-        fkColIndex !== undefined &&
-        !isNaN(fkColIndex) &&
-        fkNode.data.columns
+        sourceColIndex !== undefined &&
+        !isNaN(sourceColIndex) &&
+        targetColIndex !== undefined &&
+        !isNaN(targetColIndex)
       ) {
-        const column = fkNode.data.columns[fkColIndex];
-        if (column) {
-          const refTargetCol =
-            refColIndex !== undefined && !isNaN(refColIndex)
-              ? refNode.data.columns?.[refColIndex]
-              : undefined;
+        const sourceCol = sourceNode.data.columns?.[sourceColIndex];
+        const targetCol = targetNode.data.columns?.[targetColIndex];
 
-          let targetColName = "_id";
-          if (refTargetCol) {
-            targetColName = refTargetCol.name;
-          } else if (refNode.data.columns) {
-            const pk = refNode.data.columns.find((c) => c.isPrimaryKey);
-            if (pk) targetColName = pk.name;
+        if (sourceCol && targetCol) {
+          const isSourcePK =
+            sourceCol.isPrimaryKey ||
+            sourceCol.isUnique ||
+            sourceCol.name === "_id";
+          const isTargetPK =
+            targetCol.isPrimaryKey ||
+            targetCol.isUnique ||
+            targetCol.name === "_id";
+
+          let fkNode = sourceNode;
+          let fkCol = sourceCol;
+          let fkColIndex = sourceColIndex;
+          let refNode = targetNode;
+          let refCol = targetCol;
+
+          if (isSourcePK && !isTargetPK) {
+            fkNode = targetNode;
+            fkCol = targetCol;
+            fkColIndex = targetColIndex;
+            refNode = sourceNode;
+            refCol = sourceCol;
           }
 
           const refTable = refNode.data.label || "";
-          const newCols = [...fkNode.data.columns];
-          newCols[fkColIndex] = {
-            ...column,
-            isForeignKey: true,
-            references: {
-              table: refTable,
-              column: targetColName,
-            },
-          };
-          get().updateNode(fkNode.id, {
-            data: { ...fkNode.data, columns: newCols },
-          });
+          const refColName = refCol.name || "_id";
+
+          if (fkNode.data.columns) {
+            const newCols = [...fkNode.data.columns];
+            newCols[fkColIndex] = {
+              ...fkCol,
+              isForeignKey: true,
+              references: {
+                table: refTable,
+                column: refColName,
+              },
+            };
+            get().updateNode(fkNode.id, {
+              data: { ...fkNode.data, columns: newCols },
+            });
+          }
         }
       }
     }

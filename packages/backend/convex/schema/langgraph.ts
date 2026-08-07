@@ -47,7 +47,8 @@ export const langgraphTables = {
     updatedAt: v.number(),
   })
     .index("by_thread", ["threadId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_project", ["projectId"]),
 
   // 4. Single-Use Cryptographic Resume Tokens
   langgraph_resume_tokens: defineTable({

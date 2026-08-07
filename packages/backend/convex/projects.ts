@@ -224,6 +224,69 @@ export const removeProject = mutation({
       await ctx.db.delete(plan._id);
     }
 
+    // Cascade-delete: canvas backend endpoints
+    const endpoints = await ctx.db
+      .query("canvas_backend_endpoints")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const endpoint of endpoints) {
+      await ctx.db.delete(endpoint._id);
+    }
+
+    // Cascade-delete: canvas backend events
+    const events = await ctx.db
+      .query("canvas_backend_events")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const event of events) {
+      await ctx.db.delete(event._id);
+    }
+
+    // Cascade-delete: canvas backend identity providers
+    const identityProviders = await ctx.db
+      .query("canvas_backend_identity_providers")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const provider of identityProviders) {
+      await ctx.db.delete(provider._id);
+    }
+
+    // Cascade-delete: canvas backend test cases
+    const testCases = await ctx.db
+      .query("canvas_backend_test_cases")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const tc of testCases) {
+      await ctx.db.delete(tc._id);
+    }
+
+    // Cascade-delete: canvas backend langgraph steps
+    const langgraphSteps = await ctx.db
+      .query("canvas_backend_langgraph_steps")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const step of langgraphSteps) {
+      await ctx.db.delete(step._id);
+    }
+
+    // Cascade-delete: canvas backend langgraph edges
+    const langgraphEdges = await ctx.db
+      .query("canvas_backend_langgraph_edges")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const lgEdge of langgraphEdges) {
+      await ctx.db.delete(lgEdge._id);
+    }
+
+    // Cascade-delete: langgraph thread checkpoints
+    const checkpoints = await ctx.db
+      .query("langgraph_checkpoints")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+    for (const cp of checkpoints) {
+      await ctx.db.delete(cp._id);
+    }
+
     // Cascade-delete: API keys bound to this project
     const apiKeys = await ctx.db
       .query("api_keys")

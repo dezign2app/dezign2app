@@ -37,3 +37,14 @@ export const processingOperationEnum = z.enum([
   "db_delete",
   "return",
 ]);
+
+export const parameterTypeEnum = z.enum([
+  "string",
+  "number",
+  "boolean",
+  "UUID",
+  "timestamp",
+  "object",
+  "array",
+]);
+

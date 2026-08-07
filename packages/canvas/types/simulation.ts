@@ -18,21 +18,13 @@ export type Schema = {
   rawJson?: string;
 };
 
-export type ProcessingOperation =
-  | "passthrough"
-  | "validate"
-  | "pick"
-  | "omit"
-  | "rename"
-  | "set"
-  | "filter"
-  | "map"
-  | "db_get"
-  | "db_get_many"
-  | "db_insert"
-  | "db_update"
-  | "db_delete"
-  | "return";
+import type { processingOperationEnum, parameterTypeEnum } from "../schemas/primitives";
+import type { z } from "zod";
+
+export type ProcessingOperation = z.infer<typeof processingOperationEnum>;
+export type ParameterType = z.infer<typeof parameterTypeEnum>;
+
+
 
 // UI Specific Types
 export type UIEventItem = {

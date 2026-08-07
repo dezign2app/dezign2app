@@ -55,23 +55,13 @@ export const getProjectsByOrganization = query({
       });
     }
 
+    const userOrgId = identity.org_id?.toString();
+
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", identity.org_id?.toString()),
-      )
+      .withIndex("by_organization", (q) => q.eq("organizationId", userOrgId))
       .order("desc")
       .paginate(args.paginationOpts);
-
-    // Check ownership or organization access
-    // TODO: Add organization member check when implemented
-    const hasOrgAccess = true;
-    if (!hasOrgAccess) {
-      throw new ConvexError({
-        code: "FORBIDDEN",
-        message: "Not authorized to access this file",
-      });
-    }
 
     return projects;
   },
@@ -82,33 +72,31 @@ export const getProjectById = query({
   async handler(ctx, args) {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new ConvexError({
-        code: "UNAUTHORIZED",
-        message: "Not authenticated",
-      });
+      return null;
     }
 
     const project = await ctx.db.get(args.projectId);
     if (!project) {
-      throw new ConvexError({
-        code: "NOT_FOUND",
-        message: "Project not found",
-      });
+      return null;
     }
 
-    const response = { ...project };
+    const userOrgId = identity.org_id?.toString();
 
-    // TODO: Add organization member check when implemented
-    const hasOrgAccess = true;
-
-    if (!hasOrgAccess) {
-      throw new ConvexError({
-        code: "FORBIDDEN",
-        message: "Not authorized to access this file",
-      });
+    // Check organization membership or creator status
+    if (project.organizationId) {
+      if (
+        project.organizationId !== userOrgId &&
+        project.createdBy !== identity.subject
+      ) {
+        return null;
+      }
+    } else {
+      if (project.createdBy !== identity.subject) {
+        return null;
+      }
     }
 
-    return response;
+    return project;
   },
 });
 

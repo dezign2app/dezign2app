@@ -254,6 +254,14 @@ export default function CompilerPage({
     canvasElements === undefined ||
     storeProjectId !== projectId;
 
+  if (project === null) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#0d1117]">
+        <p className="text-slate-300 font-mono text-sm">Project not found.</p>
+      </div>
+    );
+  }
+
   if (isHydrating) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#0d1117] flex-col gap-3">

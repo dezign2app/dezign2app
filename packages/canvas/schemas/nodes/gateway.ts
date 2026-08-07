@@ -45,6 +45,12 @@ export const paymentsPlanConfigSchema = z.object({
   interval: z.enum(["monthly", "yearly"]),
 });
 
+export const additionalAuthTableConfigSchema = z.object({
+  id: z.string(),
+  entityId: z.string(),
+  purpose: z.string().optional(),
+});
+
 // --- Auth Framework Node ---
 export const authDataSchema = baseNodeDataSchema
   .extend({
@@ -57,6 +63,10 @@ export const authDataSchema = baseNodeDataSchema
     provider: z.string().optional(),
     version: z.string().optional(),
     dbAdapter: z.string().optional(),
+    userEntityId: z.string().optional(),
+    userSchemaId: z.string().optional(),
+    additionalUserTables: z.array(additionalAuthTableConfigSchema).optional(),
+    additionalTables: z.array(additionalAuthTableConfigSchema).optional(),
     providers: z
       .object({
         emailPassword: z
@@ -83,6 +93,9 @@ export const authDataSchema = baseNodeDataSchema
         teams: z.boolean().optional(),
         multiOrg: z.boolean().optional(),
         invitations: z.boolean().optional(),
+        schemaId: z.string().optional(),
+        entityId: z.string().optional(),
+        additionalTables: z.array(additionalAuthTableConfigSchema).optional(),
       })
       .optional(),
     customFields: z.array(userCustomFieldSchema).optional(),

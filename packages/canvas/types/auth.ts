@@ -353,3 +353,22 @@ export interface PaymentsPlanConfig {
   interval: "monthly" | "yearly";
 }
 
+export interface AuthOrganizationConfig {
+  enabled?: boolean;
+  roles?: string[];
+  teams?: boolean;
+  multiOrg?: boolean;
+  invitations?: boolean;
+  schemaId?: string;
+  entityId?: string;
+  additionalTables?: AdditionalAuthTableConfig[];
+}
+
+export interface AdditionalAuthTableConfig {
+  id: string;
+  entityId: string;
+  purpose?: "session" | "account" | "verification" | "rateLimit" | "custom" | string;
+}
+
+
+

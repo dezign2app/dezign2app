@@ -49,10 +49,13 @@ export type HandleKind =
   | "langgraph-in"
   | "langgraph-out"
 
-  // --- Auth & WebApp handles ---
+  // --- Auth, Payments & WebApp handles ---
   | "auth-out"
   | "auth-in"
+  | "injects-plugin-out"
+  | "payments-plugin-in"
   | "page-out"
+  | "page-in"
   | "page-section-in"
 
   // --- Fallback ---

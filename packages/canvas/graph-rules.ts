@@ -74,10 +74,13 @@ export const CONNECTION_RULES: Record<HandleKind, HandleKind[]> = {
     "sse-in",
     "websocket-in",
   ],
-  "auth-out": ["auth-in"],
+  "auth-out": ["auth-in", "page-section-in"],
   "auth-in": [],
-  "page-out": ["page-section-in", "endpoint-in"],
-  "page-section-in": [],
+  "injects-plugin-out": ["payments-plugin-in", "auth-in"],
+  "payments-plugin-in": [],
+  "page-out": ["page-section-in", "endpoint-in", "page-in"],
+  "page-in": [],
+  "page-section-in": ["page-in", "endpoint-in", "page-out"],
   unknown: [],
 };
 
@@ -103,7 +106,11 @@ export const EDGE_TYPE_MAP: Record<string, string> = {
   "langgraph-out→consumed-event-in": "message",
   // Auth & Page wiring edges
   "auth-out→auth-in": "identity-connection",
+  "injects-plugin-out→payments-plugin-in": "identity-connection",
+  "injects-plugin-out→auth-in": "identity-connection",
   "page-out→page-section-in": "connection",
+  "page-section-in→page-in": "connection",
+  "page-out→page-in": "connection",
 };
 
 export const WEB_CLIENT_EVENTS = [

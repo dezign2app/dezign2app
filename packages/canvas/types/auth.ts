@@ -248,3 +248,108 @@ export type AuthRule =
       description?: string;
       config?: Record<string, never>;
     };
+
+// ---- Access Conditions & Rules ----
+export type ConditionPrimitive =
+  | { type: "auth"; op: "signedIn" | "signedOut" }
+  | { type: "org"; op: "required" | "notRequired" }
+  | { type: "orgRole"; op: "in" | "notIn"; values: string[] }
+  | { type: "access"; op: "granted" | "notGranted" }
+  | {
+      type: "subscriptionStatus";
+      op: "statusIn" | "statusNotIn";
+      values: ("active" | "trialing" | "past_due" | "canceled" | "expired")[];
+    }
+  | { type: "plan"; op: "in" | "notIn"; values: string[] }
+  | {
+      type: "customClaim";
+      key: string;
+      op: "eq" | "neq" | "truthy" | "falsy";
+      value?: string | number | boolean;
+    };
+
+export type ConditionNode =
+  | { kind: "group"; op: "AND" | "OR" | "NOT"; children: ConditionNode[] }
+  | { kind: "leaf"; condition: ConditionPrimitive };
+
+export type FailureReason =
+  | "no-auth"
+  | "no-org"
+  | "wrong-role"
+  | "no-access"
+  | "wrong-plan"
+  | "custom-denied";
+
+export type RedirectMap = Partial<Record<FailureReason, string>> & {
+  default: string;
+};
+
+export interface ProtectionRule {
+  id: string;
+  scope: "zone" | "page";
+  conditions: ConditionNode;
+  redirects: RedirectMap;
+  customLogic?: { mode: "naturalLanguage" | "code"; prompt?: string; code?: string };
+}
+
+// ---- Protected Zone / Section (User-Managed Child Entity of WebAppNode) ----
+export interface WebAppZone {
+  id: string;
+  name: string;
+  handleId: string;
+  accessType: "public" | "protected";
+  rule: ProtectionRule;
+}
+
+// ---- Session Claims ----
+export interface SessionClaims {
+  userId: string;
+  orgId?: string;
+  orgRole?: string;
+  hasAccess?: boolean;
+  accessExpiresAt?: string;
+  subscriptionStatus?:
+    | "active"
+    | "trialing"
+    | "past_due"
+    | "canceled"
+    | "expired"
+    | "none";
+  planId?: string;
+  inGracePeriod?: boolean;
+  custom?: Record<string, string | number | boolean>;
+}
+
+export interface OAuthProviderConfig {
+  id: string;
+  provider: "google" | "github" | "discord" | "apple" | string;
+  clientIdEnv: string;
+  clientSecretEnv: string;
+}
+
+export interface SessionClaimConfig {
+  key: string;
+  source: "orgRole" | "paymentsAccess" | "customField";
+  deliveryMode: "jwt" | "cookie";
+}
+
+export interface UserCustomField {
+  name: string;
+  type: string;
+  default?: string;
+  required: boolean;
+}
+
+export interface AuthHookConfig {
+  mode: "naturalLanguage" | "code";
+  prompt?: string;
+  code?: string;
+}
+
+export interface PaymentsPlanConfig {
+  id: string;
+  name: string;
+  price: string;
+  interval: "monthly" | "yearly";
+}
+

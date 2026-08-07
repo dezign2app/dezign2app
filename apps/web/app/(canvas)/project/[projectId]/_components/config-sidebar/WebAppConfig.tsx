@@ -2,6 +2,7 @@ import React from "react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { Button } from "@workspace/ui/components/button";
 import {
   Select,
   SelectContent,
@@ -12,14 +13,15 @@ import {
 import {
   Globe,
   Lock,
-  Shield,
-  CreditCard,
-  Building2,
   Key,
   Layers,
   ShieldCheck,
+  Plus,
+  Trash2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { BackendNode, WEB_CLIENT_TECH_OPTIONS } from "@/types/canvas";
+import { WebAppZone } from "@workspace/canvas";
 
 export const WebAppConfig = ({
   id,
@@ -34,6 +36,9 @@ export const WebAppConfig = ({
   const allNodes = useBackendCanvasStore((s) => s.nodes);
   const allEdges = useBackendCanvasStore((s) => s.edges);
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
 
   if (!node) return null;
 
@@ -47,43 +52,74 @@ export const WebAppConfig = ({
     data.appSlug ||
     (data.label || "web-app").toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const port = data.port || "3000";
-  const allowedRoles = data.allowedRoles || [];
-  const requiredPlans = data.requiredPlans || [];
-  const allowedOrgRoles = data.allowedOrgRoles || [];
   const defaultLoginRoute = data.defaultLoginRoute || "/login";
 
   const authNodes = allNodes.filter((n) => n.type === "auth");
+  const paymentsNodes = allNodes.filter((n) => n.type === "payments");
 
-  // Helper to query pages plugged into sections
-  const getConnectedPages = (sectionHandleId: string) => {
-    const incomingEdges = allEdges.filter(
-      (e) => e.target === nodeId && e.targetHandle === sectionHandleId,
-    );
-    return incomingEdges
-      .map((e) => allNodes.find((n) => n.id === e.source))
-      .filter((n): n is BackendNode => Boolean(n));
+  const zones: WebAppZone[] = data.zones || [
+    {
+      id: "zone-public",
+      name: "Public Section",
+      handleId: "public-in",
+      accessType: "public",
+      rule: {
+        id: "rule-public",
+        scope: "zone",
+        conditions: { kind: "leaf", condition: { type: "auth", op: "signedOut" } },
+        redirects: { default: "/login" },
+      },
+    },
+    {
+      id: "zone-private",
+      name: "Private Section",
+      handleId: "private-in",
+      accessType: "protected",
+      rule: {
+        id: "rule-private",
+        scope: "zone",
+        conditions: { kind: "leaf", condition: { type: "auth", op: "signedIn" } },
+        redirects: { "no-auth": "/login", default: "/login" },
+      },
+    },
+  ];
+
+  const handleAddZone = () => {
+    const newZoneId = `zone-${Date.now()}`;
+    const newZone: WebAppZone = {
+      id: newZoneId,
+      name: `Custom Section ${zones.length + 1}`,
+      handleId: `${newZoneId}-in`,
+      accessType: "protected",
+      rule: {
+        id: `rule-${newZoneId}`,
+        scope: "zone",
+        conditions: { kind: "leaf", condition: { type: "auth", op: "signedIn" } },
+        redirects: { "no-auth": "/login", default: "/login" },
+      },
+    };
+    updateData({ zones: [...zones, newZone] });
   };
 
-  const publicPages = getConnectedPages("public-in");
-  const privatePages = getConnectedPages("private-in");
-  const rolePages = getConnectedPages("role-in");
-  const paymentPages = getConnectedPages("payment-in");
-  const orgPages = getConnectedPages("org-in");
+  const handleRemoveZone = (zoneId: string) => {
+    const updated = zones.filter((z) => z.id !== zoneId);
+    updateData({ zones: updated });
+  };
 
   return (
-    <div className="flex flex-col gap-6 mt-6 pb-12">
+    <div className="flex flex-col gap-6 mt-6 pb-12 text-foreground">
       {/* Header */}
       <div className="flex flex-col gap-2 border-b border-border/50 pb-6">
         <div className="flex items-center gap-2.5">
           <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-indigo-500/15 text-indigo-500 rounded border border-indigo-500/20 shadow-sm flex items-center gap-1">
-            <Globe className="w-3 h-3" /> WEB APP GATEWAY
+            <Globe className="w-3.5 h-3.5" /> WEB APP GATEWAY
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
             {data.label || "Web Application"}
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Configure application details, framework selection, protection rules per section, and connected authentication backend services.
+          Configure application monorepo settings, connected backend services, and dynamic protection sections.
         </p>
       </div>
 
@@ -110,7 +146,7 @@ export const WebAppConfig = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">Monorepo Target Slug (apps/...)</Label>
+            <Label className="text-xs text-muted-foreground">Monorepo Slug (apps/...)</Label>
             <Input
               value={appSlug}
               onChange={(e) => updateData({ appSlug: e.target.value })}
@@ -132,7 +168,7 @@ export const WebAppConfig = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">Default Login / Auth Route</Label>
+            <Label className="text-xs text-muted-foreground">Default Auth Route</Label>
             <Input
               value={defaultLoginRoute}
               onChange={(e) => updateData({ defaultLoginRoute: e.target.value })}
@@ -207,106 +243,60 @@ export const WebAppConfig = ({
         </div>
       </div>
 
-      {/* Auth Binding Section */}
+      {/* Dynamic Protection Sections Manager */}
       <div className="flex flex-col gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-sm">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Key className="w-4 h-4 text-purple-400" />
-          <span>Backend Auth Service Binding</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Protected Sections / Clusters ({zones.length})</span>
+          </div>
+          <Button variant="outline" size="sm" className="h-7 text-xs cursor-pointer" onClick={handleAddZone}>
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add Section
+          </Button>
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label className="text-xs text-muted-foreground">Connected Auth Service Node</Label>
-          <Select
-            value={data.authNodeId || "none"}
-            onValueChange={(val) =>
-              updateData({ authNodeId: val === "none" ? undefined : val })
-            }
-          >
-            <SelectTrigger className="h-9 text-xs font-medium bg-background/50">
-              <SelectValue placeholder="Select Auth Node..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none" className="text-xs">
-                Better Auth client
-              </SelectItem>
-              {authNodes.map((an) => (
-                <SelectItem key={an.id} value={an.id} className="text-xs">
-                  🛡️ {an.data.label || "Auth Node"} ({an.data.framework || "better_auth"})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          {zones.map((zone) => (
+            <div
+              key={zone.id}
+              className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/50 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                {zone.accessType === "public" ? (
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5 text-indigo-500" />
+                )}
+                <span className="font-medium text-foreground">{zone.name}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">({zone.handleId})</span>
+              </div>
 
-      {/* Protection Sections & Rule Parameters */}
-      <div className="flex flex-col gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-sm">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Protection Section Parameters</span>
-        </div>
-
-        {/* Role-Gated Parameters */}
-        <div className="flex flex-col gap-2 border-b border-border/40 pb-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-400">
-            <Shield className="w-3.5 h-3.5" />
-            <span>Role-Gated Section Allowed Roles</span>
-          </div>
-          <Input
-            value={allowedRoles.join(", ")}
-            onChange={(e) =>
-              updateData({
-                allowedRoles: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-              })
-            }
-            placeholder="e.g. admin, superadmin, editor"
-            className="h-8 text-xs bg-background/50"
-          />
-          <div className="text-[10px] text-muted-foreground">
-            Pages plugged into <span className="font-mono text-purple-400">ROLE-GATED SECTION</span> require these roles. Connected pages: {rolePages.map(p => p.data.label).join(", ") || "None"}
-          </div>
-        </div>
-
-        {/* Paid-Only Parameters */}
-        <div className="flex flex-col gap-2 border-b border-border/40 pb-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>Paid-Only Section Required Plan Tiers</span>
-          </div>
-          <Input
-            value={requiredPlans.join(", ")}
-            onChange={(e) =>
-              updateData({
-                requiredPlans: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-              })
-            }
-            placeholder="e.g. pro, enterprise"
-            className="h-8 text-xs bg-background/50"
-          />
-          <div className="text-[10px] text-muted-foreground">
-            Pages plugged into <span className="font-mono text-amber-400">PAID-ONLY SECTION</span> redirect to /pricing if un-subscribed. Connected pages: {paymentPages.map(p => p.data.label).join(", ") || "None"}
-          </div>
-        </div>
-
-        {/* Organization Parameters */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Organization Section Allowed Org Roles</span>
-          </div>
-          <Input
-            value={allowedOrgRoles.join(", ")}
-            onChange={(e) =>
-              updateData({
-                allowedOrgRoles: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-              })
-            }
-            placeholder="e.g. owner, admin, member"
-            className="h-8 text-xs bg-background/50"
-          />
-          <div className="text-[10px] text-muted-foreground">
-            Pages plugged into <span className="font-mono text-cyan-400">ORGANIZATION SECTION</span> require active Org membership. Connected pages: {orgPages.map(p => p.data.label).join(", ") || "None"}
-          </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    setActiveConfigItem({
+                      type: "zone",
+                      id: zone.id,
+                      nodeId,
+                    })
+                  }
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1" /> Config Rules
+                </Button>
+                {zone.id !== "zone-public" && (
+                  <button
+                    onClick={() => handleRemoveZone(zone.id)}
+                    className="p-1 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

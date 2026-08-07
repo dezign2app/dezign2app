@@ -19,7 +19,9 @@ export type ConfigItemType =
   | "webClient"
   | "clientEvent"
   | "eventTesting"
-  | "langgraphRoute";
+  | "langgraphRoute"
+  | "payments"
+  | "zone";
 
 export interface ActiveConfigItem {
   type: ConfigItemType;

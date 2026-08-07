@@ -24,6 +24,7 @@ import {
   VectorDBRefNode,
   IdentityProviderNode,
   AuthNode,
+  PaymentsNode,
   LangGraphNode,
   LangGraphStepNode,
 } from "./graph-nodes";
@@ -61,6 +62,7 @@ export const nodeTypes = {
   vector_db_ref: VectorDBRefNode,
   identity_provider: IdentityProviderNode,
   auth: AuthNode,
+  payments: PaymentsNode,
   langgraph: LangGraphNode,
   langgraph_step: LangGraphStepNode,
 };

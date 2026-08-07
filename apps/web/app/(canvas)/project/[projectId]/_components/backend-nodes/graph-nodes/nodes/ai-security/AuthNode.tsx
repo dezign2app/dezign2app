@@ -29,46 +29,86 @@ export const AuthNode = ({
   const setActiveConfigItem = useBackendCanvasStore(
     (s) => s.setActiveConfigItem,
   );
+  const edges = useBackendCanvasStore((s) => s.edges);
 
   const updateData = (changes: Partial<BackendNode["data"]>) =>
     updateNode(id, { data: { ...data, ...changes } });
 
   const framework = data.framework || DEFAULT_AUTH_FRAMEWORK;
   const version = data.version || DEFAULT_BETTER_AUTH_VERSION;
+  const dbAdapter = data.dbAdapter || "drizzle-postgres";
+
+  // Calculate connected WebApp / service apps
+  const connectedAppsCount = edges.filter(
+    (e) => e.source === id || e.target === id,
+  ).length;
+
+  // Check if Payments node is connected via injects-plugin handle
+  const isPaymentsPluginInjected = edges.some(
+    (e) => e.target === id && e.targetHandle === "payments-plugin-in",
+  );
+
+  const enabledPlugins = data.plugins || ["bearer", "admin", "organization"];
 
   return (
     <div
       className={cn(
-        "shadow-md rounded-xl bg-card border-2 min-w-[290px] max-w-[360px] flex flex-col relative",
+        "shadow-xl rounded-xl bg-card border-2 min-w-[300px] max-w-[370px] flex flex-col relative transition-all duration-200",
         selected ? "border-indigo-500" : "border-border",
       )}
     >
-      <NodeHeader
-        id={id}
-        data={data}
-        icon={ShieldCheck}
-        title="Auth Framework"
-        colorClass="bg-indigo-500/10 text-indigo-700 dark:text-indigo-400"
-        selected={selected}
+      {/* Target input handle from Payments node (Plugin injection) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="payments-plugin-in"
+        className="w-3 h-3 !bg-emerald-500 rounded-full border-2 border-background -left-1.5"
+        style={{ top: "18px" }}
+        title="Connect Creem Payments node to inject plugin"
       />
 
-      {/* Target input handle from WebClient / API Gateway */}
+      {/* Target input handle for standard request input */}
       <Handle
         type="target"
         position={Position.Left}
         id="auth-in"
-        className="w-2.5 h-2.5 !bg-indigo-500 rounded-full"
+        className="w-2.5 h-2.5 !bg-indigo-500 rounded-full border-2 border-background -left-1.5"
+        style={{ top: "54px" }}
         title="Auth Request Input"
       />
 
-      {/* Source output handle to Services / DB */}
+      {/* Source output handle to WebApp / Services */}
       <Handle
         type="source"
         position={Position.Right}
         id="auth-out"
-        className="w-2.5 h-2.5 !bg-indigo-500 rounded-full"
-        title="Auth Context Output"
+        className="w-3 h-3 !bg-indigo-500 rounded-full border-2 border-background -right-1.5"
+        style={{ top: "50%" }}
+        title="Auth Server Handle -> Connect to WebApp"
       />
+
+      <NodeHeader
+        id={id}
+        data={data}
+        icon={ShieldCheck}
+        title="Auth Server"
+        colorClass="bg-indigo-500/10 text-indigo-700 dark:text-indigo-400"
+        selected={selected}
+      />
+
+      {/* Info bar: DB Adapter & Connected Apps Count */}
+      <div className="px-3 py-1.5 bg-muted/60 border-b flex items-center justify-between gap-2 nodrag text-[10px]">
+        <span className="font-mono text-muted-foreground bg-background/80 px-2 py-0.5 rounded border border-border/40">
+          {dbAdapter === "drizzle-postgres"
+            ? "Drizzle · Postgres"
+            : dbAdapter === "prisma-postgres"
+            ? "Prisma · Postgres"
+            : dbAdapter}
+        </span>
+        <span className="text-muted-foreground font-mono">
+          {connectedAppsCount} {connectedAppsCount === 1 ? "app" : "apps"} connected
+        </span>
+      </div>
 
       <div className="px-3 py-2 bg-secondary/5 nodrag">
         <Textarea
@@ -79,9 +119,25 @@ export const AuthNode = ({
         />
       </div>
 
+      {/* Plugin Pills & Injections Bar */}
+      <div className="px-3 py-2 border-t border-border/50 flex flex-wrap gap-1 bg-background/50 nodrag">
+        {enabledPlugins.slice(0, 5).map((plugin) => (
+          <span
+            key={plugin}
+            className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-medium capitalize"
+          >
+            {plugin}
+          </span>
+        ))}
+        {isPaymentsPluginInjected && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-medium">
+            + Creem Plugin
+          </span>
+        )}
+      </div>
+
       <div className="p-2.5 border-t border-border/50 flex items-center justify-between gap-2 bg-muted/20 nodrag">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {/* Framework Select */}
           <Select
             value={framework}
             onValueChange={(val: any) => {
@@ -104,7 +160,6 @@ export const AuthNode = ({
             </SelectContent>
           </Select>
 
-          {/* Version Select (for Better Auth) */}
           {framework === "better_auth" && (
             <Select
               value={version}

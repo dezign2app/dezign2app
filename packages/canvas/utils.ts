@@ -28,6 +28,11 @@ const ALL_BACKEND_NODE_TYPES = [
   "llm",
   "mcp_server",
   "vector_db_ref",
+  "identity_provider",
+  "auth",
+  "webApp",
+  "webAppGroup",
+  "payments",
   "langgraph",
   "langgraph_step",
 ] as const;
@@ -146,15 +151,31 @@ export function classifyHandle(
 
   if (id === "auth-out" || id.startsWith("auth-out")) return "auth-out";
   if (id === "auth-in" || id.startsWith("auth-in")) return "auth-in";
+  if (id === "injects-plugin-out" || id.startsWith("injects-plugin-out"))
+    return "injects-plugin-out";
+  if (id === "payments-plugin-in" || id.startsWith("payments-plugin-in"))
+    return "payments-plugin-in";
   if (id === "page-out" || id.startsWith("page-out-")) return "page-out";
+  if (id === "page-in" || id.startsWith("page-in")) return "page-in";
+  if (nodeType === "webApp") {
+    if (id === "auth-in" || id.startsWith("auth-in")) {
+      return handleDirection === "source" ? "auth-out" : "auth-in";
+    }
+    return handleDirection === "source" ? "page-out" : "page-section-in";
+  }
+
   if (
+    id.endsWith("-in") ||
     id.startsWith("public-in") ||
     id.startsWith("private-in") ||
     id.startsWith("role-in") ||
     id.startsWith("payment-in") ||
-    id.startsWith("org-in")
-  )
-    return "page-section-in";
+    id.startsWith("org-in") ||
+    id.startsWith("zone-")
+  ) {
+    if (handleDirection === "source") return "page-out";
+    if (handleDirection === "target") return "page-section-in";
+  }
 
   if (id.startsWith("actions-")) return "action-target";
   if (id.startsWith("task-in-")) return "task-in";

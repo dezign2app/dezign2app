@@ -224,6 +224,10 @@ export function cleanupDeletedEdgesState(
     (e) => e && !removedSet.has(e.id),
   );
 
+  let nextNodes = [...currentState.nodes];
+  let nodesChanged = false;
+  const pendingNodeUpserts = [...currentState.pendingNodeUpserts];
+
   let nextEndpoints = [...currentState.endpoints];
   let endpointsChanged = false;
 
@@ -350,6 +354,60 @@ export function cleanupDeletedEdgesState(
         return ev;
       });
     }
+
+    // 3. Foreign Key edge cleanup: remove isForeignKey and references if no edge remains for column
+    if (edge.type === "foreign-key") {
+      const handleNodes = [
+        { nodeId: edge.source, handleId: edge.sourceHandle },
+        { nodeId: edge.target, handleId: edge.targetHandle },
+      ];
+
+      handleNodes.forEach(({ nodeId, handleId }) => {
+        if (!handleId) return;
+        const match = handleId.match(/^(?:source|target)-(\d+)$/);
+        if (!match) return;
+        const colIdx = parseInt(match[1]!, 10);
+
+        const stillConnected = nextEdges.some(
+          (e) =>
+            e &&
+            ((e.source === nodeId &&
+              (e.sourceHandle === handleId || e.targetHandle === handleId)) ||
+              (e.target === nodeId &&
+                (e.sourceHandle === handleId || e.targetHandle === handleId))),
+        );
+
+        if (!stillConnected) {
+          const targetNode = nextNodes.find((n) => n.id === nodeId);
+          if (
+            targetNode &&
+            targetNode.type === "entity" &&
+            targetNode.data?.columns
+          ) {
+            const cols = targetNode.data.columns;
+            if (
+              cols[colIdx] &&
+              (cols[colIdx].isForeignKey || cols[colIdx].references)
+            ) {
+              nodesChanged = true;
+              const newCols = [...cols];
+              const oldCol = newCols[colIdx]!;
+              newCols[colIdx] = {
+                ...oldCol,
+                isForeignKey: false,
+                references: undefined,
+              };
+              const updatedNode = {
+                ...targetNode,
+                data: { ...targetNode.data, columns: newCols },
+              };
+              nextNodes = nextNodes.map((n) => (n.id === nodeId ? updatedNode : n));
+              pendingNodeUpserts.push(updatedNode);
+            }
+          }
+        }
+      });
+    }
   });
 
   const updates: Partial<BackendCanvasState> = {
@@ -359,6 +417,11 @@ export function cleanupDeletedEdgesState(
       ...removedEdgeIds,
     ],
   };
+
+  if (nodesChanged) {
+    updates.nodes = nextNodes;
+    updates.pendingNodeUpserts = pendingNodeUpserts;
+  }
 
   if (endpointsChanged) {
     updates.endpoints = nextEndpoints;

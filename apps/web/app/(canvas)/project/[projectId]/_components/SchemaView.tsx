@@ -40,10 +40,13 @@ export function SchemaView({ projectId }: SchemaViewProps) {
     "schema",
   );
   const { screenToFlowPosition, fitView } = useReactFlow();
-  const { handleLayout } = useAutoLayout();
-
   const schemaNodes = nodes.filter((n) => n.type === "entity");
   const schemaEdges = edges.filter((e) => e.type === "foreign-key");
+
+  const { handleLayout } = useAutoLayout({
+    nodes: schemaNodes,
+    edges: schemaEdges,
+  });
 
   const hasFitted = useRef(false);
   useEffect(() => {

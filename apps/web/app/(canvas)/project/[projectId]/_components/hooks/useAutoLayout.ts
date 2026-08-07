@@ -128,6 +128,27 @@ function getNodeDimensions(node: LayoutNode): {
       const estHeight = Math.max(180, 140 + count * 40);
       return { width: 320, height: estHeight };
     }
+    case "entity": {
+      const data = node.data as
+        | {
+            columns?: any[];
+            indexes?: any[];
+            entityFunctions?: any[];
+            description?: string;
+          }
+        | undefined;
+      const colCount = data?.columns?.length ?? 1;
+      const idxCount = data?.indexes?.length ?? 0;
+      const fnCount = data?.entityFunctions?.length ?? 0;
+      const hasDesc = Boolean(data?.description);
+
+      let estHeight = 44 + 28 + (hasDesc ? 36 : 0) + 24 + colCount * 36;
+      if (idxCount > 0) estHeight += 24 + idxCount * 28;
+      if (fnCount > 0) estHeight += 24 + fnCount * 28;
+      estHeight += 16;
+
+      return { width: 300, height: Math.max(200, estHeight) };
+    }
     default:
       return { width: 300, height: 200 };
   }
@@ -135,6 +156,20 @@ function getNodeDimensions(node: LayoutNode): {
 
 function getHandleYRatio(node: LayoutNode, handleId?: string | null): number {
   if (!handleId) return 0.5;
+
+  if (node.type === "entity") {
+    const colMatch = handleId.match(/^(?:source|target)-(\d+)$/);
+    if (colMatch) {
+      const colIndex = parseInt(colMatch[1]!, 10);
+      const data = node.data as { columns?: any[]; description?: string } | undefined;
+      const { height } = getNodeDimensions(node);
+
+      const topOffset = 44 + 28 + (data?.description ? 36 : 0) + 24;
+      const targetY = topOffset + colIndex * 36 + 18;
+
+      return Math.min(0.95, Math.max(0.05, targetY / height));
+    }
+  }
 
   const data = getLayoutNodeData(node);
   if (!data) return 0.5;
@@ -197,6 +232,17 @@ function getHandleYRatio(node: LayoutNode, handleId?: string | null): number {
   }
 
   return 0.5;
+}
+
+function getIsPkNode(node?: LayoutNode, handleId?: string | null): boolean {
+  if (!node || !handleId || !node.data || typeof node.data !== "object") return false;
+  const columns = (node.data as { columns?: any[] }).columns;
+  if (!Array.isArray(columns)) return false;
+  const match = handleId.match(/^(?:source|target)-(\d+)$/);
+  if (!match) return false;
+  const idx = parseInt(match[1]!, 10);
+  const col = columns[idx];
+  return Boolean(col?.isPrimaryKey || col?.name === "_id");
 }
 
 function getHandleYOffset(node: LayoutNode, handleId?: string | null): number {
@@ -266,6 +312,9 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
       );
 
       // 4. Run Dagre layout for flowNodes and flowEdges
+      const isSchemaView =
+        flowNodes.length > 0 && flowNodes.every((n) => n.type === "entity");
+
       const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(
         () => ({}),
       );
@@ -273,8 +322,14 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         rankdir: direction,
         marginx: 60,
         marginy: 60,
-        ranksep: isHorizontal ? 140 : 100,
-        nodesep: isHorizontal ? 80 : 80,
+        ranksep: isSchemaView
+          ? isHorizontal
+            ? 220
+            : 160
+          : isHorizontal
+            ? 140
+            : 100,
+        nodesep: isSchemaView ? 100 : 80,
       });
 
       flowNodes.forEach((node: LayoutNode) => {
@@ -283,7 +338,23 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
       });
 
       flowEdges.forEach((edge: LayoutEdge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
+        if (isSchemaView && edge.type === "foreign-key") {
+          const sourceNode = flowNodes.find((n) => n.id === edge.source);
+          const targetNode = flowNodes.find((n) => n.id === edge.target);
+
+          const sourceIsPk = getIsPkNode(sourceNode, edge.sourceHandle);
+          const targetIsPk = getIsPkNode(targetNode, edge.targetHandle);
+
+          if (sourceIsPk && !targetIsPk) {
+            dagreGraph.setEdge(edge.source, edge.target);
+          } else if (targetIsPk && !sourceIsPk) {
+            dagreGraph.setEdge(edge.target, edge.source);
+          } else {
+            dagreGraph.setEdge(edge.source, edge.target);
+          }
+        } else {
+          dagreGraph.setEdge(edge.source, edge.target);
+        }
       });
 
       dagre.layout(dagreGraph);
@@ -304,16 +375,8 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
       });
 
       // 5.5. Handle-Aware Barycenter Crossing Minimization (Sugiyama-style)
-      //
-      // The key insight: when multiple nodes in rank R all connect to the SAME node
-      // in rank R+1 (just different handles/endpoints of it), a naive barycenter gives
-      // them all the same value → no reordering → crossings.
-      // Fix: resolve the actual Y offset of the specific endpoint/event handle being
-      // connected to, using the ordered lists from the store.
-
-      // --- Build endpoint Y-ratio map: epId → 0..1 ratio within its node ---
       const endpointYRatio = new Map<string, number>(); // epId → ratio
-      const epsByNode = new Map<string, string[]>();    // nodeId → ordered [epId]
+      const epsByNode = new Map<string, string[]>(); // nodeId → ordered [epId]
       storeEndpoints.forEach((ep) => {
         if (!epsByNode.has(ep.nodeId)) epsByNode.set(ep.nodeId, []);
         epsByNode.get(ep.nodeId)!.push(ep.id);
@@ -324,9 +387,8 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         });
       });
 
-      // --- Build event Y-ratio map: evId → 0..1 ratio within its node ---
       const eventYRatio = new Map<string, number>(); // evId → ratio
-      const evsByNode = new Map<string, string[]>();  // nodeId → ordered [evId]
+      const evsByNode = new Map<string, string[]>(); // nodeId → ordered [evId]
       storeEvents.forEach((ev) => {
         if (!evsByNode.has(ev.nodeId)) evsByNode.set(ev.nodeId, []);
         evsByNode.get(ev.nodeId)!.push(ev.id);
@@ -337,8 +399,6 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         });
       });
 
-      // Resolve the absolute Y of a handle's connection point on a node.
-      // Falls back to node center if the handle isn't found in the store.
       const resolveHandleY = (
         neighborId: string,
         handle: string | null | undefined,
@@ -347,7 +407,16 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
       ): number => {
         if (!handle) return neighborY + neighborH / 2;
 
-        if (handle.startsWith("endpoint-in-") || handle.startsWith("endpoint-out-")) {
+        const neighborNode = flowNodes.find((n) => n.id === neighborId);
+        if (neighborNode && neighborNode.type === "entity") {
+          const ratio = getHandleYRatio(neighborNode, handle);
+          return neighborY + ratio * neighborH;
+        }
+
+        if (
+          handle.startsWith("endpoint-in-") ||
+          handle.startsWith("endpoint-out-")
+        ) {
           const epId = handle.replace(/^endpoint-(in|out)-/, "");
           const ratio = endpointYRatio.get(epId);
           if (ratio !== undefined) return neighborY + ratio * neighborH;
@@ -370,10 +439,20 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
         return neighborY + neighborH / 2;
       };
 
-      // Resolve the Y offset of MY own handle within myself (for ideal center calc).
-      const resolveMyHandleRatio = (handle: string | null | undefined): number => {
+      const resolveMyHandleRatio = (
+        node: LayoutNode,
+        handle: string | null | undefined,
+      ): number => {
         if (!handle) return 0.5;
-        if (handle.startsWith("endpoint-in-") || handle.startsWith("endpoint-out-")) {
+
+        if (node.type === "entity") {
+          return getHandleYRatio(node, handle);
+        }
+
+        if (
+          handle.startsWith("endpoint-in-") ||
+          handle.startsWith("endpoint-out-")
+        ) {
           const epId = handle.replace(/^endpoint-(in|out)-/, "");
           return endpointYRatio.get(epId) ?? 0.5;
         }
@@ -381,15 +460,17 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
           return eventYRatio.get(handle.replace("events-", "")) ?? 0.5;
         }
         if (handle.startsWith("publishedEvents-out-")) {
-          return eventYRatio.get(handle.replace("publishedEvents-out-", "")) ?? 0.5;
+          return eventYRatio.get(handle.replace("publishedEvents-out-", "")) ??
+            0.5;
         }
         if (handle.startsWith("consumedEvents-in-")) {
-          return eventYRatio.get(handle.replace("consumedEvents-in-", "")) ?? 0.5;
+          return (
+            eventYRatio.get(handle.replace("consumedEvents-in-", "")) ?? 0.5
+          );
         }
         return 0.5;
       };
 
-      // --- Group nodes into ranks ---
       const rankMap = new Map<number, string[]>();
       flowNodes.forEach((node: LayoutNode) => {
         const dNode = dagreGraph.node(node.id);
@@ -401,9 +482,6 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
 
       const ranks = Array.from(rankMap.keys()).sort((a, b) => a - b);
 
-      // --- Handle-aware barycenter ---
-      // For each node, average the resolved Y of all its edge endpoints on the NEIGHBOR side.
-      // Then subtract the Y offset of the local handle to get the ideal node center.
       const computeBarycenter = (nodeId: string): number => {
         const node = flowNodes.find((n) => n.id === nodeId);
         if (!node) return 0;
@@ -431,10 +509,13 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
           const myHandle = isSrc ? edge.sourceHandle : edge.targetHandle;
 
           if (isHorizontal) {
-            // Ideal center Y of this node given this edge:
-            // = (neighbor handle Y) - (my handle offset from my top) + (my height / 2)
-            const neighborHandleY = resolveHandleY(neighborId, neighborHandle, neighborPos.y, nh);
-            const myRatio = resolveMyHandleRatio(myHandle);
+            const neighborHandleY = resolveHandleY(
+              neighborId,
+              neighborHandle,
+              neighborPos.y,
+              nh,
+            );
+            const myRatio = resolveMyHandleRatio(node, myHandle);
             const idealCenterY = neighborHandleY - myRatio * height + height / 2;
             sum += idealCenterY;
           } else {

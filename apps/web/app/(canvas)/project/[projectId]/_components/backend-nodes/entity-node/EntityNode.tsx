@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Handle, Position, NodeProps } from "@xyflow/react";
+import { NodeProps } from "@xyflow/react";
 import { Database, Table2, Trash2, Settings } from "lucide-react";
 import {
   BackendNode,
@@ -147,7 +147,6 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         selected ? "border-primary" : "border-border",
       )}
     >
-      <Handle type="target" position={Position.Top} className="w-2 h-2" />
       <div
         className={cn(
           "px-3 py-2 border-b flex flex-col gap-1.5 group rounded-t-[10px]",
@@ -309,8 +308,6 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
       <DbOperationsList nodeId={id} data={data} updateNode={updateNode} />
 
       <div className="h-2 w-full border-t border-transparent rounded-b-[10px]" />
-
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
     </div>
   );
 };

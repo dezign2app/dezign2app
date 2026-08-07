@@ -33,6 +33,7 @@ export const BACKEND_NODE_MCP_SERVER = "mcp_server" as const;
 export const BACKEND_NODE_VECTOR_DB_REF = "vector_db_ref" as const;
 export const BACKEND_NODE_IDENTITY_PROVIDER = "identity_provider" as const;
 export const BACKEND_NODE_AUTH = "auth" as const;
+export const BACKEND_NODE_PAYMENTS = "payments" as const;
 export const BACKEND_NODE_LANGGRAPH = "langgraph" as const;
 export const BACKEND_NODE_LANGGRAPH_STEP = "langgraph_step" as const;
 
@@ -52,6 +53,46 @@ export const BETTER_AUTH_VERSIONS = [
 
 export const DEFAULT_AUTH_FRAMEWORK = AUTH_FRAMEWORK_BETTER_AUTH;
 export const DEFAULT_BETTER_AUTH_VERSION = "v1.7";
+
+// ─── Access Conditions & Protection Rule Enums ──────────────────────────────
+export const CONDITION_PRIMITIVE_TYPES = [
+  "auth",
+  "org",
+  "orgRole",
+  "access",
+  "subscriptionStatus",
+  "plan",
+  "customClaim",
+] as const;
+
+export type ConditionPrimitiveType = (typeof CONDITION_PRIMITIVE_TYPES)[number];
+
+export const FAILURE_REASONS = [
+  "no-auth",
+  "no-org",
+  "wrong-role",
+  "no-access",
+  "wrong-plan",
+  "custom-denied",
+] as const;
+
+export type FailureReasonType = (typeof FAILURE_REASONS)[number];
+
+export const SESSION_DELIVERY_MODES = ["jwt", "cookie"] as const;
+export type SessionDeliveryMode = (typeof SESSION_DELIVERY_MODES)[number];
+
+export const SUBSCRIPTION_STATUSES = [
+  "active",
+  "trialing",
+  "past_due",
+  "canceled",
+  "expired",
+] as const;
+
+export type SubscriptionStatusType = (typeof SUBSCRIPTION_STATUSES)[number];
+
+export const PAYMENTS_INTERVALS = ["monthly", "yearly"] as const;
+export type PaymentsIntervalType = (typeof PAYMENTS_INTERVALS)[number];
 
 // ─── LangGraph Step Execution Types ───────────────────────────────────────────
 export const STEP_TYPE_LLM_CALL = "llm_call" as const;

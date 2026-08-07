@@ -5,11 +5,50 @@ import {
   Lock,
   Settings,
   ShieldCheck,
+  Plus,
+  SlidersHorizontal,
 } from "lucide-react";
 import { BackendNode } from "@/types/canvas";
+import { WebAppZone } from "@workspace/canvas/types";
 import { cn } from "@workspace/ui/lib/utils";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { NodeHeader } from "../../common";
+
+const DEFAULT_REDIRECTS = {
+  "no-auth": "/login",
+  "no-org": "/select-org",
+  "wrong-role": "/unauthorized",
+  "no-access": "/pricing",
+  "wrong-plan": "/pricing",
+  default: "/login",
+};
+
+const DEFAULT_ZONES: WebAppZone[] = [
+  {
+    id: "zone-public",
+    name: "Public Section",
+    handleId: "public-in",
+    accessType: "public",
+    rule: {
+      id: "rule-public",
+      scope: "zone",
+      conditions: { kind: "leaf", condition: { type: "auth", op: "signedOut" } },
+      redirects: { ...DEFAULT_REDIRECTS },
+    },
+  },
+  {
+    id: "zone-private",
+    name: "Private Section",
+    handleId: "private-in",
+    accessType: "protected",
+    rule: {
+      id: "rule-private",
+      scope: "zone",
+      conditions: { kind: "leaf", condition: { type: "auth", op: "signedIn" } },
+      redirects: { ...DEFAULT_REDIRECTS },
+    },
+  },
+];
 
 export const WebAppNode = ({
   id,
@@ -28,14 +67,46 @@ export const WebAppNode = ({
     (data.label || "web-app").toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const port = data.port || "3000";
 
-  // Find incoming AuthNode connection
-  const isAuthConnected = edges.some(
+  // Find connected Auth Node
+  const connectedAuthEdge = edges.find(
     (e) =>
       (e.target === id && e.targetHandle === "auth-in") ||
       (e.source === id && e.sourceHandle === "auth-out"),
   );
+  const connectedAuthNode = connectedAuthEdge
+    ? nodes.find(
+        (n) =>
+          n.id ===
+          (connectedAuthEdge.source === id
+            ? connectedAuthEdge.target
+            : connectedAuthEdge.source),
+      )
+    : null;
 
-  // Helper to find connected page nodes for each section handle
+  const isAuthConnected = Boolean(connectedAuthNode);
+  const authNodeLabel = connectedAuthNode?.data?.label || "Auth";
+
+  // User-defined zones or default zones
+  const zones: WebAppZone[] = data.zones && data.zones.length > 0 ? data.zones : DEFAULT_ZONES;
+
+  const handleAddZone = () => {
+    const newZoneId = `zone-${Date.now()}`;
+    const newZone: WebAppZone = {
+      id: newZoneId,
+      name: `Custom Zone ${zones.length + 1}`,
+      handleId: `${newZoneId}-in`,
+      accessType: "protected",
+      rule: {
+        id: `rule-${newZoneId}`,
+        scope: "zone",
+        conditions: { kind: "leaf", condition: { type: "auth", op: "signedIn" } },
+        redirects: { ...DEFAULT_REDIRECTS },
+      },
+    };
+    updateNode(id, { data: { ...data, zones: [...zones, newZone] } });
+  };
+
+  // Helper to find connected WebClient page nodes for a given section handle
   const getConnectedPages = (sectionHandleId: string) => {
     const incomingEdges = edges.filter(
       (e) =>
@@ -49,16 +120,10 @@ export const WebAppNode = ({
       .filter((n): n is BackendNode => Boolean(n));
   };
 
-  const publicPages = getConnectedPages("public-in");
-  const privatePages = getConnectedPages("private-in");
-  const rolePages = getConnectedPages("role-in");
-  const paymentPages = getConnectedPages("payment-in");
-  const orgPages = getConnectedPages("org-in");
-
   return (
     <div
       className={cn(
-        "shadow-xl rounded-xl bg-card border-2 min-w-[280px] max-w-[360px] flex flex-col transition-all duration-300 relative overflow-hidden",
+        "shadow-xl rounded-xl bg-card border-2 min-w-[290px] max-w-[370px] flex flex-col transition-all duration-300 relative",
         selected ? "border-indigo-500" : "border-border",
       )}
     >
@@ -94,23 +159,29 @@ export const WebAppNode = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <div
+          <button
+            onClick={() => {
+              if (connectedAuthNode) {
+                setActiveConfigItem({
+                  type: "auth",
+                  id: connectedAuthNode.id,
+                  nodeId: connectedAuthNode.id,
+                });
+              }
+            }}
             className={cn(
-              "flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border",
-              isAuthConnected || (data.authMode || "better_auth") === "better_auth"
-                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+              "flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border transition-colors",
+              isAuthConnected
+                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 cursor-pointer"
                 : "bg-muted text-muted-foreground border-border/40",
             )}
+            title={isAuthConnected ? `Wired to ${authNodeLabel}` : "No Auth connected"}
           >
             <ShieldCheck className="w-3 h-3" />
             <span>
-              {isAuthConnected
-                ? "Auth Connected"
-                : (data.authMode || "better_auth") === "better_auth"
-                ? "Better Auth (Default)"
-                : "No Auth"}
+              {isAuthConnected ? `🔒 Auth → ${authNodeLabel}` : "⚠️ No Auth connected"}
             </span>
-          </div>
+          </button>
 
           <button
             onClick={() =>
@@ -128,75 +199,88 @@ export const WebAppNode = ({
         </div>
       </div>
 
-      {/* Protection Sections Container */}
-      <div className="p-2.5 flex flex-col gap-2 bg-muted opacity-100 nodrag">
-        {/* 🌐 Public Section */}
-        <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-card border border-border/80 opacity-100 relative">
-          <Handle
-            type="target"
-            position={Position.Right}
-            id="public-in"
-            className="w-2.5 h-2.5 !bg-muted-foreground rounded-full border-2 border-background -right-4 opacity-100"
-            style={{ top: "50%" }}
-            title="Connect Public Page nodes here"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-foreground opacity-100 flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-foreground opacity-100" /> Public Section
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono opacity-100">Open Access</span>
-          </div>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {publicPages.length === 0 ? (
-              <span className="text-[10px] text-muted-foreground/70 italic opacity-100">
-                Plug Public WebClient pages here
-              </span>
-            ) : (
-              publicPages.map((p) => (
-                <span
-                  key={p.id}
-                  className="text-[10px] px-2 py-0.5 rounded bg-secondary text-foreground font-mono border border-border opacity-100"
-                >
-                  {p.data.label || "Page"}
-                </span>
-              ))
-            )}
-          </div>
-        </div>
+      {/* Dynamic Protection Sections Container */}
+      <div className="p-2.5 flex flex-col gap-2 bg-muted/60 opacity-100 nodrag">
+        {zones.map((zone) => {
+          const connectedPages = getConnectedPages(zone.handleId);
+          const isPublic = zone.accessType === "public";
 
-        {/* 🔒 Private Section Cluster */}
-        <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-card border border-border/80 opacity-100 relative">
-          <Handle
-            type="target"
-            position={Position.Right}
-            id="private-in"
-            className="w-2.5 h-2.5 !bg-indigo-400 rounded-full border-2 border-background -right-4 opacity-100"
-            style={{ top: "50%" }}
-            title="Connect Private Page cluster nodes here"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-foreground opacity-100 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-indigo-400 opacity-100" /> Private Section
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono opacity-100">Protected Cluster</span>
-          </div>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {privatePages.length === 0 ? (
-              <span className="text-[10px] text-muted-foreground/70 italic opacity-100">
-                Plug Private WebClient pages here
-              </span>
-            ) : (
-              privatePages.map((p) => (
-                <span
-                  key={p.id}
-                  className="text-[10px] px-2 py-0.5 rounded bg-secondary text-foreground font-mono border border-border opacity-100"
-                >
-                  {p.data.label || "Page"}
+          return (
+            <div
+              key={zone.id}
+              className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-card border border-border/80 opacity-100 relative group"
+            >
+              {/* Dynamic Section Handle (Right) */}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={zone.handleId}
+                className={cn(
+                  "w-2.5 h-2.5 rounded-full border-2 border-background -right-4 opacity-100 cursor-pointer",
+                  isPublic ? "!bg-muted-foreground" : "!bg-indigo-500",
+                )}
+                style={{ top: "50%" }}
+                title={`Connect WebClient pages to ${zone.name}`}
+              />
+
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                  {isPublic ? (
+                    <Globe className="w-3.5 h-3.5 text-foreground" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5 text-indigo-500" />
+                  )}
+                  {zone.name}
                 </span>
-              ))
-            )}
-          </div>
-        </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {isPublic ? "Open Access" : "Protected"}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setActiveConfigItem({
+                        type: "zone",
+                        id: zone.id,
+                        nodeId: id,
+                      })
+                    }
+                    className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"
+                    title={`Configure rules for ${zone.name}`}
+                  >
+                    <Settings className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Connected Page Pills */}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {connectedPages.length === 0 ? (
+                  <span className="text-[10px] text-muted-foreground/70 italic">
+                    Plug WebClient pages here
+                  </span>
+                ) : (
+                  connectedPages.map((p) => (
+                    <span
+                      key={p.id}
+                      className="text-[10px] px-2 py-0.5 rounded bg-secondary text-foreground font-mono border border-border"
+                    >
+                      {p.data.label || "Page"}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Add Custom Section Button */}
+        <button
+          onClick={handleAddZone}
+          className="flex items-center justify-center gap-1.5 p-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-card/60 hover:bg-card border border-dashed border-border/80 rounded-lg transition-colors cursor-pointer"
+        >
+          <Plus className="w-3 h-3" /> Add Protected Section
+        </button>
       </div>
     </div>
   );

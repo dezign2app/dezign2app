@@ -12,6 +12,39 @@ export type IdentityProviderNodeData = z.infer<
   typeof identityProviderDataSchema
 >;
 
+export const oauthProviderConfigSchema = z.object({
+  id: z.string(),
+  provider: z.string(),
+  clientIdEnv: z.string(),
+  clientSecretEnv: z.string(),
+});
+
+export const sessionClaimConfigSchema = z.object({
+  key: z.string(),
+  source: z.enum(["orgRole", "paymentsAccess", "customField"]),
+  deliveryMode: z.enum(["jwt", "cookie"]),
+});
+
+export const userCustomFieldSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  default: z.string().optional(),
+  required: z.boolean(),
+});
+
+export const authHookConfigSchema = z.object({
+  mode: z.enum(["naturalLanguage", "code"]),
+  prompt: z.string().optional(),
+  code: z.string().optional(),
+});
+
+export const paymentsPlanConfigSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  price: z.string(),
+  interval: z.enum(["monthly", "yearly"]),
+});
+
 // --- Auth Framework Node ---
 export const authDataSchema = baseNodeDataSchema
   .extend({
@@ -23,9 +56,60 @@ export const authDataSchema = baseNodeDataSchema
     baseUrl: z.string().optional(),
     provider: z.string().optional(),
     version: z.string().optional(),
+    dbAdapter: z.string().optional(),
+    providers: z
+      .object({
+        emailPassword: z
+          .object({
+            enabled: z.boolean(),
+            requireVerification: z.boolean(),
+            minLength: z.number(),
+          })
+          .optional(),
+        oauth: z.array(oauthProviderConfigSchema).optional(),
+        magicLink: z.boolean().optional(),
+        passkey: z.boolean().optional(),
+      })
+      .optional(),
+    session: z
+      .object({
+        claims: z.array(sessionClaimConfigSchema).optional(),
+      })
+      .optional(),
+    organization: z
+      .object({
+        enabled: z.boolean().optional(),
+        roles: z.array(z.string()).optional(),
+        teams: z.boolean().optional(),
+        multiOrg: z.boolean().optional(),
+        invitations: z.boolean().optional(),
+      })
+      .optional(),
+    customFields: z.array(userCustomFieldSchema).optional(),
+    hooks: z.array(authHookConfigSchema).optional(),
+    paymentsPlugin: z
+      .object({
+        provider: z.literal("creem"),
+        apiKeyEnv: z.string(),
+        webhookSecretEnv: z.string(),
+      })
+      .optional(),
   })
-  .strict();
+  .passthrough();
 export type AuthNodeData = z.infer<typeof authDataSchema>;
+
+// --- Payments Node ---
+export const paymentsDataSchema = baseNodeDataSchema
+  .extend({
+    description: z.string().optional(),
+    provider: z.string().optional(),
+    plans: z.array(paymentsPlanConfigSchema).optional(),
+    eventMapping: z.record(z.string(), z.string()).optional(),
+    apiKeyEnv: z.string().optional(),
+    webhookSecretEnv: z.string().optional(),
+  })
+  .passthrough();
+export type PaymentsNodeData = z.infer<typeof paymentsDataSchema>;
 
 export const authRuleSchema = z.discriminatedUnion("type", [
   z.object({

@@ -34,6 +34,7 @@ export { MCPServerNode } from "./nodes/ai-security/MCPServerNode";
 export { IdentityProviderNode } from "./nodes/ai-security/IdentityProviderNode";
 export { AuthNode } from "./nodes/ai-security/AuthNode";
 export { ExternalNode } from "./nodes/ai-security/ExternalNode";
+export { PaymentsNode } from "./nodes/ai-security/PaymentsNode";
 
 // LangGraph nodes
 export { LangGraphNode } from "./langgraph/LangGraphNode";

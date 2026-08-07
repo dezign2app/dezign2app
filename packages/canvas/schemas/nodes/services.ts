@@ -142,6 +142,28 @@ export const webAppRouteSchema = z.object({
 });
 export type WebAppRoute = z.infer<typeof webAppRouteSchema>;
 
+export const webAppZoneSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  handleId: z.string(),
+  accessType: z.enum(["public", "protected"]),
+  rule: z
+    .object({
+      id: z.string(),
+      scope: z.enum(["zone", "page"]),
+      conditions: z.record(z.string(), z.unknown()).optional(),
+      redirects: z.record(z.string(), z.string()).optional(),
+      customLogic: z
+        .object({
+          mode: z.enum(["naturalLanguage", "code"]),
+          prompt: z.string().optional(),
+          code: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
 export const webAppDataSchema = baseNodeDataSchema
   .extend({
     description: z.string().optional(),
@@ -149,6 +171,7 @@ export const webAppDataSchema = baseNodeDataSchema
     framework: z.string().optional(),
     port: z.string().optional(),
     routes: z.array(webAppRouteSchema).optional(),
+    zones: z.array(webAppZoneSchema).optional(),
     authMode: z
       .enum(["none", "connected_auth_node", "custom_jwt", "better_auth"])
       .optional(),
@@ -156,7 +179,7 @@ export const webAppDataSchema = baseNodeDataSchema
     defaultLoginRoute: z.string().optional(),
     corsOrigins: z.string().optional(),
   })
-  .strict();
+  .passthrough();
 export type WebAppNodeData = z.infer<typeof webAppDataSchema>;
 
 export const serviceDataSchema = baseNodeDataSchema

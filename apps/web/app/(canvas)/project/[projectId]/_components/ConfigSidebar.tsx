@@ -18,6 +18,8 @@ import { IdentityProviderConfig } from "./config-sidebar/IdentityProviderConfig"
 import { AuthConfig } from "./config-sidebar/AuthConfig";
 import { WebAppConfig } from "./config-sidebar/WebAppConfig";
 import { WebClientConfig } from "./config-sidebar/WebClientConfig";
+import { PaymentsConfig } from "./config-sidebar/PaymentsConfig";
+import { ZoneConfig } from "./config-sidebar/ZoneConfig";
 import { EventTestingConfig } from "./config-sidebar/EventTestingConfig";
 
 import { LangGraphRouteConfig } from "./config-sidebar/LangGraphRouteConfig";
@@ -170,6 +172,10 @@ export const ConfigSidebar = () => {
           <WebAppConfig id={id} nodeId={nodeId} />
         ) : type === "webClient" ? (
           <WebClientConfig id={id} nodeId={nodeId} />
+        ) : type === "payments" ? (
+          <PaymentsConfig id={id} nodeId={nodeId} />
+        ) : type === "zone" ? (
+          <ZoneConfig id={id} nodeId={nodeId} />
         ) : type === "clientEvent" ? (
           <WebClientEventConfig id={id} nodeId={nodeId} />
         ) : type === "eventTesting" ? (

@@ -439,19 +439,63 @@ export const WebClientNode = ({
   const setActiveConfigItem = useBackendCanvasStore(
     (s) => s.setActiveConfigItem,
   );
+  const nodes = useBackendCanvasStore((s) => s.nodes);
+  const edges = useBackendCanvasStore((s) => s.edges);
   const simulation = useSimulationNodeState(id);
   const borderClass = getSimulationNodeBorderClass(
     simulation,
     Boolean(selected),
   );
 
+  // Find incoming WebApp edge connecting to this page
+  const incomingEdge = edges.find((e) => e.target === id || e.source === id);
+  const connectedWebAppNode = incomingEdge
+    ? nodes.find(
+        (n) =>
+          n.type === "webApp" &&
+          (n.id === incomingEdge.source || n.id === incomingEdge.target),
+      )
+    : null;
+
+  // Find section name from handleId
+  let connectedZoneName: string | null = null;
+  if (connectedWebAppNode && incomingEdge) {
+    const handleId =
+      incomingEdge.source === connectedWebAppNode.id
+        ? incomingEdge.sourceHandle
+        : incomingEdge.targetHandle;
+    const zones = connectedWebAppNode.data?.zones || [];
+    const matchedZone = zones.find((z) => z.handleId === handleId);
+    if (matchedZone) {
+      connectedZoneName = matchedZone.name;
+    } else if (handleId === "public-in") {
+      connectedZoneName = "Public Section";
+    } else if (handleId === "private-in") {
+      connectedZoneName = "Private Section";
+    }
+  }
+
+  const isCustomOverride = Boolean(
+    data.useZoneDefault === false || data.protectionOverride,
+  );
+
   return (
     <div
       className={cn(
-        "shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col transition-all duration-300",
+        "shadow-md rounded-xl bg-card border-2 min-w-[200px] max-w-[300px] flex flex-col transition-all duration-300 relative",
         borderClass,
       )}
     >
+      {/* Target handle from WebApp Section */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="page-in"
+        className="w-2.5 h-2.5 !bg-indigo-500 rounded-full border-2 border-background -left-1.5"
+        style={{ top: "18px" }}
+        title="Connect from WebApp section handle"
+      />
+
       <NodeHeader
         id={id}
         data={data}
@@ -460,6 +504,23 @@ export const WebClientNode = ({
         title="Web Client(page)"
         selected={selected}
       />
+
+      {/* Zone Membership & Rule Override Indicator Bar */}
+      <div className="px-3 py-1 bg-muted/70 border-b flex items-center justify-between gap-1 nodrag text-[10px]">
+        <span className="font-mono text-muted-foreground truncate">
+          {connectedZoneName ? `Zone: ${connectedZoneName}` : "Unattached Page"}
+        </span>
+        <span
+          className={cn(
+            "px-1.5 py-0.2 rounded font-medium border text-[9px]",
+            isCustomOverride
+              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+              : "bg-secondary text-muted-foreground border-border/40",
+          )}
+        >
+          {isCustomOverride ? "Custom Rules" : "Inherits Section"}
+        </span>
+      </div>
 
       {/* Description */}
       <div className="px-3 py-2 bg-secondary/5 border-b nodrag">

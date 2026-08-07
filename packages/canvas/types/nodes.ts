@@ -13,7 +13,19 @@ import type { InterServiceProtocol } from "../constants";
 
 import type { UIEventItem } from "./simulation";
 import type { MessagingNodeData } from "./messaging";
-import type { GatewayRoute, AuthRule, AuthFramework, BetterAuthVersion } from "./auth";
+import type {
+  GatewayRoute,
+  AuthRule,
+  AuthFramework,
+  BetterAuthVersion,
+  WebAppZone,
+  ProtectionRule,
+  OAuthProviderConfig,
+  SessionClaimConfig,
+  UserCustomField,
+  AuthHookConfig,
+  PaymentsPlanConfig,
+} from "./auth";
 import type {
   CanvasLangGraphNodeData,
   CanvasLangGraphStepNodeData,
@@ -51,6 +63,7 @@ export type BackendNodeType =
   | "auth"
   | "webApp"
   | "webAppGroup"
+  | "payments"
   | "langgraph"
   | "langgraph_step";
 
@@ -219,11 +232,32 @@ export interface CanvasIdentityProviderNodeData {
 /** Auth Framework node fields (canvas type). */
 export interface CanvasAuthNodeData {
   framework?: AuthFramework;
+  provider?: string;
   authMode?: "embedded" | "standalone" | "gateway";
   plugins?: string[];
   secretKey?: string;
   baseUrl?: string;
   version?: BetterAuthVersion | string;
+  dbAdapter?: "drizzle-postgres" | "prisma-postgres" | "drizzle-mysql" | "custom";
+  providers?: {
+    emailPassword?: { enabled: boolean; requireVerification: boolean; minLength: number };
+    oauth?: OAuthProviderConfig[];
+    magicLink?: boolean;
+    passkey?: boolean;
+  };
+  session?: {
+    claims?: SessionClaimConfig[];
+  };
+  organization?: {
+    enabled?: boolean;
+    roles?: string[];
+    teams?: boolean;
+    multiOrg?: boolean;
+    invitations?: boolean;
+  };
+  customFields?: UserCustomField[];
+  hooks?: AuthHookConfig[];
+  paymentsPlugin?: { provider: "creem"; apiKeyEnv: string; webhookSecretEnv: string };
 }
 
 /** WebApp node fields (canvas type). */
@@ -243,6 +277,7 @@ export interface CanvasWebAppNodeData {
     isAuthPage?: boolean;
     events?: UIEventItem[];
   }>;
+  zones?: WebAppZone[];
   authMode?: "none" | "connected_auth_node" | "custom_jwt" | "better_auth";
   authNodeId?: string;
   defaultLoginRoute?: string;
@@ -260,7 +295,19 @@ export interface CanvasWebClientNodeData {
   redirectTo?: string;
   isAuthPage?: boolean;
   authNodeId?: string;
+  zoneId?: string;
+  useZoneDefault?: boolean;
+  protectionOverride?: ProtectionRule;
   events?: UIEventItem[];
+}
+
+/** Payments node fields (canvas type). */
+export interface CanvasPaymentsNodeData {
+  provider?: "creem" | string;
+  plans?: PaymentsPlanConfig[];
+  eventMapping?: Record<string, "active" | "trialing" | "past_due" | "canceled" | "expired">;
+  apiKeyEnv?: string;
+  webhookSecretEnv?: string;
 }
 
 /**
@@ -282,6 +329,7 @@ export type BackendNodeData = BaseNodeData &
       CanvasAINodeData &
       CanvasIdentityProviderNodeData &
       CanvasAuthNodeData &
+      CanvasPaymentsNodeData &
       CanvasLangGraphNodeData &
       CanvasLangGraphStepNodeData
   >;

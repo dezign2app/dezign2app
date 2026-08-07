@@ -49,6 +49,12 @@ export type HandleKind =
   | "langgraph-in"
   | "langgraph-out"
 
+  // --- Auth & WebApp handles ---
+  | "auth-out"
+  | "auth-in"
+  | "page-out"
+  | "page-section-in"
+
   // --- Fallback ---
   | "unknown";
 

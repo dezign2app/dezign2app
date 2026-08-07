@@ -11,6 +11,7 @@ import {
   RedisCacheNode,
   StorageNode,
   ExternalNode,
+  WebAppNode,
   WebClientNode,
   WorkerNode,
   ServerlessNode,
@@ -27,6 +28,7 @@ import {
   LangGraphStepNode,
 } from "./graph-nodes";
 import { SchemaGroupNode } from "./SchemaGroupNode";
+import { WebAppGroupNode } from "./WebAppGroupNode";
 import { EntityNode } from "./entity-node/EntityNode";
 
 export const nodeTypes = {
@@ -43,8 +45,10 @@ export const nodeTypes = {
   storage: StorageNode,
   entity: EntityNode,
   external: ExternalNode,
+  webApp: WebAppNode,
   webClient: WebClientNode,
   group: SchemaGroupNode,
+  webAppGroup: WebAppGroupNode,
   // New nodes
   worker: WorkerNode,
   serverless: ServerlessNode,

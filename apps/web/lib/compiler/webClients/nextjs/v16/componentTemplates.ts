@@ -54,7 +54,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@work
 import { Badge } from "@workspace/ui/components/badge";
 
 export default function ${pageMeta.componentName}() {
-  const [pageLoadData, setPageLoadData] = useState<any>(null);
+  const [pageLoadData, setPageLoadData] = useState<Record<string, Record<string, string | number | boolean | null>> | null>(null);
   const [pageLoadLoading, setPageLoadLoading] = useState<boolean>(false);
   const [pageLoadError, setPageLoadError] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ export default function ${pageMeta.componentName}() {
     url: string;
     method: string;
     status?: number;
-    data: any;
+    data: Record<string, string | number | boolean | null> | null;
     error?: string;
   }>>([]);
 
@@ -93,7 +93,7 @@ export default function ${pageMeta.componentName}() {
         });
       }
 
-      let resData: any = null;
+      let resData: Record<string, string | number | boolean | null> | null = null;
       let status: number | undefined = undefined;
 
       if (url && url !== "#") {
@@ -121,7 +121,8 @@ export default function ${pageMeta.componentName}() {
         },
         ...prev,
       ]);
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Request failed";
       setTriggerLogs((prev) => [
         {
           id: logId,
@@ -130,7 +131,7 @@ export default function ${pageMeta.componentName}() {
           timestamp,
           url: url || "N/A",
           method: method || "TRIGGER",
-          error: err.message || "Request failed",
+          error: errorMessage,
           data: null,
         },
         ...prev,
@@ -149,6 +150,9 @@ export default function ${pageMeta.componentName}() {
               <h1 className="text-3xl font-extrabold tracking-tight text-white">${pageMeta.label}</h1>
               <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
                 Next.js Page
+              </Badge>
+              <Badge variant="outline" className="${pageMeta.accessType === "private" ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : pageMeta.accessType === "role-gated" ? "bg-purple-500/20 text-purple-300 border-purple-500/40" : pageMeta.accessType === "payment-gated" ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : pageMeta.accessType === "org-gated" ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"}">
+                ${pageMeta.accessType ? pageMeta.accessType.toUpperCase() : "PUBLIC"}
               </Badge>
             </div>
             <p className="text-slate-400 text-sm mt-1">

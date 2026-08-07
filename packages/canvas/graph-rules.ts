@@ -74,6 +74,10 @@ export const CONNECTION_RULES: Record<HandleKind, HandleKind[]> = {
     "sse-in",
     "websocket-in",
   ],
+  "auth-out": ["auth-in"],
+  "auth-in": [],
+  "page-out": ["page-section-in", "endpoint-in"],
+  "page-section-in": [],
   unknown: [],
 };
 
@@ -97,6 +101,9 @@ export const EDGE_TYPE_MAP: Record<string, string> = {
   "langgraph-out→endpoint-in": "connection",
   "langgraph-out→task-in": "connection",
   "langgraph-out→consumed-event-in": "message",
+  // Auth & Page wiring edges
+  "auth-out→auth-in": "identity-connection",
+  "page-out→page-section-in": "connection",
 };
 
 export const WEB_CLIENT_EVENTS = [

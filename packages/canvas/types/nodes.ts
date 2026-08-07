@@ -49,6 +49,8 @@ export type BackendNodeType =
   | "vector_db_ref"
   | "identity_provider"
   | "auth"
+  | "webApp"
+  | "webAppGroup"
   | "langgraph"
   | "langgraph_step";
 
@@ -224,6 +226,43 @@ export interface CanvasAuthNodeData {
   version?: BetterAuthVersion | string;
 }
 
+/** WebApp node fields (canvas type). */
+export interface CanvasWebAppNodeData {
+  appSlug?: string;
+  framework?: string;
+  port?: string;
+  routes?: Array<{
+    id: string;
+    name: string;
+    path: string;
+    accessType?: "public" | "private" | "role-gated" | "payment-gated" | "org-gated";
+    allowedRoles?: string[];
+    requiredPlans?: string[];
+    allowedOrgRoles?: string[];
+    redirectTo?: string;
+    isAuthPage?: boolean;
+    events?: UIEventItem[];
+  }>;
+  authMode?: "none" | "connected_auth_node" | "custom_jwt" | "better_auth";
+  authNodeId?: string;
+  defaultLoginRoute?: string;
+  corsOrigins?: string;
+}
+
+/** Web Client node fields (canvas type). */
+export interface CanvasWebClientNodeData {
+  appName?: string;
+  appSlug?: string;
+  accessType?: "public" | "private" | "role-gated" | "payment-gated" | "org-gated";
+  allowedRoles?: string[];
+  requiredPlans?: string[];
+  allowedOrgRoles?: string[];
+  redirectTo?: string;
+  isAuthPage?: boolean;
+  authNodeId?: string;
+  events?: UIEventItem[];
+}
+
 /**
  * Composite data payload for every BackendNode.
  * All domain-specific fields are optional; only `BaseNodeData.label` is required.
@@ -234,6 +273,8 @@ export type BackendNodeData = BaseNodeData &
   Partial<
     CanvasEntityNodeData &
       CanvasServiceNodeData &
+      CanvasWebAppNodeData &
+      CanvasWebClientNodeData &
       MessagingNodeData &
       CanvasWorkerNodeData &
       CanvasServerlessNodeData &

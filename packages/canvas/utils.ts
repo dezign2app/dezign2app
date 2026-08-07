@@ -144,6 +144,18 @@ export function classifyHandle(
     return direction === "in" ? "resource-def-in" : "resource-def-out";
   }
 
+  if (id === "auth-out" || id.startsWith("auth-out")) return "auth-out";
+  if (id === "auth-in" || id.startsWith("auth-in")) return "auth-in";
+  if (id === "page-out" || id.startsWith("page-out-")) return "page-out";
+  if (
+    id.startsWith("public-in") ||
+    id.startsWith("private-in") ||
+    id.startsWith("role-in") ||
+    id.startsWith("payment-in") ||
+    id.startsWith("org-in")
+  )
+    return "page-section-in";
+
   if (id.startsWith("actions-")) return "action-target";
   if (id.startsWith("task-in-")) return "task-in";
   if (id.startsWith("task-out-")) return "task-out";

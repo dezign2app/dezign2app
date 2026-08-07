@@ -85,16 +85,26 @@ export function GraphView({ projectId }: GraphViewProps) {
     const center = getCenterPosition();
     const { x, y } = getOffsetPosition(center.x - 100, center.y - 100, nodes);
     const data = createGraphNodeData(type, label, nodes);
+    const isContainer = type === "webAppGroup";
 
     addNode({
       id: crypto.randomUUID(),
       type,
       position: { x, y },
+      style: isContainer ? { width: 560, height: 380 } : undefined,
+      width: isContainer ? 560 : undefined,
+      height: isContainer ? 380 : undefined,
       data,
     });
   };
 
-  const visualGraphNodes = graphNodes.map((node) => {
+  const sortedGraphNodes = [...graphNodes].sort((a, b) => {
+    if (a.type === "webAppGroup") return -1;
+    if (b.type === "webAppGroup") return 1;
+    return 0;
+  });
+
+  const visualGraphNodes = sortedGraphNodes.map((node) => {
     const hasRun = simulation.status !== "idle";
     let isVisited = simulation.activeNodeIds.includes(node.id);
     let isCurrent = simulation.currentNodeId === node.id;

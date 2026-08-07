@@ -64,6 +64,18 @@ export const clientEventInputSchema = z.object({
 });
 
 export const webClientDataSchema = simpleDataSchema.extend({
+  appName: z.string().optional().describe("Parent web application display name"),
+  appSlug: z.string().optional().describe("Parent web application slug (e.g. customer-portal)"),
+  accessType: z
+    .enum(["public", "private", "role-gated", "payment-gated", "org-gated"])
+    .optional()
+    .describe("Page access control level"),
+  allowedRoles: z.array(z.string()).optional().describe("User roles allowed access"),
+  requiredPlans: z.array(z.string()).optional().describe("Subscription plan tiers allowed access"),
+  allowedOrgRoles: z.array(z.string()).optional().describe("Organization roles allowed access"),
+  redirectTo: z.string().optional().describe("Route path to redirect unauthorized users"),
+  isAuthPage: z.boolean().optional().describe("Whether this page is the auth/login page"),
+  authNodeId: z.string().optional().describe("Connected AuthNode ID"),
   events: z
     .array(
       z.object({
@@ -96,8 +108,56 @@ export const webClientDataSchema = simpleDataSchema.extend({
 
 export const webClientDataInputSchema = baseNodeDataSchema.extend({
   description: z.string().optional(),
+  appName: z.string().optional(),
+  appSlug: z.string().optional(),
+  accessType: z
+    .enum(["public", "private", "role-gated", "payment-gated", "org-gated"])
+    .optional(),
+  allowedRoles: z.array(z.string()).optional(),
+  requiredPlans: z.array(z.string()).optional(),
+  allowedOrgRoles: z.array(z.string()).optional(),
+  redirectTo: z.string().optional(),
+  isAuthPage: z.boolean().optional(),
+  authNodeId: z.string().optional(),
   events: z.array(clientEventInputSchema).optional(),
 });
+
+// --- WebApp Node ---
+export const webAppRouteSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  path: z.string(),
+  method: z.string().optional(),
+  service: z.string().optional(),
+  authRuleId: z.string().optional(),
+  accessType: z
+    .enum(["public", "private", "role-gated", "payment-gated", "org-gated"])
+    .optional(),
+  allowedRoles: z.array(z.string()).optional(),
+  requiredPlans: z.array(z.string()).optional(),
+  allowedOrgRoles: z.array(z.string()).optional(),
+  redirectTo: z.string().optional(),
+  isAuthPage: z.boolean().optional(),
+  events: z.array(clientEventInputSchema).optional(),
+});
+export type WebAppRoute = z.infer<typeof webAppRouteSchema>;
+
+export const webAppDataSchema = baseNodeDataSchema
+  .extend({
+    description: z.string().optional(),
+    appSlug: z.string().optional(),
+    framework: z.string().optional(),
+    port: z.string().optional(),
+    routes: z.array(webAppRouteSchema).optional(),
+    authMode: z
+      .enum(["none", "connected_auth_node", "custom_jwt", "better_auth"])
+      .optional(),
+    authNodeId: z.string().optional(),
+    defaultLoginRoute: z.string().optional(),
+    corsOrigins: z.string().optional(),
+  })
+  .strict();
+export type WebAppNodeData = z.infer<typeof webAppDataSchema>;
 
 export const serviceDataSchema = baseNodeDataSchema
   .extend({

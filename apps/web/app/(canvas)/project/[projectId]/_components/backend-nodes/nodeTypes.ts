@@ -22,6 +22,7 @@ import {
   MCPServerNode,
   VectorDBRefNode,
   IdentityProviderNode,
+  AuthNode,
   LangGraphNode,
   LangGraphStepNode,
 } from "./graph-nodes";
@@ -55,6 +56,7 @@ export const nodeTypes = {
   mcp_server: MCPServerNode,
   vector_db_ref: VectorDBRefNode,
   identity_provider: IdentityProviderNode,
+  auth: AuthNode,
   langgraph: LangGraphNode,
   langgraph_step: LangGraphStepNode,
 };

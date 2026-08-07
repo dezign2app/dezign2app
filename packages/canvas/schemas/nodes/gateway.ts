@@ -12,6 +12,21 @@ export type IdentityProviderNodeData = z.infer<
   typeof identityProviderDataSchema
 >;
 
+// --- Auth Framework Node ---
+export const authDataSchema = baseNodeDataSchema
+  .extend({
+    description: z.string().optional(),
+    framework: z.string().optional(),
+    authMode: z.string().optional(),
+    plugins: z.array(z.string()).optional(),
+    secretKey: z.string().optional(),
+    baseUrl: z.string().optional(),
+    provider: z.string().optional(),
+    version: z.string().optional(),
+  })
+  .strict();
+export type AuthNodeData = z.infer<typeof authDataSchema>;
+
 export const authRuleSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("jwt"),

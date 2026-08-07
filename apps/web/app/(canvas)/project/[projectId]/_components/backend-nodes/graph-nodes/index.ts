@@ -31,6 +31,7 @@ export { SearchIndexNode } from "./nodes/database/SearchIndexNode";
 export { LLMNode } from "./nodes/ai-security/LLMNode";
 export { MCPServerNode } from "./nodes/ai-security/MCPServerNode";
 export { IdentityProviderNode } from "./nodes/ai-security/IdentityProviderNode";
+export { AuthNode } from "./nodes/ai-security/AuthNode";
 export { ExternalNode } from "./nodes/ai-security/ExternalNode";
 
 // LangGraph nodes

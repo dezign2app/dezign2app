@@ -13,7 +13,7 @@ import type { InterServiceProtocol } from "../constants";
 
 import type { UIEventItem } from "./simulation";
 import type { MessagingNodeData } from "./messaging";
-import type { GatewayRoute, AuthRule } from "./auth";
+import type { GatewayRoute, AuthRule, AuthFramework, BetterAuthVersion } from "./auth";
 import type {
   CanvasLangGraphNodeData,
   CanvasLangGraphStepNodeData,
@@ -48,6 +48,7 @@ export type BackendNodeType =
   | "mcp_server"
   | "vector_db_ref"
   | "identity_provider"
+  | "auth"
   | "langgraph"
   | "langgraph_step";
 
@@ -213,6 +214,16 @@ export interface CanvasIdentityProviderNodeData {
   };
 }
 
+/** Auth Framework node fields (canvas type). */
+export interface CanvasAuthNodeData {
+  framework?: AuthFramework;
+  authMode?: "embedded" | "standalone" | "gateway";
+  plugins?: string[];
+  secretKey?: string;
+  baseUrl?: string;
+  version?: BetterAuthVersion | string;
+}
+
 /**
  * Composite data payload for every BackendNode.
  * All domain-specific fields are optional; only `BaseNodeData.label` is required.
@@ -229,6 +240,7 @@ export type BackendNodeData = BaseNodeData &
       CanvasInfrastructureNodeData &
       CanvasAINodeData &
       CanvasIdentityProviderNodeData &
+      CanvasAuthNodeData &
       CanvasLangGraphNodeData &
       CanvasLangGraphStepNodeData
   >;

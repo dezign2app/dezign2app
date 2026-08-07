@@ -1,3 +1,8 @@
+import { AUTH_FRAMEWORK_OPTIONS, BETTER_AUTH_VERSIONS } from "../constants";
+
+export type AuthFramework = (typeof AUTH_FRAMEWORK_OPTIONS)[number]["value"];
+export type BetterAuthVersion = (typeof BETTER_AUTH_VERSIONS)[number]["value"];
+
 export type IdPCapabilities = {
   authentication: boolean;
   userManagement: boolean;
@@ -139,6 +144,21 @@ export const IDENTITY_PROVIDER_PRESETS: Record<string, IdentityProviderPreset> =
       jwksUrl:
         "https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys",
       supportedAlgorithms: ["RS256"],
+      capabilities: {
+        authentication: true,
+        userManagement: true,
+        identity: true,
+        authorization: true,
+      },
+      outputs: { user: true, tokens: true, claims: true },
+    },
+    better_auth: {
+      provider: "Better Auth",
+      issuerUrl: "http://localhost:3000/api/auth",
+      discoveryUrl:
+        "http://localhost:3000/api/auth/.well-known/openid-configuration",
+      jwksUrl: "http://localhost:3000/api/auth/jwks",
+      supportedAlgorithms: ["EdDSA", "RS256", "ES256"],
       capabilities: {
         authentication: true,
         userManagement: true,

@@ -14,6 +14,7 @@ export type ConfigItemType =
   | "searchIndex"
   | "authRule"
   | "identityProvider"
+  | "auth"
   | "clientEvent"
   | "eventTesting"
   | "langgraphRoute";

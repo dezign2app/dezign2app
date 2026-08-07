@@ -93,20 +93,44 @@ export function pickDbFunctionsForEndpoint(
 
     const cleanTableName = rawTableName.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-    const tableFns = dbFunctions.filter((f) => {
-      const targetClean = (f.targetName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const fnNameClean = f.name.toLowerCase();
-      return (
-        (cleanTableName && targetClean && targetClean === cleanTableName) ||
-        (cleanTableName && fnNameClean.includes(cleanTableName)) ||
-        (targetClean && cleanTableName && cleanTableName.includes(targetClean))
-      );
-    });
+    const entityCustomFns: ReusableFunction[] = [];
+    const targetEntityNode = tableNode?.type === "db_ref" && tableNode.data?.tableRef
+      ? allNodes.find((n) => n.id === tableNode.data?.tableRef)
+      : tableNode;
+
+    if (targetEntityNode?.data?.dbOperations && targetEntityNode.data.dbOperations.length > 0) {
+      const varName = rawTableName.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const importPath = `@workspace/db/helpers/${varName}`;
+      targetEntityNode.data.dbOperations.forEach((op) => {
+        if (op.enabled !== false) {
+          entityCustomFns.push({
+            name: op.name,
+            importPath,
+            signature: op.signature || `${op.name}(): any`,
+            targetName: rawTableName,
+            kind: op.kind === "fetchByIndex" ? "custom" : (op.kind as any),
+          });
+        }
+      });
+    }
+
+    const tableFns = [
+      ...entityCustomFns,
+      ...dbFunctions.filter((f) => {
+        const targetClean = (f.targetName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const fnNameClean = f.name.toLowerCase();
+        return (
+          (cleanTableName && targetClean && targetClean === cleanTableName) ||
+          (cleanTableName && fnNameClean.includes(cleanTableName)) ||
+          (targetClean && cleanTableName && cleanTableName.includes(targetClean))
+        );
+      }),
+    ];
 
     const fnsToUse = tableFns.length > 0 ? tableFns : dbFunctions;
 
     const rawOps = ep.crudOperations?.[tableNodeId];
-    const ops: ("read" | "create" | "update" | "delete")[] =
+    const selectedOps: string[] =
       Array.isArray(rawOps) && rawOps.length > 0
         ? rawOps
         : [
@@ -119,33 +143,44 @@ export function pickDbFunctionsForEndpoint(
                   : "read",
           ];
 
-    for (const op of ops) {
-      let fn: ReusableFunction | undefined;
+    for (const op of selectedOps) {
+      let fn: ReusableFunction | undefined = fnsToUse.find(
+        (f) => f.name === op || f.name.toLowerCase() === op.toLowerCase(),
+      );
       let callExpr = "";
 
-      if (op === "read") {
-        if (isIdRoute) {
-          fn = fnsToUse.find((f) => f.kind === "findById") || fnsToUse.find((f) => f.kind === "findAll");
-          callExpr = fn ? `await ${fn.name}(req.params.id)` : "";
-        } else {
-          fn = fnsToUse.find((f) => f.kind === "findAll") || fnsToUse.find((f) => f.kind === "findById");
-          callExpr = fn ? `await ${fn.name}()` : "";
+      if (!fn) {
+        if (op === "read") {
+          if (isIdRoute) {
+            fn = fnsToUse.find((f) => f.kind === "findById") || fnsToUse.find((f) => f.kind === "findAll");
+          } else {
+            fn = fnsToUse.find((f) => f.kind === "findAll") || fnsToUse.find((f) => f.kind === "findById");
+          }
+        } else if (op === "create") {
+          fn = fnsToUse.find((f) => f.kind === "create");
+        } else if (op === "update") {
+          fn = fnsToUse.find((f) => f.kind === "update");
+        } else if (op === "delete") {
+          fn = fnsToUse.find((f) => f.kind === "delete");
         }
-      } else if (op === "create") {
-        fn = fnsToUse.find((f) => f.kind === "create");
-        callExpr = fn ? `await ${fn.name}(PAYLOAD_VAR)` : "";
-      } else if (op === "update") {
-        fn = fnsToUse.find((f) => f.kind === "update");
-        callExpr = fn ? `await ${fn.name}(req.params.id, PAYLOAD_VAR)` : "";
-      } else if (op === "delete") {
-        fn = fnsToUse.find((f) => f.kind === "delete");
-        callExpr = fn ? `await ${fn.name}(req.params.id)` : "";
       }
 
-      if (fn && callExpr) {
+      if (fn) {
+        if (fn.kind === "findById" || fn.name.toLowerCase().includes("byid")) {
+          callExpr = `await ${fn.name}(req.params.id)`;
+        } else if (fn.kind === "create") {
+          callExpr = `await ${fn.name}(PAYLOAD_VAR)`;
+        } else if (fn.kind === "update") {
+          callExpr = `await ${fn.name}(req.params.id, PAYLOAD_VAR)`;
+        } else if (fn.kind === "delete") {
+          callExpr = `await ${fn.name}(req.params.id)`;
+        } else {
+          callExpr = `await ${fn.name}()`;
+        }
+
         const targetFnName = fn.name;
         if (!results.some((r) => r.fn.name === targetFnName)) {
-          results.push({ fn, callExpr, operationKind: op, tableNodeId });
+          results.push({ fn, callExpr, operationKind: (fn.kind || "read") as any, tableNodeId });
         }
       }
     }

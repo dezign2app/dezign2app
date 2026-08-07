@@ -100,7 +100,7 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
     const newDbNodeIds = newCrudConfig
       .map((c) => c.tableNodeId)
       .filter(Boolean);
-    const newCrudOps: Record<string, CrudOperation[]> = {};
+    const newCrudOps: Record<string, string[]> = {};
     const newCrudExplanations: Record<string, Record<string, string>> = {};
     newCrudConfig.forEach((c) => {
       if (c.tableNodeId) {
@@ -275,6 +275,7 @@ export const EndpointConfig = ({ id, nodeId }: EndpointConfigProps) => {
         crudConfig={crudConfig}
         onCrudConfigChange={handleCrudConfigChange}
         availableTableNodes={availableTableNodes}
+        allNodes={allNodes}
         publishedEvents={item.publishedEvents || []}
         endpointMethod={item.type || "POST"}
         endpointPath={item.name || "/"}

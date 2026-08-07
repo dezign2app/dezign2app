@@ -70,16 +70,20 @@ export function InfrastructurePreview({
                   snippet = `update${Pascal}(req.params.id, body);`;
                 else if (op === "delete")
                   snippet = `delete${Pascal}ById(req.params.id);`;
+                else if (op.toLowerCase().includes("byid"))
+                  snippet = `${op}(req.params.id);`;
+                else
+                  snippet = `${op}(...);`;
 
                 return (
                   <div
                     key={op}
                     className="flex items-center gap-2 pl-2 border-l-2 border-blue-500/40 text-foreground"
                   >
-                    <span className="text-[9px] font-bold uppercase px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                    <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 font-mono">
                       {op}
                     </span>
-                    <code className="text-blue-600 dark:text-blue-300 font-semibold">
+                    <code className="text-blue-600 dark:text-blue-300 font-semibold font-mono">
                       {snippet}
                     </code>
                   </div>

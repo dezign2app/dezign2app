@@ -31,6 +31,7 @@ export function BusinessLogicBlock({
   crudConfig = [],
   onCrudConfigChange,
   availableTableNodes = [],
+  allNodes = [],
   publishedEvents = [],
   endpointMethod = "POST",
   endpointPath = "/",
@@ -94,6 +95,7 @@ export function BusinessLogicBlock({
           crudConfig={crudConfig}
           onCrudConfigChange={onCrudConfigChange}
           availableTableNodes={availableTableNodes}
+          allNodes={allNodes}
         />
       )}
 

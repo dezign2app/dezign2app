@@ -47,11 +47,12 @@ export const endpointSchema = z.object({
   requiredScopes: z.array(z.string()).optional(),
   audience: z.string().optional(),
   crudOperations: z
-    .record(z.string(), z.array(z.enum(["create", "read", "update", "delete"])))
+    .record(z.string(), z.array(z.string()))
     .optional(),
   crudExplanations: z
     .record(z.string(), z.record(z.string(), z.string()))
     .optional(),
+  dbFunctionNames: z.array(z.string()).optional(),
   responseMode: z.enum(["schema_builder", "custom_expression", "inferred"]).optional(),
   responseFields: z.array(responseFieldSchema).optional(),
   responseExpression: z.string().optional(),

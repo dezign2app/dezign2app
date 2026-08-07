@@ -21,7 +21,8 @@ export type ConfigItemType =
   | "eventTesting"
   | "langgraphRoute"
   | "payments"
-  | "zone";
+  | "zone"
+  | "entityFunctions";
 
 export interface ActiveConfigItem {
   type: ConfigItemType;

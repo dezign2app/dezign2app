@@ -112,9 +112,6 @@ importers:
       groq-sdk:
         specifier: ^1.3.0
         version: 1.3.0
-      supermemory:
-        specifier: ^4.24.12
-        version: 4.24.12
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -7007,10 +7004,6 @@ packages:
   sucrase@3.35.1:
     resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
     engines: {node: '>=16 || 14 >=14.17'}
-    hasBin: true
-
-  supermemory@4.24.12:
-    resolution: {integrity: sha512-xAFextuqk4JuoW33jJaFGqT1oMppN2IgfWUrV18Fv3qAAZ6M1SR1tb+7EBq8vrEQIx4iY2MQh5p+qnfL6lI8Yw==}
     hasBin: true
 
   supports-color@7.2.0:
@@ -15998,8 +15991,6 @@ snapshots:
       pirates: 4.0.7
       tinyglobby: 0.2.16
       ts-interface-checker: 0.1.13
-
-  supermemory@4.24.12: {}
 
   supports-color@7.2.0:
     dependencies:

@@ -81,6 +81,9 @@ export type FailureReasonType = (typeof FAILURE_REASONS)[number];
 export const SESSION_DELIVERY_MODES = ["jwt", "cookie"] as const;
 export type SessionDeliveryMode = (typeof SESSION_DELIVERY_MODES)[number];
 
+export const DEFAULT_SESSION_CLAIM_SOURCE = "customField" as const;
+export const DEFAULT_SESSION_CLAIM_DELIVERY_MODE = "jwt" as const;
+
 export const SUBSCRIPTION_STATUSES = [
   "active",
   "trialing",

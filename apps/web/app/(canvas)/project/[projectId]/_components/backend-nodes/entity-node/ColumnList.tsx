@@ -73,6 +73,7 @@ export const ColumnList = ({
         {items.map((col, i) => (
           <ColumnRow
             key={i}
+            nodeId={nodeId}
             col={col}
             index={i}
             isEditing={editingIndex === i}

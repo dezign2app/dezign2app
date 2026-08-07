@@ -63,6 +63,7 @@ declare module "@xyflow/react" {
     markerEnd?: string;
     markerStart?: string;
     style?: React.CSSProperties;
+    selected?: boolean;
   }
 
   export type NodeChange<TNode = Node> =
@@ -113,6 +114,9 @@ declare module "@xyflow/react" {
   export const Controls: React.ComponentType<Record<string, unknown>>;
   export const MiniMap: React.ComponentType<Record<string, unknown>>;
   export const BaseEdge: React.ComponentType<any>;
+  export const EdgeLabelRenderer: React.ComponentType<{
+    children?: React.ReactNode;
+  }>;
   export const NodeResizer: React.ComponentType<any>;
   export const Panel: React.ComponentType<any>;
   export const ReactFlowProvider: React.ComponentType<{
@@ -145,6 +149,10 @@ declare module "@xyflow/react" {
     setEdges: (edges: TEdge[] | ((edges: TEdge[]) => TEdge[])) => void;
     getNodes: () => TNode[];
     getEdges: () => TEdge[];
+    deleteElements: (params: {
+      nodes?: { id: string }[];
+      edges?: { id: string }[];
+    }) => void;
   };
 
   export function applyNodeChanges<TNode = Node>(

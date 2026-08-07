@@ -34,12 +34,19 @@ export function compileExpressV4Service(
 
   let nodeEndpoints = endpoints.filter((e) => e.nodeId === node.id);
   if (nodeEndpoints.length === 0 && node.data?.endpoints) {
-    nodeEndpoints = node.data.endpoints as (Endpoint & { nodeId: string })[];
+    nodeEndpoints = node.data.endpoints.map((ep) => ({
+      ...ep,
+      nodeId: node.id,
+    }));
   }
   if (node.data?.routeGroups) {
-    for (const group of node.data.routeGroups as any[]) {
+    for (const group of node.data.routeGroups) {
       if (group.endpoints) {
-        nodeEndpoints = [...nodeEndpoints, ...group.endpoints];
+        const groupEndpoints = group.endpoints.map((ep) => ({
+          ...ep,
+          nodeId: node.id,
+        }));
+        nodeEndpoints = [...nodeEndpoints, ...groupEndpoints];
       }
     }
   }
@@ -48,7 +55,7 @@ export function compileExpressV4Service(
     (e) => e.nodeId === node.id && e.variant === "consume",
   );
   if (nodeConsumedEvents.length === 0 && node.data?.consumedEvents) {
-    nodeConsumedEvents = (node.data.consumedEvents as any[]).map((e) => ({
+    nodeConsumedEvents = node.data.consumedEvents.map((e) => ({
       ...e,
       nodeId: node.id,
       variant: "consume",
@@ -59,7 +66,7 @@ export function compileExpressV4Service(
     (e) => e.nodeId === node.id && e.variant === "publish",
   );
   if (nodePublishedEvents.length === 0 && node.data?.publishedEvents) {
-    nodePublishedEvents = (node.data.publishedEvents as any[]).map((e) => ({
+    nodePublishedEvents = node.data.publishedEvents.map((e) => ({
       ...e,
       nodeId: node.id,
       variant: "publish",

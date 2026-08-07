@@ -10,7 +10,6 @@ export function compileDatabaseNodes(
   allNodes: BackendNode[],
   allEdges: BackendEdge[],
 ): CompiledDatabaseResult {
-  // Single driver for now: raw better-sqlite3.
-  // To restore Drizzle ORM: import { compileSqliteDrizzleDatabase } from "./databases/sqlite/drizzle"
+  // Single driver: raw better-sqlite3.
   return compileRawSqliteDatabase(allNodes, allEdges);
 }

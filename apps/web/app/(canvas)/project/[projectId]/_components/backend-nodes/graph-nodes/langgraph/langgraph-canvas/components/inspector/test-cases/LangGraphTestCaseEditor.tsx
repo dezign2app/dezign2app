@@ -79,7 +79,7 @@ export const LangGraphTestCaseEditor = ({
     testCase.routerChoices || {},
   );
   const [mocks, setMocks] = useState<
-    Record<string, { returnData: JSONValue; status: number }>
+    Record<string, { returnData?: JSONValue; status?: number }>
   >(testCase.mocks || {});
   const [expectedState, setExpectedState] = useState<Record<string, JSONValue>>(
     (testCase.expectedState as Record<string, JSONValue> | undefined) ||

@@ -18,7 +18,12 @@ import {
   BETTER_AUTH_VERSIONS,
   DEFAULT_AUTH_FRAMEWORK,
   DEFAULT_BETTER_AUTH_VERSION,
+  AuthFramework,
 } from "@workspace/canvas";
+
+function isAuthFramework(val: string): val is AuthFramework {
+  return AUTH_FRAMEWORK_OPTIONS.some((o) => o.value === val);
+}
 
 export const AuthNode = ({
   id,
@@ -36,7 +41,7 @@ export const AuthNode = ({
 
   const framework = data.framework || DEFAULT_AUTH_FRAMEWORK;
   const version = data.version || DEFAULT_BETTER_AUTH_VERSION;
-  const dbAdapter = data.dbAdapter || "drizzle-postgres";
+  const dbAdapter = data.dbAdapter || "sqlite-raw";
 
   // Calculate connected WebApp / service apps
   const connectedAppsCount = edges.filter(
@@ -99,10 +104,8 @@ export const AuthNode = ({
       {/* Info bar: DB Adapter & Connected Apps Count */}
       <div className="px-3 py-1.5 bg-muted/60 border-b flex items-center justify-between gap-2 nodrag text-[10px]">
         <span className="font-mono text-muted-foreground bg-background/80 px-2 py-0.5 rounded border border-border/40">
-          {dbAdapter === "drizzle-postgres"
-            ? "Drizzle · Postgres"
-            : dbAdapter === "prisma-postgres"
-            ? "Prisma · Postgres"
+          {dbAdapter === "sqlite-raw"
+            ? "SQLite · Raw"
             : dbAdapter}
         </span>
         <span className="text-muted-foreground font-mono">
@@ -140,12 +143,14 @@ export const AuthNode = ({
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <Select
             value={framework}
-            onValueChange={(val: any) => {
-              const option = AUTH_FRAMEWORK_OPTIONS.find((o) => o.value === val);
-              updateData({
-                framework: val,
-                provider: option?.label || "Better Auth",
-              });
+            onValueChange={(val: string) => {
+              if (isAuthFramework(val)) {
+                const option = AUTH_FRAMEWORK_OPTIONS.find((o) => o.value === val);
+                updateData({
+                  framework: val,
+                  provider: option?.label || "Better Auth",
+                });
+              }
             }}
           >
             <SelectTrigger className="h-7 text-xs font-medium px-2 py-1 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 nodrag focus:ring-0 shadow-none">

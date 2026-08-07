@@ -44,15 +44,6 @@ export const DATABASE_ENGINE_OPTIONS = [
   },
 ] as const;
 
-export const DATABASE_ORM_OPTIONS = [
-  {
-    value: "drizzle",
-    label: "Drizzle ORM",
-    versions: [{ value: "0.30.x", label: "0.30.x" }],
-    defaultVersion: "0.30.x",
-  },
-] as const;
-
 // Derived TypeScript Types (inferred directly from the single source of truth!)
 export type ServiceTechStack = (typeof SERVICE_TECH_OPTIONS)[number]["value"];
 export type ServiceTechVersion =
@@ -66,10 +57,6 @@ export type WebClientTechVersion =
 export type DatabaseEngine = (typeof DATABASE_ENGINE_OPTIONS)[number]["value"];
 export type DatabaseEngineVersion =
   (typeof DATABASE_ENGINE_OPTIONS)[number]["versions"][number]["value"];
-
-export type DatabaseORM = (typeof DATABASE_ORM_OPTIONS)[number]["value"];
-export type DatabaseOrmVersion =
-  (typeof DATABASE_ORM_OPTIONS)[number]["versions"][number]["value"];
 
 // Tuples for Zod z.enum validation (derived directly without re-typing)
 export const ALL_TECH_STACK_VALUES = [
@@ -88,12 +75,4 @@ export const ALL_DATABASE_ENGINE_VALUES = [
 
 export const ALL_DATABASE_ENGINE_VERSION_VALUES = [
   ...DATABASE_ENGINE_OPTIONS.flatMap((e) => e.versions.map((v) => v.value)),
-] as [string, ...string[]];
-
-export const ALL_DATABASE_ORM_VALUES = [
-  ...DATABASE_ORM_OPTIONS.map((o) => o.value),
-] as [string, ...string[]];
-
-export const ALL_DATABASE_ORM_VERSION_VALUES = [
-  ...DATABASE_ORM_OPTIONS.flatMap((o) => o.versions.map((v) => v.value)),
 ] as [string, ...string[]];

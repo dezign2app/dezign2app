@@ -148,8 +148,10 @@ export const PaymentsConfig = ({
                   placeholder="plan-id"
                   onChange={(e) => {
                     const updated = [...plans];
-                    updated[idx].id = e.target.value;
-                    updateData({ plans: updated });
+                    if (updated[idx]) {
+                      updated[idx].id = e.target.value;
+                      updateData({ plans: updated });
+                    }
                   }}
                 />
               </div>
@@ -160,8 +162,10 @@ export const PaymentsConfig = ({
                   placeholder="Plan Name"
                   onChange={(e) => {
                     const updated = [...plans];
-                    updated[idx].name = e.target.value;
-                    updateData({ plans: updated });
+                    if (updated[idx]) {
+                      updated[idx].name = e.target.value;
+                      updateData({ plans: updated });
+                    }
                   }}
                 />
               </div>
@@ -172,8 +176,10 @@ export const PaymentsConfig = ({
                   placeholder="$29"
                   onChange={(e) => {
                     const updated = [...plans];
-                    updated[idx].price = e.target.value;
-                    updateData({ plans: updated });
+                    if (updated[idx]) {
+                      updated[idx].price = e.target.value;
+                      updateData({ plans: updated });
+                    }
                   }}
                 />
               </div>
@@ -182,8 +188,10 @@ export const PaymentsConfig = ({
                   value={plan.interval}
                   onValueChange={(val: PaymentsPlanConfig["interval"]) => {
                     const updated = [...plans];
-                    updated[idx].interval = val;
-                    updateData({ plans: updated });
+                    if (updated[idx]) {
+                      updated[idx].interval = val;
+                      updateData({ plans: updated });
+                    }
                   }}
                 >
                   <SelectTrigger className="h-7 text-xs">

@@ -26,7 +26,8 @@ export function FrontendCanvas({ projectId }: FrontendCanvasProps) {
 
   const handleMount = (editor: Editor) => {
     setEditor(editor);
-    (window as any).frontendAdapter = new FrontendCanvasAdapter(editor);
+    (window as typeof window & { frontendAdapter?: FrontendCanvasAdapter }).frontendAdapter =
+      new FrontendCanvasAdapter(editor);
 
     // Listen to store diffs → push granular updates to Convex immediately
     editor.store.listen(
@@ -75,7 +76,7 @@ export function FrontendCanvas({ projectId }: FrontendCanvasProps) {
     if (initialRecords.length > 0) {
       try {
         editor.store.mergeRemoteChanges(() => {
-          editor.store.put(initialRecords as any);
+          editor.store.put(initialRecords as Parameters<typeof editor.store.put>[0]);
         });
       } catch (err) {
         console.error("Failed to hydrate tldraw from Convex:", err);

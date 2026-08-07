@@ -78,7 +78,7 @@ export const TestCaseEditor = ({
     initialCase.expectedBody,
   );
   const [mocks, setMocks] = useState<
-    Record<string, { returnData: JSONValue; status: number }>
+    Record<string, { returnData?: JSONValue; status?: number }>
   >(initialCase.mocks || {});
 
   useEffect(() => {

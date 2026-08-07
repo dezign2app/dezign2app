@@ -5,8 +5,6 @@ import {
   ALL_TECH_VERSION_VALUES,
   ALL_DATABASE_ENGINE_VALUES,
   ALL_DATABASE_ENGINE_VERSION_VALUES,
-  ALL_DATABASE_ORM_VALUES,
-  ALL_DATABASE_ORM_VERSION_VALUES,
 } from "../../techStack";
 
 export const baseNodeDataSchema = z.object({
@@ -22,8 +20,6 @@ export const baseNodeDataSchema = z.object({
   techVersion: z.enum(ALL_TECH_VERSION_VALUES).optional(),
   dbEngine: z.enum(ALL_DATABASE_ENGINE_VALUES).optional(),
   dbEngineVersion: z.enum(ALL_DATABASE_ENGINE_VERSION_VALUES).optional(),
-  orm: z.enum(ALL_DATABASE_ORM_VALUES).optional(),
-  ormVersion: z.enum(ALL_DATABASE_ORM_VERSION_VALUES).optional(),
 });
 
 export const resourceItemSchema = z.object({

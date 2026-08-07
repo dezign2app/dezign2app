@@ -1,6 +1,15 @@
 import { BackendNode, BackendEdge } from "@/types/canvas";
 import { CompiledFile, CompiledDatabaseResult } from "@workspace/canvas/types";
-import { toTableName, toVarName, mapToDrizzleSqliteType } from "../../../utils";
+import { toTableName, toVarName } from "../../../utils";
+
+function mapToDrizzleSqliteType(type?: string): { drizzleType: string; mode?: string } {
+  if (!type) return { drizzleType: "text" };
+  const t = type.toLowerCase();
+  if (t === "number" || t === "int" || t === "integer") return { drizzleType: "integer" };
+  if (t === "float" || t === "double" || t === "decimal" || t === "real") return { drizzleType: "real" };
+  if (t === "boolean" || t === "bool") return { drizzleType: "integer", mode: '{ mode: "boolean" }' };
+  return { drizzleType: "text" };
+}
 
 function enrichEntitiesWithForeignKeys(
   tables: BackendNode[],

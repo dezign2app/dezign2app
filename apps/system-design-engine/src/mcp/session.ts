@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { AuthContext } from "./auth.js";
-import { SupermemorySync } from "../knowledge/sync.js";
 import { z } from "zod";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/backend/_generated/api";

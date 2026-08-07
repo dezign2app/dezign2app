@@ -27,21 +27,6 @@ export function toTableName(str: string): string {
   return (str || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
 
-export function mapToDrizzleSqliteType(type?: string): {
-  drizzleType: string;
-  mode?: string;
-} {
-  if (!type) return { drizzleType: "text" };
-  const t = type.toLowerCase();
-  if (t === "number" || t === "int" || t === "integer")
-    return { drizzleType: "integer" };
-  if (t === "float" || t === "double" || t === "decimal" || t === "real")
-    return { drizzleType: "real" };
-  if (t === "boolean" || t === "bool")
-    return { drizzleType: "integer", mode: '{ mode: "boolean" }' };
-  return { drizzleType: "text" };
-}
-
 export function toEnvVarName(str: string): string {
   if (!str) return "SERVICE";
   const clean = str.replace(/[^a-zA-Z0-9]/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2");

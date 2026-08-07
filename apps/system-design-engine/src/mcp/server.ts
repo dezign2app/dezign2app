@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { SupermemorySync } from "../knowledge/sync.js";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/backend/_generated/api";
 import { Id } from "@workspace/backend/_generated/dataModel";

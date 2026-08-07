@@ -107,7 +107,7 @@ export const addDbRefNodeTool = tool(
         .optional()
         .describe("The ID of the target entity node this references, if known"),
       type: z.string().optional(),
-      data: z.any().optional(),
+      data: z.record(z.unknown()).optional(),
     }),
   },
 );

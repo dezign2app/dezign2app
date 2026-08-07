@@ -224,7 +224,7 @@ export function useBackendSync(projectId: string, view: BackendCanvasView) {
     );
     useSimulationStore
       .getState()
-      .setTestCases((initialElements.testCases || []) as any);
+      .setTestCases(initialElements.testCases || []);
   }, [initialElements, setNodesAndEdges, view, projectId]);
 
   // Handle view changes: swap active positions for existing nodes

@@ -65,7 +65,7 @@ export type SimulationTestCase = {
   expectedStatus?: number;
   expectedBody?: JSONValue;
   enabled?: boolean;
-  mocks?: Record<string, { returnData: JSONValue; status: number }>;
+  mocks?: Record<string, { returnData?: JSONValue; status?: number }>;
   expectedPath?: string[];
 };
 

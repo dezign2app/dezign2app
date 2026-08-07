@@ -21,6 +21,8 @@ import {
   Schema,
   ProcessingStep,
   JSONValue,
+  PROCESSING_STEP_OPERATIONS,
+  PARAMETER_TYPES,
 } from "@/types/canvas";
 import { generateId } from "./utils";
 import { LocalInput, LocalTextarea } from "./LocalInput";
@@ -107,22 +109,7 @@ export const ProcessingStepsEditor = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[
-                    "passthrough",
-                    "validate",
-                    "pick",
-                    "omit",
-                    "rename",
-                    "set",
-                    "filter",
-                    "map",
-                    "db_get",
-                    "db_get_many",
-                    "db_insert",
-                    "db_update",
-                    "db_delete",
-                    "return",
-                  ].map((operation) => (
+                  {PROCESSING_STEP_OPERATIONS.map((operation) => (
                     <SelectItem
                       key={operation}
                       value={operation}
@@ -252,27 +239,11 @@ export const ParameterEditor = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="string" className="text-xs">
-                    string
-                  </SelectItem>
-                  <SelectItem value="number" className="text-xs">
-                    number
-                  </SelectItem>
-                  <SelectItem value="boolean" className="text-xs">
-                    boolean
-                  </SelectItem>
-                  <SelectItem value="UUID" className="text-xs">
-                    UUID
-                  </SelectItem>
-                  <SelectItem value="timestamp" className="text-xs">
-                    timestamp
-                  </SelectItem>
-                  <SelectItem value="object" className="text-xs">
-                    object
-                  </SelectItem>
-                  <SelectItem value="array" className="text-xs">
-                    array
-                  </SelectItem>
+                  {PARAMETER_TYPES.map((type) => (
+                    <SelectItem key={type} value={type} className="text-xs">
+                      {type}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button

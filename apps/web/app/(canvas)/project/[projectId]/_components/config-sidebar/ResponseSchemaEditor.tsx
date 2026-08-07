@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { LocalInput } from "../backend-nodes/graph-nodes/common";
-import { BackendNode } from "@/types/canvas";
+import { BackendNode, PARAMETER_TYPES } from "@/types/canvas";
 
 export interface ResponseField {
   id: string;
@@ -245,27 +245,15 @@ export const ResponseSchemaEditor: React.FC<ResponseSchemaEditorProps> = ({
                         <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                           Primitives
                         </div>
-                        <SelectItem value="string" className="text-xs font-mono">
-                          string
-                        </SelectItem>
-                        <SelectItem value="number" className="text-xs font-mono">
-                          number
-                        </SelectItem>
-                        <SelectItem value="boolean" className="text-xs font-mono">
-                          boolean
-                        </SelectItem>
-                        <SelectItem value="UUID" className="text-xs font-mono">
-                          UUID
-                        </SelectItem>
-                        <SelectItem value="timestamp" className="text-xs font-mono">
-                          timestamp
-                        </SelectItem>
-                        <SelectItem value="object" className="text-xs font-mono">
-                          object
-                        </SelectItem>
-                        <SelectItem value="array" className="text-xs font-mono">
-                          array
-                        </SelectItem>
+                        {PARAMETER_TYPES.map((pt) => (
+                          <SelectItem
+                            key={pt}
+                            value={pt}
+                            className="text-xs font-mono"
+                          >
+                            {pt}
+                          </SelectItem>
+                        ))}
 
                         {availableTableNodes.length > 0 && (
                           <>

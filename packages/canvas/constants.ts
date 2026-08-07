@@ -2,8 +2,14 @@ import type {
   LangGraphStepConfig,
   LangGraphEdgeConfig,
 } from "./types";
+import { processingOperationEnum, parameterTypeEnum } from "./schemas/primitives";
 
 export const RULES_VERSION = 1;
+
+// ─── Processing Step Operations & Parameter Types ─────────────────────────────
+export const PROCESSING_STEP_OPERATIONS = processingOperationEnum.options;
+export const PARAMETER_TYPES = parameterTypeEnum.options;
+
 
 // ─── Backend Canvas Main Node Types ───────────────────────────────────────────
 export const BACKEND_NODE_SERVICE = "service" as const;

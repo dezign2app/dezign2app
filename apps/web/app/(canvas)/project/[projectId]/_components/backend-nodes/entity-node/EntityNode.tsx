@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { Database, Table2, Trash2 } from "lucide-react";
+import { Database, Table2, Trash2, Settings } from "lucide-react";
 import {
   BackendNode,
   DATABASE_ENGINE_OPTIONS,
@@ -24,9 +24,13 @@ import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { ColumnList } from "./ColumnList";
 import { IndexList } from "./IndexList";
 import { VectorConfig } from "./VectorConfig";
+import { DbOperationsList } from "./DbOperationsList";
 
 export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
+  const setActiveConfigItem = useBackendCanvasStore(
+    (s) => s.setActiveConfigItem,
+  );
   const setNodesPendingDeletion = useBackendCanvasStore(
     (s) => s.setNodesPendingDeletion,
   );
@@ -197,29 +201,45 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
               </span>
             )}
           </div>
-          <div
-            className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer ml-2 shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              const cols = data.columns || [];
-              const idxs = data.indexes || [];
-              const isEmpty = cols.length === 0 && idxs.length === 0;
-              const isInitial =
-                cols.length === 1 &&
-                cols[0]?.name === "_id" &&
-                idxs.length === 0;
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            <div
+              className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              title="DB Operation Functions"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveConfigItem({
+                  type: "entityFunctions",
+                  id: id,
+                  nodeId: id,
+                });
+              }}
+            >
+              <Settings size={14} />
+            </div>
+            <div
+              className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                const cols = data.columns || [];
+                const idxs = data.indexes || [];
+                const isEmpty = cols.length === 0 && idxs.length === 0;
+                const isInitial =
+                  cols.length === 1 &&
+                  cols[0]?.name === "_id" &&
+                  idxs.length === 0;
 
-              if (!isEmpty && !isInitial) {
-                const node = useBackendCanvasStore
-                  .getState()
-                  .nodes.find((n) => n.id === id);
-                if (node) setNodesPendingDeletion([node]);
-              } else {
-                useBackendCanvasStore.getState().deleteNode(id);
-              }
-            }}
-          >
-            <Trash2 size={14} />
+                if (!isEmpty && !isInitial) {
+                  const node = useBackendCanvasStore
+                    .getState()
+                    .nodes.find((n) => n.id === id);
+                  if (node) setNodesPendingDeletion([node]);
+                } else {
+                  useBackendCanvasStore.getState().deleteNode(id);
+                }
+              }}
+            >
+              <Trash2 size={14} />
+            </div>
           </div>
         </div>
 
@@ -285,6 +305,8 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
         data={data}
         updateNode={updateNode}
       />
+
+      <DbOperationsList nodeId={id} data={data} updateNode={updateNode} />
 
       <div className="h-2 w-full border-t border-transparent rounded-b-[10px]" />
 

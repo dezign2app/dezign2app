@@ -1,11 +1,11 @@
 export type LogicMode = "natural_language" | "code";
 
-export type CrudOperation = "create" | "read" | "update" | "delete";
+export type CrudOperation = "create" | "read" | "update" | "delete" | string;
 
 export interface TableCrudConfig {
   tableNodeId: string;
   operations: CrudOperation[];
-  explanations?: Record<CrudOperation, string>;
+  explanations?: Record<string, string>;
 }
 
 export interface PublishedEventInfo {
@@ -34,6 +34,7 @@ export interface BusinessLogicBlockProps {
   crudConfig?: TableCrudConfig[];
   onCrudConfigChange?: (config: TableCrudConfig[]) => void;
   availableTableNodes?: { id: string; label: string }[];
+  allNodes?: any[];
 
   // Messaging & Endpoint Context Props
   publishedEvents?: PublishedEventInfo[];

@@ -23,6 +23,7 @@ import { ZoneConfig } from "./config-sidebar/ZoneConfig";
 import { EventTestingConfig } from "./config-sidebar/EventTestingConfig";
 
 import { LangGraphRouteConfig } from "./config-sidebar/LangGraphRouteConfig";
+import { EntityFunctionsConfig } from "./config-sidebar/EntityFunctionsConfig";
 
 export const ConfigSidebar = () => {
   const activeConfigItem = useBackendCanvasStore((s) => s.activeConfigItem);
@@ -116,7 +117,7 @@ export const ConfigSidebar = () => {
             e.preventDefault();
           }
         }}
-        className="overflow-y-auto bg-background/80 backdrop-blur-xl border-l border-border/50 shadow-2xl p-6 sm:p-8 transition-none"
+        className="overflow-hidden p-0 bg-background/80 backdrop-blur-xl border-l border-border/50 shadow-2xl transition-none flex flex-col"
         style={{ maxWidth: "100vw", width: width }}
       >
         <div
@@ -125,72 +126,77 @@ export const ConfigSidebar = () => {
             isDragging.current = true;
           }}
         />
-        <SheetHeader className="hidden">
-          <SheetTitle>Configuration</SheetTitle>
-          <SheetDescription>
-            {type === "endpoint"
-              ? "Configure endpoint properties."
-              : type === "task"
-                ? "Configure task properties."
-                : type === "searchIndex"
-                  ? "Configure search index properties."
-                  : type === "authRule"
-                    ? "Configure reusable authentication policy."
-                    : type === "identityProvider"
-                      ? "Configure identity provider."
-                      : "Configure event and messaging properties."}
-          </SheetDescription>
-        </SheetHeader>
 
-        {history.length > 1 && (
-          <div
-            onClick={handleBack}
-            className="flex items-center text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6 transition-colors"
-          >
-            <ChevronLeft size={14} className="mr-0.5" />
-            Back
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+          <SheetHeader className="hidden">
+            <SheetTitle>Configuration</SheetTitle>
+            <SheetDescription>
+              {type === "endpoint"
+                ? "Configure endpoint properties."
+                : type === "task"
+                  ? "Configure task properties."
+                  : type === "searchIndex"
+                    ? "Configure search index properties."
+                    : type === "authRule"
+                      ? "Configure reusable authentication policy."
+                      : type === "identityProvider"
+                        ? "Configure identity provider."
+                        : "Configure event and messaging properties."}
+            </SheetDescription>
+          </SheetHeader>
 
-        {type === "endpoint" ? (
-          <EndpointConfig id={id} nodeId={nodeId} />
-        ) : type === "task" ? (
-          <TaskConfig id={id} nodeId={nodeId} />
-        ) : type === "searchIndex" ? (
-          <SearchIndexConfig
-            id={id}
-            nodeId={nodeId}
-            sourceId={activeConfigItem.sourceId}
-          />
-        ) : type === "authRule" ? (
-          <AuthRuleConfig id={id} nodeId={nodeId} />
-        ) : type === "identityProvider" ? (
-          <IdentityProviderConfig id={id} nodeId={nodeId} />
-        ) : type === "auth" ? (
-          <AuthConfig id={id} nodeId={nodeId} />
-        ) : type === "webApp" ? (
-          <WebAppConfig id={id} nodeId={nodeId} />
-        ) : type === "webClient" ? (
-          <WebClientConfig id={id} nodeId={nodeId} />
-        ) : type === "payments" ? (
-          <PaymentsConfig id={id} nodeId={nodeId} />
-        ) : type === "zone" ? (
-          <ZoneConfig id={id} nodeId={nodeId} />
-        ) : type === "clientEvent" ? (
-          <WebClientEventConfig id={id} nodeId={nodeId} />
-        ) : type === "eventTesting" ? (
-          <EventTestingConfig
-            id={id}
-            nodeId={nodeId}
-            targetNodeId={activeConfigItem.targetNodeId!}
-            endpointId={activeConfigItem.endpointId!}
-            initialTab={activeConfigItem.initialTab}
-          />
-        ) : type === "langgraphRoute" ? (
-          <LangGraphRouteConfig id={id} nodeId={nodeId} />
-        ) : (
-          <EventConfig id={id} nodeId={nodeId} />
-        )}
+          {history.length > 1 && (
+            <div
+              onClick={handleBack}
+              className="flex items-center text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6 transition-colors"
+            >
+              <ChevronLeft size={14} className="mr-0.5" />
+              Back
+            </div>
+          )}
+
+          {type === "endpoint" ? (
+            <EndpointConfig id={id} nodeId={nodeId} />
+          ) : type === "task" ? (
+            <TaskConfig id={id} nodeId={nodeId} />
+          ) : type === "searchIndex" ? (
+            <SearchIndexConfig
+              id={id}
+              nodeId={nodeId}
+              sourceId={activeConfigItem.sourceId}
+            />
+          ) : type === "authRule" ? (
+            <AuthRuleConfig id={id} nodeId={nodeId} />
+          ) : type === "identityProvider" ? (
+            <IdentityProviderConfig id={id} nodeId={nodeId} />
+          ) : type === "auth" ? (
+            <AuthConfig id={id} nodeId={nodeId} />
+          ) : type === "webApp" ? (
+            <WebAppConfig id={id} nodeId={nodeId} />
+          ) : type === "webClient" ? (
+            <WebClientConfig id={id} nodeId={nodeId} />
+          ) : type === "payments" ? (
+            <PaymentsConfig id={id} nodeId={nodeId} />
+          ) : type === "zone" ? (
+            <ZoneConfig id={id} nodeId={nodeId} />
+          ) : type === "clientEvent" ? (
+            <WebClientEventConfig id={id} nodeId={nodeId} />
+          ) : type === "eventTesting" ? (
+            <EventTestingConfig
+              id={id}
+              nodeId={nodeId}
+              targetNodeId={activeConfigItem.targetNodeId!}
+              endpointId={activeConfigItem.endpointId!}
+              initialTab={activeConfigItem.initialTab}
+            />
+          ) : type === "langgraphRoute" ? (
+            <LangGraphRouteConfig id={id} nodeId={nodeId} />
+          ) : type === "entityFunctions" ? (
+            <EntityFunctionsConfig id={id} nodeId={nodeId} />
+          ) : (
+            <EventConfig id={id} nodeId={nodeId} />
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );

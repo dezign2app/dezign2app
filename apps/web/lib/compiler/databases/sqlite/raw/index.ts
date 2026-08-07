@@ -3,8 +3,10 @@ import {
   CompiledFile,
   CompiledDatabaseResult,
   ReusableFunction,
+  DbOperationFunction,
 } from "@workspace/canvas/types";
 import { toTableName, toVarName } from "../../../utils";
+import { generateDefaultDbOperations } from "@/lib/utils/entityOperationsHelper";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -35,6 +37,8 @@ function toTsType(colType: string): string {
   return "string";
 }
 
+// ---------------------------------------------------------------------------
+// Per-table CRUD code generator
 // ---------------------------------------------------------------------------
 // Per-table CRUD code generator
 // ---------------------------------------------------------------------------
@@ -105,100 +109,69 @@ function generateTableHelpers(
   code += `  "DELETE FROM ${tableName} WHERE ${pkName} = ?"\n`;
   code += `);\n\n`;
 
-  // CRUD functions
-  code += `// ── CRUD Functions ───────────────────────────────────────────────────────────\n\n`;
+  // DB operations defined on entity node (or fallback defaults)
+  const dbOps: DbOperationFunction[] =
+    tableNode.data.dbOperations && tableNode.data.dbOperations.length > 0
+      ? tableNode.data.dbOperations
+      : generateDefaultDbOperations(
+          tableNode.data.label || "table",
+          cols,
+          tableNode.data.indexes || [],
+        );
 
-  code += `/** Retrieve all rows from ${tableName}. */\n`;
-  code += `export function findAll${Pascal}(): ${Pascal}Row[] {\n`;
-  code += `  return stmtFindAll.all();\n`;
-  code += `}\n\n`;
+  const fns: ReusableFunction[] = [];
 
-  code += `/** Find a ${tableName} row by primary key. Returns undefined if not found. */\n`;
-  code += `export function find${Pascal}ById(${pkName}: ${pkTs}): ${Pascal}Row | undefined {\n`;
-  code += `  return stmtFindById.get(${pkName});\n`;
-  code += `}\n\n`;
+  code += `// ── DB Operations Functions ───────────────────────────────────────────────────\n\n`;
 
-  if (writableCols.length > 0) {
-    code += `/**\n`;
-    code += ` * Insert a new row into ${tableName}.\n`;
-    code += ` * Values are passed as positional ? parameters — injection-safe.\n`;
-    code += ` */\n`;
-    code += `export function create${Pascal}(data: Create${Pascal}Data): ${Pascal}Row {\n`;
-    code += `  const info = stmtInsert.run(${writableCols.map((c) => `data.${toVarName(c.name)}`).join(", ")});\n`;
-    code += `  const ${pkName} = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n`;
-    code += `  return { ${pkName}, ...data } as ${Pascal}Row;\n`;
-    code += `}\n\n`;
+  dbOps.forEach((op) => {
+    if (op.enabled === false) return;
 
-    code += `/**\n`;
-    code += ` * Update a ${tableName} row by primary key.\n`;
-    code += ` * Column names come from the typed Update${Pascal}Data keys — NOT from user input.\n`;
-    code += ` * Values flow through ? placeholders — injection-safe.\n`;
-    code += ` * @throws {Error} if no fields provided\n`;
-    code += ` */\n`;
-    code += `export function update${Pascal}(\n`;
-    code += `  ${pkName}: ${pkTs},\n`;
-    code += `  data: Update${Pascal}Data\n`;
-    code += `): ${Pascal}Row | undefined {\n`;
-    code += `  const entries = Object.entries(data).filter(\n`;
-    code += `    (entry): entry is [keyof Update${Pascal}Data & string, any] => entry[1] !== undefined\n`;
-    code += `  );\n`;
-    code += `  if (entries.length === 0) throw new Error("update${Pascal}: no fields provided");\n\n`;
-    code += `  const setClause = entries.map(([col]) => \\\`\${col} = ?\\\`).join(", ");\n`;
-    code += `  const values = entries.map(([, v]) => v);\n\n`;
-    code += `  db.prepare<[...values: any[], ${pkName}: ${pkTs}]>(\n`;
-    code += `    \\\`UPDATE ${tableName} SET \${setClause} WHERE ${pkName} = ?\\\`\n`;
-    code += `  ).run(...values, ${pkName});\n\n`;
-    code += `  return find${Pascal}ById(${pkName});\n`;
-    code += `}\n\n`;
-  }
-
-  code += `/** Delete a ${tableName} row by primary key. */\n`;
-  code += `export function delete${Pascal}ById(${pkName}: ${pkTs}): { success: boolean; ${pkName}: ${pkTs} } {\n`;
-  code += `  stmtDelete.run(${pkName});\n`;
-  code += `  return { success: true, ${pkName} };\n`;
-  code += `}\n`;
-
-  const fns: ReusableFunction[] = [
-    {
-      name: `findAll${Pascal}`,
+    fns.push({
+      name: op.name,
       importPath,
-      signature: `findAll${Pascal}(): ${Pascal}Row[]`,
+      signature: op.signature || `${op.name}(): any`,
       targetName: tableName,
-      kind: "findAll",
-    },
-    {
-      name: `find${Pascal}ById`,
-      importPath,
-      signature: `find${Pascal}ById(${pkName}: ${pkTs}): ${Pascal}Row | undefined`,
-      targetName: tableName,
-      kind: "findById",
-    },
-    ...(writableCols.length > 0
-      ? [
-          {
-            name: `create${Pascal}`,
-            importPath,
-            signature: `create${Pascal}(data: Create${Pascal}Data): ${Pascal}Row`,
-            targetName: tableName,
-            kind: "create" as const,
-          },
-          {
-            name: `update${Pascal}`,
-            importPath,
-            signature: `update${Pascal}(${pkName}: ${pkTs}, data: Update${Pascal}Data): ${Pascal}Row | undefined`,
-            targetName: tableName,
-            kind: "update" as const,
-          },
-        ]
-      : []),
-    {
-      name: `delete${Pascal}ById`,
-      importPath,
-      signature: `delete${Pascal}ById(${pkName}: ${pkTs}): void`,
-      targetName: tableName,
-      kind: "delete",
-    },
-  ];
+      kind: op.kind === "fetchByIndex" ? "custom" : (op.kind as any),
+    });
+
+    if (op.code && op.code.trim()) {
+      code += `/** ${op.description || op.name} */\n`;
+      code += `${op.code.trim()}\n\n`;
+    } else if (op.kind === "findAll") {
+      code += `/** ${op.description || `Retrieve all rows from ${tableName}`} */\n`;
+      code += `export function ${op.name}(limit: number = 20, offset: number = 0): ${Pascal}Row[] {\n`;
+      code += `  return stmtFindAll.all() as ${Pascal}Row[];\n`;
+      code += `}\n\n`;
+    } else if (op.kind === "findById") {
+      code += `/** ${op.description || `Find a ${tableName} row by primary key`} */\n`;
+      code += `export function ${op.name}(${pkName}: ${pkTs}): ${Pascal}Row | undefined {\n`;
+      code += `  return stmtFindById.get(${pkName}) as ${Pascal}Row | undefined;\n`;
+      code += `}\n\n`;
+    } else if (op.kind === "create" && writableCols.length > 0) {
+      code += `/** ${op.description || `Create a new record in ${tableName}`} */\n`;
+      code += `export function ${op.name}(data: Create${Pascal}Data): ${Pascal}Row {\n`;
+      code += `  const info = stmtInsert.run(${writableCols.map((c) => `data.${toVarName(c.name)}`).join(", ")});\n`;
+      code += `  const ${pkName} = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n`;
+      code += `  return { ${pkName}, ...data } as ${Pascal}Row;\n`;
+      code += `}\n\n`;
+    } else if (op.kind === "update" && writableCols.length > 0) {
+      code += `/** ${op.description || `Update a ${tableName} row by primary key`} */\n`;
+      code += `export function ${op.name}(${pkName}: ${pkTs}, data: Update${Pascal}Data): ${Pascal}Row | undefined {\n`;
+      code += `  const entries = Object.entries(data).filter((entry): entry is [keyof Update${Pascal}Data & string, any] => entry[1] !== undefined);\n`;
+      code += `  if (entries.length === 0) throw new Error("${op.name}: no fields provided");\n`;
+      code += `  const setClause = entries.map(([col]) => \`\${col} = ?\`).join(", ");\n`;
+      code += `  const values = entries.map(([, v]) => v);\n`;
+      code += `  db.prepare<[...values: any[], ${pkName}: ${pkTs}]>(\`UPDATE ${tableName} SET \${setClause} WHERE ${pkName} = ?\`).run(...values, ${pkName});\n`;
+      code += `  return find${Pascal}ById(${pkName});\n`;
+      code += `}\n\n`;
+    } else if (op.kind === "delete") {
+      code += `/** ${op.description || `Delete a ${tableName} row by primary key`} */\n`;
+      code += `export function ${op.name}(${pkName}: ${pkTs}): { success: boolean; ${pkName}: ${pkTs} } {\n`;
+      code += `  stmtDelete.run(${pkName});\n`;
+      code += `  return { success: true, ${pkName} };\n`;
+      code += `}\n\n`;
+    }
+  });
 
   return { code, fns };
 }

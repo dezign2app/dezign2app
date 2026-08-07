@@ -27,6 +27,7 @@ import {
   vectorDbRefDataSchema,
   endpointSchema,
   identityProviderDataSchema,
+  authDataSchema,
   langgraphDataSchema,
   langgraphStepDataSchema,
   identityProviderSchema,
@@ -102,6 +103,7 @@ export const backendNodeDataValidator = v.union(
   zodToConvex(mcpServerDataSchema),
   zodToConvex(vectorDbRefDataSchema),
   zodToConvex(identityProviderDataSchema),
+  zodToConvex(authDataSchema),
   langgraphConvexDataValidator,
   zodToConvex(langgraphStepDataSchema),
   // Fallback for completely empty data (allowable in some updates)

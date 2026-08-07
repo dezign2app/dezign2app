@@ -9,6 +9,7 @@ import {
 } from "@workspace/ui/components/combobox";
 
 export const PRESET_LABELS = [
+  "Better Auth",
   "Auth0",
   "Clerk",
   "Keycloak",
@@ -22,6 +23,7 @@ export const PRESET_LABELS = [
 ];
 
 export const LABEL_TO_KEY: Record<string, string> = {
+  "Better Auth": "better_auth",
   Auth0: "auth0",
   Clerk: "clerk",
   Keycloak: "keycloak",

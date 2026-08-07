@@ -18,6 +18,7 @@ import {
 } from "./services";
 import {
   identityProviderDataSchema,
+  authDataSchema,
   apiGatewayDataSchema,
   loadBalancerDataSchema,
   webhookDataSchema,
@@ -57,6 +58,7 @@ export const nodeDataSchemas: Record<string, z.ZodSchema> = {
   mcp_server: mcpServerDataSchema,
   vector_db_ref: vectorDbRefDataSchema,
   identity_provider: identityProviderDataSchema,
+  auth: authDataSchema,
   langgraph: langgraphDataSchema,
   langgraph_step: langgraphStepDataSchema,
 };

@@ -34,7 +34,9 @@ export const AuthRuleConfig = ({
   const updateNode = useBackendCanvasStore((s) => s.updateNode);
   const rule = node?.data.authRules?.find((item) => item.id === id);
   const nodes = useBackendCanvasStore((s) => s.nodes);
-  const identityProviders = nodes.filter((n) => n.type === "identity_provider");
+  const identityProviders = nodes.filter(
+    (n) => n.type === "identity_provider" || n.type === "auth",
+  );
 
   if (!node || !rule) return null;
 

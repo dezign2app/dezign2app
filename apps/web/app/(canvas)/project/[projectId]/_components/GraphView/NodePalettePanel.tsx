@@ -10,6 +10,7 @@ import {
   HardDrive,
   Network,
   Key,
+  ShieldCheck,
 } from "lucide-react";
 import type { GraphNodeType } from "@workspace/canvas";
 
@@ -117,6 +118,15 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
       <div className="text-[9px] uppercase font-extrabold text-muted-foreground/60 px-1 pt-2 pb-1 border-t mt-1">
         Network
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
+        onClick={() => onAddNode("auth", "Auth Node")}
+      >
+        <ShieldCheck className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+        Auth Node
+      </Button>
       <Button
         variant="outline"
         size="sm"

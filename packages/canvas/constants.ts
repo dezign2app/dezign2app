@@ -32,8 +32,26 @@ export const BACKEND_NODE_LLM = "llm" as const;
 export const BACKEND_NODE_MCP_SERVER = "mcp_server" as const;
 export const BACKEND_NODE_VECTOR_DB_REF = "vector_db_ref" as const;
 export const BACKEND_NODE_IDENTITY_PROVIDER = "identity_provider" as const;
+export const BACKEND_NODE_AUTH = "auth" as const;
 export const BACKEND_NODE_LANGGRAPH = "langgraph" as const;
 export const BACKEND_NODE_LANGGRAPH_STEP = "langgraph_step" as const;
+
+// ─── Auth Framework & Better Auth Options ───────────────────────────────────────
+export const AUTH_FRAMEWORK_BETTER_AUTH = "better_auth" as const;
+export const AUTH_FRAMEWORK_NEXT_AUTH = "next_auth" as const;
+export const AUTH_FRAMEWORK_LUCIA = "lucia" as const;
+export const AUTH_FRAMEWORK_CUSTOM = "custom" as const;
+
+export const AUTH_FRAMEWORK_OPTIONS = [
+  { value: "better_auth", label: "Better Auth" }
+] as const;
+
+export const BETTER_AUTH_VERSIONS = [
+  { value: "v1.7", label: "v1.7" },
+] as const;
+
+export const DEFAULT_AUTH_FRAMEWORK = AUTH_FRAMEWORK_BETTER_AUTH;
+export const DEFAULT_BETTER_AUTH_VERSION = "v1.7";
 
 // ─── LangGraph Step Execution Types ───────────────────────────────────────────
 export const STEP_TYPE_LLM_CALL = "llm_call" as const;

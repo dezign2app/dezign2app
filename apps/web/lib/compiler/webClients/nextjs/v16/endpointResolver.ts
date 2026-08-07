@@ -84,7 +84,7 @@ export function resolveLinkedEndpoint(
       }
 
       if (!ep && targetNode.data?.routeGroups) {
-        for (const group of targetNode.data.routeGroups as any[]) {
+        for (const group of targetNode.data.routeGroups) {
           if (group.endpoints) {
             ep = group.endpoints.find(
               (e: Endpoint) => e.id === endpointId || e.name === endpointId,

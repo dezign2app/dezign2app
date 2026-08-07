@@ -34,7 +34,7 @@ export async function simulateEndpoint(args: {
   /** Pre-resolved ingress edge — pass this for chained service-to-service hops
    *  so the trace entry carries the correct edgeId and the arrow animates. */
   resolvedIngressEdge?: BackendEdge;
-  mocks?: Record<string, { returnData: JSONValue; status: number }>;
+  mocks?: Record<string, { returnData?: JSONValue; status?: number }>;
 }): Promise<SimulationResult> {
   const { service, endpoint, nodes, edges, request, mocks } = args;
   const trace: SimulationTraceEntry[] = [];

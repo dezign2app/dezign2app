@@ -4,8 +4,12 @@ import { Database, Table2, Trash2 } from "lucide-react";
 import {
   BackendNode,
   DATABASE_ENGINE_OPTIONS,
-  DATABASE_ORM_OPTIONS,
+  DatabaseEngine,
 } from "@/types/canvas";
+
+function isDatabaseEngine(val: string): val is DatabaseEngine {
+  return DATABASE_ENGINE_OPTIONS.some((e) => e.value === val);
+}
 import { cn } from "@workspace/ui/lib/utils";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -129,7 +133,6 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
   };
 
   const currentDbEngine = data.dbEngine || "sqlite";
-  const currentOrm = data.orm || "drizzle";
 
   return (
     <div
@@ -224,13 +227,15 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
           <div className="flex items-center gap-1.5 nodrag pt-0.5 border-t border-border/40">
             <Select
               value={currentDbEngine}
-              onValueChange={(val) => {
-                updateNode(id, {
-                  data: {
-                    ...data,
-                    dbEngine: val as any,
-                  },
-                });
+              onValueChange={(val: string) => {
+                if (isDatabaseEngine(val)) {
+                  updateNode(id, {
+                    data: {
+                      ...data,
+                      dbEngine: val,
+                    },
+                  });
+                }
               }}
             >
               <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-border/40 px-1.5 py-0 shadow-none">
@@ -240,29 +245,6 @@ export const EntityNode = ({ id, data, selected }: NodeProps<BackendNode>) => {
                 {DATABASE_ENGINE_OPTIONS.map((e) => (
                   <SelectItem key={e.value} value={e.value} className="text-xs">
                     {e.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={currentOrm}
-              onValueChange={(val) => {
-                updateNode(id, {
-                  data: {
-                    ...data,
-                    orm: val as any,
-                  },
-                });
-              }}
-            >
-              <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-border/40 px-1.5 py-0 shadow-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DATABASE_ORM_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    {o.label}
                   </SelectItem>
                 ))}
               </SelectContent>

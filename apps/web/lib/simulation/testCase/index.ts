@@ -107,7 +107,7 @@ export async function simulateTestCase(args: {
   // for the initial (target) endpoint so the simulation uses the configured output directly.
   const buildMocks = (
     endpointId: string,
-  ): Record<string, { returnData: JSONValue; status: number }> | undefined => {
+  ): Record<string, { returnData?: JSONValue; status?: number }> | undefined => {
     const base = args.testCase.mocks ?? {};
     if (args.testCase.expectedBody !== undefined && !(endpointId in base)) {
       return {

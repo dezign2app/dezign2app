@@ -767,10 +767,10 @@ export const AuthConfig = ({
               <Label className="text-xs font-semibold">Generated <code className="font-mono">auth.ts</code></Label>
               <pre className="p-3 bg-muted/80 rounded-lg text-[11px] font-mono border border-border/60 overflow-x-auto text-foreground">
 {`import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { sqliteAdapter } from "better-auth/adapters/sqlite";
 ${enabledPlugins.includes("jwt") ? 'import { jwt } from "better-auth/plugins";\n' : ''}${enabledPlugins.includes("organization") ? 'import { organization } from "better-auth/plugins";\n' : ''}${isPaymentsInjected ? 'import { creem } from "@creem_io/better-auth";\n' : ''}
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg" }),
+  database: sqliteAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: ${providers.emailPassword?.enabled || false} },
   plugins: [
     ${enabledPlugins.map((p) => `${p}()`).join(",\n    ")}${isPaymentsInjected ? ',\n    creem({ apiKey: process.env.CREEM_API_KEY!, webhookSecret: process.env.CREEM_WEBHOOK_SECRET! })' : ''}

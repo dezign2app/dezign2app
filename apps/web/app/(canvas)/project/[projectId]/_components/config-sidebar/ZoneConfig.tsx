@@ -29,6 +29,7 @@ import {
   ConditionPrimitive,
   FailureReason,
   ProtectionRule,
+  RedirectMap,
   WebAppZone,
 } from "@workspace/canvas";
 
@@ -204,6 +205,7 @@ export const ZoneConfig = ({
     }
 
     const updatedRedirects = {
+      default: redirectsMap.default || "/login",
       ...redirectsMap,
       [keyToAdd]: defaultPath,
     };
@@ -211,26 +213,33 @@ export const ZoneConfig = ({
   };
 
   const handleDeleteRedirect = (keyToDelete: string) => {
-    const updatedRedirects = { ...redirectsMap };
-    delete updatedRedirects[keyToDelete];
+    const { [keyToDelete]: _removed, ...remaining } = redirectsMap;
+    const updatedRedirects = {
+      default: remaining.default || "/login",
+      ...remaining,
+    };
     updateZoneRule({ ...rule, redirects: updatedRedirects });
   };
 
   const handleUpdateRedirectKey = (oldKey: string, newKey: string) => {
-    if (!newKey.trim() || oldKey === newKey) return;
-    const updatedRedirects: Record<string, string> = {};
-    for (const [k, v] of Object.entries(redirectsMap)) {
-      if (k === oldKey) {
-        updatedRedirects[newKey.trim()] = v;
-      } else {
-        updatedRedirects[k] = v;
-      }
-    }
+    const cleanNewKey = newKey.trim();
+    if (!cleanNewKey || oldKey === cleanNewKey) return;
+
+    const updatedEntries = Object.entries(redirectsMap).map(([k, v]) => [
+      k === oldKey ? cleanNewKey : k,
+      v,
+    ]);
+
+    const updatedRedirects = {
+      default: redirectsMap.default || "/login",
+      ...Object.fromEntries(updatedEntries),
+    };
     updateZoneRule({ ...rule, redirects: updatedRedirects });
   };
 
   const handleUpdateRedirectRoute = (key: string, route: string) => {
     const updatedRedirects = {
+      default: redirectsMap.default || "/login",
       ...redirectsMap,
       [key]: route,
     };

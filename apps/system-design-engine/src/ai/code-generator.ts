@@ -52,8 +52,8 @@ export async function generateBusinessLogicCode(params: GenerateCodeParams): Pro
   if (params.requestBody) {
     if (Array.isArray(params.requestBody.fields) && params.requestBody.fields.length > 0) {
       const fDefs = params.requestBody.fields
-        .filter((f: any) => f && f.name)
-        .map((f: any) => `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`);
+        .filter((f) => f && f.name)
+        .map((f) => `${f.name}${f.required === false ? "?" : ""}: ${f.type || "string"}`);
       if (fDefs.length > 0) {
         requestBodySchemaStr = `{ ${fDefs.join(", ")} }`;
       }

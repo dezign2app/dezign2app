@@ -22,11 +22,6 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { toast } from "sonner";
-import { useAuth } from "@clerk/nextjs";
-import { Label } from "@workspace/ui/components/label";
-import { useSimulationStore } from "@/lib/stores/simulationStore";
-import { FlaskConical } from "lucide-react";
 
 interface CanvasToolbarProps {
   projectName: string;
@@ -36,7 +31,6 @@ interface CanvasToolbarProps {
   aiPanelOpen: boolean;
   setAiPanelOpen: (open: boolean) => void;
 }
-
 export function CanvasToolbar({
   projectName,
   projectId,
@@ -45,59 +39,6 @@ export function CanvasToolbar({
   aiPanelOpen,
   setAiPanelOpen,
 }: CanvasToolbarProps) {
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const { getToken } = useAuth();
-
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-      const token = await getToken({ template: "convex" });
-      const res = await fetch(
-        `${window.location.origin}/api/sync-supermemory`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectId, token }),
-        },
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to sync");
-      }
-
-      toast.success("Successfully synced context to Supermemory!");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to sync context.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleClear = async () => {
-    setIsClearing(true);
-    try {
-      const token = await getToken({ template: "convex" });
-      const res = await fetch("/api/clear-supermemory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, token }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to clear");
-      }
-
-      toast.success("Successfully cleared context from Supermemory!");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to clear context.");
-    } finally {
-      setIsClearing(false);
-    }
-  };
-
   return (
     <div className="flex items-center justify-between h-14 px-4 border-b bg-background shrink-0">
       <div className="flex items-center space-x-4">

@@ -5,8 +5,6 @@ import type {
   WebClientTechVersion,
   DatabaseEngine,
   DatabaseEngineVersion,
-  DatabaseORM,
-  DatabaseOrmVersion,
 } from "../techStack";
 import type { Endpoint, WorkerTask, SearchSource } from "../schemas";
 import type { InterServiceProtocol } from "../constants";
@@ -82,8 +80,6 @@ export interface BaseNodeData {
   techVersion?: ServiceTechVersion | WebClientTechVersion;
   dbEngine?: DatabaseEngine;
   dbEngineVersion?: DatabaseEngineVersion;
-  orm?: DatabaseORM;
-  ormVersion?: DatabaseOrmVersion;
   // Client & connection properties
   targetServerId?: string;
   targetRouteId?: string;
@@ -238,7 +234,7 @@ export interface CanvasAuthNodeData {
   secretKey?: string;
   baseUrl?: string;
   version?: BetterAuthVersion | string;
-  dbAdapter?: "drizzle-postgres" | "prisma-postgres" | "drizzle-mysql" | "custom";
+  dbAdapter?: "sqlite-raw" | "custom";
   providers?: {
     emailPassword?: { enabled: boolean; requireVerification: boolean; minLength: number };
     oauth?: OAuthProviderConfig[];

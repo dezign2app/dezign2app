@@ -175,14 +175,19 @@ export function generateTypesPackage(
     // Gather all endpoints for this node
     let nodeEndpoints = endpoints.filter((e) => e.nodeId === serviceNode.id);
     if (nodeEndpoints.length === 0 && serviceNode.data?.endpoints) {
-      nodeEndpoints = serviceNode.data.endpoints as (Endpoint & {
-        nodeId: string;
-      })[];
+      nodeEndpoints = serviceNode.data.endpoints.map((ep) => ({
+        ...ep,
+        nodeId: serviceNode.id,
+      }));
     }
     if (serviceNode.data?.routeGroups) {
-      for (const group of serviceNode.data.routeGroups as any[]) {
+      for (const group of serviceNode.data.routeGroups) {
         if (group.endpoints) {
-          nodeEndpoints = [...nodeEndpoints, ...group.endpoints];
+          const groupEndpoints = group.endpoints.map((ep) => ({
+            ...ep,
+            nodeId: serviceNode.id,
+          }));
+          nodeEndpoints = [...nodeEndpoints, ...groupEndpoints];
         }
       }
     }

@@ -20,8 +20,21 @@ import {
   Trash2,
   SlidersHorizontal,
 } from "lucide-react";
-import { BackendNode, WEB_CLIENT_TECH_OPTIONS } from "@/types/canvas";
+import {
+  BackendNode,
+  WEB_CLIENT_TECH_OPTIONS,
+  WebClientTechStack,
+  WebClientTechVersion,
+} from "@/types/canvas";
 import { WebAppZone } from "@workspace/canvas";
+
+function isWebClientTechStack(val: string): val is WebClientTechStack {
+  return WEB_CLIENT_TECH_OPTIONS.some((t) => t.value === val);
+}
+
+function isWebClientTechVersion(val: string): val is WebClientTechVersion {
+  return WEB_CLIENT_TECH_OPTIONS.some((t) => t.versions.some((v) => v.value === val));
+}
 
 export const WebAppConfig = ({
   id,
@@ -191,12 +204,17 @@ export const WebAppConfig = ({
             <Label className="text-xs text-muted-foreground">Framework</Label>
             <Select
               value={data.techStack || "nextjs"}
-              onValueChange={(val) => {
-                const selectedTech = WEB_CLIENT_TECH_OPTIONS.find((t) => t.value === val);
-                updateData({
-                  techStack: val as any,
-                  techVersion: selectedTech?.defaultVersion as any,
-                });
+              onValueChange={(val: string) => {
+                if (isWebClientTechStack(val)) {
+                  const selectedTech = WEB_CLIENT_TECH_OPTIONS.find((t) => t.value === val);
+                  const defaultVer = selectedTech?.defaultVersion;
+                  updateData({
+                    techStack: val,
+                    ...(defaultVer && isWebClientTechVersion(defaultVer)
+                      ? { techVersion: defaultVer }
+                      : {}),
+                  });
+                }
               }}
             >
               <SelectTrigger className="h-8 text-xs font-medium bg-background/50">
@@ -222,7 +240,11 @@ export const WebAppConfig = ({
                 )?.defaultVersion ||
                 "16.x"
               }
-              onValueChange={(val) => updateData({ techVersion: val as any })}
+              onValueChange={(val: string) => {
+                if (isWebClientTechVersion(val)) {
+                  updateData({ techVersion: val });
+                }
+              }}
             >
               <SelectTrigger className="h-8 text-xs font-mono bg-background/50">
                 <SelectValue />

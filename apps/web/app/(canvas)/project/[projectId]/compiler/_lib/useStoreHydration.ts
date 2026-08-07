@@ -14,7 +14,7 @@ import {
   identityProviderSchema,
 } from "@workspace/canvas/schemas";
 import { z } from "zod";
-import { BackendNode, BackendEdge } from "@/types/canvas";
+import { BackendNode, BackendEdge, SimulationTestCase } from "@/types/canvas";
 
 type CanvasElements = {
   nodes?: any[];
@@ -96,6 +96,6 @@ export function useStoreHydration(
 
     useSimulationStore
       .getState()
-      .setTestCases((canvasElements.testCases || []) as any);
+      .setTestCases(canvasElements.testCases || []);
   }, [canvasElements, storeProjectId, projectId]);
 }

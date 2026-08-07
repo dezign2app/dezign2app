@@ -113,10 +113,14 @@ export class BackendCanvasAdapter implements CanvasAdapter<BackendDesignDoc> {
           .join(", ");
         const routes = n.data.routes
           ?.map((route) => {
-            const authRule =
-              n.data.authRules?.find((rule) => rule.id === route.authRuleId)
-                ?.name || "No auth rule";
-            return `${route.method || "GET"} ${route.name}${route.service ? ` → ${route.service}` : ""} → ${authRule}`;
+            const authRuleId = "authRuleId" in route ? route.authRuleId : undefined;
+            const method = "method" in route ? route.method : undefined;
+            const service = "service" in route ? route.service : undefined;
+            const authRuleName = authRuleId
+              ? n.data.authRules?.find((rule) => rule.id === authRuleId)?.name
+              : undefined;
+            const authRule = authRuleName || "No auth rule";
+            return `${method || "GET"} ${route.name}${service ? ` → ${service}` : ""} → ${authRule}`;
           })
           .join(", ");
         const details = [];

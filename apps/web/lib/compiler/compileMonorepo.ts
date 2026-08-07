@@ -189,30 +189,111 @@ export function compileMonorepo(
     });
   });
 
-  // 6. Generate Web Client App: apps/web-client (if WebClient nodes exist)
-  if (webClientNodes.length > 0) {
-    const webClientFolder = "web-client";
-    webClientsInfo.push({
-      id: "web-client-app",
-      name: "Web Client",
-      folderName: webClientFolder,
+  // 6. Generate Web Apps: apps/<appSlug> for WebApp nodes & connected WebClient pages
+  const webAppNodes = nodes.filter((n) => n.type === "webApp");
+
+  if (webAppNodes.length > 0 || webClientNodes.length > 0) {
+    const appMap = new Map<string, { appName: string; appSlug: string; webAppNode?: BackendNode; pageNodes: BackendNode[] }>();
+
+    // Process explicit WebApp nodes
+    webAppNodes.forEach((appNode) => {
+      const appName = appNode.data.label || "Web Application";
+      const appSlug =
+        appNode.data.appSlug ||
+        appName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      appMap.set(appSlug, {
+        appName,
+        appSlug,
+        webAppNode: appNode,
+        pageNodes: [],
+      });
     });
 
-    const webClientResult = compileWebClientNodes(
-      webClientNodes,
-      endpoints,
-      events,
-      nodes,
-      edges,
-      projectName,
-      testCases,
-    );
+    // Process page nodes (WebClient) and trace their section connections to WebApp nodes
+    webClientNodes.forEach((pageNode) => {
+      // Find edge connecting this pageNode (page-out) to a WebAppNode section
+      const edgeToApp = edges.find(
+        (e) =>
+          e.source === pageNode.id &&
+          webAppNodes.some((appNode) => appNode.id === e.target),
+      );
 
-    webClientResult.files.forEach((f) => {
-      files.push({
-        filename: `apps/${webClientFolder}/${f.filename}`,
-        language: f.language,
-        content: f.content,
+      let targetAppSlug = "web-client";
+      let accessTypeOverride: "public" | "private" | "role-gated" | "payment-gated" | "org-gated" | undefined = undefined;
+
+      if (edgeToApp) {
+        const targetAppNode = webAppNodes.find((n) => n.id === edgeToApp.target);
+        if (targetAppNode) {
+          targetAppSlug =
+            targetAppNode.data.appSlug ||
+            (targetAppNode.data.label || "web-app")
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-");
+
+          const handle = edgeToApp.targetHandle || "";
+          if (handle.startsWith("public-in")) accessTypeOverride = "public";
+          else if (handle.startsWith("private-in")) accessTypeOverride = "private";
+          else if (handle.startsWith("role-in")) accessTypeOverride = "role-gated";
+          else if (handle.startsWith("payment-in")) accessTypeOverride = "payment-gated";
+          else if (handle.startsWith("org-in")) accessTypeOverride = "org-gated";
+        }
+      } else if (pageNode.data.appSlug) {
+        targetAppSlug = pageNode.data.appSlug;
+      }
+
+      if (!appMap.has(targetAppSlug)) {
+        appMap.set(targetAppSlug, {
+          appName: pageNode.data.appName || targetAppSlug,
+          appSlug: targetAppSlug,
+          pageNodes: [],
+        });
+      }
+
+      const targetAppObj = appMap.get(targetAppSlug)!;
+      const appNodeData = targetAppObj.webAppNode?.data;
+
+      // Clone page node data with section access override & app parameters
+      const enrichedPageNode: BackendNode = {
+        ...pageNode,
+        data: {
+          ...pageNode.data,
+          appSlug: targetAppSlug,
+          appName: targetAppObj.appName,
+          accessType: accessTypeOverride || pageNode.data.accessType || "public",
+          allowedRoles: pageNode.data.allowedRoles || appNodeData?.allowedRoles,
+          requiredPlans: pageNode.data.requiredPlans || appNodeData?.requiredPlans,
+          allowedOrgRoles: pageNode.data.allowedOrgRoles || appNodeData?.allowedOrgRoles,
+          authNodeId: pageNode.data.authNodeId || appNodeData?.authNodeId,
+        },
+      };
+
+      targetAppObj.pageNodes.push(enrichedPageNode);
+    });
+
+    appMap.forEach(({ appName, appSlug, pageNodes }, slug) => {
+      webClientsInfo.push({
+        id: `web-app-${slug}`,
+        name: appName,
+        folderName: slug,
+      });
+
+      const webClientResult = compileWebClientNodes(
+        pageNodes,
+        endpoints,
+        events,
+        nodes,
+        edges,
+        `${projectName} - ${appName}`,
+        testCases,
+      );
+
+      webClientResult.files.forEach((f) => {
+        files.push({
+          filename: `apps/${slug}/${f.filename}`,
+          language: f.language,
+          content: f.content,
+        });
       });
     });
   }

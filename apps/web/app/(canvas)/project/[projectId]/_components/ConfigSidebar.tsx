@@ -16,6 +16,8 @@ import { SearchIndexConfig } from "./config-sidebar/SearchIndexConfig";
 import { AuthRuleConfig } from "./config-sidebar/AuthRuleConfig";
 import { IdentityProviderConfig } from "./config-sidebar/IdentityProviderConfig";
 import { AuthConfig } from "./config-sidebar/AuthConfig";
+import { WebAppConfig } from "./config-sidebar/WebAppConfig";
+import { WebClientConfig } from "./config-sidebar/WebClientConfig";
 import { EventTestingConfig } from "./config-sidebar/EventTestingConfig";
 
 import { LangGraphRouteConfig } from "./config-sidebar/LangGraphRouteConfig";
@@ -164,6 +166,10 @@ export const ConfigSidebar = () => {
           <IdentityProviderConfig id={id} nodeId={nodeId} />
         ) : type === "auth" ? (
           <AuthConfig id={id} nodeId={nodeId} />
+        ) : type === "webApp" ? (
+          <WebAppConfig id={id} nodeId={nodeId} />
+        ) : type === "webClient" ? (
+          <WebClientConfig id={id} nodeId={nodeId} />
         ) : type === "clientEvent" ? (
           <WebClientEventConfig id={id} nodeId={nodeId} />
         ) : type === "eventTesting" ? (

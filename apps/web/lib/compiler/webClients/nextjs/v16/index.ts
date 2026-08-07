@@ -17,6 +17,8 @@ import {
   generatePageCode,
   generateRootIndexPage,
 } from "./componentTemplates";
+import { generateMiddleware } from "./middlewareTemplate";
+import { generateAuthClient } from "../../../generators/auth-providers/better-auth/v1.7/generateAuthClient";
 
 export type { LinkedEndpointInfo };
 export { getServicePort, resolveLinkedEndpoint };
@@ -63,11 +65,44 @@ export function compileNextjsV16WebClient(
       routePath,
       componentName,
       isRoot,
+      accessType: node.data.accessType || "public",
+      allowedRoles: node.data.allowedRoles,
+      requiredPlans: node.data.requiredPlans,
+      allowedOrgRoles: node.data.allowedOrgRoles,
+      redirectTo: node.data.redirectTo,
+      isAuthPage: node.data.isAuthPage,
+      appSlug: node.data.appSlug,
+      appName: node.data.appName,
     });
   });
 
   // Project configuration files
   files.push(...generateProjectConfigFiles());
+
+  // Check if AuthNode is connected or auth rules are specified
+  const authNode = allNodes.find((n) => n.type === "auth");
+  const authPort = authNode?.data?.port || "3000";
+  const authBaseUrl = authNode?.data?.baseUrl || `http://localhost:${authPort}`;
+
+  // Generate Auth Client if protected routes or AuthNode exist
+  const hasProtectedRoutes = pagesInfo.some((p) => p.accessType && p.accessType !== "public");
+  if (authNode || hasProtectedRoutes) {
+    files.push({
+      filename: "lib/auth-client.ts",
+      language: "typescript",
+      content: generateAuthClient({
+        baseUrl: authBaseUrl,
+        plugins: ["adminClient", "organizationClient"],
+      }),
+    });
+  }
+
+  // Generate Route Protection Middleware
+  files.push({
+    filename: "middleware.ts",
+    language: "typescript",
+    content: generateMiddleware(pagesInfo),
+  });
 
   // Root layout
   const pagesNavLinks = pagesInfo

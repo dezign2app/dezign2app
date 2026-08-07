@@ -50,13 +50,13 @@ export const NodeHeader = ({
 
   let techOptions: readonly TechOption[] | null = null;
   if (nodeType === "service") techOptions = SERVICE_TECH_OPTIONS;
-  if (nodeType === "webClient") techOptions = WEB_CLIENT_TECH_OPTIONS;
+  if (nodeType === "webApp") techOptions = WEB_CLIENT_TECH_OPTIONS;
 
   const currentTech =
     data.techStack ||
     (nodeType === "service"
       ? "express"
-      : nodeType === "webClient"
+      : nodeType === "webApp"
         ? "nextjs"
         : undefined);
   const currentTechObj =
@@ -94,7 +94,7 @@ export const NodeHeader = ({
               className="flex flex-col cursor-pointer flex-1 min-w-0"
               onClick={() => setIsEditing(true)}
             >
-              <span className="text-[9px] uppercase font-bold tracking-wider opacity-70 truncate">
+              <span className="text-[9px] uppercase font-bold tracking-wider truncate">
                 {title}
               </span>
               <span className="font-semibold text-sm truncate">
@@ -130,7 +130,7 @@ export const NodeHeader = ({
               });
             }}
           >
-            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+            <SelectTrigger className="h-5 text-[10px] font-semibold bg-background hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -154,7 +154,7 @@ export const NodeHeader = ({
                 });
               }}
             >
-              <SelectTrigger className="h-5 text-[10px] font-mono font-medium bg-background/60 hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
+              <SelectTrigger className="h-5 text-[10px] font-mono font-medium bg-background hover:bg-background border-black/10 dark:border-white/10 px-1.5 py-0 shadow-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

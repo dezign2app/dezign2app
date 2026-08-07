@@ -15,6 +15,8 @@ export type ConfigItemType =
   | "authRule"
   | "identityProvider"
   | "auth"
+  | "webApp"
+  | "webClient"
   | "clientEvent"
   | "eventTesting"
   | "langgraphRoute";

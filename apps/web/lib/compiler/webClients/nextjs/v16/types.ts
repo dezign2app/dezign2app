@@ -17,4 +17,12 @@ export interface PageInfo {
   routePath: string;
   componentName: string;
   isRoot: boolean;
+  accessType?: "public" | "private" | "role-gated" | "payment-gated" | "org-gated";
+  allowedRoles?: string[];
+  requiredPlans?: string[];
+  allowedOrgRoles?: string[];
+  redirectTo?: string;
+  isAuthPage?: boolean;
+  appSlug?: string;
+  appName?: string;
 }

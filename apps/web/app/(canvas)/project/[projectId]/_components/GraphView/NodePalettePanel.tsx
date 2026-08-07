@@ -34,11 +34,20 @@ export const NodePalettePanel: React.FC<NodePalettePanelProps> = ({
       <Button
         variant="outline"
         size="sm"
+        className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0 border-indigo-500/30"
+        onClick={() => onAddNode("webApp", "Web App")}
+      >
+        <Globe className="w-3.5 h-3.5 mr-2 text-indigo-400 shrink-0" />
+        Web App
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         className="bg-sidebar dark:bg-sidebar shadow-sm text-xs justify-start h-8 shrink-0"
-        onClick={() => onAddNode("webClient", "Client")}
+        onClick={() => onAddNode("webClient", "Page Client")}
       >
         <Globe className="w-3.5 h-3.5 mr-2 shrink-0" />
-        Client
+        Page Client
       </Button>
       <Button
         variant="outline"

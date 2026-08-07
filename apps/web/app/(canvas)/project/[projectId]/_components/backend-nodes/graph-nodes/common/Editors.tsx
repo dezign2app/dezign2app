@@ -9,13 +9,6 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@workspace/ui/components/tabs";
-import { Label } from "@workspace/ui/components/label";
-import {
   Combobox,
   ComboboxInput,
   ComboboxContent,
@@ -28,7 +21,6 @@ import {
   Schema,
   ProcessingStep,
   JSONValue,
-  JSONObject,
 } from "@/types/canvas";
 import { generateId } from "./utils";
 import { LocalInput, LocalTextarea } from "./LocalInput";

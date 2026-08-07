@@ -54,6 +54,7 @@ export const ColumnRow = ({
   setNameError,
 }: ColumnRowProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
   const nodes = useBackendCanvasStore((s) => s.nodes);
 
   const entityNodes = nodes.filter((n) => n.type === "entity");
@@ -90,8 +91,8 @@ export const ColumnRow = ({
     setEditingIndex(null);
   };
 
-  const isKeyColumn = col.isPrimaryKey || col.isUnique || col.isForeignKey;
-  const isTargetAllowed = col.isPrimaryKey || col.isUnique || col.name === "_id";
+  const isSourceVisible = col.isPrimaryKey || col.isUnique;
+  const isTargetVisible = col.isForeignKey || col.isPrimaryKey || col.name === "_id";
 
   return (
     <div className="flex flex-col px-3 py-1.5 border-b last:border-b-0 text-xs relative group/row hover:bg-secondary/20 nodrag">
@@ -100,21 +101,32 @@ export const ColumnRow = ({
         position={Position.Right}
         id={`source-${index}`}
         className={cn(
-          "w-3.5 h-3.5 !bg-zinc-200 dark:!bg-zinc-100 hover:!bg-sky-400 border-none shadow-md transition-all hover:scale-125 rounded-full z-30 cursor-crosshair",
-          isKeyColumn ? "opacity-100" : "opacity-0 group-hover/row:opacity-100",
+          "w-3.5 h-3.5 !bg-zinc-200 dark:!bg-zinc-100 hover:!bg-sky-400 border-none shadow-md transition-all hover:scale-125 rounded-full z-30 cursor-crosshair !top-[14px]",
+          isSourceVisible ? "opacity-100" : "opacity-0 group-hover/row:opacity-100",
         )}
       />
-      {isTargetAllowed && (
-        <Handle
-          type="target"
-          position={Position.Left}
-          id={`target-${index}`}
-          className="w-3.5 h-3.5 !bg-zinc-200 dark:!bg-zinc-100 hover:!bg-sky-400 border-none shadow-md transition-all hover:scale-125 rounded-full z-30 cursor-crosshair"
-        />
-      )}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={`target-${index}`}
+        className={cn(
+          "w-3.5 h-3.5 !bg-zinc-200 dark:!bg-zinc-100 hover:!bg-sky-400 border-none shadow-md transition-all hover:scale-125 rounded-full z-30 cursor-crosshair !top-[14px]",
+          isTargetVisible
+            ? "opacity-100"
+            : "opacity-0 group-hover/row:opacity-100",
+        )}
+      />
 
       {isEditing ? (
-        <div className="flex items-center gap-1 w-full nodrag">
+        <div
+          className="flex items-center gap-1 w-full nodrag"
+          onBlur={(e) => {
+            if (isSelectOpen) return;
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              saveInlineEdit();
+            }
+          }}
+        >
           <Input
             value={editingName}
             onChange={(e) => {
@@ -129,10 +141,19 @@ export const ColumnRow = ({
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") saveInlineEdit();
-              if (e.key === "Escape") setEditingIndex(null);
+              if (e.key === "Escape") {
+                if (!editingName.trim() || !col.name) {
+                  handleDelete(index);
+                }
+                setEditingIndex(null);
+              }
             }}
           />
-          <Select value={editingType} onValueChange={setEditingType}>
+          <Select
+            value={editingType}
+            onValueChange={setEditingType}
+            onOpenChange={setIsSelectOpen}
+          >
             <SelectTrigger className="h-6 text-[10px] px-1.5 w-[80px] py-0 nodrag">
               <SelectValue />
             </SelectTrigger>

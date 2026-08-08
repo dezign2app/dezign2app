@@ -4,6 +4,7 @@ export * from "./messaging";
 export * from "./storage";
 export * from "./services";
 export * from "./gateway";
+export * from "./auth";
 export * from "./ai";
 export * from "./langgraph";
 export * from "./registry";

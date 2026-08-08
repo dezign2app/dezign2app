@@ -320,46 +320,49 @@ export interface SessionClaims {
   custom?: Record<string, string | number | boolean>;
 }
 
-export interface OAuthProviderConfig {
-  id: string;
-  provider: "google" | "github" | "discord" | "apple" | string;
-  clientIdEnv: string;
-  clientSecretEnv: string;
-}
+import type {
+  OAuthProviderConfig,
+  SessionClaimConfig,
+  AuthFunctionRef,
+  UserCustomField,
+  AuthHookConfig,
+  AdditionalAuthTableConfig,
+  AccountLinkingPolicy,
+  EmailPasswordConfig,
+  SessionConfig,
+  OrgInvitationsConfig,
+  RedirectsConfig,
+  BetterAuthTableMapping,
+} from "../schemas/nodes/auth";
 
-export interface AuthFunctionRef {
-  id: string;
-  variableName?: string;
-  entityNodeId: string;
-  functionId: string;
-}
+export type {
+  OAuthProviderConfig,
+  SessionClaimConfig,
+  AuthFunctionRef,
+  UserCustomField,
+  AuthHookConfig,
+  AdditionalAuthTableConfig,
+  AccountLinkingPolicy,
+  EmailPasswordConfig,
+  SessionConfig,
+  OrgInvitationsConfig,
+  RedirectsConfig,
+  BetterAuthTableMapping,
+};
 
-export interface SessionClaimConfig {
-  key: string;
-  source:
-    | "userColumn"
-    | "dbFunction"
-    | "serviceEndpoint"
-    | "customFunction"
-    | "orgRole"
-    | "subscription"
-    | "paymentsAccess"
-    | "customField";
-  targetValue?: string;
-  deliveryMode: "jwt" | "cookie";
-}
-
-export interface UserCustomField {
+export interface BetterAuthTableDefinition {
+  key: keyof BetterAuthTableMapping;
   name: string;
-  type: string;
-  default?: string;
-  required: boolean;
-}
-
-export interface AuthHookConfig {
-  mode: "naturalLanguage" | "code";
-  prompt?: string;
-  code?: string;
+  category: "core" | "organization" | "plugin";
+  description: string;
+  defaultColumns: Array<{
+    name: string;
+    type: string;
+    isPrimaryKey?: boolean;
+    isForeignKey?: boolean;
+    isUnique?: boolean;
+    references?: { table: string; column: string };
+  }>;
 }
 
 export interface PaymentsPlanConfig {
@@ -378,12 +381,6 @@ export interface AuthOrganizationConfig {
   schemaId?: string;
   entityId?: string;
   additionalTables?: AdditionalAuthTableConfig[];
-}
-
-export interface AdditionalAuthTableConfig {
-  id: string;
-  entityId: string;
-  purpose?: "session" | "account" | "verification" | "rateLimit" | "custom" | string;
 }
 
 

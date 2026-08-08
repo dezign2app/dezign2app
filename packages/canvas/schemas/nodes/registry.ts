@@ -18,11 +18,11 @@ import {
 } from "./services";
 import {
   identityProviderDataSchema,
-  authDataSchema,
   apiGatewayDataSchema,
   loadBalancerDataSchema,
   webhookDataSchema,
 } from "./gateway";
+import { authDataSchema } from "./auth";
 import {
   llmDataSchema,
   mcpServerDataSchema,

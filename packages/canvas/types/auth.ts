@@ -327,9 +327,29 @@ export interface OAuthProviderConfig {
   clientSecretEnv: string;
 }
 
+export interface AuthSubscriptionConfig {
+  enabled?: boolean;
+  provider?: "creem" | "stripe" | "lemonsqueezy" | "custom" | string;
+  entityId?: string;
+  schemaId?: string;
+  statusColumn?: string;
+  planColumn?: string;
+  customerIdColumn?: string;
+  periodEndColumn?: string;
+}
+
 export interface SessionClaimConfig {
   key: string;
-  source: "orgRole" | "paymentsAccess" | "customField";
+  source:
+    | "userColumn"
+    | "dbFunction"
+    | "serviceEndpoint"
+    | "customFunction"
+    | "orgRole"
+    | "subscription"
+    | "paymentsAccess"
+    | "customField";
+  targetValue?: string;
   deliveryMode: "jwt" | "cookie";
 }
 

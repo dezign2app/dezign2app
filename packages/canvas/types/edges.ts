@@ -14,6 +14,9 @@ export type BackendEdge = {
   type: BackendEdgeType;
   sourceHandle?: string | null;
   targetHandle?: string | null;
+  sourceHandleId?: string | null;
+  targetHandleId?: string | null;
+  zIndex?: number;
   sourceResourceId?: string;
   targetResourceId?: string;
   resourceType?: MessagingResourceType;

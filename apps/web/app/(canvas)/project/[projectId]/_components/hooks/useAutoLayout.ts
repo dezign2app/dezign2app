@@ -80,22 +80,27 @@ export function useAutoLayout(options?: UseAutoLayoutOptions) {
       // 4. Run Dagre layout for flowNodes and flowEdges
       const isSchemaView =
         flowNodes.length > 0 && flowNodes.every((n) => n.type === "entity");
+      const hasEntityNodes = flowNodes.some((n) => n.type === "entity");
 
       const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(
         () => ({}),
       );
       dagreGraph.setGraph({
         rankdir: direction,
-        marginx: 60,
-        marginy: 60,
+        marginx: 80,
+        marginy: 80,
         ranksep: isSchemaView
           ? isHorizontal
-            ? 220
-            : 160
-          : isHorizontal
-            ? 140
-            : 100,
-        nodesep: isSchemaView ? 100 : 80,
+            ? 300
+            : 240
+          : hasEntityNodes
+            ? isHorizontal
+              ? 280
+              : 220
+            : isHorizontal
+              ? 200
+              : 150,
+        nodesep: isSchemaView || hasEntityNodes ? 160 : 110,
       });
 
       flowNodes.forEach((node: LayoutNode) => {

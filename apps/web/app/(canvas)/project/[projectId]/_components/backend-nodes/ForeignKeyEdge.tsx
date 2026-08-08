@@ -11,7 +11,14 @@ import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { cn } from "@workspace/ui/lib/utils";
 import { X } from "lucide-react";
 
-export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
+export type ForeignKeyEdgeProps = EdgeProps<BackendEdge> & {
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  sourceHandleId?: string | null;
+  targetHandleId?: string | null;
+};
+
+export const ForeignKeyEdge = (props: ForeignKeyEdgeProps) => {
   const {
     id,
     sourceX,
@@ -30,7 +37,7 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
   const updateEdge = useBackendCanvasStore((s) => s.updateEdge);
   const [isHovered, setIsHovered] = useState(false);
 
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [ edgePath ] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -38,6 +45,39 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
     targetY,
     targetPosition,
   });
+
+  // Calculate unique t-offset along bezier path per edge to prevent label collisions
+  const hashStr = props.id || "";
+  let idHash = 0;
+  for (let i = 0; i < hashStr.length; i++) {
+    idHash = (idHash << 5) - idHash + hashStr.charCodeAt(i);
+  }
+  const targetHandle = props.targetHandleId ?? props.targetHandle ?? "";
+  const sourceHandle = props.sourceHandleId ?? props.sourceHandle ?? "";
+  const match = (targetHandle || sourceHandle || "").match(/(\d+)/);
+  const handleIdx = (match ? parseInt(match[1]!, 10) : 0) + Math.abs(idHash % 4);
+
+  const tValues = [0.35, 0.65, 0.44, 0.56];
+  const t = tValues[handleIdx % tValues.length]!;
+
+  const dx = Math.abs(targetX - sourceX);
+  const c1x = sourceX + (sourcePosition === "left" ? -dx * 0.5 : dx * 0.5);
+  const c1y = sourceY;
+  const c2x = targetX + (targetPosition === "right" ? dx * 0.5 : -dx * 0.5);
+  const c2y = targetY;
+
+  const oneMinusT = 1 - t;
+  const labelX =
+    Math.pow(oneMinusT, 3) * sourceX +
+    3 * Math.pow(oneMinusT, 2) * t * c1x +
+    3 * oneMinusT * Math.pow(t, 2) * c2x +
+    Math.pow(t, 3) * targetX;
+
+  const labelY =
+    Math.pow(oneMinusT, 3) * sourceY +
+    3 * Math.pow(oneMinusT, 2) * t * c1y +
+    3 * oneMinusT * Math.pow(t, 2) * c2y +
+    Math.pow(t, 3) * targetY;
 
   // Interpret crow's foot markers based on cardinality
   const sourceCard = data?.sourceCardinality || "1";
@@ -68,6 +108,16 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
     });
   };
 
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    updateEdge(id, { zIndex: 1000 });
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    updateEdge(id, { zIndex: 0 });
+  };
+
   const sourceMarkerId =
     sourceCard === "1" ? "crows-foot-one" : "crows-foot-many";
   const targetMarkerId =
@@ -86,6 +136,7 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
           width: 0,
           height: 0,
           overflow: "visible",
+          zIndex: isHighlighted ? 9999 : undefined,
         }}
       >
         <defs>
@@ -145,10 +196,10 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
         d={edgePath}
         fill="none"
         stroke="transparent"
-        strokeWidth={20}
+        strokeWidth={24}
         className="cursor-pointer"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       />
 
       {/* Ambient background path */}
@@ -190,10 +241,11 @@ export const ForeignKeyEdge = (props: EdgeProps<BackendEdge>) => {
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "all",
+            zIndex: isHighlighted ? 9999 : 50,
           }}
           className="nodrag nopan"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <div
             onClick={handleCycleCardinality}

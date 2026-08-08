@@ -11,20 +11,23 @@ export function getNodeDimensions(node: LayoutNode): {
   width: number;
   height: number;
 } {
-  if (
-    "measured" in node &&
-    node.measured &&
-    typeof node.measured === "object" &&
-    "width" in node.measured &&
-    "height" in node.measured &&
-    typeof node.measured.width === "number" &&
-    typeof node.measured.height === "number" &&
-    node.measured.width > 0 &&
-    node.measured.height > 0
-  ) {
+  const measured =
+    "measured" in node && node.measured
+      ? (node.measured as { width?: number; height?: number })
+      : undefined;
+
+  const isMeasured = Boolean(
+    measured &&
+      typeof measured.width === "number" &&
+      typeof measured.height === "number" &&
+      measured.width > 0 &&
+      measured.height > 0,
+  );
+
+  if (isMeasured && node.type !== "entity") {
     return {
-      width: node.measured.width,
-      height: node.measured.height,
+      width: measured!.width!,
+      height: measured!.height!,
     };
   }
 
@@ -77,23 +80,50 @@ export function getNodeDimensions(node: LayoutNode): {
         | {
             columns?: any[];
             indexes?: any[];
-            entityFunctions?: any[];
+            dbOperations?: any[];
             description?: string;
+            dbType?: string;
           }
         | undefined;
+      const isVector = data?.dbType === "vector";
       const colCount = data?.columns?.length ?? 1;
       const idxCount = data?.indexes?.length ?? 0;
-      const fnCount = data?.entityFunctions?.length ?? 0;
-      const hasDesc = Boolean(data?.description);
 
-      let estHeight = 44 + 28 + (hasDesc ? 36 : 0) + 24 + colCount * 36;
-      if (idxCount > 0) estHeight += 24 + idxCount * 28;
-      if (fnCount > 0) estHeight += 24 + fnCount * 28;
-      estHeight += 16;
+      // Header: 68px (standard SQL with engine select) or 44px (vector)
+      const headerH = isVector ? 44 : 68;
+      // Description box is always rendered in EntityNode DOM (~44px)
+      const descH = 44;
+      // Vector config block (if vector db type): ~120px
+      const vectorConfigH = isVector ? 120 : 0;
+      // Column list: header 24px + 42px per column row
+      const columnsH = 24 + colCount * 42;
+      // Index list: header 24px + 44px per index row (if indexes present)
+      const indexesH = idxCount > 0 ? 24 + idxCount * 44 : 0;
+      // DbOperations list header: ~30px
+      const dbOpsH = 30;
+      // Card padding / bottom margin
+      const paddingH = 16;
 
-      return { width: 300, height: Math.max(200, estHeight) };
+      const estHeight =
+        headerH + descH + vectorConfigH + columnsH + indexesH + dbOpsH + paddingH;
+      const estWidth = 320;
+
+      if (isMeasured) {
+        return {
+          width: Math.max(measured!.width!, estWidth),
+          height: Math.max(measured!.height!, estHeight),
+        };
+      }
+
+      return { width: estWidth, height: Math.max(220, estHeight) };
     }
     default:
+      if (isMeasured) {
+        return {
+          width: measured!.width!,
+          height: measured!.height!,
+        };
+      }
       return { width: 300, height: 200 };
   }
 }
@@ -109,12 +139,18 @@ export function getHandleYRatio(
     if (colMatch) {
       const colIndex = parseInt(colMatch[1]!, 10);
       const data = node.data as
-        | { columns?: any[]; description?: string }
+        | { columns?: any[]; description?: string; dbType?: string }
         | undefined;
       const { height } = getNodeDimensions(node);
 
-      const topOffset = 44 + 28 + (data?.description ? 36 : 0) + 24;
-      const targetY = topOffset + colIndex * 36 + 18;
+      const isVector = data?.dbType === "vector";
+      const headerH = isVector ? 44 : 68;
+      const descH = 44;
+      const vectorConfigH = isVector ? 120 : 0;
+      const columnHeaderH = 24;
+
+      const topOffset = headerH + descH + vectorConfigH + columnHeaderH;
+      const targetY = topOffset + colIndex * 42 + 21;
 
       return Math.min(0.95, Math.max(0.05, targetY / height));
     }

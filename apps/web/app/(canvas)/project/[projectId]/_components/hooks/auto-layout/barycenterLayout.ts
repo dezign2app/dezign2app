@@ -1,6 +1,82 @@
-import type dagre from "@dagrejs/dagre";
 import type { LayoutNode, LayoutEdge } from "./types";
 import { getNodeDimensions, getHandleYRatio } from "./nodeDimensions";
+
+// ---------------------------------------------------------------------------
+// Bezier helpers
+// ---------------------------------------------------------------------------
+
+/** Sample a point on a cubic bezier at parameter t ∈ [0, 1] */
+function cubicBezierPoint(
+  p0: [number, number],
+  p1: [number, number],
+  p2: [number, number],
+  p3: [number, number],
+  t: number,
+): [number, number] {
+  const mt = 1 - t;
+  const x =
+    mt * mt * mt * p0[0] +
+    3 * mt * mt * t * p1[0] +
+    3 * mt * t * t * p2[0] +
+    t * t * t * p3[0];
+  const y =
+    mt * mt * mt * p0[1] +
+    3 * mt * mt * t * p1[1] +
+    3 * mt * t * t * p2[1] +
+    t * t * t * p3[1];
+  return [x, y];
+}
+
+/** Sample `count` evenly-spaced points along a cubic bezier */
+function sampleBezier(
+  p0: [number, number],
+  p1: [number, number],
+  p2: [number, number],
+  p3: [number, number],
+  count: number = 14,
+): [number, number][] {
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= count; i++) {
+    pts.push(cubicBezierPoint(p0, p1, p2, p3, i / count));
+  }
+  return pts;
+}
+
+/**
+ * Build the 4 cubic-bezier control points that approximate a ReactFlow
+ * smoothstep / bezier edge given source and target handle positions.
+ */
+function buildEdgeBezier(
+  srcX: number,
+  srcY: number,
+  tgtX: number,
+  tgtY: number,
+  isHorizontal: boolean,
+): [[number, number], [number, number], [number, number], [number, number]] {
+  if (isHorizontal) {
+    // Handles exit right / enter left
+    const offset = Math.max(Math.abs(tgtX - srcX) * 0.5, 80);
+    return [
+      [srcX, srcY],
+      [srcX + offset, srcY],
+      [tgtX - offset, tgtY],
+      [tgtX, tgtY],
+    ];
+  } else {
+    // Handles exit bottom / enter top
+    const offset = Math.max(Math.abs(tgtY - srcY) * 0.5, 80);
+    return [
+      [srcX, srcY],
+      [srcX, srcY + offset],
+      [tgtX, tgtY - offset],
+      [tgtX, tgtY],
+    ];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
 
 export interface BarycenterRefinementParams {
   dagreGraph: any;
@@ -21,6 +97,9 @@ export function runBarycenterRefinement({
   storeEndpoints,
   storeEvents,
 }: BarycenterRefinementParams): void {
+  // Whether any entity nodes are present — used to tune gaps
+  const hasEntityNodesLocal = flowNodes.some((n) => n.type === "entity");
+
   const endpointYRatio = new Map<string, number>();
   const epsByNode = new Map<string, string[]>();
   storeEndpoints.forEach((ep) => {
@@ -204,8 +283,13 @@ export function runBarycenterRefinement({
     return total;
   };
 
-  const nodeGap = 80;
+  // Use wider gaps for entity/schema views so edges have room to breathe
+  const nodeGap = hasEntityNodesLocal ? 200 : 160;
+  const minRankGap = hasEntityNodesLocal ? 200 : 160;
+
   const reapplyRankPositions = () => {
+    let lastRankMaxPrimary = -Infinity;
+
     ranks.forEach((r) => {
       const ids = rankMap.get(r);
       if (!ids || ids.length === 0) return;
@@ -221,7 +305,7 @@ export function runBarycenterRefinement({
         ids.reduce((s, id) => s + computeBarycenter(id), 0) / ids.length;
       let cursor = avgCenter - totalLen / 2;
 
-      const secondaryPos =
+      let secondaryPos =
         ids.reduce((s, id) => {
           const pos = positionsMap.get(id);
           if (!pos) return s;
@@ -230,17 +314,46 @@ export function runBarycenterRefinement({
           return s + (isHorizontal ? pos.x + width / 2 : pos.y + height / 2);
         }, 0) / ids.length;
 
+      // Calculate max half-dimension along the primary rank axis
+      const maxHalfSize = Math.max(
+        ...ids.map((id) => {
+          const node = flowNodes.find((n) => n.id === id)!;
+          const { width, height } = getNodeDimensions(node);
+          return (isHorizontal ? width : height) / 2;
+        }),
+      );
+
+      // Enforce clean rank separation from previous rank
+      if (lastRankMaxPrimary !== -Infinity) {
+        const minAllowedCenter = lastRankMaxPrimary + minRankGap + maxHalfSize;
+        if (secondaryPos < minAllowedCenter) {
+          secondaryPos = minAllowedCenter;
+        }
+      }
+
+      let currentRankMaxPrimary = -Infinity;
+
       ids.forEach((id) => {
         const node = flowNodes.find((n) => n.id === id)!;
         const { width, height } = getNodeDimensions(node);
         if (isHorizontal) {
           positionsMap.set(id, { x: secondaryPos - width / 2, y: cursor });
           cursor += height + nodeGap;
+          const nodeRight = secondaryPos + width / 2;
+          if (nodeRight > currentRankMaxPrimary) {
+            currentRankMaxPrimary = nodeRight;
+          }
         } else {
           positionsMap.set(id, { x: cursor, y: secondaryPos - height / 2 });
           cursor += width + nodeGap;
+          const nodeBottom = secondaryPos + height / 2;
+          if (nodeBottom > currentRankMaxPrimary) {
+            currentRankMaxPrimary = nodeBottom;
+          }
         }
       });
+
+      lastRankMaxPrimary = currentRankMaxPrimary;
     });
   };
 
@@ -281,7 +394,8 @@ export function runBarycenterRefinement({
   let bestOrder: Map<number, string[]> | null = null;
   let bestScore = Infinity;
 
-  for (let pass = 0; pass < 6; pass++) {
+  // Increased to 10 passes for better crossing minimisation
+  for (let pass = 0; pass < 10; pass++) {
     sweepRanks(pass % 2 === 0 ? [...ranks] : [...ranks].reverse());
     transposeRefine();
     reapplyRankPositions();
@@ -373,9 +487,16 @@ export function runBarycenterRefinement({
             nPos.y <= yEdgeAtRank + 40 && nodeBottom >= yEdgeAtRank - 40;
 
           if (isConnectedToSkipEdge || overlapsEdge) {
-            const targetY = yEdgeAtRank - nH - 60;
-            if (nPos.y > targetY) {
-              positionsMap.set(nodeId, { x: nPos.x, y: targetY });
+            // Choose the direction that requires less movement
+            const pushUpY = yEdgeAtRank - nH - 90;
+            const pushDownY = yEdgeAtRank + 90;
+            const nodeCenterY = nPos.y + nH / 2;
+            const distUp = Math.abs(nodeCenterY - (pushUpY + nH / 2));
+            const distDown = Math.abs(nodeCenterY - (pushDownY + nH / 2));
+            if (distUp <= distDown) {
+              positionsMap.set(nodeId, { x: nPos.x, y: pushUpY });
+            } else {
+              positionsMap.set(nodeId, { x: nPos.x, y: pushDownY });
             }
           }
         });
@@ -395,9 +516,221 @@ export function runBarycenterRefinement({
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Node-to-Edge Clearance Pass (bezier-aware)
+  // ---------------------------------------------------------------------------
+  const resolveNodeEdgeOverlaps = () => {
+    const BEZIER_SAMPLES = 14;
+    const clearance = hasEntityNodesLocal ? 100 : 70;
+    const maxPasses = 6;
+
+    for (let pass = 0; pass < maxPasses; pass++) {
+      let movedAny = false;
+
+      flowEdges.forEach((edge) => {
+        const srcNode = flowNodes.find((n) => n.id === edge.source);
+        const tgtNode = flowNodes.find((n) => n.id === edge.target);
+        if (!srcNode || !tgtNode) return;
+
+        const srcPos = positionsMap.get(edge.source);
+        const tgtPos = positionsMap.get(edge.target);
+        if (!srcPos || !tgtPos) return;
+
+        const srcDim = getNodeDimensions(srcNode);
+        const tgtDim = getNodeDimensions(tgtNode);
+
+        const srcHandleY = resolveHandleY(
+          edge.source,
+          edge.sourceHandle,
+          srcPos.y,
+          srcDim.height,
+        );
+        const tgtHandleY = resolveHandleY(
+          edge.target,
+          edge.targetHandle,
+          tgtPos.y,
+          tgtDim.height,
+        );
+
+        // Build bezier control points matching ReactFlow's edge curve shape
+        let p0: [number, number],
+          p1: [number, number],
+          p2: [number, number],
+          p3: [number, number];
+
+        if (isHorizontal) {
+          const srcX = srcPos.x + srcDim.width; // right handle exit
+          const tgtX = tgtPos.x; // left handle entry
+          [p0, p1, p2, p3] = buildEdgeBezier(
+            srcX,
+            srcHandleY,
+            tgtX,
+            tgtHandleY,
+            true,
+          );
+        } else {
+          const srcHandleX = srcPos.x + srcDim.width / 2;
+          const tgtHandleX = tgtPos.x + tgtDim.width / 2;
+          const srcY = srcPos.y + srcDim.height; // bottom handle exit
+          const tgtY = tgtPos.y; // top handle entry
+          [p0, p1, p2, p3] = buildEdgeBezier(
+            srcHandleX,
+            srcY,
+            tgtHandleX,
+            tgtY,
+            false,
+          );
+        }
+
+        const edgePoints = sampleBezier(p0, p1, p2, p3, BEZIER_SAMPLES);
+
+        // Compute the bounding box of the bezier path for a quick pre-filter
+        let edgeMinX = Infinity,
+          edgeMaxX = -Infinity,
+          edgeMinY = Infinity,
+          edgeMaxY = -Infinity;
+        edgePoints.forEach(([ex, ey]) => {
+          if (ex < edgeMinX) edgeMinX = ex;
+          if (ex > edgeMaxX) edgeMaxX = ex;
+          if (ey < edgeMinY) edgeMinY = ey;
+          if (ey > edgeMaxY) edgeMaxY = ey;
+        });
+
+        flowNodes.forEach((node) => {
+          if (node.id === edge.source || node.id === edge.target) return;
+          const pos = positionsMap.get(node.id);
+          if (!pos) return;
+          const { width, height } = getNodeDimensions(node);
+
+          const nodeLeft = pos.x - clearance;
+          const nodeRight = pos.x + width + clearance;
+          const nodeTop = pos.y - clearance;
+          const nodeBottom = pos.y + height + clearance;
+
+          // Quick AABB pre-filter against edge bounding box
+          if (
+            nodeRight < edgeMinX ||
+            nodeLeft > edgeMaxX ||
+            nodeBottom < edgeMinY ||
+            nodeTop > edgeMaxY
+          ) {
+            return;
+          }
+
+          // Precise check: does any sampled bezier point fall inside the node's
+          // clearance-expanded bounding box?
+          const intersects = edgePoints.some(
+            ([ex, ey]) =>
+              ex >= nodeLeft &&
+              ex <= nodeRight &&
+              ey >= nodeTop &&
+              ey <= nodeBottom,
+          );
+
+          if (!intersects) return;
+
+          movedAny = true;
+
+          // Find the edge Y closest to the node's horizontal centre to decide
+          // which direction to push
+          const nodeCenterX = pos.x + width / 2;
+          let closestEdgeY = p0[1];
+          let minDist = Infinity;
+          edgePoints.forEach(([ex, ey]) => {
+            const dist = Math.abs(ex - nodeCenterX);
+            if (dist < minDist) {
+              minDist = dist;
+              closestEdgeY = ey;
+            }
+          });
+
+          const nodeCenterY = pos.y + height / 2;
+          const pushUpY = closestEdgeY - height - clearance;
+          const pushDownY = closestEdgeY + clearance;
+          const distUp = Math.abs(nodeCenterY - (pushUpY + height / 2));
+          const distDown = Math.abs(nodeCenterY - (pushDownY + height / 2));
+
+          if (distUp <= distDown) {
+            positionsMap.set(node.id, { x: pos.x, y: pushUpY });
+          } else {
+            positionsMap.set(node.id, { x: pos.x, y: pushDownY });
+          }
+        });
+      });
+
+      if (!movedAny) break;
+    }
+  };
+
+  // --- Final AABB Overlap Resolution Pass ---
+  const resolveNodeOverlaps = () => {
+    const padding = hasEntityNodesLocal ? 80 : 70;
+    let hasOverlaps = true;
+    let iterations = 0;
+    const maxIterations = 20;
+
+    while (hasOverlaps && iterations < maxIterations) {
+      hasOverlaps = false;
+      iterations++;
+
+      for (let i = 0; i < flowNodes.length; i++) {
+        const nodeA = flowNodes[i]!;
+        const posA = positionsMap.get(nodeA.id);
+        if (!posA) continue;
+        const dimA = getNodeDimensions(nodeA);
+
+        for (let j = i + 1; j < flowNodes.length; j++) {
+          const nodeB = flowNodes[j]!;
+          const posB = positionsMap.get(nodeB.id);
+          if (!posB) continue;
+          const dimB = getNodeDimensions(nodeB);
+
+          const overlapX =
+            Math.min(
+              posA.x + dimA.width + padding,
+              posB.x + dimB.width + padding,
+            ) - Math.max(posA.x, posB.x);
+          const overlapY =
+            Math.min(
+              posA.y + dimA.height + padding,
+              posB.y + dimB.height + padding,
+            ) - Math.max(posA.y, posB.y);
+
+          if (overlapX > 0 && overlapY > 0) {
+            hasOverlaps = true;
+            if (isHorizontal) {
+              if (posA.y <= posB.y) {
+                positionsMap.set(nodeB.id, { x: posB.x, y: posB.y + overlapY });
+              } else {
+                positionsMap.set(nodeA.id, { x: posA.x, y: posA.y + overlapY });
+              }
+            } else {
+              if (posA.x <= posB.x) {
+                positionsMap.set(nodeB.id, { x: posB.x + overlapX, y: posB.y });
+              } else {
+                positionsMap.set(nodeA.id, { x: posA.x + overlapX, y: posA.y });
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  // Apply the best crossing-minimal order found across all sweep passes
   if (bestOrder) {
     bestOrder.forEach((ids, r) => rankMap.set(r, ids));
   }
   reapplyRankPositions();
   adjustIntermediateNodesForSkipEdges();
+
+  // First pass: push nodes out of bezier edge paths
+  resolveNodeEdgeOverlaps();
+
+  // Separate any still-overlapping node pairs
+  resolveNodeOverlaps();
+
+  // Second pass: re-check bezier overlaps that may have been introduced by
+  // the node-node separation step above
+  resolveNodeEdgeOverlaps();
 }

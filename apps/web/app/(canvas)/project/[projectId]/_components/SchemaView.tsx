@@ -92,6 +92,7 @@ export function SchemaView({ projectId }: SchemaViewProps) {
       <ReactFlow
         nodes={schemaNodes}
         edges={schemaEdges}
+        elevateEdgesOnSelect={true}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         deleteKeyCode={["Backspace", "Delete"]}

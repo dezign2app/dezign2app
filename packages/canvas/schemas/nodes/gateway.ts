@@ -21,8 +21,29 @@ export const oauthProviderConfigSchema = z.object({
 
 export const sessionClaimConfigSchema = z.object({
   key: z.string(),
-  source: z.enum(["orgRole", "paymentsAccess", "customField"]),
+  source: z.enum([
+    "userColumn",
+    "dbFunction",
+    "serviceEndpoint",
+    "customFunction",
+    "orgRole",
+    "subscription",
+    "paymentsAccess",
+    "customField",
+  ]),
+  targetValue: z.string().optional(),
   deliveryMode: z.enum(["jwt", "cookie"]),
+});
+
+export const authSubscriptionConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  provider: z.string().optional(),
+  entityId: z.string().optional(),
+  schemaId: z.string().optional(),
+  statusColumn: z.string().optional(),
+  planColumn: z.string().optional(),
+  customerIdColumn: z.string().optional(),
+  periodEndColumn: z.string().optional(),
 });
 
 export const userCustomFieldSchema = z.object({
@@ -76,6 +97,8 @@ export const authDataSchema = baseNodeDataSchema
             minLength: z.number(),
           })
           .optional(),
+        socialEnabled: z.boolean().optional(),
+        oauthEnabled: z.boolean().optional(),
         oauth: z.array(oauthProviderConfigSchema).optional(),
         magicLink: z.boolean().optional(),
         passkey: z.boolean().optional(),
@@ -86,6 +109,7 @@ export const authDataSchema = baseNodeDataSchema
         claims: z.array(sessionClaimConfigSchema).optional(),
       })
       .optional(),
+    subscription: authSubscriptionConfigSchema.optional(),
     organization: z
       .object({
         enabled: z.boolean().optional(),

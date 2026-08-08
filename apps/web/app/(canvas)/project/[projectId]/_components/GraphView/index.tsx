@@ -191,6 +191,7 @@ export function GraphView({ projectId }: GraphViewProps) {
       <ReactFlow
         nodes={visualGraphNodes}
         edges={edges}
+        elevateEdgesOnSelect={true}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         deleteKeyCode={["Backspace", "Delete"]}

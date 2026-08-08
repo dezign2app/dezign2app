@@ -24,6 +24,7 @@ import type {
   AuthHookConfig,
   PaymentsPlanConfig,
   AdditionalAuthTableConfig,
+  AuthSubscriptionConfig,
 } from "./auth";
 import type {
   CanvasLangGraphNodeData,
@@ -269,6 +270,8 @@ export interface CanvasAuthNodeData {
   additionalTables?: AdditionalAuthTableConfig[];
   providers?: {
     emailPassword?: { enabled: boolean; requireVerification: boolean; minLength: number };
+    socialEnabled?: boolean;
+    oauthEnabled?: boolean;
     oauth?: OAuthProviderConfig[];
     magicLink?: boolean;
     passkey?: boolean;
@@ -286,6 +289,7 @@ export interface CanvasAuthNodeData {
     entityId?: string;
     additionalTables?: AdditionalAuthTableConfig[];
   };
+  subscription?: AuthSubscriptionConfig;
   customFields?: UserCustomField[];
   hooks?: AuthHookConfig[];
   paymentsPlugin?: { provider: "creem"; apiKeyEnv: string; webhookSecretEnv: string };

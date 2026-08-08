@@ -103,6 +103,13 @@ export type SubscriptionStatusType = (typeof SUBSCRIPTION_STATUSES)[number];
 export const PAYMENTS_INTERVALS = ["monthly", "yearly"] as const;
 export type PaymentsIntervalType = (typeof PAYMENTS_INTERVALS)[number];
 
+export const PAYMENT_PROVIDER_OPTIONS = [
+  { value: "creem", label: "Creem" },
+  // { value: "lemonsqueezy", label: "Lemon Squeezy" },
+  // { value: "custom", label: "Custom Billing Engine" },
+  // { value: "stripe", label: "Stripe" }
+] as const;
+
 // ─── LangGraph Step Execution Types ───────────────────────────────────────────
 export const STEP_TYPE_LLM_CALL = "llm_call" as const;
 export const STEP_TYPE_TOOL_NODE = "tool_node" as const;

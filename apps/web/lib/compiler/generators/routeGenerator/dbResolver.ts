@@ -1,5 +1,6 @@
 import { Endpoint, TargetDbOperation, ReusableFunction } from "@workspace/canvas/types";
 import { BackendNode, BackendEdge } from "@/types/canvas";
+import { getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 
 export interface EndpointWithNodeId extends Endpoint {
   nodeId?: string;
@@ -98,10 +99,11 @@ export function pickDbFunctionsForEndpoint(
       ? allNodes.find((n) => n.id === tableNode.data?.tableRef)
       : tableNode;
 
-    if (targetEntityNode?.data?.dbOperations && targetEntityNode.data.dbOperations.length > 0) {
+    if (targetEntityNode) {
+      const ops = getEntityDbOperations(targetEntityNode, allNodes);
       const varName = rawTableName.toLowerCase().replace(/[^a-z0-9]/g, "");
       const importPath = `@workspace/db/helpers/${varName}`;
-      targetEntityNode.data.dbOperations.forEach((op) => {
+      ops.forEach((op) => {
         if (op.enabled !== false) {
           entityCustomFns.push({
             name: op.name,

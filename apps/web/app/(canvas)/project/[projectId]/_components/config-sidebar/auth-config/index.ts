@@ -2,7 +2,6 @@ export * from "./types";
 export * from "./AuthConfigHeader";
 export * from "./AuthCoreEntitiesSection";
 export * from "./AuthProvidersSection";
-export * from "./AuthSubscriptionSection";
 export * from "./AuthSessionSection";
 export * from "./AuthOrgRbacSection";
 export * from "./AuthUserSchemaSection";

@@ -35,19 +35,6 @@ export const sessionClaimConfigSchema = z.object({
   deliveryMode: z.enum(["jwt", "cookie"]),
 });
 
-export const authSubscriptionConfigSchema = z
-  .object({
-    enabled: z.boolean().optional(),
-    provider: z.string().optional(),
-    entityId: z.string().optional(),
-    schemaId: z.string().optional(),
-    statusColumn: z.string().optional(),
-    planColumn: z.string().optional(),
-    customerIdColumn: z.string().optional(),
-    periodEndColumn: z.string().optional(),
-  })
-  .passthrough();
-
 export const authFunctionRefSchema = z.object({
   id: z.string(),
   variableName: z.string().optional(),
@@ -119,7 +106,6 @@ export const authDataSchema = baseNodeDataSchema
         claims: z.array(sessionClaimConfigSchema).optional(),
       })
       .optional(),
-    subscription: authSubscriptionConfigSchema.optional(),
     organization: z
       .object({
         enabled: z.boolean().optional(),
@@ -130,6 +116,13 @@ export const authDataSchema = baseNodeDataSchema
         schemaId: z.string().optional(),
         entityId: z.string().optional(),
         additionalTables: z.array(additionalAuthTableConfigSchema).optional(),
+      })
+      .optional(),
+    subscription: z
+      .object({
+        enabled: z.boolean().optional(),
+        schemaId: z.string().optional(),
+        entityId: z.string().optional(),
       })
       .optional(),
     customFields: z.array(userCustomFieldSchema).optional(),

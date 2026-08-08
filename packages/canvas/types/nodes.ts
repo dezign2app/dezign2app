@@ -24,7 +24,6 @@ import type {
   AuthHookConfig,
   PaymentsPlanConfig,
   AdditionalAuthTableConfig,
-  AuthSubscriptionConfig,
   AuthFunctionRef,
 } from "./auth";
 import type {
@@ -291,7 +290,11 @@ export interface CanvasAuthNodeData {
     entityId?: string;
     additionalTables?: AdditionalAuthTableConfig[];
   };
-  subscription?: AuthSubscriptionConfig;
+  subscription?: {
+    enabled?: boolean;
+    schemaId?: string;
+    entityId?: string;
+  };
   customFields?: UserCustomField[];
   hooks?: AuthHookConfig[];
   paymentsPlugin?: { provider: "creem"; apiKeyEnv: string; webhookSecretEnv: string };

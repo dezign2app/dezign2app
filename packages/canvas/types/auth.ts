@@ -334,17 +334,6 @@ export interface AuthFunctionRef {
   functionId: string;
 }
 
-export interface AuthSubscriptionConfig {
-  enabled?: boolean;
-  provider?: "creem" | "stripe" | "lemonsqueezy" | "custom" | string;
-  entityId?: string;
-  schemaId?: string;
-  statusColumn?: string;
-  planColumn?: string;
-  customerIdColumn?: string;
-  periodEndColumn?: string;
-}
-
 export interface SessionClaimConfig {
   key: string;
   source:

@@ -5,7 +5,6 @@ import {
   AuthConfigHeader,
   AuthCoreEntitiesSection,
   AuthProvidersSection,
-  AuthSubscriptionSection,
   AuthSessionSection,
   AuthOrgRbacSection,
   AuthUserSchemaSection,
@@ -47,7 +46,6 @@ export const AuthConfig = ({
         defaultValue={[
           "core-entities",
           "providers",
-          "subscription",
           "session",
           "org",
           "schema",
@@ -65,13 +63,6 @@ export const AuthConfig = ({
           nodeId={nodeId}
         />
         <AuthProvidersSection
-          data={data}
-          updateData={updateData}
-          allNodes={allNodes}
-          edges={edges}
-          nodeId={nodeId}
-        />
-        <AuthSubscriptionSection
           data={data}
           updateData={updateData}
           allNodes={allNodes}

@@ -458,4 +458,25 @@ export function generateDefaultDbOperations(
   return ops;
 }
 
+/**
+ * Helper function to retrieve the active list of DB operation functions for an entity node.
+ * If entityNode has dbOperations configured on its data, returns that.
+ * Otherwise generates default CRUD, index-based, and relational JOIN operations.
+ */
+export function getEntityDbOperations(
+  entityNode?: { data?: { label?: string; columns?: any[]; indexes?: any[]; dbOperations?: DbOperationFunction[] } } | null,
+  allNodes: BackendNode[] = []
+): DbOperationFunction[] {
+  if (!entityNode || !entityNode.data) return [];
+  const label = entityNode.data.label || "table";
+  const columns = entityNode.data.columns || [];
+  const indexes = entityNode.data.indexes || [];
+
+  if (entityNode.data.dbOperations && entityNode.data.dbOperations.length > 0) {
+    return entityNode.data.dbOperations;
+  }
+  return generateDefaultDbOperations(label, columns, indexes, allNodes);
+}
+
+
 

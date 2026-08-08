@@ -10,7 +10,7 @@ import {
 } from "@workspace/ui/components/select";
 import { TableCrudConfig } from "../types";
 import { BackendNode } from "@/types/canvas";
-import { generateDefaultDbOperations } from "@/lib/utils/entityOperationsHelper";
+import { getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 import { DbOperationFunction } from "@workspace/canvas/types";
 
 interface CrudConfigSectionProps {
@@ -60,10 +60,7 @@ export function CrudConfigSection({
           const columns = tableNode?.data.columns || [];
           const indexes = tableNode?.data.indexes || [];
 
-          const entityOps: DbOperationFunction[] =
-            tableNode?.data.dbOperations && tableNode.data.dbOperations.length > 0
-              ? tableNode.data.dbOperations
-              : generateDefaultDbOperations(label, columns, indexes);
+          const entityOps: DbOperationFunction[] = getEntityDbOperations(tableNode, allNodes);
 
           // Get selected operation names for this table
           const selectedOps = configItem.operations || [];

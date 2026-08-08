@@ -24,7 +24,7 @@ import {
   Variable,
 } from "lucide-react";
 import { AuthFunctionRef, DbOperationFunction } from "@workspace/canvas";
-import { generateDefaultDbOperations } from "@/lib/utils/entityOperationsHelper";
+import { getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 import { AuthConfigSectionProps } from "./types";
 
 export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
@@ -39,14 +39,7 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
     if (!entityNodeId) return [];
     const entity = schemaEntities.find((e) => e.id === entityNodeId);
     if (!entity) return [];
-    if (entity.data.dbOperations && entity.data.dbOperations.length > 0) {
-      return entity.data.dbOperations;
-    }
-    return generateDefaultDbOperations(
-      entity.data.label || "table",
-      entity.data.columns || [],
-      entity.data.indexes || []
-    );
+    return getEntityDbOperations(entity, allNodes).filter((op) => op.enabled !== false);
   };
 
   const addFunctionMapping = () => {
@@ -65,7 +58,6 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
     const updated = authFunctions.map((fn, idx) => {
       if (idx !== index) return fn;
       const nextFn = { ...fn, ...changes };
-      // If entityNodeId changed, reset functionId to the first available function on the new entity if invalid
       if (changes.entityNodeId && changes.entityNodeId !== fn.entityNodeId) {
         const ops = getEntityDbOps(changes.entityNodeId);
         nextFn.functionId = ops[0]?.id || "";
@@ -90,7 +82,7 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
           <div className="flex gap-2 items-center">
             <UserCheck className="w-4 h-4 text-primary shrink-0" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Associated DB Functions & Variables
+              Associated DB Functions
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -129,6 +121,8 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
               {authFunctions.map((af, idx) => {
                 const selectedEntity = schemaEntities.find((e) => e.id === af.entityNodeId);
                 const dbOps = getEntityDbOps(af.entityNodeId);
+                const matchedOp = dbOps.find((op) => op.id === af.functionId || op.name === af.functionId);
+                const currentFunctionId = matchedOp ? matchedOp.id : af.functionId || "none";
 
                 return (
                   <div
@@ -139,7 +133,7 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
                       {/* Variable Name Input */}
                       <div className="col-span-3 flex flex-col gap-1">
                         <Label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                          <Variable className="w-3 h-3 text-primary" /> Variable
+                          Variable
                         </Label>
                         <Input
                           placeholder="e.g. user, subscription"
@@ -182,7 +176,7 @@ export const AuthCoreEntitiesSection: React.FC<AuthConfigSectionProps> = ({
                           <Code2 className="w-3 h-3 text-primary" /> Associated Function
                         </Label>
                         <Select
-                          value={af.functionId || "none"}
+                          value={currentFunctionId}
                           onValueChange={(val) =>
                             updateMapping(idx, { functionId: val === "none" ? "" : val })
                           }

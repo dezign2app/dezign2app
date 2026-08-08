@@ -6,7 +6,7 @@ import {
   DbOperationFunction,
 } from "@workspace/canvas/types";
 import { toTableName, toVarName, toSqlIdentifier } from "../../../utils";
-import { generateDefaultDbOperations } from "@/lib/utils/entityOperationsHelper";
+import { generateDefaultDbOperations, getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -128,10 +128,7 @@ function generateTableHelpers(
     allNodes,
   );
 
-  const dbOps: DbOperationFunction[] =
-    tableNode.data.dbOperations && tableNode.data.dbOperations.length > 0
-      ? tableNode.data.dbOperations
-      : defaultDbOps;
+  const dbOps: DbOperationFunction[] = getEntityDbOperations(tableNode, allNodes);
 
   const fns: ReusableFunction[] = [];
 

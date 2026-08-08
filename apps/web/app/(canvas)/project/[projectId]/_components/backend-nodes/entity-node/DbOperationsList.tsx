@@ -2,7 +2,7 @@ import React from "react";
 import { Settings, Zap, FunctionSquare, ChevronDown, ChevronUp } from "lucide-react";
 import { useBackendCanvasStore } from "@/lib/stores/backendCanvasStore";
 import { BackendNodeData, DbOperationFunction } from "@workspace/canvas/types";
-import { generateDefaultDbOperations } from "@/lib/utils/entityOperationsHelper";
+import { generateDefaultDbOperations, getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 import { cn } from "@workspace/ui/lib/utils";
 
 interface DbOperationsListProps {
@@ -23,10 +23,7 @@ export const DbOperationsList: React.FC<DbOperationsListProps> = ({
   const indexes = data.indexes || [];
 
   // Fallback to auto-generated operations if not explicitly initialized
-  const dbOps: DbOperationFunction[] =
-    data.dbOperations && data.dbOperations.length > 0
-      ? data.dbOperations
-      : generateDefaultDbOperations(data.label, columns, indexes, allNodes);
+  const dbOps: DbOperationFunction[] = getEntityDbOperations({ data }, allNodes);
 
   const activeOps = dbOps.filter((op) => op.enabled !== false);
 

@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/accordion";
 import { SlidersHorizontal, Plus, Trash2 } from "lucide-react";
 import { SessionClaimConfig } from "@workspace/canvas";
+import { getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 import { AuthConfigSectionProps } from "./types";
 
 export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
@@ -44,10 +45,12 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
 
   // Collect all available DB operations from entity nodes
   const allDbOps = schemaEntities.flatMap((e) =>
-    (e.data.dbOperations || []).map((op) => ({
-      id: op.id,
-      name: `${e.data.label}.${op.name}`,
-    })),
+    getEntityDbOperations(e, allNodes)
+      .filter((op) => op.enabled !== false)
+      .map((op) => ({
+        id: op.id,
+        name: `${e.data.label}.${op.name}`,
+      })),
   );
 
   // Collect all available Service Endpoints

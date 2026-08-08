@@ -39,6 +39,11 @@ export const upsertBackendNode = mutation({
       args.data = parsed.data;
     }
 
+    if (args.type === "auth" && typeof args.data === "object" && args.data !== null) {
+      delete (args.data as Record<string, unknown>).dbNodeId;
+      delete (args.data as Record<string, unknown>).dbConnectionStringEnv;
+    }
+
     if (
       (args.type === "entity" || args.type === "group") &&
       "label" in args.data &&

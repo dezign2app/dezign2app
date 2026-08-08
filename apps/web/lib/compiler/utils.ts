@@ -9,22 +9,31 @@ export function parseSchemaJson(rawJson?: string): JSONValue {
   }
 }
 
+export function toSqlIdentifier(str: string, fallback = "item"): string {
+  if (!str) return fallback;
+  const clean = str
+    .replace(/[^a-zA-Z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[^a-zA-Z_]+/, "");
+  return clean || fallback;
+}
+
 export function toVarName(str: string): string {
-  const clean = str.replace(/[^a-zA-Z0-9_]/g, "_");
-  const camel = clean.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  const safe = toSqlIdentifier(str, "item");
+  const camel = safe.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
   if (!camel) return "item";
   return camel.charAt(0).toLowerCase() + camel.slice(1);
 }
 
 export function toPascalCase(str: string): string {
-  const clean = str.replace(/[^a-zA-Z0-9_]/g, "_");
-  const camel = clean.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  const safe = toSqlIdentifier(str, "Item");
+  const camel = safe.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
   if (!camel) return "Item";
   return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
 
 export function toTableName(str: string): string {
-  return (str || "table").toLowerCase().replace(/[^a-z0-9_]/g, "_");
+  return toSqlIdentifier((str || "table").toLowerCase(), "table");
 }
 
 export function toEnvVarName(str: string): string {

@@ -1,5 +1,6 @@
 import React from "react";
 import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Switch } from "@workspace/ui/components/switch";
 import {
@@ -14,13 +15,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
-import { Users, Database } from "lucide-react";
+import { Users, Mail } from "lucide-react";
+import { OrgInvitationsConfig } from "@workspace/canvas";
 import { AuthConfigSectionProps } from "./types";
 
 export const AuthOrgRbacSection: React.FC<AuthConfigSectionProps> = ({
   data,
   updateData,
-  allNodes,
 }) => {
   const enabledPlugins = data.plugins || ["bearer", "admin", "organization", "jwt"];
   const org = data.organization || {
@@ -29,11 +30,20 @@ export const AuthOrgRbacSection: React.FC<AuthConfigSectionProps> = ({
     teams: true,
     multiOrg: true,
     invitations: true,
+    invitationsConfig: {
+      deliveryMethod: "email",
+      inviteExpiresInDays: 7,
+      defaultRole: "member",
+      allowMemberInvites: false,
+    },
   };
 
-  const schemaEntities = allNodes.filter((n) => n.type === "entity");
-  const selectedOrgSchemaId = org.schemaId || org.entityId;
-  const selectedOrgEntity = schemaEntities.find((n) => n.id === selectedOrgSchemaId);
+  const invitationsConfig: OrgInvitationsConfig = org.invitationsConfig || {
+    deliveryMethod: "email",
+    inviteExpiresInDays: 7,
+    defaultRole: "member",
+    allowMemberInvites: false,
+  };
 
   return (
     <AccordionItem
@@ -75,7 +85,8 @@ export const AuthOrgRbacSection: React.FC<AuthConfigSectionProps> = ({
             </div>
 
             {org.enabled && (
-              <div className="flex flex-col gap-3 pt-3 border-t border-border/40 text-xs">
+              <div className="flex flex-col gap-4 pt-3 border-t border-border/40 text-xs">
+                {/* Organization Roles List */}
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-semibold">Organization Roles</Label>
                   <div className="flex flex-wrap gap-1.5">
@@ -101,7 +112,7 @@ export const AuthOrgRbacSection: React.FC<AuthConfigSectionProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="org-teams"
@@ -120,6 +131,107 @@ export const AuthOrgRbacSection: React.FC<AuthConfigSectionProps> = ({
                     />
                     <Label htmlFor="org-multi" className="text-xs font-normal cursor-pointer">
                       Multi-Org per user
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Member Invitation & Onboarding Flow Card */}
+                <div className="flex flex-col gap-3 p-3 rounded bg-background border border-border/40 mt-1">
+                  <Label className="text-[11px] font-semibold flex items-center gap-1.5 text-primary">
+                    <Mail className="w-3.5 h-3.5" /> Member Invitation & Onboarding Policy
+                  </Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Delivery Method</span>
+                      <Select
+                        value={invitationsConfig.deliveryMethod || "email"}
+                        onValueChange={(val: string) => {
+                          if (val === "email" || val === "link" || val === "both") {
+                            updateData({
+                              organization: {
+                                ...org,
+                                invitationsConfig: { ...invitationsConfig, deliveryMethod: val },
+                              },
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-7 text-xs bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="email" className="text-xs">Email Invite</SelectItem>
+                          <SelectItem value="link" className="text-xs">Shareable Link</SelectItem>
+                          <SelectItem value="both" className="text-xs">Email & Link</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Invite Expiry</span>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          className="h-7 text-xs font-mono bg-background"
+                          type="number"
+                          value={invitationsConfig.inviteExpiresInDays ?? 7}
+                          onChange={(e) =>
+                            updateData({
+                              organization: {
+                                ...org,
+                                invitationsConfig: {
+                                  ...invitationsConfig,
+                                  inviteExpiresInDays: parseInt(e.target.value, 10) || 7,
+                                },
+                              },
+                            })
+                          }
+                        />
+                        <span className="text-[10px] text-muted-foreground font-mono shrink-0">Days</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Default Role</span>
+                      <Select
+                        value={invitationsConfig.defaultRole || "member"}
+                        onValueChange={(val) =>
+                          updateData({
+                            organization: {
+                              ...org,
+                              invitationsConfig: { ...invitationsConfig, defaultRole: val },
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-7 text-xs font-mono bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="font-mono">
+                          {(org.roles || ["owner", "admin", "member"]).map((r) => (
+                            <SelectItem key={r} value={r} className="text-xs font-mono">
+                              {r}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Checkbox
+                      id="allow-mem-invites"
+                      checked={invitationsConfig.allowMemberInvites ?? false}
+                      onCheckedChange={(c) =>
+                        updateData({
+                          organization: {
+                            ...org,
+                            invitationsConfig: { ...invitationsConfig, allowMemberInvites: Boolean(c) },
+                          },
+                        })
+                      }
+                    />
+                    <Label htmlFor="allow-mem-invites" className="text-[11px] font-normal cursor-pointer text-muted-foreground">
+                      Allow standard members to send invitations (default: Owners/Admins only)
                     </Label>
                   </div>
                 </div>

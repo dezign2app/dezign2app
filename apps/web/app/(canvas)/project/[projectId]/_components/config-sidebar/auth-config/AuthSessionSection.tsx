@@ -2,6 +2,7 @@ import React from "react";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Button } from "@workspace/ui/components/button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Select,
   SelectContent,
@@ -14,8 +15,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
-import { SlidersHorizontal, Plus, Trash2 } from "lucide-react";
-import { SessionClaimConfig } from "@workspace/canvas";
+import { SlidersHorizontal, Plus, Trash2, Clock, RefreshCw } from "lucide-react";
+import { SessionClaimConfig, SessionConfig } from "@workspace/canvas";
 import { getEntityDbOperations } from "@/lib/utils/entityOperationsHelper";
 import { AuthConfigSectionProps } from "./types";
 
@@ -24,11 +25,19 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
   updateData,
   allNodes,
 }) => {
-  const claims: SessionClaimConfig[] = data.session?.claims || [
-    { key: "orgRole", source: "orgRole", deliveryMode: "jwt" },
-    { key: "subscriptionStatus", source: "subscription", targetValue: "status", deliveryMode: "cookie" },
-    { key: "planId", source: "subscription", targetValue: "plan_id", deliveryMode: "jwt" },
-  ];
+  const sessionConfig: SessionConfig = data.session || {
+    claims: [
+      { key: "orgRole", source: "orgRole", deliveryMode: "jwt" },
+      { key: "subscriptionStatus", source: "subscription", targetValue: "status", deliveryMode: "cookie" },
+      { key: "planId", source: "subscription", targetValue: "plan_id", deliveryMode: "jwt" },
+    ],
+    expiresInSeconds: 604800, // 7 days
+    updateAgeSeconds: 86400, // 1 day
+    refreshTokenRotation: true,
+    rememberMeDurationDays: 30,
+  };
+
+  const claims: SessionClaimConfig[] = sessionConfig.claims || [];
 
   const schemaEntities = allNodes.filter((n) => n.type === "entity");
   const serviceNodes = allNodes.filter((n) => n.type === "service" || n.type === "webClient");
@@ -43,7 +52,6 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
   );
   const subColumns = selectedSubEntity?.data.columns || [];
 
-  // Collect all available DB operations from entity nodes
   const allDbOps = schemaEntities.flatMap((e) =>
     getEntityDbOperations(e, allNodes)
       .filter((op) => op.enabled !== false)
@@ -53,7 +61,6 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
       })),
   );
 
-  // Collect all available Service Endpoints
   const allEndpoints = serviceNodes.flatMap((s) =>
     (s.data.endpoints || []).map((ep) => ({
       id: ep.id,
@@ -79,7 +86,72 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4 pt-1">
         <div className="flex flex-col gap-4 pt-2">
-          <div className="p-3.5 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary dark:text-primary">
+          {/* Session Expiry & Refresh Rotation Card */}
+          <div className="flex flex-col gap-3 p-3.5 bg-background/50 rounded-lg border border-border/40 text-xs">
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-primary" /> Session Lifetime & Refresh Token Policy
+            </Label>
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="flex flex-col gap-1">
+                <Label className="text-[11px] text-muted-foreground font-medium">Session Lifetime</Label>
+                <Select
+                  value={String(sessionConfig.expiresInSeconds ?? 604800)}
+                  onValueChange={(val) =>
+                    updateData({
+                      session: { ...sessionConfig, expiresInSeconds: parseInt(val, 10) },
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-7 text-xs font-mono bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="font-mono">
+                    <SelectItem value="3600" className="text-xs font-mono">1 Hour (3,600s)</SelectItem>
+                    <SelectItem value="86400" className="text-xs font-mono">24 Hours (86,400s)</SelectItem>
+                    <SelectItem value="604800" className="text-xs font-mono">7 Days (604,800s)</SelectItem>
+                    <SelectItem value="2592000" className="text-xs font-mono">30 Days (2,592,000s)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <Label className="text-[11px] text-muted-foreground font-medium">Remember Me Duration</Label>
+                <div className="flex items-center gap-1">
+                  <Input
+                    className="h-7 text-xs font-mono bg-background"
+                    type="number"
+                    value={sessionConfig.rememberMeDurationDays ?? 30}
+                    onChange={(e) =>
+                      updateData({
+                        session: { ...sessionConfig, rememberMeDurationDays: parseInt(e.target.value, 10) || 30 },
+                      })
+                    }
+                  />
+                  <span className="text-[10px] text-muted-foreground shrink-0 font-mono">Days</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5 justify-center pt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="token-rot"
+                    checked={sessionConfig.refreshTokenRotation ?? true}
+                    onCheckedChange={(c) =>
+                      updateData({
+                        session: { ...sessionConfig, refreshTokenRotation: Boolean(c) },
+                      })
+                    }
+                  />
+                  <Label htmlFor="token-rot" className="text-[11px] font-normal cursor-pointer flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3 text-primary shrink-0" /> Refresh Token Rotation
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Architecture Banner */}
+          <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary dark:text-primary">
             <p className="font-semibold mb-1">Session Delivery & Claims Architecture:</p>
             <ul className="list-disc list-inside gap-1 flex flex-col text-[11px] text-muted-foreground">
               <li>
@@ -94,6 +166,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
             </ul>
           </div>
 
+          {/* Configured Session Claims Table */}
           <div className="flex flex-col gap-3 p-3.5 bg-background/50 rounded-lg border border-border/40">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold">Configured Session Claims</Label>
@@ -108,7 +181,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                     deliveryMode: "jwt",
                   };
                   const updated: SessionClaimConfig[] = [...claims, newClaim];
-                  updateData({ session: { claims: updated } });
+                  updateData({ session: { ...sessionConfig, claims: updated } });
                 }}
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Add Claim
@@ -122,7 +195,6 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                   className="flex flex-col gap-2 p-2.5 rounded-lg bg-background border border-border/50 text-xs"
                 >
                   <div className="grid grid-cols-12 gap-2 items-center">
-                    {/* Claim Key */}
                     <div className="col-span-3">
                       <Input
                         className="h-7 text-xs font-mono bg-background"
@@ -130,18 +202,17 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                         placeholder="claim_key"
                         onChange={(e) => {
                           const updated = claims.map((c, i) => (i === idx ? { ...c, key: e.target.value } : c));
-                          updateData({ session: { claims: updated } });
+                          updateData({ session: { ...sessionConfig, claims: updated } });
                         }}
                       />
                     </div>
 
-                    {/* Source Selector */}
                     <div className="col-span-4">
                       <Select
                         value={claim.source}
                         onValueChange={(val: SessionClaimConfig["source"]) => {
                           const updated = claims.map((c, i) => (i === idx ? { ...c, source: val, targetValue: "" } : c));
-                          updateData({ session: { claims: updated } });
+                          updateData({ session: { ...sessionConfig, claims: updated } });
                         }}
                       >
                         <SelectTrigger className="h-7 text-xs bg-background">
@@ -159,13 +230,12 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                       </Select>
                     </div>
 
-                    {/* Delivery Mode */}
                     <div className="col-span-4">
                       <Select
                         value={claim.deliveryMode}
                         onValueChange={(val: SessionClaimConfig["deliveryMode"]) => {
                           const updated = claims.map((c, i) => (i === idx ? { ...c, deliveryMode: val } : c));
-                          updateData({ session: { claims: updated } });
+                          updateData({ session: { ...sessionConfig, claims: updated } });
                         }}
                       >
                         <SelectTrigger className="h-7 text-xs font-mono bg-background">
@@ -178,12 +248,11 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                       </Select>
                     </div>
 
-                    {/* Delete Button */}
                     <div className="col-span-1 flex justify-end">
                       <button
                         onClick={() => {
                           const updated = claims.filter((_, i) => i !== idx);
-                          updateData({ session: { claims: updated } });
+                          updateData({ session: { ...sessionConfig, claims: updated } });
                         }}
                         className="p-1 text-muted-foreground hover:text-destructive"
                       >
@@ -192,7 +261,6 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Secondary Target Selector based on source */}
                   {claim.source === "userColumn" && (
                     <div className="flex items-center gap-2 pl-1">
                       <span className="text-[11px] text-muted-foreground shrink-0 font-medium">User Column:</span>
@@ -201,7 +269,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onValueChange={(val) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: val } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         >
                           <SelectTrigger className="h-6 text-[11px] font-mono bg-background/80">
@@ -222,7 +290,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onChange={(e) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: e.target.value } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         />
                       )}
@@ -237,7 +305,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onValueChange={(val) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: val } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         >
                           <SelectTrigger className="h-6 text-[11px] font-mono bg-background/80">
@@ -258,7 +326,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onChange={(e) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: e.target.value } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         />
                       )}
@@ -273,7 +341,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onValueChange={(val) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: val } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         >
                           <SelectTrigger className="h-6 text-[11px] font-mono bg-background/80">
@@ -294,7 +362,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onChange={(e) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: e.target.value } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         />
                       )}
@@ -309,7 +377,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onValueChange={(val) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: val } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         >
                           <SelectTrigger className="h-6 text-[11px] font-mono bg-background/80">
@@ -330,7 +398,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                           value={claim.targetValue || ""}
                           onChange={(e) => {
                             const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: e.target.value } : c));
-                            updateData({ session: { claims: updated } });
+                            updateData({ session: { ...sessionConfig, claims: updated } });
                           }}
                         />
                       )}
@@ -346,7 +414,7 @@ export const AuthSessionSection: React.FC<AuthConfigSectionProps> = ({
                         value={claim.targetValue || ""}
                         onChange={(e) => {
                           const updated = claims.map((c, i) => (i === idx ? { ...c, targetValue: e.target.value } : c));
-                          updateData({ session: { claims: updated } });
+                          updateData({ session: { ...sessionConfig, claims: updated } });
                         }}
                       />
                     </div>

@@ -15,13 +15,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
-import { Key, Plus, Trash2 } from "lucide-react";
+import { Key, Plus, Trash2, Lock, ShieldCheck, GitMerge } from "lucide-react";
 import {
   AUTH_FRAMEWORK_OPTIONS,
   BETTER_AUTH_VERSIONS,
   DEFAULT_AUTH_FRAMEWORK,
   DEFAULT_BETTER_AUTH_VERSION,
   OAuthProviderConfig,
+  EmailPasswordConfig,
+  AccountLinkingPolicy,
 } from "@workspace/canvas";
 import { AuthConfigSectionProps } from "./types";
 
@@ -32,13 +34,34 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
   const selectedFramework = data.framework || DEFAULT_AUTH_FRAMEWORK;
   const selectedVersion = data.version || DEFAULT_BETTER_AUTH_VERSION;
 
+  const emailPassword: EmailPasswordConfig = data.providers?.emailPassword || {
+    enabled: true,
+    requireVerification: true,
+    minLength: 8,
+    requireUppercase: true,
+    requireNumbers: true,
+    requireSpecialChars: false,
+    rateLimit: {
+      maxAttempts: 5,
+      windowSeconds: 60,
+      lockoutDurationSeconds: 900,
+    },
+  };
+
+  const accountLinking: AccountLinkingPolicy = data.providers?.accountLinking || {
+    enabled: true,
+    policy: "prompt",
+    trustedProvidersOnly: true,
+  };
+
   const providers = data.providers || {
-    emailPassword: { enabled: true, requireVerification: true, minLength: 8 },
+    emailPassword,
     socialEnabled: true,
     oauth: [
       { id: "oa-1", provider: "google", clientIdEnv: "GOOGLE_CLIENT_ID", clientSecretEnv: "GOOGLE_CLIENT_SECRET" },
       { id: "oa-2", provider: "github", clientIdEnv: "GITHUB_CLIENT_ID", clientSecretEnv: "GITHUB_CLIENT_SECRET" },
     ],
+    accountLinking,
     magicLink: true,
     passkey: false,
   };
@@ -57,12 +80,12 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
         <div className="flex items-center gap-2 text-left flex-1">
           <Key className="w-4 h-4 text-primary shrink-0" />
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Providers
+            Providers & Password Security
           </span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20 font-medium">
-            {providers.emailPassword?.enabled ? "Email" : ""}
+            {emailPassword?.enabled ? "Email" : ""}
             {isSocialEnabled && providers.oauth?.length ? ` + ${providers.oauth.length} OAuth` : ""}
-            {!providers.emailPassword?.enabled && (!isSocialEnabled || !providers.oauth?.length) ? "None" : ""}
+            {!emailPassword?.enabled && (!isSocialEnabled || !providers.oauth?.length) ? "None" : ""}
           </span>
         </div>
       </AccordionTrigger>
@@ -114,40 +137,39 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
             </div>
           </div>
 
-          {/* Email / Password */}
+          {/* Email / Password & Security Guardrails */}
           <div className="flex flex-col gap-3 p-3.5 bg-background/50 rounded-lg border border-border/40">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold">Email & Password Auth</Label>
+              <Label className="text-xs font-semibold">Email & Password Policy</Label>
               <Checkbox
-                checked={providers.emailPassword?.enabled}
+                checked={emailPassword?.enabled}
                 onCheckedChange={(checked) =>
                   updateData({
                     providers: {
                       ...providers,
                       emailPassword: {
+                        ...emailPassword,
                         enabled: Boolean(checked),
-                        requireVerification: providers.emailPassword?.requireVerification ?? true,
-                        minLength: providers.emailPassword?.minLength ?? 8,
                       },
                     },
                   })
                 }
               />
             </div>
-            {providers.emailPassword?.enabled && (
-              <div className="flex items-center gap-4 text-xs pt-1">
+            {emailPassword?.enabled && (
+              <div className="flex flex-col gap-3 pt-2 text-xs border-t border-border/30">
+                {/* Require Email Verification */}
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="require-verify"
-                    checked={providers.emailPassword?.requireVerification}
+                    checked={emailPassword?.requireVerification}
                     onCheckedChange={(c) =>
                       updateData({
                         providers: {
                           ...providers,
                           emailPassword: {
-                            enabled: providers.emailPassword?.enabled ?? true,
+                            ...emailPassword,
                             requireVerification: Boolean(c),
-                            minLength: providers.emailPassword?.minLength ?? 8,
                           },
                         },
                       })
@@ -157,14 +179,206 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
                     Require Email Verification
                   </Label>
                 </div>
+
+                {/* Password Complexity Rules */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-[11px] text-muted-foreground font-medium">Min Password Length</Label>
+                    <Select
+                      value={String(emailPassword.minLength || 8)}
+                      onValueChange={(val) =>
+                        updateData({
+                          providers: {
+                            ...providers,
+                            emailPassword: {
+                              ...emailPassword,
+                              minLength: parseInt(val, 10),
+                            },
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-7 text-xs font-mono bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="font-mono">
+                        {[6, 8, 10, 12, 16].map((len) => (
+                          <SelectItem key={len} value={String(len)} className="text-xs font-mono">
+                            {len} characters
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 justify-end">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="req-upper"
+                        checked={emailPassword.requireUppercase}
+                        onCheckedChange={(c) =>
+                          updateData({
+                            providers: {
+                              ...providers,
+                              emailPassword: { ...emailPassword, requireUppercase: Boolean(c) },
+                            },
+                          })
+                        }
+                      />
+                      <Label htmlFor="req-upper" className="text-[11px] font-normal cursor-pointer">
+                        Require Uppercase
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="req-num"
+                        checked={emailPassword.requireNumbers}
+                        onCheckedChange={(c) =>
+                          updateData({
+                            providers: {
+                              ...providers,
+                              emailPassword: { ...emailPassword, requireNumbers: Boolean(c) },
+                            },
+                          })
+                        }
+                      />
+                      <Label htmlFor="req-num" className="text-[11px] font-normal cursor-pointer">
+                        Require Numbers
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Brute Force Rate Limiting */}
+                <div className="flex flex-col gap-2 p-2.5 rounded bg-background border border-border/40 mt-1">
+                  <Label className="text-[11px] font-semibold flex items-center gap-1 text-primary">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Brute-Force Rate Limiting & Lockout
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Max Attempts</span>
+                      <Input
+                        className="h-7 text-xs font-mono bg-background"
+                        type="number"
+                        value={emailPassword.rateLimit?.maxAttempts ?? 5}
+                        onChange={(e) =>
+                          updateData({
+                            providers: {
+                              ...providers,
+                              emailPassword: {
+                                ...emailPassword,
+                                rateLimit: {
+                                  maxAttempts: parseInt(e.target.value, 10) || 5,
+                                  windowSeconds: emailPassword.rateLimit?.windowSeconds ?? 60,
+                                  lockoutDurationSeconds: emailPassword.rateLimit?.lockoutDurationSeconds ?? 900,
+                                },
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Window (Sec)</span>
+                      <Input
+                        className="h-7 text-xs font-mono bg-background"
+                        type="number"
+                        value={emailPassword.rateLimit?.windowSeconds ?? 60}
+                        onChange={(e) =>
+                          updateData({
+                            providers: {
+                              ...providers,
+                              emailPassword: {
+                                ...emailPassword,
+                                rateLimit: {
+                                  maxAttempts: emailPassword.rateLimit?.maxAttempts ?? 5,
+                                  windowSeconds: parseInt(e.target.value, 10) || 60,
+                                  lockoutDurationSeconds: emailPassword.rateLimit?.lockoutDurationSeconds ?? 900,
+                                },
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Lockout (Sec)</span>
+                      <Input
+                        className="h-7 text-xs font-mono bg-background"
+                        type="number"
+                        value={emailPassword.rateLimit?.lockoutDurationSeconds ?? 900}
+                        onChange={(e) =>
+                          updateData({
+                            providers: {
+                              ...providers,
+                              emailPassword: {
+                                ...emailPassword,
+                                rateLimit: {
+                                  maxAttempts: emailPassword.rateLimit?.maxAttempts ?? 5,
+                                  windowSeconds: emailPassword.rateLimit?.windowSeconds ?? 60,
+                                  lockoutDurationSeconds: parseInt(e.target.value, 10) || 900,
+                                },
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
-          {/* OAuth Providers Table */}
+          {/* Account Linking Policy */}
+          {isSocialEnabled && (
+            <div className="flex flex-col gap-3 p-3.5 bg-background/50 rounded-lg border border-border/40 text-xs">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <GitMerge className="w-3.5 h-3.5 text-primary" /> Multi-Provider Account Linking Policy
+                </Label>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 capitalize font-medium">
+                  {accountLinking.policy || "prompt"}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Action when a user signs in with social OAuth after already possessing an email/password account.
+              </p>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {(["prompt", "merge", "block"] satisfies Array<NonNullable<AccountLinkingPolicy["policy"]>>).map((strat) => (
+                  <button
+                    key={strat}
+                    onClick={() =>
+                      updateData({
+                        providers: {
+                          ...providers,
+                          accountLinking: { ...accountLinking, policy: strat },
+                        },
+                      })
+                    }
+                    className={`p-2 rounded border text-[11px] font-medium capitalize text-center transition-colors ${
+                      accountLinking.policy === strat
+                        ? "bg-primary/15 border-primary text-primary font-bold"
+                        : "bg-background border-border/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {strat === "prompt" ? "Prompt & Verify" : strat === "merge" ? "Auto-Merge" : "Block Sign-In"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* OAuth Providers Table with Secret Security Indicators */}
           <div className="flex flex-col gap-3 p-3.5 bg-background/50 rounded-lg border border-border/40">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold">OAuth 2.0 / Social Providers</Label>
+              <div>
+                <Label className="text-xs font-semibold">OAuth 2.0 / Social Providers</Label>
+                <div className="flex items-center gap-1 pt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                  <Lock className="w-3 h-3 shrink-0" />
+                  <span>Stored as encrypted environment variables (process.env.XXXX)</span>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="enable-social-auth"
@@ -254,9 +468,9 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-4">
+                        <div className="col-span-4 relative flex items-center">
                           <Input
-                            className="h-7 text-xs font-mono bg-background"
+                            className="h-7 text-xs font-mono bg-background pr-6"
                             value={oa.clientIdEnv}
                             placeholder="CLIENT_ID_ENV"
                             onChange={(e) => {
@@ -266,10 +480,11 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
                               updateData({ providers: { ...providers, oauth: updated } });
                             }}
                           />
+                          <Lock className="w-3 h-3 text-muted-foreground absolute right-2 pointer-events-none" />
                         </div>
-                        <div className="col-span-4">
+                        <div className="col-span-4 relative flex items-center">
                           <Input
-                            className="h-7 text-xs font-mono bg-background"
+                            className="h-7 text-xs font-mono bg-background pr-6"
                             value={oa.clientSecretEnv}
                             placeholder="CLIENT_SECRET_ENV"
                             onChange={(e) => {
@@ -279,6 +494,7 @@ export const AuthProvidersSection: React.FC<AuthConfigSectionProps> = ({
                               updateData({ providers: { ...providers, oauth: updated } });
                             }}
                           />
+                          <Lock className="w-3 h-3 text-muted-foreground absolute right-2 pointer-events-none" />
                         </div>
                         <div className="col-span-1 flex justify-end">
                           <button

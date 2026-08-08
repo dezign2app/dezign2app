@@ -25,6 +25,12 @@ import type {
   PaymentsPlanConfig,
   AdditionalAuthTableConfig,
   AuthFunctionRef,
+  EmailPasswordConfig,
+  AccountLinkingPolicy,
+  SessionConfig,
+  RedirectsConfig,
+  OrgInvitationsConfig,
+  BetterAuthTableMapping,
 } from "./auth";
 import type {
   CanvasLangGraphNodeData,
@@ -265,27 +271,30 @@ export interface CanvasAuthNodeData {
   version?: BetterAuthVersion | string;
   dbAdapter?: "sqlite-raw" | "custom";
   authFunctions?: AuthFunctionRef[];
+  tableMappings?: BetterAuthTableMapping;
   userEntityId?: string;
   userSchemaId?: string;
   additionalUserTables?: AdditionalAuthTableConfig[];
   additionalTables?: AdditionalAuthTableConfig[];
   providers?: {
-    emailPassword?: { enabled: boolean; requireVerification: boolean; minLength: number };
+    emailPassword?: EmailPasswordConfig;
     socialEnabled?: boolean;
     oauthEnabled?: boolean;
     oauth?: OAuthProviderConfig[];
     magicLink?: boolean;
     passkey?: boolean;
+    accountLinking?: AccountLinkingPolicy;
   };
-  session?: {
-    claims?: SessionClaimConfig[];
-  };
+  session?: SessionConfig;
+  redirects?: RedirectsConfig;
+  trustedOrigins?: string[];
   organization?: {
     enabled?: boolean;
     roles?: string[];
     teams?: boolean;
     multiOrg?: boolean;
     invitations?: boolean;
+    invitationsConfig?: OrgInvitationsConfig;
     schemaId?: string;
     entityId?: string;
     additionalTables?: AdditionalAuthTableConfig[];

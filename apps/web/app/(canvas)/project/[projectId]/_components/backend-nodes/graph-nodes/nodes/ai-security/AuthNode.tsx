@@ -41,7 +41,6 @@ export const AuthNode = ({
 
   const framework = data.framework || DEFAULT_AUTH_FRAMEWORK;
   const version = data.version || DEFAULT_BETTER_AUTH_VERSION;
-  const dbAdapter = data.dbAdapter || "sqlite-raw";
 
   // Calculate connected WebApp / service apps
   const connectedAppsCount = edges.filter(
@@ -101,13 +100,8 @@ export const AuthNode = ({
         selected={selected}
       />
 
-      {/* Info bar: DB Adapter & Connected Apps Count */}
+      {/* Info bar: Connected Apps Count */}
       <div className="px-3 py-1.5 bg-muted/60 border-b flex items-center justify-between gap-2 nodrag text-[10px]">
-        <span className="font-mono text-muted-foreground bg-background/80 px-2 py-0.5 rounded border border-border/40">
-          {dbAdapter === "sqlite-raw"
-            ? "SQLite · Raw"
-            : dbAdapter}
-        </span>
         <span className="text-muted-foreground font-mono">
           {connectedAppsCount} {connectedAppsCount === 1 ? "app" : "apps"} connected
         </span>

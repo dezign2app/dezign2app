@@ -55,8 +55,8 @@ export function generateDefaultDbOperations(
     .join("\n");
 
   const createCode = writableCols.length > 0
-    ? `export function create${pascal}(data: Create${pascal}Data): ${pascal}Row {\n  const info = stmtInsert.run(${insertBindArgs});\n  const ${pkVarName} = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n  return { ${pkVarName}, ...data } as ${pascal}Row;\n}`
-    : `export function create${pascal}(): ${pascal}Row {\n  const info = db.prepare("INSERT INTO ${tableName} DEFAULT VALUES").run();\n  const ${pkVarName} = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n  return { ${pkVarName} } as ${pascal}Row;\n}`;
+    ? `export function create${pascal}(data: Create${pascal}Data): ${pascal}Row {\n  const info = stmtInsert.run(${insertBindArgs});\n  const _rowId = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n  return { ${pkColName}: _rowId, ...data } as ${pascal}Row;\n}`
+    : `export function create${pascal}(): ${pascal}Row {\n  const info = db.prepare("INSERT INTO ${tableName} DEFAULT VALUES").run();\n  const _rowId = typeof info.lastInsertRowid === "bigint" ? info.lastInsertRowid.toString() : String(info.lastInsertRowid);\n  return { ${pkColName}: _rowId } as ${pascal}Row;\n}`;
 
   const updateCode = writableCols.length > 0
     ? `export function update${pascal}(${pkVarName}: ${pkType}, data: Update${pascal}Data): ${pascal}Row | undefined {\n  const current = find${pascal}ById(${pkVarName});\n  if (!current) return undefined;\n  const updated = { ...current, ...data };\n  stmtUpdate.run(${writableCols.map((c) => `updated.${toCamel(c.name)}`).join(", ")}, ${pkVarName});\n  return find${pascal}ById(${pkVarName});\n}`
@@ -158,10 +158,12 @@ export function generateDefaultDbOperations(
         return cList.includes(col.name.toLowerCase());
       });
       if (!exists) {
+        // Cardinality invariant: FK columns are always the N side of a relationship.
+        // They must never be treated as unique — always generate .all() with pagination.
         effectiveIndexes.push({
           name: `idx_${tableName}_${col.name}`,
           columns: col.name,
-          isUnique: !!col.isUnique,
+          isUnique: false,
         });
       }
     }
@@ -182,7 +184,13 @@ export function generateDefaultDbOperations(
     const pascalIdxName = toPascal(cleanName || colList.join("_"));
     const fnName = `fetchBy${pascalIdxName}`;
 
-    const isUnique = !!idx.isUnique;
+    // Cardinality invariant: if the indexed column is a FK column, it is always N-cardinality
+    // regardless of how the index was declared. Only truly unique constraints use .get().
+    const colIsForeignKey = colList.some((c) =>
+      columns.find((col) => col.name.toLowerCase() === c.toLowerCase())?.isForeignKey ||
+      c.toLowerCase().endsWith("_id")
+    );
+    const isUnique = !!idx.isUnique && !colIsForeignKey;
 
     const paramList: { name: string; type: string; required?: boolean; defaultValue?: string }[] = colList.map((colName) => {
       const colObj = columns.find((c) => c.name.toLowerCase() === colName.toLowerCase());
@@ -208,9 +216,19 @@ export function generateDefaultDbOperations(
     const whereClause = colList.map((c) => `${c} = ?`).join(" AND ");
     const argList = colList.map((c) => toCamel(c)).join(", ") + (isUnique ? "" : ", limit, offset");
 
+    const paramTypes = colList.map((colName) => {
+      const colObj = columns.find((c) => c.name.toLowerCase() === colName.toLowerCase());
+      const colType =
+        (colObj?.type || "string").toLowerCase() === "number" ||
+        (colObj?.type || "string").toLowerCase() === "integer"
+          ? "number"
+          : "string";
+      return `${toCamel(colName)}: ${colType}`;
+    }).join(", ");
+
     const indexCode = isUnique
-      ? `export function ${fnName}(${paramSig}): ${returnType} {\n  return db.prepare("SELECT * FROM ${tableName} WHERE ${whereClause}").get(${argList}) as ${returnType};\n}`
-      : `export function ${fnName}(${paramSig}): ${returnType} {\n  return db.prepare("SELECT * FROM ${tableName} WHERE ${whereClause} LIMIT ? OFFSET ?").all(${argList}) as ${returnType};\n}`;
+      ? `const stmtFindBy${pascalIdxName} = db.prepare<[${paramTypes}], ${pascal}Row>(\n  "SELECT * FROM ${tableName} WHERE ${whereClause}"\n);\n\nexport function ${fnName}(${paramSig}): ${returnType} {\n  return stmtFindBy${pascalIdxName}.get(${argList}) as ${returnType};\n}`
+      : `const stmtFindBy${pascalIdxName} = db.prepare<[${paramTypes}, limit?: number, offset?: number], ${pascal}Row>(\n  "SELECT * FROM ${tableName} WHERE ${whereClause} LIMIT ? OFFSET ?"\n);\n\nexport function ${fnName}(${paramSig}): ${returnType} {\n  return stmtFindBy${pascalIdxName}.all(${argList}) as ${returnType};\n}`;
 
     ops.push({
       id: `auto-index-${tableName}-${rawIdxName}-${i}`,

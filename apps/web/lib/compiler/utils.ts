@@ -20,16 +20,22 @@ export function toSqlIdentifier(str: string, fallback = "item"): string {
 
 export function toVarName(str: string): string {
   const safe = toSqlIdentifier(str, "item");
-  const camel = safe.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
-  if (!camel) return "item";
-  return camel.charAt(0).toLowerCase() + camel.slice(1);
+  const hasLeadingUnderscore = safe.startsWith("_");
+  const core = hasLeadingUnderscore ? safe.slice(1) : safe;
+  const camel = core.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  if (!camel) return hasLeadingUnderscore ? "_item" : "item";
+  const result = camel.charAt(0).toLowerCase() + camel.slice(1);
+  return hasLeadingUnderscore ? `_${result}` : result;
 }
 
 export function toPascalCase(str: string): string {
   const safe = toSqlIdentifier(str, "Item");
-  const camel = safe.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
-  if (!camel) return "Item";
-  return camel.charAt(0).toUpperCase() + camel.slice(1);
+  const hasLeadingUnderscore = safe.startsWith("_");
+  const core = hasLeadingUnderscore ? safe.slice(1) : safe;
+  const camel = core.replace(/_([a-z0-9])/gi, (_, char) => char.toUpperCase());
+  if (!camel) return hasLeadingUnderscore ? "_Item" : "Item";
+  const result = camel.charAt(0).toUpperCase() + camel.slice(1);
+  return hasLeadingUnderscore ? `_${result}` : result;
 }
 
 export function toTableName(str: string): string {

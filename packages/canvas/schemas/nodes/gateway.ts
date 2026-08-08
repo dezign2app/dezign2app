@@ -35,15 +35,24 @@ export const sessionClaimConfigSchema = z.object({
   deliveryMode: z.enum(["jwt", "cookie"]),
 });
 
-export const authSubscriptionConfigSchema = z.object({
-  enabled: z.boolean().optional(),
-  provider: z.string().optional(),
-  entityId: z.string().optional(),
-  schemaId: z.string().optional(),
-  statusColumn: z.string().optional(),
-  planColumn: z.string().optional(),
-  customerIdColumn: z.string().optional(),
-  periodEndColumn: z.string().optional(),
+export const authSubscriptionConfigSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    provider: z.string().optional(),
+    entityId: z.string().optional(),
+    schemaId: z.string().optional(),
+    statusColumn: z.string().optional(),
+    planColumn: z.string().optional(),
+    customerIdColumn: z.string().optional(),
+    periodEndColumn: z.string().optional(),
+  })
+  .passthrough();
+
+export const authFunctionRefSchema = z.object({
+  id: z.string(),
+  variableName: z.string().optional(),
+  entityNodeId: z.string(),
+  functionId: z.string(),
 });
 
 export const userCustomFieldSchema = z.object({
@@ -84,6 +93,7 @@ export const authDataSchema = baseNodeDataSchema
     provider: z.string().optional(),
     version: z.string().optional(),
     dbAdapter: z.string().optional(),
+    authFunctions: z.array(authFunctionRefSchema).optional(),
     userEntityId: z.string().optional(),
     userSchemaId: z.string().optional(),
     additionalUserTables: z.array(additionalAuthTableConfigSchema).optional(),

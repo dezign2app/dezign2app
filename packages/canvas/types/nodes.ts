@@ -25,6 +25,7 @@ import type {
   PaymentsPlanConfig,
   AdditionalAuthTableConfig,
   AuthSubscriptionConfig,
+  AuthFunctionRef,
 } from "./auth";
 import type {
   CanvasLangGraphNodeData,
@@ -95,7 +96,7 @@ export interface BaseNodeData {
 export interface DbOperationFunction {
   id: string;
   name: string;
-  kind: "findAll" | "findById" | "create" | "update" | "delete" | "fetchByIndex" | "custom";
+  kind: "findAll" | "findById" | "create" | "update" | "delete" | "fetchByIndex" | "join" | "custom";
   description?: string;
   signature?: string;
   indexName?: string;
@@ -264,6 +265,7 @@ export interface CanvasAuthNodeData {
   baseUrl?: string;
   version?: BetterAuthVersion | string;
   dbAdapter?: "sqlite-raw" | "custom";
+  authFunctions?: AuthFunctionRef[];
   userEntityId?: string;
   userSchemaId?: string;
   additionalUserTables?: AdditionalAuthTableConfig[];

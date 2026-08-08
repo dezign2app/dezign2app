@@ -327,6 +327,13 @@ export interface OAuthProviderConfig {
   clientSecretEnv: string;
 }
 
+export interface AuthFunctionRef {
+  id: string;
+  variableName?: string;
+  entityNodeId: string;
+  functionId: string;
+}
+
 export interface AuthSubscriptionConfig {
   enabled?: boolean;
   provider?: "creem" | "stripe" | "lemonsqueezy" | "custom" | string;

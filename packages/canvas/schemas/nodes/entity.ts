@@ -11,6 +11,7 @@ export const dbOperationFunctionSchema = z.object({
     "update",
     "delete",
     "fetchByIndex",
+    "join",
     "custom",
   ]),
   description: z.string().optional(),

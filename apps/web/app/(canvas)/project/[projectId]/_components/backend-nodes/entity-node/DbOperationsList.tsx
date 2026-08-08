@@ -16,6 +16,7 @@ export const DbOperationsList: React.FC<DbOperationsListProps> = ({
   data,
 }) => {
   const setActiveConfigItem = useBackendCanvasStore((s) => s.setActiveConfigItem);
+  const allNodes = useBackendCanvasStore((s) => s.nodes);
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   const columns = data.columns || [];
@@ -25,7 +26,7 @@ export const DbOperationsList: React.FC<DbOperationsListProps> = ({
   const dbOps: DbOperationFunction[] =
     data.dbOperations && data.dbOperations.length > 0
       ? data.dbOperations
-      : generateDefaultDbOperations(data.label, columns, indexes);
+      : generateDefaultDbOperations(data.label, columns, indexes, allNodes);
 
   const activeOps = dbOps.filter((op) => op.enabled !== false);
 

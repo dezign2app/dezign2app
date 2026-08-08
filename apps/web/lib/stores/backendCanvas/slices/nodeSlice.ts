@@ -198,7 +198,50 @@ export const createNodeSlice = (
     console.log("backendCanvasStore: updateNode called for id", id, changes);
     const updatedNode = get().nodes.find((n) => n.id === id);
     if (!updatedNode) return;
-    const next = get().nodes.map((n) =>
+
+    let currentNodes = get().nodes;
+
+    // If entity label changed, sync references.table across other entity nodes
+    if (
+      updatedNode.type === "entity" &&
+      changes.data?.label !== undefined &&
+      changes.data.label !== updatedNode.data.label
+    ) {
+      const oldLabel = updatedNode.data.label;
+      const newLabel = changes.data.label;
+
+      if (
+        oldLabel &&
+        oldLabel.trim() !== "" &&
+        newLabel &&
+        newLabel.trim() !== ""
+      ) {
+        currentNodes = currentNodes.map((node) => {
+          if (node.id === id || node.type !== "entity" || !node.data.columns) {
+            return node;
+          }
+          let colsChanged = false;
+          const newCols = node.data.columns.map((col) => {
+            if (col.references?.table === oldLabel) {
+              colsChanged = true;
+              return {
+                ...col,
+                references: {
+                  ...col.references,
+                  table: newLabel,
+                },
+              };
+            }
+            return col;
+          });
+          return colsChanged
+            ? { ...node, data: { ...node.data, columns: newCols } }
+            : node;
+        });
+      }
+    }
+
+    const next = currentNodes.map((n) =>
       n.id === id ? { ...n, ...changes } : n,
     );
     const updated = next.find((n) => n.id === id)!;
@@ -312,15 +355,17 @@ export const createNodeSlice = (
 
     if (updatedNode.type === "entity" && changes.data?.columns) {
       const currentCols = changes.data.columns;
-      const allEntityNodes = get().nodes.filter((n) => n.type === "entity");
+      const allEntityNodes = next.filter((n) => n.type === "entity");
 
+      // 1. Sync foreign-key edges where node `id` is the TARGET (referencing table)
       currentCols.forEach((col, colIdx) => {
         const existingEdgeIndices: number[] = [];
         nextEdges.forEach((e, idx) => {
           if (
             e.type === "foreign-key" &&
-            ((e.target === id && e.targetHandle === `target-${colIdx}`) ||
-              (e.source === id && e.sourceHandle === `source-${colIdx}`))
+            e.target === id &&
+            (e.targetHandle === `target-${colIdx}` ||
+              e.targetHandle === `source-${colIdx}`)
           ) {
             existingEdgeIndices.push(idx);
           }
@@ -331,30 +376,31 @@ export const createNodeSlice = (
           col.references?.table &&
           col.references?.column
         ) {
-          const targetNode = allEntityNodes.find(
+          const refNode = allEntityNodes.find(
             (n) => n.data.label === col.references?.table,
           );
-          if (targetNode && targetNode.data.columns) {
-            const targetColIdx = targetNode.data.columns.findIndex(
+          if (refNode && refNode.data.columns) {
+            const refColIdx = refNode.data.columns.findIndex(
               (c) => c.name === col.references?.column,
             );
-            if (targetColIdx !== -1) {
-              const expectedSourceHandle = `source-${targetColIdx}`;
+            if (refColIdx !== -1) {
+              const expectedSourceHandle = `source-${refColIdx}`;
               const expectedTargetHandle = `target-${colIdx}`;
+              const expectedSourceId = refNode.id;
 
               if (existingEdgeIndices.length > 0) {
                 const primaryEdgeIdx = existingEdgeIndices[0]!;
                 const existingEdge = nextEdges[primaryEdgeIdx]!;
 
                 if (
-                  existingEdge.source !== targetNode.id ||
+                  existingEdge.source !== expectedSourceId ||
                   existingEdge.target !== id ||
                   existingEdge.sourceHandle !== expectedSourceHandle ||
                   existingEdge.targetHandle !== expectedTargetHandle
                 ) {
                   const updatedEdge: BackendEdge = {
                     ...existingEdge,
-                    source: targetNode.id,
+                    source: expectedSourceId,
                     target: id,
                     sourceHandle: expectedSourceHandle,
                     targetHandle: expectedTargetHandle,
@@ -388,7 +434,7 @@ export const createNodeSlice = (
                 const fractionalIndex = generateKeyBetween(lastEdgeIndex, null);
                 const newEdge: BackendEdge = {
                   id: `edge-${Date.now()}-${colIdx}`,
-                  source: targetNode.id,
+                  source: expectedSourceId,
                   target: id,
                   type: "foreign-key",
                   sourceHandle: expectedSourceHandle,
@@ -418,6 +464,39 @@ export const createNodeSlice = (
               }
             });
             edgesChanged = true;
+          }
+        }
+      });
+
+      // 2. Clean up foreign-key edges where handles point to indices that no longer exist on node `id`
+      const maxColIdx = currentCols.length - 1;
+      nextEdges.forEach((e) => {
+        if (e.type === "foreign-key") {
+          if (e.target === id && e.targetHandle) {
+            const match = e.targetHandle.match(/^(?:source|target)-(\d+)$/);
+            if (match) {
+              const idx = parseInt(match[1]!, 10);
+              if (idx > maxColIdx) {
+                nextEdges = nextEdges.filter((edge) => edge.id !== e.id);
+                set({
+                  pendingEdgeRemovals: [...get().pendingEdgeRemovals, e.id],
+                });
+                edgesChanged = true;
+              }
+            }
+          }
+          if (e.source === id && e.sourceHandle) {
+            const match = e.sourceHandle.match(/^(?:source|target)-(\d+)$/);
+            if (match) {
+              const idx = parseInt(match[1]!, 10);
+              if (idx > maxColIdx) {
+                nextEdges = nextEdges.filter((edge) => edge.id !== e.id);
+                set({
+                  pendingEdgeRemovals: [...get().pendingEdgeRemovals, e.id],
+                });
+                edgesChanged = true;
+              }
+            }
           }
         }
       });
